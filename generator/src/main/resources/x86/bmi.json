@@ -1,0 +1,106 @@
+[
+  {
+    "mnemonic": "andn",
+    "summary": "Logical AND NOT",
+    "forms": [
+      { "operands": ["r32", "r32", "r/m32"], "encoding": { "opcode": [242], "vex_map": "0F38", "vex": "128", "vex_w": 0, "modrm": "reg" }, "flags": { "set": "OSZ", "undefined": "AP" }, "feature": "bmi1" },
+      { "operands": ["r64", "r64", "r/m64"], "encoding": { "opcode": [242], "vex_map": "0F38", "vex": "128", "vex_w": 1, "modrm": "reg" }, "flags": { "set": "OSZ", "undefined": "AP" }, "feature": "bmi1" }
+    ]
+  },
+  {
+    "mnemonic": "bextr",
+    "summary": "Bit field extract",
+    "forms": [
+      { "operands": ["r32", "r/m32", "r32"], "encoding": { "opcode": [247], "vex_map": "0F38", "vex": "128", "vex_w": 0, "modrm": "reg" }, "flags": { "set": "Z", "undefined": "OSAP" }, "feature": "bmi1" },
+      { "operands": ["r64", "r/m64", "r64"], "encoding": { "opcode": [247], "vex_map": "0F38", "vex": "128", "vex_w": 1, "modrm": "reg" }, "flags": { "set": "Z", "undefined": "OSAP" }, "feature": "bmi1" }
+    ]
+  },
+  {
+    "mnemonic": "blsi",
+    "summary": "Extract lowest set isolated bit",
+    "forms": [
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [243], "vex_map": "0F38", "vex": "128", "vex_w": 0, "modrm": "/3" }, "flags": { "set": "OSZ", "undefined": "AP" }, "feature": "bmi1" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [243], "vex_map": "0F38", "vex": "128", "vex_w": 1, "modrm": "/3" }, "flags": { "set": "OSZ", "undefined": "AP" }, "feature": "bmi1" }
+    ]
+  },
+  {
+    "mnemonic": "blsmsk",
+    "summary": "Get mask up to lowest set bit",
+    "forms": [
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [243], "vex_map": "0F38", "vex": "128", "vex_w": 0, "modrm": "/2" }, "flags": { "set": "OSC", "undefined": "AP" }, "feature": "bmi1" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [243], "vex_map": "0F38", "vex": "128", "vex_w": 1, "modrm": "/2" }, "flags": { "set": "OSC", "undefined": "AP" }, "feature": "bmi1" }
+    ]
+  },
+  {
+    "mnemonic": "blsr",
+    "summary": "Reset lowest set bit",
+    "forms": [
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [243], "vex_map": "0F38", "vex": "128", "vex_w": 0, "modrm": "/1" }, "flags": { "set": "OSZC", "undefined": "AP" }, "feature": "bmi1" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [243], "vex_map": "0F38", "vex": "128", "vex_w": 1, "modrm": "/1" }, "flags": { "set": "OSZC", "undefined": "AP" }, "feature": "bmi1" }
+    ]
+  },
+  {
+    "mnemonic": "bzhi",
+    "summary": "Zero high bits starting at specified bit position",
+    "forms": [
+      { "operands": ["r32", "r/m32", "r32"], "encoding": { "opcode": [245], "vex_map": "0F38", "vex": "128", "vex_w": 0, "modrm": "reg" }, "flags": { "set": "OSZC", "undefined": "AP" }, "feature": "bmi2" },
+      { "operands": ["r64", "r/m64", "r64"], "encoding": { "opcode": [245], "vex_map": "0F38", "vex": "128", "vex_w": 1, "modrm": "reg" }, "flags": { "set": "OSZC", "undefined": "AP" }, "feature": "bmi2" }
+    ]
+  },
+  {
+    "mnemonic": "mulx",
+    "summary": "Unsigned multiply without affecting flags",
+    "forms": [
+      { "operands": ["r32", "r32", "r/m32"], "encoding": { "opcode": [246], "vex_map": "0F38", "vex": "128", "vex_w": 0, "prefix": "0xF2", "modrm": "reg" }, "feature": "bmi2" },
+      { "operands": ["r64", "r64", "r/m64"], "encoding": { "opcode": [246], "vex_map": "0F38", "vex": "128", "vex_w": 1, "prefix": "0xF2", "modrm": "reg" }, "feature": "bmi2" }
+    ]
+  },
+  {
+    "mnemonic": "pdep",
+    "summary": "Parallel bits deposit",
+    "forms": [
+      { "operands": ["r32", "r32", "r/m32"], "encoding": { "opcode": [245], "vex_map": "0F38", "vex": "128", "vex_w": 0, "prefix": "0xF2", "modrm": "reg" }, "feature": "bmi2" },
+      { "operands": ["r64", "r64", "r/m64"], "encoding": { "opcode": [245], "vex_map": "0F38", "vex": "128", "vex_w": 1, "prefix": "0xF2", "modrm": "reg" }, "feature": "bmi2" }
+    ]
+  },
+  {
+    "mnemonic": "pext",
+    "summary": "Parallel bits extract",
+    "forms": [
+      { "operands": ["r32", "r32", "r/m32"], "encoding": { "opcode": [245], "vex_map": "0F38", "vex": "128", "vex_w": 0, "prefix": "0xF3", "modrm": "reg" }, "feature": "bmi2" },
+      { "operands": ["r64", "r64", "r/m64"], "encoding": { "opcode": [245], "vex_map": "0F38", "vex": "128", "vex_w": 1, "prefix": "0xF3", "modrm": "reg" }, "feature": "bmi2" }
+    ]
+  },
+  {
+    "mnemonic": "rorx",
+    "summary": "Rotate right without affecting flags",
+    "forms": [
+      { "operands": ["r32", "r/m32", "imm8"], "encoding": { "opcode": [240], "vex_map": "0F3A", "vex": "128", "vex_w": 0, "prefix": "0xF2", "modrm": "reg" }, "feature": "bmi2" },
+      { "operands": ["r64", "r/m64", "imm8"], "encoding": { "opcode": [240], "vex_map": "0F3A", "vex": "128", "vex_w": 1, "prefix": "0xF2", "modrm": "reg" }, "feature": "bmi2" }
+    ]
+  },
+  {
+    "mnemonic": "sarx",
+    "summary": "Shift arithmetic right without affecting flags",
+    "forms": [
+      { "operands": ["r32", "r/m32", "r32"], "encoding": { "opcode": [247], "vex_map": "0F38", "vex": "128", "vex_w": 0, "prefix": "0xF3", "modrm": "reg" }, "feature": "bmi2" },
+      { "operands": ["r64", "r/m64", "r64"], "encoding": { "opcode": [247], "vex_map": "0F38", "vex": "128", "vex_w": 1, "prefix": "0xF3", "modrm": "reg" }, "feature": "bmi2" }
+    ]
+  },
+  {
+    "mnemonic": "shrx",
+    "summary": "Shift logical right without affecting flags",
+    "forms": [
+      { "operands": ["r32", "r/m32", "r32"], "encoding": { "opcode": [247], "vex_map": "0F38", "vex": "128", "vex_w": 0, "prefix": "0xF2", "modrm": "reg" }, "feature": "bmi2" },
+      { "operands": ["r64", "r/m64", "r64"], "encoding": { "opcode": [247], "vex_map": "0F38", "vex": "128", "vex_w": 1, "prefix": "0xF2", "modrm": "reg" }, "feature": "bmi2" }
+    ]
+  },
+  {
+    "mnemonic": "shlx",
+    "summary": "Shift logical left without affecting flags",
+    "forms": [
+      { "operands": ["r32", "r/m32", "r32"], "encoding": { "opcode": [247], "vex_map": "0F38", "vex": "128", "vex_w": 0, "prefix": "0x66", "modrm": "reg" }, "feature": "bmi2" },
+      { "operands": ["r64", "r/m64", "r64"], "encoding": { "opcode": [247], "vex_map": "0F38", "vex": "128", "vex_w": 1, "prefix": "0x66", "modrm": "reg" }, "feature": "bmi2" }
+    ]
+  }
+]

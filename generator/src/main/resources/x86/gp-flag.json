@@ -1,0 +1,9 @@
+[
+  { "mnemonic": "clc",  "summary": "Clear carry flag", "forms": [{ "operands": [], "encoding": { "opcode": [248] }, "flags": { "set": "C" }, "feature": "baseline" }] },
+  { "mnemonic": "stc",  "summary": "Set carry flag",   "forms": [{ "operands": [], "encoding": { "opcode": [249] }, "flags": { "set": "C" }, "feature": "baseline" }] },
+  { "mnemonic": "cmc",  "summary": "Complement carry flag", "forms": [{ "operands": [], "encoding": { "opcode": [245] }, "flags": { "set": "C" }, "feature": "baseline" }] },
+  { "mnemonic": "cld",  "summary": "Clear direction flag", "forms": [{ "operands": [], "encoding": { "opcode": [252] }, "feature": "baseline" }] },
+  { "mnemonic": "std",  "summary": "Set direction flag",   "forms": [{ "operands": [], "encoding": { "opcode": [253] }, "feature": "baseline" }] },
+  { "mnemonic": "lahf", "summary": "Load AH from flags", "forms": [{ "operands": [], "encoding": { "opcode": [159] }, "feature": "baseline" }] },
+  { "mnemonic": "sahf", "summary": "Store AH into flags", "forms": [{ "operands": [], "encoding": { "opcode": [158] }, "flags": { "set": "SZAPC" }, "feature": "baseline" }] }
+]

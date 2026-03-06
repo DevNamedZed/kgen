@@ -1,0 +1,15 @@
+{
+  "description": "WebAssembly opcode definitions for kgen code generation",
+  "includes": [
+    "core.json",
+    "sign-extension.json",
+    "saturating-trunc.json",
+    "bulk-memory.json",
+    "reference-types.json",
+    "simd.json",
+    "tail-call.json",
+    "exception-handling.json",
+    "threads.json",
+    "gc.json"
+  ]
+}

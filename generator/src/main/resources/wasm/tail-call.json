@@ -1,0 +1,4 @@
+[
+  {"opcode": "0x12", "name": "returnCall", "mnemonic": "return_call", "immediate": "FuncIdx", "pop": [], "push": [], "group": "call", "feature": "tail-call"},
+  {"opcode": "0x13", "name": "returnCallIndirect", "mnemonic": "return_call_indirect", "immediate": "CallIndirect", "pop": ["i32"], "push": [], "group": "call", "feature": "tail-call"}
+]

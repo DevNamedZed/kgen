@@ -1,0 +1,122 @@
+[
+  {
+    "mnemonic": "vfmadd132ps", "summary": "Fused multiply-add packed single (132 form)",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [152], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "fma" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [152], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "fma" }
+    ]
+  },
+  {
+    "mnemonic": "vfmadd213ps", "summary": "Fused multiply-add packed single (213 form)",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [168], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "fma" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [168], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "fma" }
+    ]
+  },
+  {
+    "mnemonic": "vfmadd231ps", "summary": "Fused multiply-add packed single (231 form)",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [184], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "fma" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [184], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "fma" }
+    ]
+  },
+  {
+    "mnemonic": "vfmadd132pd", "summary": "Fused multiply-add packed double (132 form)",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [152], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 1, "modrm": "reg" }, "feature": "fma" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [152], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "vex_w": 1, "modrm": "reg" }, "feature": "fma" }
+    ]
+  },
+  {
+    "mnemonic": "vfmadd213pd", "summary": "Fused multiply-add packed double (213 form)",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [168], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 1, "modrm": "reg" }, "feature": "fma" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [168], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "vex_w": 1, "modrm": "reg" }, "feature": "fma" }
+    ]
+  },
+  {
+    "mnemonic": "vfmadd231pd", "summary": "Fused multiply-add packed double (231 form)",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [184], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 1, "modrm": "reg" }, "feature": "fma" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [184], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "vex_w": 1, "modrm": "reg" }, "feature": "fma" }
+    ]
+  },
+  {
+    "mnemonic": "vfmadd132ss", "summary": "Fused multiply-add scalar single (132 form)",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m32"], "encoding": { "opcode": [153], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "fma" }
+    ]
+  },
+  {
+    "mnemonic": "vfmadd213ss", "summary": "Fused multiply-add scalar single (213 form)",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m32"], "encoding": { "opcode": [169], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "fma" }
+    ]
+  },
+  {
+    "mnemonic": "vfmadd231ss", "summary": "Fused multiply-add scalar single (231 form)",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m32"], "encoding": { "opcode": [185], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "fma" }
+    ]
+  },
+  {
+    "mnemonic": "vfmadd132sd", "summary": "Fused multiply-add scalar double (132 form)",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m64"], "encoding": { "opcode": [153], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 1, "modrm": "reg" }, "feature": "fma" }
+    ]
+  },
+  {
+    "mnemonic": "vfmadd213sd", "summary": "Fused multiply-add scalar double (213 form)",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m64"], "encoding": { "opcode": [169], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 1, "modrm": "reg" }, "feature": "fma" }
+    ]
+  },
+  {
+    "mnemonic": "vfmadd231sd", "summary": "Fused multiply-add scalar double (231 form)",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m64"], "encoding": { "opcode": [185], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 1, "modrm": "reg" }, "feature": "fma" }
+    ]
+  },
+  {
+    "mnemonic": "vfmsub132ps", "summary": "Fused multiply-subtract packed single (132 form)",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [154], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "fma" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [154], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "fma" }
+    ]
+  },
+  {
+    "mnemonic": "vfmsub213ps", "summary": "Fused multiply-subtract packed single (213 form)",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [170], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "fma" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [170], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "fma" }
+    ]
+  },
+  {
+    "mnemonic": "vfmsub231ps", "summary": "Fused multiply-subtract packed single (231 form)",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [186], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "fma" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [186], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "fma" }
+    ]
+  },
+  {
+    "mnemonic": "vfnmadd132ps", "summary": "Fused negative multiply-add packed single (132 form)",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [156], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "fma" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [156], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "fma" }
+    ]
+  },
+  {
+    "mnemonic": "vfnmadd213ps", "summary": "Fused negative multiply-add packed single (213 form)",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [172], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "fma" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [172], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "fma" }
+    ]
+  },
+  {
+    "mnemonic": "vfnmadd231ps", "summary": "Fused negative multiply-add packed single (231 form)",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [188], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "fma" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [188], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "fma" }
+    ]
+  }
+]

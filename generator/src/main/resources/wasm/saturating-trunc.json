@@ -1,0 +1,10 @@
+[
+  {"opcode": "0xFC00", "name": "i32TruncSatF32S", "mnemonic": "i32.trunc_sat_f32_s", "immediate": null, "pop": ["f32"], "push": ["i32"], "group": "conversion", "feature": "nontrapping-fptoint", "prefix": "0xFC"},
+  {"opcode": "0xFC01", "name": "i32TruncSatF32U", "mnemonic": "i32.trunc_sat_f32_u", "immediate": null, "pop": ["f32"], "push": ["i32"], "group": "conversion", "feature": "nontrapping-fptoint", "prefix": "0xFC"},
+  {"opcode": "0xFC02", "name": "i32TruncSatF64S", "mnemonic": "i32.trunc_sat_f64_s", "immediate": null, "pop": ["f64"], "push": ["i32"], "group": "conversion", "feature": "nontrapping-fptoint", "prefix": "0xFC"},
+  {"opcode": "0xFC03", "name": "i32TruncSatF64U", "mnemonic": "i32.trunc_sat_f64_u", "immediate": null, "pop": ["f64"], "push": ["i32"], "group": "conversion", "feature": "nontrapping-fptoint", "prefix": "0xFC"},
+  {"opcode": "0xFC04", "name": "i64TruncSatF32S", "mnemonic": "i64.trunc_sat_f32_s", "immediate": null, "pop": ["f32"], "push": ["i64"], "group": "conversion", "feature": "nontrapping-fptoint", "prefix": "0xFC"},
+  {"opcode": "0xFC05", "name": "i64TruncSatF32U", "mnemonic": "i64.trunc_sat_f32_u", "immediate": null, "pop": ["f32"], "push": ["i64"], "group": "conversion", "feature": "nontrapping-fptoint", "prefix": "0xFC"},
+  {"opcode": "0xFC06", "name": "i64TruncSatF64S", "mnemonic": "i64.trunc_sat_f64_s", "immediate": null, "pop": ["f64"], "push": ["i64"], "group": "conversion", "feature": "nontrapping-fptoint", "prefix": "0xFC"},
+  {"opcode": "0xFC07", "name": "i64TruncSatF64U", "mnemonic": "i64.trunc_sat_f64_u", "immediate": null, "pop": ["f64"], "push": ["i64"], "group": "conversion", "feature": "nontrapping-fptoint", "prefix": "0xFC"}
+]

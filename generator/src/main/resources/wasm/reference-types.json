@@ -1,0 +1,6 @@
+[
+  {"opcode": "0xD3", "name": "refEq", "mnemonic": "ref.eq", "immediate": null, "pop": ["ref", "ref"], "push": ["i32"], "group": "reference", "feature": "gc"},
+  {"opcode": "0xD4", "name": "refAsNonNull", "mnemonic": "ref.as_non_null", "immediate": null, "pop": ["ref"], "push": ["ref"], "group": "reference", "feature": "gc"},
+  {"opcode": "0xD5", "name": "brOnNull", "mnemonic": "br_on_null", "immediate": "LabelIdx", "pop": ["ref"], "push": [], "group": "reference", "feature": "gc"},
+  {"opcode": "0xD6", "name": "brOnNonNull", "mnemonic": "br_on_non_null", "immediate": "LabelIdx", "pop": ["ref"], "push": ["ref"], "group": "reference", "feature": "gc"}
+]

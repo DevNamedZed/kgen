@@ -1,0 +1,127 @@
+[
+  {
+    "mnemonic": "shl",
+    "summary": "Shift left",
+    "forms": [
+      { "operands": ["r/m8", "1"], "encoding": { "opcode": [208], "modrm": "/4" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m8", "cl"], "encoding": { "opcode": [210], "modrm": "/4" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m8", "imm8"], "encoding": { "opcode": [192], "modrm": "/4" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "1"], "encoding": { "opcode": [209], "modrm": "/4" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "cl"], "encoding": { "opcode": [211], "modrm": "/4" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "imm8"], "encoding": { "opcode": [193], "modrm": "/4" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "1"], "encoding": { "opcode": [209], "modrm": "/4", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "cl"], "encoding": { "opcode": [211], "modrm": "/4", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "imm8"], "encoding": { "opcode": [193], "modrm": "/4", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "shr",
+    "summary": "Shift right (unsigned)",
+    "forms": [
+      { "operands": ["r/m8", "1"], "encoding": { "opcode": [208], "modrm": "/5" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m8", "cl"], "encoding": { "opcode": [210], "modrm": "/5" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m8", "imm8"], "encoding": { "opcode": [192], "modrm": "/5" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "1"], "encoding": { "opcode": [209], "modrm": "/5" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "cl"], "encoding": { "opcode": [211], "modrm": "/5" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "imm8"], "encoding": { "opcode": [193], "modrm": "/5" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "1"], "encoding": { "opcode": [209], "modrm": "/5", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "cl"], "encoding": { "opcode": [211], "modrm": "/5", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "imm8"], "encoding": { "opcode": [193], "modrm": "/5", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "sar",
+    "summary": "Shift right (signed/arithmetic)",
+    "forms": [
+      { "operands": ["r/m8", "1"], "encoding": { "opcode": [208], "modrm": "/7" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m8", "cl"], "encoding": { "opcode": [210], "modrm": "/7" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m8", "imm8"], "encoding": { "opcode": [192], "modrm": "/7" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "1"], "encoding": { "opcode": [209], "modrm": "/7" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "cl"], "encoding": { "opcode": [211], "modrm": "/7" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "imm8"], "encoding": { "opcode": [193], "modrm": "/7" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "1"], "encoding": { "opcode": [209], "modrm": "/7", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "cl"], "encoding": { "opcode": [211], "modrm": "/7", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "imm8"], "encoding": { "opcode": [193], "modrm": "/7", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "rol",
+    "summary": "Rotate left",
+    "forms": [
+      { "operands": ["r/m8", "1"], "encoding": { "opcode": [208], "modrm": "/0" }, "flags": { "set": "OC" }, "feature": "baseline" },
+      { "operands": ["r/m8", "cl"], "encoding": { "opcode": [210], "modrm": "/0" }, "flags": { "set": "OC" }, "feature": "baseline" },
+      { "operands": ["r/m8", "imm8"], "encoding": { "opcode": [192], "modrm": "/0" }, "flags": { "set": "OC" }, "feature": "baseline" },
+      { "operands": ["r/m32", "1"], "encoding": { "opcode": [209], "modrm": "/0" }, "flags": { "set": "OC" }, "feature": "baseline" },
+      { "operands": ["r/m32", "cl"], "encoding": { "opcode": [211], "modrm": "/0" }, "flags": { "set": "OC" }, "feature": "baseline" },
+      { "operands": ["r/m32", "imm8"], "encoding": { "opcode": [193], "modrm": "/0" }, "flags": { "set": "OC" }, "feature": "baseline" },
+      { "operands": ["r/m64", "1"], "encoding": { "opcode": [209], "modrm": "/0", "rex_w": true }, "flags": { "set": "OC" }, "feature": "baseline" },
+      { "operands": ["r/m64", "cl"], "encoding": { "opcode": [211], "modrm": "/0", "rex_w": true }, "flags": { "set": "OC" }, "feature": "baseline" },
+      { "operands": ["r/m64", "imm8"], "encoding": { "opcode": [193], "modrm": "/0", "rex_w": true }, "flags": { "set": "OC" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "ror",
+    "summary": "Rotate right",
+    "forms": [
+      { "operands": ["r/m8", "1"], "encoding": { "opcode": [208], "modrm": "/1" }, "flags": { "set": "OC" }, "feature": "baseline" },
+      { "operands": ["r/m8", "cl"], "encoding": { "opcode": [210], "modrm": "/1" }, "flags": { "set": "OC" }, "feature": "baseline" },
+      { "operands": ["r/m8", "imm8"], "encoding": { "opcode": [192], "modrm": "/1" }, "flags": { "set": "OC" }, "feature": "baseline" },
+      { "operands": ["r/m32", "1"], "encoding": { "opcode": [209], "modrm": "/1" }, "flags": { "set": "OC" }, "feature": "baseline" },
+      { "operands": ["r/m32", "cl"], "encoding": { "opcode": [211], "modrm": "/1" }, "flags": { "set": "OC" }, "feature": "baseline" },
+      { "operands": ["r/m32", "imm8"], "encoding": { "opcode": [193], "modrm": "/1" }, "flags": { "set": "OC" }, "feature": "baseline" },
+      { "operands": ["r/m64", "1"], "encoding": { "opcode": [209], "modrm": "/1", "rex_w": true }, "flags": { "set": "OC" }, "feature": "baseline" },
+      { "operands": ["r/m64", "cl"], "encoding": { "opcode": [211], "modrm": "/1", "rex_w": true }, "flags": { "set": "OC" }, "feature": "baseline" },
+      { "operands": ["r/m64", "imm8"], "encoding": { "opcode": [193], "modrm": "/1", "rex_w": true }, "flags": { "set": "OC" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "rcl",
+    "summary": "Rotate left through carry",
+    "forms": [
+      { "operands": ["r/m8", "1"], "encoding": { "opcode": [208], "modrm": "/2" }, "flags": { "set": "OC", "tested": "C" }, "feature": "baseline" },
+      { "operands": ["r/m8", "cl"], "encoding": { "opcode": [210], "modrm": "/2" }, "flags": { "set": "OC", "tested": "C" }, "feature": "baseline" },
+      { "operands": ["r/m8", "imm8"], "encoding": { "opcode": [192], "modrm": "/2" }, "flags": { "set": "OC", "tested": "C" }, "feature": "baseline" },
+      { "operands": ["r/m32", "1"], "encoding": { "opcode": [209], "modrm": "/2" }, "flags": { "set": "OC", "tested": "C" }, "feature": "baseline" },
+      { "operands": ["r/m32", "cl"], "encoding": { "opcode": [211], "modrm": "/2" }, "flags": { "set": "OC", "tested": "C" }, "feature": "baseline" },
+      { "operands": ["r/m32", "imm8"], "encoding": { "opcode": [193], "modrm": "/2" }, "flags": { "set": "OC", "tested": "C" }, "feature": "baseline" },
+      { "operands": ["r/m64", "1"], "encoding": { "opcode": [209], "modrm": "/2", "rex_w": true }, "flags": { "set": "OC", "tested": "C" }, "feature": "baseline" },
+      { "operands": ["r/m64", "cl"], "encoding": { "opcode": [211], "modrm": "/2", "rex_w": true }, "flags": { "set": "OC", "tested": "C" }, "feature": "baseline" },
+      { "operands": ["r/m64", "imm8"], "encoding": { "opcode": [193], "modrm": "/2", "rex_w": true }, "flags": { "set": "OC", "tested": "C" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "rcr",
+    "summary": "Rotate right through carry",
+    "forms": [
+      { "operands": ["r/m8", "1"], "encoding": { "opcode": [208], "modrm": "/3" }, "flags": { "set": "OC", "tested": "C" }, "feature": "baseline" },
+      { "operands": ["r/m8", "cl"], "encoding": { "opcode": [210], "modrm": "/3" }, "flags": { "set": "OC", "tested": "C" }, "feature": "baseline" },
+      { "operands": ["r/m8", "imm8"], "encoding": { "opcode": [192], "modrm": "/3" }, "flags": { "set": "OC", "tested": "C" }, "feature": "baseline" },
+      { "operands": ["r/m32", "1"], "encoding": { "opcode": [209], "modrm": "/3" }, "flags": { "set": "OC", "tested": "C" }, "feature": "baseline" },
+      { "operands": ["r/m32", "cl"], "encoding": { "opcode": [211], "modrm": "/3" }, "flags": { "set": "OC", "tested": "C" }, "feature": "baseline" },
+      { "operands": ["r/m32", "imm8"], "encoding": { "opcode": [193], "modrm": "/3" }, "flags": { "set": "OC", "tested": "C" }, "feature": "baseline" },
+      { "operands": ["r/m64", "1"], "encoding": { "opcode": [209], "modrm": "/3", "rex_w": true }, "flags": { "set": "OC", "tested": "C" }, "feature": "baseline" },
+      { "operands": ["r/m64", "cl"], "encoding": { "opcode": [211], "modrm": "/3", "rex_w": true }, "flags": { "set": "OC", "tested": "C" }, "feature": "baseline" },
+      { "operands": ["r/m64", "imm8"], "encoding": { "opcode": [193], "modrm": "/3", "rex_w": true }, "flags": { "set": "OC", "tested": "C" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "shld",
+    "summary": "Double precision shift left",
+    "forms": [
+      { "operands": ["r/m32", "r32", "imm8"], "encoding": { "opcode": [15, 164], "modrm": "reg" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "r32", "cl"], "encoding": { "opcode": [15, 165], "modrm": "reg" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "r64", "imm8"], "encoding": { "opcode": [15, 164], "modrm": "reg", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "r64", "cl"], "encoding": { "opcode": [15, 165], "modrm": "reg", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "shrd",
+    "summary": "Double precision shift right",
+    "forms": [
+      { "operands": ["r/m32", "r32", "imm8"], "encoding": { "opcode": [15, 172], "modrm": "reg" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "r32", "cl"], "encoding": { "opcode": [15, 173], "modrm": "reg" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "r64", "imm8"], "encoding": { "opcode": [15, 172], "modrm": "reg", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "r64", "cl"], "encoding": { "opcode": [15, 173], "modrm": "reg", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" }
+    ]
+  }
+]

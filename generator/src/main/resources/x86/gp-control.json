@@ -1,0 +1,218 @@
+[
+  {
+    "mnemonic": "jmp",
+    "summary": "Unconditional jump",
+    "forms": [
+      { "operands": ["rel8"], "encoding": { "opcode": [235] }, "feature": "baseline" },
+      { "operands": ["rel32"], "encoding": { "opcode": [233] }, "feature": "baseline" },
+      { "operands": ["r/m64"], "encoding": { "opcode": [255], "modrm": "/4" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "ja",    "summary": "Jump if above (CF=0, ZF=0)",
+    "forms": [
+      { "operands": ["rel8"], "encoding": { "opcode": [119] }, "flags": { "tested": "CZ" }, "feature": "baseline" },
+      { "operands": ["rel32"], "encoding": { "opcode": [15, 135] }, "flags": { "tested": "CZ" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "jae",   "summary": "Jump if above or equal (CF=0)",
+    "forms": [
+      { "operands": ["rel8"], "encoding": { "opcode": [115] }, "flags": { "tested": "C" }, "feature": "baseline" },
+      { "operands": ["rel32"], "encoding": { "opcode": [15, 131] }, "flags": { "tested": "C" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "jb",    "summary": "Jump if below (CF=1)",
+    "forms": [
+      { "operands": ["rel8"], "encoding": { "opcode": [114] }, "flags": { "tested": "C" }, "feature": "baseline" },
+      { "operands": ["rel32"], "encoding": { "opcode": [15, 130] }, "flags": { "tested": "C" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "jbe",   "summary": "Jump if below or equal (CF=1 or ZF=1)",
+    "forms": [
+      { "operands": ["rel8"], "encoding": { "opcode": [118] }, "flags": { "tested": "CZ" }, "feature": "baseline" },
+      { "operands": ["rel32"], "encoding": { "opcode": [15, 134] }, "flags": { "tested": "CZ" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "je",    "summary": "Jump if equal (ZF=1)",
+    "forms": [
+      { "operands": ["rel8"], "encoding": { "opcode": [116] }, "flags": { "tested": "Z" }, "feature": "baseline" },
+      { "operands": ["rel32"], "encoding": { "opcode": [15, 132] }, "flags": { "tested": "Z" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "jg",    "summary": "Jump if greater (ZF=0, SF=OF)",
+    "forms": [
+      { "operands": ["rel8"], "encoding": { "opcode": [127] }, "flags": { "tested": "OSZ" }, "feature": "baseline" },
+      { "operands": ["rel32"], "encoding": { "opcode": [15, 143] }, "flags": { "tested": "OSZ" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "jge",   "summary": "Jump if greater or equal (SF=OF)",
+    "forms": [
+      { "operands": ["rel8"], "encoding": { "opcode": [125] }, "flags": { "tested": "OS" }, "feature": "baseline" },
+      { "operands": ["rel32"], "encoding": { "opcode": [15, 141] }, "flags": { "tested": "OS" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "jl",    "summary": "Jump if less (SF!=OF)",
+    "forms": [
+      { "operands": ["rel8"], "encoding": { "opcode": [124] }, "flags": { "tested": "OS" }, "feature": "baseline" },
+      { "operands": ["rel32"], "encoding": { "opcode": [15, 140] }, "flags": { "tested": "OS" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "jle",   "summary": "Jump if less or equal (ZF=1 or SF!=OF)",
+    "forms": [
+      { "operands": ["rel8"], "encoding": { "opcode": [126] }, "flags": { "tested": "OSZ" }, "feature": "baseline" },
+      { "operands": ["rel32"], "encoding": { "opcode": [15, 142] }, "flags": { "tested": "OSZ" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "jne",   "summary": "Jump if not equal (ZF=0)",
+    "forms": [
+      { "operands": ["rel8"], "encoding": { "opcode": [117] }, "flags": { "tested": "Z" }, "feature": "baseline" },
+      { "operands": ["rel32"], "encoding": { "opcode": [15, 133] }, "flags": { "tested": "Z" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "jno",   "summary": "Jump if not overflow (OF=0)",
+    "forms": [
+      { "operands": ["rel8"], "encoding": { "opcode": [113] }, "flags": { "tested": "O" }, "feature": "baseline" },
+      { "operands": ["rel32"], "encoding": { "opcode": [15, 129] }, "flags": { "tested": "O" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "jnp",   "summary": "Jump if not parity (PF=0)",
+    "forms": [
+      { "operands": ["rel8"], "encoding": { "opcode": [123] }, "flags": { "tested": "P" }, "feature": "baseline" },
+      { "operands": ["rel32"], "encoding": { "opcode": [15, 139] }, "flags": { "tested": "P" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "jns",   "summary": "Jump if not sign (SF=0)",
+    "forms": [
+      { "operands": ["rel8"], "encoding": { "opcode": [121] }, "flags": { "tested": "S" }, "feature": "baseline" },
+      { "operands": ["rel32"], "encoding": { "opcode": [15, 137] }, "flags": { "tested": "S" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "jo",    "summary": "Jump if overflow (OF=1)",
+    "forms": [
+      { "operands": ["rel8"], "encoding": { "opcode": [112] }, "flags": { "tested": "O" }, "feature": "baseline" },
+      { "operands": ["rel32"], "encoding": { "opcode": [15, 128] }, "flags": { "tested": "O" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "jp",    "summary": "Jump if parity (PF=1)",
+    "forms": [
+      { "operands": ["rel8"], "encoding": { "opcode": [122] }, "flags": { "tested": "P" }, "feature": "baseline" },
+      { "operands": ["rel32"], "encoding": { "opcode": [15, 138] }, "flags": { "tested": "P" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "js",    "summary": "Jump if sign (SF=1)",
+    "forms": [
+      { "operands": ["rel8"], "encoding": { "opcode": [120] }, "flags": { "tested": "S" }, "feature": "baseline" },
+      { "operands": ["rel32"], "encoding": { "opcode": [15, 136] }, "flags": { "tested": "S" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "jrcxz",  "summary": "Jump if RCX is zero",
+    "forms": [
+      { "operands": ["rel8"], "encoding": { "opcode": [227] }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "call",
+    "summary": "Call procedure",
+    "forms": [
+      { "operands": ["rel32"], "encoding": { "opcode": [232] }, "feature": "baseline" },
+      { "operands": ["r/m64"], "encoding": { "opcode": [255], "modrm": "/2" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "ret",
+    "summary": "Return from procedure",
+    "forms": [
+      { "operands": [], "encoding": { "opcode": [195] }, "feature": "baseline" },
+      { "operands": ["imm16"], "encoding": { "opcode": [194] }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "loop",
+    "summary": "Loop (decrement RCX and jump if non-zero)",
+    "forms": [
+      { "operands": ["rel8"], "encoding": { "opcode": [226] }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "loope",
+    "summary": "Loop if equal (decrement RCX, jump if non-zero and ZF=1)",
+    "forms": [
+      { "operands": ["rel8"], "encoding": { "opcode": [225] }, "flags": { "tested": "Z" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "loopne",
+    "summary": "Loop if not equal (decrement RCX, jump if non-zero and ZF=0)",
+    "forms": [
+      { "operands": ["rel8"], "encoding": { "opcode": [224] }, "flags": { "tested": "Z" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "int",
+    "summary": "Software interrupt",
+    "forms": [
+      { "operands": ["imm8"], "encoding": { "opcode": [205] }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "int3",
+    "summary": "Breakpoint",
+    "forms": [
+      { "operands": [], "encoding": { "opcode": [204] }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "syscall",
+    "summary": "System call",
+    "forms": [
+      { "operands": [], "encoding": { "opcode": [15, 5] }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "sysret",
+    "summary": "Return from system call",
+    "forms": [
+      { "operands": [], "encoding": { "opcode": [15, 7] }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "nop",
+    "summary": "No operation",
+    "forms": [
+      { "operands": [], "encoding": { "opcode": [144] }, "feature": "baseline" },
+      { "operands": ["r/m16"], "encoding": { "opcode": [15, 31], "modrm": "/0", "prefix": "0x66" }, "feature": "baseline" },
+      { "operands": ["r/m32"], "encoding": { "opcode": [15, 31], "modrm": "/0" }, "feature": "baseline" },
+      { "operands": ["r/m64"], "encoding": { "opcode": [15, 31], "modrm": "/0", "rex_w": true }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "ud2",
+    "summary": "Undefined instruction (guaranteed #UD)",
+    "forms": [
+      { "operands": [], "encoding": { "opcode": [15, 11] }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "hlt",
+    "summary": "Halt",
+    "forms": [
+      { "operands": [], "encoding": { "opcode": [244] }, "feature": "baseline" }
+    ]
+  }
+]

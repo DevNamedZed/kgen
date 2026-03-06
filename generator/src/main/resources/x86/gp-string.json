@@ -1,0 +1,97 @@
+[
+  {
+    "mnemonic": "movsb",
+    "summary": "Move byte string",
+    "forms": [{ "operands": [], "encoding": { "opcode": [164] }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "movsw",
+    "summary": "Move word string",
+    "forms": [{ "operands": [], "encoding": { "opcode": [165], "prefix": "0x66" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "movsd_str",
+    "summary": "Move doubleword string",
+    "forms": [{ "operands": [], "encoding": { "opcode": [165] }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "movsq",
+    "summary": "Move quadword string",
+    "forms": [{ "operands": [], "encoding": { "opcode": [165], "rex_w": true }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "cmpsb",
+    "summary": "Compare byte strings",
+    "forms": [{ "operands": [], "encoding": { "opcode": [166] }, "flags": { "set": "OSZAPC" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "cmpsd_str",
+    "summary": "Compare doubleword strings",
+    "forms": [{ "operands": [], "encoding": { "opcode": [167] }, "flags": { "set": "OSZAPC" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "cmpsq",
+    "summary": "Compare quadword strings",
+    "forms": [{ "operands": [], "encoding": { "opcode": [167], "rex_w": true }, "flags": { "set": "OSZAPC" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "scasb",
+    "summary": "Scan byte string",
+    "forms": [{ "operands": [], "encoding": { "opcode": [174] }, "flags": { "set": "OSZAPC" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "scasd",
+    "summary": "Scan doubleword string",
+    "forms": [{ "operands": [], "encoding": { "opcode": [175] }, "flags": { "set": "OSZAPC" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "scasq",
+    "summary": "Scan quadword string",
+    "forms": [{ "operands": [], "encoding": { "opcode": [175], "rex_w": true }, "flags": { "set": "OSZAPC" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "lodsb",
+    "summary": "Load byte string",
+    "forms": [{ "operands": [], "encoding": { "opcode": [172] }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "lodsd",
+    "summary": "Load doubleword string",
+    "forms": [{ "operands": [], "encoding": { "opcode": [173] }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "lodsq",
+    "summary": "Load quadword string",
+    "forms": [{ "operands": [], "encoding": { "opcode": [173], "rex_w": true }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "stosb",
+    "summary": "Store byte string",
+    "forms": [{ "operands": [], "encoding": { "opcode": [170] }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "stosd",
+    "summary": "Store doubleword string",
+    "forms": [{ "operands": [], "encoding": { "opcode": [171] }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "stosq",
+    "summary": "Store quadword string",
+    "forms": [{ "operands": [], "encoding": { "opcode": [171], "rex_w": true }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "rep",
+    "summary": "Repeat prefix",
+    "forms": [{ "operands": [], "encoding": { "opcode": [243] }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "repe",
+    "summary": "Repeat while equal prefix",
+    "forms": [{ "operands": [], "encoding": { "opcode": [243] }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "repne",
+    "summary": "Repeat while not equal prefix",
+    "forms": [{ "operands": [], "encoding": { "opcode": [242] }, "feature": "baseline" }]
+  }
+]

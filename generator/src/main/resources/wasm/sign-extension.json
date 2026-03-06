@@ -1,0 +1,7 @@
+[
+  {"opcode": "0xC0", "name": "i32Extend8S", "mnemonic": "i32.extend8_s", "immediate": null, "pop": ["i32"], "push": ["i32"], "group": "numeric", "feature": "sign-ext"},
+  {"opcode": "0xC1", "name": "i32Extend16S", "mnemonic": "i32.extend16_s", "immediate": null, "pop": ["i32"], "push": ["i32"], "group": "numeric", "feature": "sign-ext"},
+  {"opcode": "0xC2", "name": "i64Extend8S", "mnemonic": "i64.extend8_s", "immediate": null, "pop": ["i64"], "push": ["i64"], "group": "numeric", "feature": "sign-ext"},
+  {"opcode": "0xC3", "name": "i64Extend16S", "mnemonic": "i64.extend16_s", "immediate": null, "pop": ["i64"], "push": ["i64"], "group": "numeric", "feature": "sign-ext"},
+  {"opcode": "0xC4", "name": "i64Extend32S", "mnemonic": "i64.extend32_s", "immediate": null, "pop": ["i64"], "push": ["i64"], "group": "numeric", "feature": "sign-ext"}
+]

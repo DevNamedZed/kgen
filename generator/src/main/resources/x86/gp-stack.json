@@ -1,0 +1,55 @@
+[
+  {
+    "mnemonic": "push",
+    "summary": "Push onto stack",
+    "forms": [
+      { "operands": ["r16"], "encoding": { "opcode": [80], "plus_reg": true, "prefix": "0x66" }, "feature": "baseline" },
+      { "operands": ["r64"], "encoding": { "opcode": [80], "plus_reg": true, "default_size": 64 }, "feature": "baseline" },
+      { "operands": ["r/m16"], "encoding": { "opcode": [255], "modrm": "/6", "prefix": "0x66" }, "feature": "baseline" },
+      { "operands": ["r/m64"], "encoding": { "opcode": [255], "modrm": "/6", "default_size": 64 }, "feature": "baseline" },
+      { "operands": ["imm8"], "encoding": { "opcode": [106] }, "feature": "baseline" },
+      { "operands": ["imm16"], "encoding": { "opcode": [104], "prefix": "0x66" }, "feature": "baseline" },
+      { "operands": ["imm32"], "encoding": { "opcode": [104] }, "feature": "baseline" },
+      { "operands": ["sreg"], "encoding": { "opcode": [6] }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "pop",
+    "summary": "Pop from stack",
+    "forms": [
+      { "operands": ["r16"], "encoding": { "opcode": [88], "plus_reg": true, "prefix": "0x66" }, "feature": "baseline" },
+      { "operands": ["r64"], "encoding": { "opcode": [88], "plus_reg": true, "default_size": 64 }, "feature": "baseline" },
+      { "operands": ["r/m16"], "encoding": { "opcode": [143], "modrm": "/0", "prefix": "0x66" }, "feature": "baseline" },
+      { "operands": ["r/m64"], "encoding": { "opcode": [143], "modrm": "/0", "default_size": 64 }, "feature": "baseline" },
+      { "operands": ["sreg"], "encoding": { "opcode": [7] }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "enter",
+    "summary": "Create stack frame",
+    "forms": [
+      { "operands": ["imm16", "imm8"], "encoding": { "opcode": [200] }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "leave",
+    "summary": "Destroy stack frame",
+    "forms": [
+      { "operands": [], "encoding": { "opcode": [201] }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "pushfq",
+    "summary": "Push RFLAGS onto stack",
+    "forms": [
+      { "operands": [], "encoding": { "opcode": [156] }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "popfq",
+    "summary": "Pop stack into RFLAGS",
+    "forms": [
+      { "operands": [], "encoding": { "opcode": [157] }, "flags": { "set": "OSZAPC" }, "feature": "baseline" }
+    ]
+  }
+]

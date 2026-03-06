@@ -1,0 +1,122 @@
+[
+  {
+    "mnemonic": "vmovaps", "summary": "VEX move aligned packed single",
+    "forms": [
+      { "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [40], "vex_map": "0F", "vex": "128", "modrm": "reg" }, "feature": "avx" },
+      { "operands": ["xmm/m128", "xmm"], "encoding": { "opcode": [41], "vex_map": "0F", "vex": "128", "modrm": "reg" }, "feature": "avx" },
+      { "operands": ["ymm", "ymm/m256"], "encoding": { "opcode": [40], "vex_map": "0F", "vex": "256", "modrm": "reg" }, "feature": "avx" },
+      { "operands": ["ymm/m256", "ymm"], "encoding": { "opcode": [41], "vex_map": "0F", "vex": "256", "modrm": "reg" }, "feature": "avx" }
+    ]
+  },
+  {
+    "mnemonic": "vmovups", "summary": "VEX move unaligned packed single",
+    "forms": [
+      { "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [16], "vex_map": "0F", "vex": "128", "modrm": "reg" }, "feature": "avx" },
+      { "operands": ["xmm/m128", "xmm"], "encoding": { "opcode": [17], "vex_map": "0F", "vex": "128", "modrm": "reg" }, "feature": "avx" },
+      { "operands": ["ymm", "ymm/m256"], "encoding": { "opcode": [16], "vex_map": "0F", "vex": "256", "modrm": "reg" }, "feature": "avx" },
+      { "operands": ["ymm/m256", "ymm"], "encoding": { "opcode": [17], "vex_map": "0F", "vex": "256", "modrm": "reg" }, "feature": "avx" }
+    ]
+  },
+  {
+    "mnemonic": "vmovapd", "summary": "VEX move aligned packed double",
+    "forms": [
+      { "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [40], "vex_map": "0F", "vex": "128", "prefix": "0x66", "modrm": "reg" }, "feature": "avx" },
+      { "operands": ["xmm/m128", "xmm"], "encoding": { "opcode": [41], "vex_map": "0F", "vex": "128", "prefix": "0x66", "modrm": "reg" }, "feature": "avx" },
+      { "operands": ["ymm", "ymm/m256"], "encoding": { "opcode": [40], "vex_map": "0F", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx" },
+      { "operands": ["ymm/m256", "ymm"], "encoding": { "opcode": [41], "vex_map": "0F", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx" }
+    ]
+  },
+  {
+    "mnemonic": "vaddps", "summary": "VEX add packed single",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [88], "vex_map": "0F", "vex": "128", "modrm": "reg" }, "feature": "avx" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [88], "vex_map": "0F", "vex": "256", "modrm": "reg" }, "feature": "avx" }
+    ]
+  },
+  {
+    "mnemonic": "vaddpd", "summary": "VEX add packed double",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [88], "vex_map": "0F", "vex": "128", "prefix": "0x66", "modrm": "reg" }, "feature": "avx" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [88], "vex_map": "0F", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx" }
+    ]
+  },
+  {
+    "mnemonic": "vaddss", "summary": "VEX add scalar single",
+    "forms": [{ "operands": ["xmm", "xmm", "xmm/m32"], "encoding": { "opcode": [88], "vex_map": "0F", "vex": "128", "prefix": "0xF3", "modrm": "reg" }, "feature": "avx" }]
+  },
+  {
+    "mnemonic": "vaddsd", "summary": "VEX add scalar double",
+    "forms": [{ "operands": ["xmm", "xmm", "xmm/m64"], "encoding": { "opcode": [88], "vex_map": "0F", "vex": "128", "prefix": "0xF2", "modrm": "reg" }, "feature": "avx" }]
+  },
+  {
+    "mnemonic": "vsubps", "summary": "VEX subtract packed single",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [92], "vex_map": "0F", "vex": "128", "modrm": "reg" }, "feature": "avx" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [92], "vex_map": "0F", "vex": "256", "modrm": "reg" }, "feature": "avx" }
+    ]
+  },
+  {
+    "mnemonic": "vsubpd", "summary": "VEX subtract packed double",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [92], "vex_map": "0F", "vex": "128", "prefix": "0x66", "modrm": "reg" }, "feature": "avx" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [92], "vex_map": "0F", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx" }
+    ]
+  },
+  {
+    "mnemonic": "vmulps", "summary": "VEX multiply packed single",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [89], "vex_map": "0F", "vex": "128", "modrm": "reg" }, "feature": "avx" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [89], "vex_map": "0F", "vex": "256", "modrm": "reg" }, "feature": "avx" }
+    ]
+  },
+  {
+    "mnemonic": "vmulpd", "summary": "VEX multiply packed double",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [89], "vex_map": "0F", "vex": "128", "prefix": "0x66", "modrm": "reg" }, "feature": "avx" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [89], "vex_map": "0F", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx" }
+    ]
+  },
+  {
+    "mnemonic": "vdivps", "summary": "VEX divide packed single",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [94], "vex_map": "0F", "vex": "128", "modrm": "reg" }, "feature": "avx" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [94], "vex_map": "0F", "vex": "256", "modrm": "reg" }, "feature": "avx" }
+    ]
+  },
+  {
+    "mnemonic": "vdivpd", "summary": "VEX divide packed double",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [94], "vex_map": "0F", "vex": "128", "prefix": "0x66", "modrm": "reg" }, "feature": "avx" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [94], "vex_map": "0F", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx" }
+    ]
+  },
+  {
+    "mnemonic": "vxorps", "summary": "VEX bitwise XOR packed single",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [87], "vex_map": "0F", "vex": "128", "modrm": "reg" }, "feature": "avx" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [87], "vex_map": "0F", "vex": "256", "modrm": "reg" }, "feature": "avx" }
+    ]
+  },
+  {
+    "mnemonic": "vxorpd", "summary": "VEX bitwise XOR packed double",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [87], "vex_map": "0F", "vex": "128", "prefix": "0x66", "modrm": "reg" }, "feature": "avx" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [87], "vex_map": "0F", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx" }
+    ]
+  },
+  { "mnemonic": "vzeroall", "summary": "Zero all YMM registers", "forms": [{ "operands": [], "encoding": { "opcode": [119], "vex_map": "0F", "vex": "256" }, "feature": "avx" }] },
+  { "mnemonic": "vzeroupper", "summary": "Zero upper bits of all YMM registers", "forms": [{ "operands": [], "encoding": { "opcode": [119], "vex_map": "0F", "vex": "128" }, "feature": "avx" }] },
+  {
+    "mnemonic": "vbroadcastss", "summary": "Broadcast single-precision",
+    "forms": [
+      { "operands": ["xmm", "xmm/m32"], "encoding": { "opcode": [24], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "modrm": "reg" }, "feature": "avx" },
+      { "operands": ["ymm", "xmm/m32"], "encoding": { "opcode": [24], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx" }
+    ]
+  },
+  {
+    "mnemonic": "vbroadcastsd", "summary": "Broadcast double-precision",
+    "forms": [
+      { "operands": ["ymm", "xmm/m64"], "encoding": { "opcode": [25], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx" }
+    ]
+  }
+]

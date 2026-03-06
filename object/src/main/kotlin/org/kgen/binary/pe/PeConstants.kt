@@ -1,0 +1,33 @@
+package org.kgen.binary.pe
+
+object PeConstants {
+    const val IMAGE_SCN_CNT_CODE = 0x00000020
+    const val IMAGE_SCN_CNT_INITIALIZED_DATA = 0x00000040
+    const val IMAGE_SCN_CNT_UNINITIALIZED_DATA = 0x00000080
+    const val IMAGE_SCN_LNK_COMDAT = 0x00001000
+    const val IMAGE_SCN_MEM_DISCARDABLE = 0x02000000
+    const val IMAGE_SCN_MEM_SHARED = 0x10000000
+    const val IMAGE_SCN_MEM_EXECUTE = 0x20000000
+    const val IMAGE_SCN_MEM_READ = 0x40000000
+    const val IMAGE_SCN_MEM_WRITE = 0x80000000.toInt()
+
+    const val IMAGE_SYM_CLASS_EXTERNAL = 2
+    const val IMAGE_SYM_CLASS_STATIC = 3
+    const val IMAGE_SYM_CLASS_FILE = 103
+    const val IMAGE_SYM_CLASS_SECTION = 104
+    const val IMAGE_SYM_CLASS_WEAK_EXTERNAL = 105
+
+    const val IMAGE_FILE_EXECUTABLE_IMAGE = 0x0002
+    const val IMAGE_FILE_LARGE_ADDRESS_AWARE = 0x0020
+    const val IMAGE_FILE_DLL = 0x2000
+
+    const val MACHINE_AMD64 = 0x8664
+    const val MACHINE_ARM64 = 0xAA64
+    const val MACHINE_ARM = 0x01c0
+    const val MACHINE_I386 = 0x014c
+
+    const val PE32_MAGIC = 0x10B
+    const val PE32PLUS_MAGIC = 0x20B
+
+    val KNOWN_MACHINES = setOf(MACHINE_AMD64, MACHINE_ARM64, MACHINE_ARM, MACHINE_I386)
+}

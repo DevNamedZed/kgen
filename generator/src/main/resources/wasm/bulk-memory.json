@@ -1,0 +1,12 @@
+[
+  {"opcode": "0xFC08", "name": "memoryInit", "mnemonic": "memory.init", "immediate": "DataMemIdx", "pop": ["i32", "i32", "i32"], "push": [], "group": "memory", "feature": "bulk-memory", "prefix": "0xFC"},
+  {"opcode": "0xFC09", "name": "dataDrop", "mnemonic": "data.drop", "immediate": "DataIdx", "pop": [], "push": [], "group": "memory", "feature": "bulk-memory", "prefix": "0xFC"},
+  {"opcode": "0xFC0A", "name": "memoryCopy", "mnemonic": "memory.copy", "immediate": "MemMemIdx", "pop": ["i32", "i32", "i32"], "push": [], "group": "memory", "feature": "bulk-memory", "prefix": "0xFC"},
+  {"opcode": "0xFC0B", "name": "memoryFill", "mnemonic": "memory.fill", "immediate": "MemIdx", "pop": ["i32", "i32", "i32"], "push": [], "group": "memory", "feature": "bulk-memory", "prefix": "0xFC"},
+  {"opcode": "0xFC0C", "name": "tableInit", "mnemonic": "table.init", "immediate": "ElemTableIdx", "pop": ["i32", "i32", "i32"], "push": [], "group": "table", "feature": "bulk-memory", "prefix": "0xFC"},
+  {"opcode": "0xFC0D", "name": "elemDrop", "mnemonic": "elem.drop", "immediate": "ElemIdx", "pop": [], "push": [], "group": "table", "feature": "bulk-memory", "prefix": "0xFC"},
+  {"opcode": "0xFC0E", "name": "tableCopy", "mnemonic": "table.copy", "immediate": "TableTableIdx", "pop": ["i32", "i32", "i32"], "push": [], "group": "table", "feature": "bulk-memory", "prefix": "0xFC"},
+  {"opcode": "0xFC0F", "name": "tableGrow", "mnemonic": "table.grow", "immediate": "TableIdx", "pop": ["ref", "i32"], "push": ["i32"], "group": "table", "feature": "reference-types", "prefix": "0xFC"},
+  {"opcode": "0xFC10", "name": "tableSize", "mnemonic": "table.size", "immediate": "TableIdx", "pop": [], "push": ["i32"], "group": "table", "feature": "reference-types", "prefix": "0xFC"},
+  {"opcode": "0xFC11", "name": "tableFill", "mnemonic": "table.fill", "immediate": "TableIdx", "pop": ["i32", "ref", "i32"], "push": [], "group": "table", "feature": "reference-types", "prefix": "0xFC"}
+]

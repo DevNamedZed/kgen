@@ -1,0 +1,172 @@
+[
+  {
+    "mnemonic": "movapd", "summary": "Move aligned packed double-precision",
+    "forms": [
+      { "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 40], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" },
+      { "operands": ["xmm/m128", "xmm"], "encoding": { "opcode": [15, 41], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }
+    ]
+  },
+  {
+    "mnemonic": "movupd", "summary": "Move unaligned packed double-precision",
+    "forms": [
+      { "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 16], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" },
+      { "operands": ["xmm/m128", "xmm"], "encoding": { "opcode": [15, 17], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }
+    ]
+  },
+  {
+    "mnemonic": "movsd", "summary": "Move scalar double-precision",
+    "forms": [
+      { "operands": ["xmm", "xmm/m64"], "encoding": { "opcode": [15, 16], "modrm": "reg", "prefix": "0xF2" }, "feature": "sse2" },
+      { "operands": ["xmm/m64", "xmm"], "encoding": { "opcode": [15, 17], "modrm": "reg", "prefix": "0xF2" }, "feature": "sse2" }
+    ]
+  },
+  {
+    "mnemonic": "movdqa", "summary": "Move aligned packed integers",
+    "forms": [
+      { "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 111], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" },
+      { "operands": ["xmm/m128", "xmm"], "encoding": { "opcode": [15, 127], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }
+    ]
+  },
+  {
+    "mnemonic": "movdqu", "summary": "Move unaligned packed integers",
+    "forms": [
+      { "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 111], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse2" },
+      { "operands": ["xmm/m128", "xmm"], "encoding": { "opcode": [15, 127], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse2" }
+    ]
+  },
+  { "mnemonic": "movd", "summary": "Move doubleword to/from XMM", "forms": [
+    { "operands": ["xmm", "r/m32"], "encoding": { "opcode": [15, 110], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" },
+    { "operands": ["r/m32", "xmm"], "encoding": { "opcode": [15, 126], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }
+  ]},
+  { "mnemonic": "movq", "summary": "Move quadword to/from XMM", "forms": [
+    { "operands": ["xmm", "r/m64"], "encoding": { "opcode": [15, 110], "modrm": "reg", "prefix": "0x66", "rex_w": true }, "feature": "sse2" },
+    { "operands": ["r/m64", "xmm"], "encoding": { "opcode": [15, 126], "modrm": "reg", "prefix": "0x66", "rex_w": true }, "feature": "sse2" },
+    { "operands": ["xmm", "xmm/m64"], "encoding": { "opcode": [15, 126], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse2" },
+    { "operands": ["xmm/m64", "xmm"], "encoding": { "opcode": [15, 214], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }
+  ]},
+  { "mnemonic": "movmskpd", "summary": "Extract sign mask from packed double", "forms": [{ "operands": ["r32", "xmm"], "encoding": { "opcode": [15, 80], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "addpd", "summary": "Add packed double-precision", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 88], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "addsd", "summary": "Add scalar double-precision", "forms": [{ "operands": ["xmm", "xmm/m64"], "encoding": { "opcode": [15, 88], "modrm": "reg", "prefix": "0xF2" }, "feature": "sse2" }] },
+  { "mnemonic": "subpd", "summary": "Subtract packed double-precision", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 92], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "subsd", "summary": "Subtract scalar double-precision", "forms": [{ "operands": ["xmm", "xmm/m64"], "encoding": { "opcode": [15, 92], "modrm": "reg", "prefix": "0xF2" }, "feature": "sse2" }] },
+  { "mnemonic": "mulpd", "summary": "Multiply packed double-precision", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 89], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "mulsd", "summary": "Multiply scalar double-precision", "forms": [{ "operands": ["xmm", "xmm/m64"], "encoding": { "opcode": [15, 89], "modrm": "reg", "prefix": "0xF2" }, "feature": "sse2" }] },
+  { "mnemonic": "divpd", "summary": "Divide packed double-precision", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 94], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "divsd", "summary": "Divide scalar double-precision", "forms": [{ "operands": ["xmm", "xmm/m64"], "encoding": { "opcode": [15, 94], "modrm": "reg", "prefix": "0xF2" }, "feature": "sse2" }] },
+  { "mnemonic": "sqrtpd", "summary": "Square root packed double", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 81], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "sqrtsd", "summary": "Square root scalar double", "forms": [{ "operands": ["xmm", "xmm/m64"], "encoding": { "opcode": [15, 81], "modrm": "reg", "prefix": "0xF2" }, "feature": "sse2" }] },
+  { "mnemonic": "maxpd", "summary": "Maximum packed double", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 95], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "maxsd", "summary": "Maximum scalar double", "forms": [{ "operands": ["xmm", "xmm/m64"], "encoding": { "opcode": [15, 95], "modrm": "reg", "prefix": "0xF2" }, "feature": "sse2" }] },
+  { "mnemonic": "minpd", "summary": "Minimum packed double", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 93], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "minsd", "summary": "Minimum scalar double", "forms": [{ "operands": ["xmm", "xmm/m64"], "encoding": { "opcode": [15, 93], "modrm": "reg", "prefix": "0xF2" }, "feature": "sse2" }] },
+  { "mnemonic": "andpd", "summary": "Bitwise AND packed double", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 84], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "andnpd", "summary": "Bitwise AND NOT packed double", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 85], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "orpd", "summary": "Bitwise OR packed double", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 86], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "xorpd", "summary": "Bitwise XOR packed double", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 87], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "cmppd", "summary": "Compare packed double", "forms": [{ "operands": ["xmm", "xmm/m128", "imm8"], "encoding": { "opcode": [15, 194], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "cmpsd_sse", "summary": "Compare scalar double", "forms": [{ "operands": ["xmm", "xmm/m64", "imm8"], "encoding": { "opcode": [15, 194], "modrm": "reg", "prefix": "0xF2" }, "feature": "sse2" }] },
+  { "mnemonic": "comisd", "summary": "Compare ordered scalar double", "forms": [{ "operands": ["xmm", "xmm/m64"], "encoding": { "opcode": [15, 47], "modrm": "reg", "prefix": "0x66" }, "flags": { "set": "ZPC", "undefined": "OSA" }, "feature": "sse2" }] },
+  { "mnemonic": "ucomisd", "summary": "Compare unordered scalar double", "forms": [{ "operands": ["xmm", "xmm/m64"], "encoding": { "opcode": [15, 46], "modrm": "reg", "prefix": "0x66" }, "flags": { "set": "ZPC", "undefined": "OSA" }, "feature": "sse2" }] },
+  { "mnemonic": "shufpd", "summary": "Shuffle packed double", "forms": [{ "operands": ["xmm", "xmm/m128", "imm8"], "encoding": { "opcode": [15, 198], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "unpcklpd", "summary": "Unpack low packed double", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 20], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "unpckhpd", "summary": "Unpack high packed double", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 21], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "cvtsi2sd", "summary": "Convert integer to scalar double", "forms": [
+    { "operands": ["xmm", "r/m32"], "encoding": { "opcode": [15, 42], "modrm": "reg", "prefix": "0xF2" }, "feature": "sse2" },
+    { "operands": ["xmm", "r/m64"], "encoding": { "opcode": [15, 42], "modrm": "reg", "prefix": "0xF2", "rex_w": true }, "feature": "sse2" }
+  ]},
+  { "mnemonic": "cvtsd2si", "summary": "Convert scalar double to integer", "forms": [
+    { "operands": ["r32", "xmm/m64"], "encoding": { "opcode": [15, 45], "modrm": "reg", "prefix": "0xF2" }, "feature": "sse2" },
+    { "operands": ["r64", "xmm/m64"], "encoding": { "opcode": [15, 45], "modrm": "reg", "prefix": "0xF2", "rex_w": true }, "feature": "sse2" }
+  ]},
+  { "mnemonic": "cvttsd2si", "summary": "Convert truncated scalar double to integer", "forms": [
+    { "operands": ["r32", "xmm/m64"], "encoding": { "opcode": [15, 44], "modrm": "reg", "prefix": "0xF2" }, "feature": "sse2" },
+    { "operands": ["r64", "xmm/m64"], "encoding": { "opcode": [15, 44], "modrm": "reg", "prefix": "0xF2", "rex_w": true }, "feature": "sse2" }
+  ]},
+  { "mnemonic": "cvtsd2ss", "summary": "Convert scalar double to scalar single", "forms": [{ "operands": ["xmm", "xmm/m64"], "encoding": { "opcode": [15, 90], "modrm": "reg", "prefix": "0xF2" }, "feature": "sse2" }] },
+  { "mnemonic": "cvtss2sd", "summary": "Convert scalar single to scalar double", "forms": [{ "operands": ["xmm", "xmm/m32"], "encoding": { "opcode": [15, 90], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse2" }] },
+  { "mnemonic": "cvtpd2ps", "summary": "Convert packed double to packed single", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 90], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "cvtps2pd", "summary": "Convert packed single to packed double", "forms": [{ "operands": ["xmm", "xmm/m64"], "encoding": { "opcode": [15, 90], "modrm": "reg" }, "feature": "sse2" }] },
+  { "mnemonic": "cvtpd2dq", "summary": "Convert packed double to packed dword", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 230], "modrm": "reg", "prefix": "0xF2" }, "feature": "sse2" }] },
+  { "mnemonic": "cvttpd2dq", "summary": "Convert truncated packed double to packed dword", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 230], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "cvtdq2pd", "summary": "Convert packed dword to packed double", "forms": [{ "operands": ["xmm", "xmm/m64"], "encoding": { "opcode": [15, 230], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse2" }] },
+  { "mnemonic": "cvtdq2ps", "summary": "Convert packed dword to packed single", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 91], "modrm": "reg" }, "feature": "sse2" }] },
+  { "mnemonic": "cvtps2dq", "summary": "Convert packed single to packed dword", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 91], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "cvttps2dq", "summary": "Convert truncated packed single to packed dword", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 91], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse2" }] },
+  { "mnemonic": "paddb", "summary": "Add packed byte integers", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 252], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "paddw", "summary": "Add packed word integers", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 253], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "paddd", "summary": "Add packed dword integers", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 254], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "paddq", "summary": "Add packed qword integers", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 212], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "psubb", "summary": "Subtract packed byte integers", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 248], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "psubw", "summary": "Subtract packed word integers", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 249], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "psubd", "summary": "Subtract packed dword integers", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 250], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "psubq", "summary": "Subtract packed qword integers", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 251], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "pmullw", "summary": "Multiply packed word integers (low)", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 213], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "pmulhw", "summary": "Multiply packed word integers (high)", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 229], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "pmuludq", "summary": "Multiply packed unsigned dword integers", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 244], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "pand", "summary": "Bitwise AND packed integers", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 219], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "pandn", "summary": "Bitwise AND NOT packed integers", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 223], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "por", "summary": "Bitwise OR packed integers", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 235], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "pxor", "summary": "Bitwise XOR packed integers", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 239], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "psllw", "summary": "Shift packed words left", "forms": [
+    { "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 241], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" },
+    { "operands": ["xmm", "imm8"], "encoding": { "opcode": [15, 113], "modrm": "/6", "prefix": "0x66" }, "feature": "sse2" }
+  ]},
+  { "mnemonic": "pslld", "summary": "Shift packed dwords left", "forms": [
+    { "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 242], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" },
+    { "operands": ["xmm", "imm8"], "encoding": { "opcode": [15, 114], "modrm": "/6", "prefix": "0x66" }, "feature": "sse2" }
+  ]},
+  { "mnemonic": "psllq", "summary": "Shift packed qwords left", "forms": [
+    { "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 243], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" },
+    { "operands": ["xmm", "imm8"], "encoding": { "opcode": [15, 115], "modrm": "/6", "prefix": "0x66" }, "feature": "sse2" }
+  ]},
+  { "mnemonic": "psrlw", "summary": "Shift packed words right (logical)", "forms": [
+    { "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 209], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" },
+    { "operands": ["xmm", "imm8"], "encoding": { "opcode": [15, 113], "modrm": "/2", "prefix": "0x66" }, "feature": "sse2" }
+  ]},
+  { "mnemonic": "psrld", "summary": "Shift packed dwords right (logical)", "forms": [
+    { "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 210], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" },
+    { "operands": ["xmm", "imm8"], "encoding": { "opcode": [15, 114], "modrm": "/2", "prefix": "0x66" }, "feature": "sse2" }
+  ]},
+  { "mnemonic": "psrlq", "summary": "Shift packed qwords right (logical)", "forms": [
+    { "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 211], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" },
+    { "operands": ["xmm", "imm8"], "encoding": { "opcode": [15, 115], "modrm": "/2", "prefix": "0x66" }, "feature": "sse2" }
+  ]},
+  { "mnemonic": "psraw", "summary": "Shift packed words right (arithmetic)", "forms": [
+    { "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 225], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" },
+    { "operands": ["xmm", "imm8"], "encoding": { "opcode": [15, 113], "modrm": "/4", "prefix": "0x66" }, "feature": "sse2" }
+  ]},
+  { "mnemonic": "psrad", "summary": "Shift packed dwords right (arithmetic)", "forms": [
+    { "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 226], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" },
+    { "operands": ["xmm", "imm8"], "encoding": { "opcode": [15, 114], "modrm": "/4", "prefix": "0x66" }, "feature": "sse2" }
+  ]},
+  { "mnemonic": "pslldq", "summary": "Shift XMM left by bytes", "forms": [{ "operands": ["xmm", "imm8"], "encoding": { "opcode": [15, 115], "modrm": "/7", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "psrldq", "summary": "Shift XMM right by bytes", "forms": [{ "operands": ["xmm", "imm8"], "encoding": { "opcode": [15, 115], "modrm": "/3", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "pcmpeqb", "summary": "Compare packed bytes for equality", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 116], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "pcmpeqw", "summary": "Compare packed words for equality", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 117], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "pcmpeqd", "summary": "Compare packed dwords for equality", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 118], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "pcmpgtb", "summary": "Compare packed bytes for greater than", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 100], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "pcmpgtw", "summary": "Compare packed words for greater than", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 101], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "pcmpgtd", "summary": "Compare packed dwords for greater than", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 102], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "packsswb", "summary": "Pack words to bytes (signed saturation)", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 99], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "packssdw", "summary": "Pack dwords to words (signed saturation)", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 107], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "packuswb", "summary": "Pack words to bytes (unsigned saturation)", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 103], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "punpcklbw", "summary": "Unpack low bytes", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 96], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "punpcklwd", "summary": "Unpack low words", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 97], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "punpckldq", "summary": "Unpack low dwords", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 98], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "punpcklqdq", "summary": "Unpack low qwords", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 108], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "punpckhbw", "summary": "Unpack high bytes", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 104], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "punpckhwd", "summary": "Unpack high words", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 105], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "punpckhdq", "summary": "Unpack high dwords", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 106], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "punpckhqdq", "summary": "Unpack high qwords", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 109], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "pshufd", "summary": "Shuffle packed dwords", "forms": [{ "operands": ["xmm", "xmm/m128", "imm8"], "encoding": { "opcode": [15, 112], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "pshufhw", "summary": "Shuffle packed high words", "forms": [{ "operands": ["xmm", "xmm/m128", "imm8"], "encoding": { "opcode": [15, 112], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse2" }] },
+  { "mnemonic": "pshuflw", "summary": "Shuffle packed low words", "forms": [{ "operands": ["xmm", "xmm/m128", "imm8"], "encoding": { "opcode": [15, 112], "modrm": "reg", "prefix": "0xF2" }, "feature": "sse2" }] },
+  { "mnemonic": "pmovmskb", "summary": "Move byte mask", "forms": [{ "operands": ["r32", "xmm"], "encoding": { "opcode": [15, 215], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "maskmovdqu", "summary": "Store selected bytes", "forms": [{ "operands": ["xmm", "xmm"], "encoding": { "opcode": [15, 247], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "movntdq", "summary": "Store packed integers (non-temporal)", "forms": [{ "operands": ["m128", "xmm"], "encoding": { "opcode": [15, 231], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "movntpd", "summary": "Store packed double (non-temporal)", "forms": [{ "operands": ["m128", "xmm"], "encoding": { "opcode": [15, 43], "modrm": "reg", "prefix": "0x66" }, "feature": "sse2" }] },
+  { "mnemonic": "movnti", "summary": "Store dword/qword (non-temporal)", "forms": [
+    { "operands": ["m32", "r32"], "encoding": { "opcode": [15, 195], "modrm": "reg" }, "feature": "sse2" },
+    { "operands": ["m64", "r64"], "encoding": { "opcode": [15, 195], "modrm": "reg", "rex_w": true }, "feature": "sse2" }
+  ]}
+]

@@ -1,0 +1,86 @@
+[
+  {
+    "mnemonic": "movaps", "summary": "Move aligned packed single-precision",
+    "forms": [
+      { "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 40], "modrm": "reg" }, "feature": "sse" },
+      { "operands": ["xmm/m128", "xmm"], "encoding": { "opcode": [15, 41], "modrm": "reg" }, "feature": "sse" }
+    ]
+  },
+  {
+    "mnemonic": "movups", "summary": "Move unaligned packed single-precision",
+    "forms": [
+      { "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 16], "modrm": "reg" }, "feature": "sse" },
+      { "operands": ["xmm/m128", "xmm"], "encoding": { "opcode": [15, 17], "modrm": "reg" }, "feature": "sse" }
+    ]
+  },
+  {
+    "mnemonic": "movss", "summary": "Move scalar single-precision",
+    "forms": [
+      { "operands": ["xmm", "xmm/m32"], "encoding": { "opcode": [15, 16], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse" },
+      { "operands": ["xmm/m32", "xmm"], "encoding": { "opcode": [15, 17], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse" }
+    ]
+  },
+  {
+    "mnemonic": "movlps", "summary": "Move low packed single-precision",
+    "forms": [
+      { "operands": ["xmm", "m64"], "encoding": { "opcode": [15, 18], "modrm": "reg" }, "feature": "sse" },
+      { "operands": ["m64", "xmm"], "encoding": { "opcode": [15, 19], "modrm": "reg" }, "feature": "sse" }
+    ]
+  },
+  {
+    "mnemonic": "movhps", "summary": "Move high packed single-precision",
+    "forms": [
+      { "operands": ["xmm", "m64"], "encoding": { "opcode": [15, 22], "modrm": "reg" }, "feature": "sse" },
+      { "operands": ["m64", "xmm"], "encoding": { "opcode": [15, 23], "modrm": "reg" }, "feature": "sse" }
+    ]
+  },
+  { "mnemonic": "movlhps", "summary": "Move low to high packed single", "forms": [{ "operands": ["xmm", "xmm"], "encoding": { "opcode": [15, 22], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "movhlps", "summary": "Move high to low packed single", "forms": [{ "operands": ["xmm", "xmm"], "encoding": { "opcode": [15, 18], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "movmskps", "summary": "Extract sign mask", "forms": [{ "operands": ["r32", "xmm"], "encoding": { "opcode": [15, 80], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "addps", "summary": "Add packed single-precision", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 88], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "addss", "summary": "Add scalar single-precision", "forms": [{ "operands": ["xmm", "xmm/m32"], "encoding": { "opcode": [15, 88], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse" }] },
+  { "mnemonic": "subps", "summary": "Subtract packed single-precision", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 92], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "subss", "summary": "Subtract scalar single-precision", "forms": [{ "operands": ["xmm", "xmm/m32"], "encoding": { "opcode": [15, 92], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse" }] },
+  { "mnemonic": "mulps", "summary": "Multiply packed single-precision", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 89], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "mulss", "summary": "Multiply scalar single-precision", "forms": [{ "operands": ["xmm", "xmm/m32"], "encoding": { "opcode": [15, 89], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse" }] },
+  { "mnemonic": "divps", "summary": "Divide packed single-precision", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 94], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "divss", "summary": "Divide scalar single-precision", "forms": [{ "operands": ["xmm", "xmm/m32"], "encoding": { "opcode": [15, 94], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse" }] },
+  { "mnemonic": "sqrtps", "summary": "Square root packed single", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 81], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "sqrtss", "summary": "Square root scalar single", "forms": [{ "operands": ["xmm", "xmm/m32"], "encoding": { "opcode": [15, 81], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse" }] },
+  { "mnemonic": "rcpps", "summary": "Reciprocal packed single", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 83], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "rcpss", "summary": "Reciprocal scalar single", "forms": [{ "operands": ["xmm", "xmm/m32"], "encoding": { "opcode": [15, 83], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse" }] },
+  { "mnemonic": "rsqrtps", "summary": "Reciprocal square root packed", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 82], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "rsqrtss", "summary": "Reciprocal square root scalar", "forms": [{ "operands": ["xmm", "xmm/m32"], "encoding": { "opcode": [15, 82], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse" }] },
+  { "mnemonic": "maxps", "summary": "Maximum packed single", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 95], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "maxss", "summary": "Maximum scalar single", "forms": [{ "operands": ["xmm", "xmm/m32"], "encoding": { "opcode": [15, 95], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse" }] },
+  { "mnemonic": "minps", "summary": "Minimum packed single", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 93], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "minss", "summary": "Minimum scalar single", "forms": [{ "operands": ["xmm", "xmm/m32"], "encoding": { "opcode": [15, 93], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse" }] },
+  { "mnemonic": "andps", "summary": "Bitwise AND packed single", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 84], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "andnps", "summary": "Bitwise AND NOT packed single", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 85], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "orps", "summary": "Bitwise OR packed single", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 86], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "xorps", "summary": "Bitwise XOR packed single", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 87], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "cmpps", "summary": "Compare packed single", "forms": [{ "operands": ["xmm", "xmm/m128", "imm8"], "encoding": { "opcode": [15, 194], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "cmpss", "summary": "Compare scalar single", "forms": [{ "operands": ["xmm", "xmm/m32", "imm8"], "encoding": { "opcode": [15, 194], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse" }] },
+  { "mnemonic": "comiss", "summary": "Compare ordered scalar single", "forms": [{ "operands": ["xmm", "xmm/m32"], "encoding": { "opcode": [15, 47], "modrm": "reg" }, "flags": { "set": "ZPC", "undefined": "OSA" }, "feature": "sse" }] },
+  { "mnemonic": "ucomiss", "summary": "Compare unordered scalar single", "forms": [{ "operands": ["xmm", "xmm/m32"], "encoding": { "opcode": [15, 46], "modrm": "reg" }, "flags": { "set": "ZPC", "undefined": "OSA" }, "feature": "sse" }] },
+  { "mnemonic": "shufps", "summary": "Shuffle packed single", "forms": [{ "operands": ["xmm", "xmm/m128", "imm8"], "encoding": { "opcode": [15, 198], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "unpcklps", "summary": "Unpack and interleave low packed single", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 20], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "unpckhps", "summary": "Unpack and interleave high packed single", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 21], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "cvtsi2ss", "summary": "Convert integer to scalar single", "forms": [
+    { "operands": ["xmm", "r/m32"], "encoding": { "opcode": [15, 42], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse" },
+    { "operands": ["xmm", "r/m64"], "encoding": { "opcode": [15, 42], "modrm": "reg", "prefix": "0xF3", "rex_w": true }, "feature": "sse" }
+  ]},
+  { "mnemonic": "cvtss2si", "summary": "Convert scalar single to integer", "forms": [
+    { "operands": ["r32", "xmm/m32"], "encoding": { "opcode": [15, 45], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse" },
+    { "operands": ["r64", "xmm/m32"], "encoding": { "opcode": [15, 45], "modrm": "reg", "prefix": "0xF3", "rex_w": true }, "feature": "sse" }
+  ]},
+  { "mnemonic": "cvttss2si", "summary": "Convert truncated scalar single to integer", "forms": [
+    { "operands": ["r32", "xmm/m32"], "encoding": { "opcode": [15, 44], "modrm": "reg", "prefix": "0xF3" }, "feature": "sse" },
+    { "operands": ["r64", "xmm/m32"], "encoding": { "opcode": [15, 44], "modrm": "reg", "prefix": "0xF3", "rex_w": true }, "feature": "sse" }
+  ]},
+  { "mnemonic": "cvtps2pi", "summary": "Convert packed single to packed integer (MMX)", "forms": [{ "operands": ["mm", "xmm/m64"], "encoding": { "opcode": [15, 45], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "cvttps2pi", "summary": "Convert truncated packed single to packed integer (MMX)", "forms": [{ "operands": ["mm", "xmm/m64"], "encoding": { "opcode": [15, 44], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "cvtpi2ps", "summary": "Convert packed integer (MMX) to packed single", "forms": [{ "operands": ["xmm", "mm/m64"], "encoding": { "opcode": [15, 42], "modrm": "reg" }, "feature": "sse" }] },
+  { "mnemonic": "ldmxcsr", "summary": "Load MXCSR register", "forms": [{ "operands": ["m32"], "encoding": { "opcode": [15, 174], "modrm": "/2" }, "feature": "sse" }] },
+  { "mnemonic": "stmxcsr", "summary": "Store MXCSR register", "forms": [{ "operands": ["m32"], "encoding": { "opcode": [15, 174], "modrm": "/3" }, "feature": "sse" }] }
+]

@@ -1,0 +1,27 @@
+{
+  "description": "x86-64 instruction set manifest",
+  "files": [
+    "gp-move.json",
+    "gp-arithmetic.json",
+    "gp-logic.json",
+    "gp-shift.json",
+    "gp-compare.json",
+    "gp-stack.json",
+    "gp-control.json",
+    "gp-string.json",
+    "gp-flag.json",
+    "gp-bit.json",
+    "bmi.json",
+    "sse.json",
+    "sse2.json",
+    "sse3.json",
+    "sse4.json",
+    "avx.json",
+    "avx2.json",
+    "avx512.json",
+    "fma.json",
+    "aes.json",
+    "cet.json",
+    "system.json"
+  ]
+}

@@ -1,0 +1,98 @@
+[
+  {
+    "mnemonic": "vaddps_z", "summary": "EVEX add packed single (512-bit)",
+    "forms": [
+      { "operands": ["zmm", "zmm", "zmm/m512"], "encoding": { "opcode": [88], "evex": "512", "vex_map": "0F", "modrm": "reg" }, "feature": "avx-512f" }
+    ]
+  },
+  {
+    "mnemonic": "vaddpd_z", "summary": "EVEX add packed double (512-bit)",
+    "forms": [
+      { "operands": ["zmm", "zmm", "zmm/m512"], "encoding": { "opcode": [88], "evex": "512", "vex_map": "0F", "prefix": "0x66", "vex_w": 1, "modrm": "reg" }, "feature": "avx-512f" }
+    ]
+  },
+  {
+    "mnemonic": "vsubps_z", "summary": "EVEX subtract packed single (512-bit)",
+    "forms": [
+      { "operands": ["zmm", "zmm", "zmm/m512"], "encoding": { "opcode": [92], "evex": "512", "vex_map": "0F", "modrm": "reg" }, "feature": "avx-512f" }
+    ]
+  },
+  {
+    "mnemonic": "vsubpd_z", "summary": "EVEX subtract packed double (512-bit)",
+    "forms": [
+      { "operands": ["zmm", "zmm", "zmm/m512"], "encoding": { "opcode": [92], "evex": "512", "vex_map": "0F", "prefix": "0x66", "vex_w": 1, "modrm": "reg" }, "feature": "avx-512f" }
+    ]
+  },
+  {
+    "mnemonic": "vmulps_z", "summary": "EVEX multiply packed single (512-bit)",
+    "forms": [
+      { "operands": ["zmm", "zmm", "zmm/m512"], "encoding": { "opcode": [89], "evex": "512", "vex_map": "0F", "modrm": "reg" }, "feature": "avx-512f" }
+    ]
+  },
+  {
+    "mnemonic": "vmulpd_z", "summary": "EVEX multiply packed double (512-bit)",
+    "forms": [
+      { "operands": ["zmm", "zmm", "zmm/m512"], "encoding": { "opcode": [89], "evex": "512", "vex_map": "0F", "prefix": "0x66", "vex_w": 1, "modrm": "reg" }, "feature": "avx-512f" }
+    ]
+  },
+  {
+    "mnemonic": "vdivps_z", "summary": "EVEX divide packed single (512-bit)",
+    "forms": [
+      { "operands": ["zmm", "zmm", "zmm/m512"], "encoding": { "opcode": [94], "evex": "512", "vex_map": "0F", "modrm": "reg" }, "feature": "avx-512f" }
+    ]
+  },
+  {
+    "mnemonic": "vdivpd_z", "summary": "EVEX divide packed double (512-bit)",
+    "forms": [
+      { "operands": ["zmm", "zmm", "zmm/m512"], "encoding": { "opcode": [94], "evex": "512", "vex_map": "0F", "prefix": "0x66", "vex_w": 1, "modrm": "reg" }, "feature": "avx-512f" }
+    ]
+  },
+  {
+    "mnemonic": "vmovdqa32", "summary": "EVEX move aligned packed dwords",
+    "forms": [
+      { "operands": ["zmm", "zmm/m512"], "encoding": { "opcode": [111], "evex": "512", "vex_map": "0F", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "avx-512f" },
+      { "operands": ["zmm/m512", "zmm"], "encoding": { "opcode": [127], "evex": "512", "vex_map": "0F", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "avx-512f" }
+    ]
+  },
+  {
+    "mnemonic": "vmovdqa64", "summary": "EVEX move aligned packed qwords",
+    "forms": [
+      { "operands": ["zmm", "zmm/m512"], "encoding": { "opcode": [111], "evex": "512", "vex_map": "0F", "prefix": "0x66", "vex_w": 1, "modrm": "reg" }, "feature": "avx-512f" },
+      { "operands": ["zmm/m512", "zmm"], "encoding": { "opcode": [127], "evex": "512", "vex_map": "0F", "prefix": "0x66", "vex_w": 1, "modrm": "reg" }, "feature": "avx-512f" }
+    ]
+  },
+  {
+    "mnemonic": "vpbroadcastd_z", "summary": "EVEX broadcast dword",
+    "forms": [
+      { "operands": ["zmm", "r32"], "encoding": { "opcode": [124], "evex": "512", "vex_map": "0F38", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "avx-512f" },
+      { "operands": ["zmm", "xmm/m32"], "encoding": { "opcode": [88], "evex": "512", "vex_map": "0F38", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "avx-512f" }
+    ]
+  },
+  {
+    "mnemonic": "vpcmpeqd_z", "summary": "EVEX compare packed dwords for equality (to mask)",
+    "forms": [
+      { "operands": ["k", "zmm", "zmm/m512"], "encoding": { "opcode": [118], "evex": "512", "vex_map": "0F", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "avx-512f" }
+    ]
+  },
+  {
+    "mnemonic": "kmovw", "summary": "Move mask register",
+    "forms": [
+      { "operands": ["k", "k/m16"], "encoding": { "opcode": [144], "vex_map": "0F", "vex": "128", "modrm": "reg" }, "feature": "avx-512f" },
+      { "operands": ["k/m16", "k"], "encoding": { "opcode": [145], "vex_map": "0F", "vex": "128", "modrm": "reg" }, "feature": "avx-512f" },
+      { "operands": ["k", "r32"], "encoding": { "opcode": [146], "vex_map": "0F", "vex": "128", "modrm": "reg" }, "feature": "avx-512f" },
+      { "operands": ["r32", "k"], "encoding": { "opcode": [147], "vex_map": "0F", "vex": "128", "modrm": "reg" }, "feature": "avx-512f" }
+    ]
+  },
+  {
+    "mnemonic": "kandw", "summary": "AND mask registers",
+    "forms": [{ "operands": ["k", "k", "k"], "encoding": { "opcode": [65], "vex_map": "0F", "vex": "256", "modrm": "reg" }, "feature": "avx-512f" }]
+  },
+  {
+    "mnemonic": "korw", "summary": "OR mask registers",
+    "forms": [{ "operands": ["k", "k", "k"], "encoding": { "opcode": [69], "vex_map": "0F", "vex": "256", "modrm": "reg" }, "feature": "avx-512f" }]
+  },
+  {
+    "mnemonic": "knotw", "summary": "NOT mask register",
+    "forms": [{ "operands": ["k", "k"], "encoding": { "opcode": [68], "vex_map": "0F", "vex": "128", "modrm": "reg" }, "feature": "avx-512f" }]
+  }
+]

@@ -1,0 +1,134 @@
+[
+  {
+    "mnemonic": "vpaddb", "summary": "VEX add packed bytes",
+    "forms": [
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [252], "vex_map": "0F", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx2" }
+    ]
+  },
+  {
+    "mnemonic": "vpaddw", "summary": "VEX add packed words",
+    "forms": [
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [253], "vex_map": "0F", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx2" }
+    ]
+  },
+  {
+    "mnemonic": "vpaddd", "summary": "VEX add packed dwords",
+    "forms": [
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [254], "vex_map": "0F", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx2" }
+    ]
+  },
+  {
+    "mnemonic": "vpaddq", "summary": "VEX add packed qwords",
+    "forms": [
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [212], "vex_map": "0F", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx2" }
+    ]
+  },
+  {
+    "mnemonic": "vpsubb", "summary": "VEX subtract packed bytes",
+    "forms": [
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [248], "vex_map": "0F", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx2" }
+    ]
+  },
+  {
+    "mnemonic": "vpsubw", "summary": "VEX subtract packed words",
+    "forms": [
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [249], "vex_map": "0F", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx2" }
+    ]
+  },
+  {
+    "mnemonic": "vpsubd", "summary": "VEX subtract packed dwords",
+    "forms": [
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [250], "vex_map": "0F", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx2" }
+    ]
+  },
+  {
+    "mnemonic": "vpsubq", "summary": "VEX subtract packed qwords",
+    "forms": [
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [251], "vex_map": "0F", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx2" }
+    ]
+  },
+  {
+    "mnemonic": "vpmulld", "summary": "VEX multiply packed dwords (low)",
+    "forms": [
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [64], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx2" }
+    ]
+  },
+  {
+    "mnemonic": "vpand", "summary": "VEX bitwise AND packed integers",
+    "forms": [
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [219], "vex_map": "0F", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx2" }
+    ]
+  },
+  {
+    "mnemonic": "vpor", "summary": "VEX bitwise OR packed integers",
+    "forms": [
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [235], "vex_map": "0F", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx2" }
+    ]
+  },
+  {
+    "mnemonic": "vpxor", "summary": "VEX bitwise XOR packed integers",
+    "forms": [
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [239], "vex_map": "0F", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx2" }
+    ]
+  },
+  {
+    "mnemonic": "vpbroadcastd", "summary": "VEX broadcast dword",
+    "forms": [
+      { "operands": ["xmm", "xmm/m32"], "encoding": { "opcode": [88], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "modrm": "reg" }, "feature": "avx2" },
+      { "operands": ["ymm", "xmm/m32"], "encoding": { "opcode": [88], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx2" }
+    ]
+  },
+  {
+    "mnemonic": "vpbroadcastq", "summary": "VEX broadcast qword",
+    "forms": [
+      { "operands": ["xmm", "xmm/m64"], "encoding": { "opcode": [89], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "modrm": "reg" }, "feature": "avx2" },
+      { "operands": ["ymm", "xmm/m64"], "encoding": { "opcode": [89], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "modrm": "reg" }, "feature": "avx2" }
+    ]
+  },
+  {
+    "mnemonic": "vperm2i128", "summary": "Permute 128-bit integer lanes",
+    "forms": [
+      { "operands": ["ymm", "ymm", "ymm/m256", "imm8"], "encoding": { "opcode": [70], "vex_map": "0F3A", "vex": "256", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "avx2" }
+    ]
+  },
+  {
+    "mnemonic": "vpermd", "summary": "Permute packed dwords",
+    "forms": [
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [54], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "avx2" }
+    ]
+  },
+  {
+    "mnemonic": "vpermq", "summary": "Permute packed qwords",
+    "forms": [
+      { "operands": ["ymm", "ymm/m256", "imm8"], "encoding": { "opcode": [0], "vex_map": "0F3A", "vex": "256", "prefix": "0x66", "vex_w": 1, "modrm": "reg" }, "feature": "avx2" }
+    ]
+  },
+  {
+    "mnemonic": "vpgatherdd", "summary": "Gather packed dwords with dword indices",
+    "forms": [
+      { "operands": ["xmm", "m32", "xmm"], "encoding": { "opcode": [144], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "avx2" },
+      { "operands": ["ymm", "m32", "ymm"], "encoding": { "opcode": [144], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "avx2" }
+    ]
+  },
+  {
+    "mnemonic": "vpsllvd", "summary": "Variable shift packed dwords left",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [71], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "avx2" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [71], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "avx2" }
+    ]
+  },
+  {
+    "mnemonic": "vpsrlvd", "summary": "Variable shift packed dwords right (logical)",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [69], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "avx2" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [69], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "avx2" }
+    ]
+  },
+  {
+    "mnemonic": "vpsravd", "summary": "Variable shift packed dwords right (arithmetic)",
+    "forms": [
+      { "operands": ["xmm", "xmm", "xmm/m128"], "encoding": { "opcode": [70], "vex_map": "0F38", "vex": "128", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "avx2" },
+      { "operands": ["ymm", "ymm", "ymm/m256"], "encoding": { "opcode": [70], "vex_map": "0F38", "vex": "256", "prefix": "0x66", "vex_w": 0, "modrm": "reg" }, "feature": "avx2" }
+    ]
+  }
+]

@@ -1,0 +1,86 @@
+[
+  {
+    "mnemonic": "cmp",
+    "summary": "Compare (SUB without storing result)",
+    "forms": [
+      { "operands": ["al", "imm8"], "encoding": { "opcode": [60] }, "flags": { "set": "OSZAPC" }, "feature": "baseline" },
+      { "operands": ["eax", "imm32"], "encoding": { "opcode": [61] }, "flags": { "set": "OSZAPC" }, "feature": "baseline" },
+      { "operands": ["rax", "imm32"], "encoding": { "opcode": [61], "rex_w": true }, "flags": { "set": "OSZAPC" }, "feature": "baseline" },
+      { "operands": ["r/m8", "imm8"], "encoding": { "opcode": [128], "modrm": "/7" }, "flags": { "set": "OSZAPC" }, "feature": "baseline" },
+      { "operands": ["r/m32", "imm32"], "encoding": { "opcode": [129], "modrm": "/7" }, "flags": { "set": "OSZAPC" }, "feature": "baseline" },
+      { "operands": ["r/m64", "imm32"], "encoding": { "opcode": [129], "modrm": "/7", "rex_w": true }, "flags": { "set": "OSZAPC" }, "feature": "baseline" },
+      { "operands": ["r/m32", "imm8"], "encoding": { "opcode": [131], "modrm": "/7" }, "flags": { "set": "OSZAPC" }, "feature": "baseline" },
+      { "operands": ["r/m64", "imm8"], "encoding": { "opcode": [131], "modrm": "/7", "rex_w": true }, "flags": { "set": "OSZAPC" }, "feature": "baseline" },
+      { "operands": ["r/m8", "r8"], "encoding": { "opcode": [56], "modrm": "reg" }, "flags": { "set": "OSZAPC" }, "feature": "baseline" },
+      { "operands": ["r/m32", "r32"], "encoding": { "opcode": [57], "modrm": "reg" }, "flags": { "set": "OSZAPC" }, "feature": "baseline" },
+      { "operands": ["r/m64", "r64"], "encoding": { "opcode": [57], "modrm": "reg", "rex_w": true }, "flags": { "set": "OSZAPC" }, "feature": "baseline" },
+      { "operands": ["r8", "r/m8"], "encoding": { "opcode": [58], "modrm": "reg" }, "flags": { "set": "OSZAPC" }, "feature": "baseline" },
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [59], "modrm": "reg" }, "flags": { "set": "OSZAPC" }, "feature": "baseline" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [59], "modrm": "reg", "rex_w": true }, "flags": { "set": "OSZAPC" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "seta",   "summary": "Set byte if above (CF=0, ZF=0)",
+    "forms": [{ "operands": ["r/m8"], "encoding": { "opcode": [15, 151], "modrm": "/0" }, "flags": { "tested": "CZ" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "setae",  "summary": "Set byte if above or equal (CF=0)",
+    "forms": [{ "operands": ["r/m8"], "encoding": { "opcode": [15, 147], "modrm": "/0" }, "flags": { "tested": "C" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "setb",   "summary": "Set byte if below (CF=1)",
+    "forms": [{ "operands": ["r/m8"], "encoding": { "opcode": [15, 146], "modrm": "/0" }, "flags": { "tested": "C" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "setbe",  "summary": "Set byte if below or equal (CF=1 or ZF=1)",
+    "forms": [{ "operands": ["r/m8"], "encoding": { "opcode": [15, 150], "modrm": "/0" }, "flags": { "tested": "CZ" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "sete",   "summary": "Set byte if equal (ZF=1)",
+    "forms": [{ "operands": ["r/m8"], "encoding": { "opcode": [15, 148], "modrm": "/0" }, "flags": { "tested": "Z" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "setg",   "summary": "Set byte if greater (ZF=0, SF=OF)",
+    "forms": [{ "operands": ["r/m8"], "encoding": { "opcode": [15, 159], "modrm": "/0" }, "flags": { "tested": "OSZ" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "setge",  "summary": "Set byte if greater or equal (SF=OF)",
+    "forms": [{ "operands": ["r/m8"], "encoding": { "opcode": [15, 157], "modrm": "/0" }, "flags": { "tested": "OS" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "setl",   "summary": "Set byte if less (SF!=OF)",
+    "forms": [{ "operands": ["r/m8"], "encoding": { "opcode": [15, 156], "modrm": "/0" }, "flags": { "tested": "OS" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "setle",  "summary": "Set byte if less or equal (ZF=1 or SF!=OF)",
+    "forms": [{ "operands": ["r/m8"], "encoding": { "opcode": [15, 158], "modrm": "/0" }, "flags": { "tested": "OSZ" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "setne",  "summary": "Set byte if not equal (ZF=0)",
+    "forms": [{ "operands": ["r/m8"], "encoding": { "opcode": [15, 149], "modrm": "/0" }, "flags": { "tested": "Z" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "setno",  "summary": "Set byte if not overflow (OF=0)",
+    "forms": [{ "operands": ["r/m8"], "encoding": { "opcode": [15, 145], "modrm": "/0" }, "flags": { "tested": "O" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "setnp",  "summary": "Set byte if not parity (PF=0)",
+    "forms": [{ "operands": ["r/m8"], "encoding": { "opcode": [15, 155], "modrm": "/0" }, "flags": { "tested": "P" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "setns",  "summary": "Set byte if not sign (SF=0)",
+    "forms": [{ "operands": ["r/m8"], "encoding": { "opcode": [15, 153], "modrm": "/0" }, "flags": { "tested": "S" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "seto",   "summary": "Set byte if overflow (OF=1)",
+    "forms": [{ "operands": ["r/m8"], "encoding": { "opcode": [15, 144], "modrm": "/0" }, "flags": { "tested": "O" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "setp",   "summary": "Set byte if parity (PF=1)",
+    "forms": [{ "operands": ["r/m8"], "encoding": { "opcode": [15, 154], "modrm": "/0" }, "flags": { "tested": "P" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "sets",   "summary": "Set byte if sign (SF=1)",
+    "forms": [{ "operands": ["r/m8"], "encoding": { "opcode": [15, 152], "modrm": "/0" }, "flags": { "tested": "S" }, "feature": "baseline" }]
+  }
+]

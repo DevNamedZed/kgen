@@ -1,0 +1,28 @@
+[
+  { "mnemonic": "cpuid",  "summary": "CPU identification", "forms": [{ "operands": [], "encoding": { "opcode": [15, 162] }, "feature": "baseline" }] },
+  { "mnemonic": "rdtsc",  "summary": "Read time-stamp counter", "forms": [{ "operands": [], "encoding": { "opcode": [15, 49] }, "feature": "baseline" }] },
+  { "mnemonic": "rdtscp", "summary": "Read time-stamp counter and processor ID", "forms": [{ "operands": [], "encoding": { "opcode": [15, 1, 249] }, "feature": "baseline" }] },
+  { "mnemonic": "rdmsr",  "summary": "Read model-specific register", "forms": [{ "operands": [], "encoding": { "opcode": [15, 50] }, "feature": "baseline" }] },
+  { "mnemonic": "wrmsr",  "summary": "Write model-specific register", "forms": [{ "operands": [], "encoding": { "opcode": [15, 48] }, "feature": "baseline" }] },
+  { "mnemonic": "rdpmc",  "summary": "Read performance monitoring counter", "forms": [{ "operands": [], "encoding": { "opcode": [15, 51] }, "feature": "baseline" }] },
+  { "mnemonic": "mfence", "summary": "Memory fence", "forms": [{ "operands": [], "encoding": { "opcode": [15, 174, 240] }, "feature": "sse2" }] },
+  { "mnemonic": "lfence", "summary": "Load fence", "forms": [{ "operands": [], "encoding": { "opcode": [15, 174, 232] }, "feature": "sse2" }] },
+  { "mnemonic": "sfence", "summary": "Store fence", "forms": [{ "operands": [], "encoding": { "opcode": [15, 174, 248] }, "feature": "sse" }] },
+  { "mnemonic": "pause",  "summary": "Spin loop hint", "forms": [{ "operands": [], "encoding": { "opcode": [243, 144] }, "feature": "baseline" }] },
+  { "mnemonic": "prefetcht0",  "summary": "Prefetch to all cache levels", "forms": [{ "operands": ["m8"], "encoding": { "opcode": [15, 24], "modrm": "/1" }, "feature": "sse" }] },
+  { "mnemonic": "prefetcht1",  "summary": "Prefetch to L2+ cache", "forms": [{ "operands": ["m8"], "encoding": { "opcode": [15, 24], "modrm": "/2" }, "feature": "sse" }] },
+  { "mnemonic": "prefetcht2",  "summary": "Prefetch to L3+ cache", "forms": [{ "operands": ["m8"], "encoding": { "opcode": [15, 24], "modrm": "/3" }, "feature": "sse" }] },
+  { "mnemonic": "prefetchnta", "summary": "Prefetch non-temporal", "forms": [{ "operands": ["m8"], "encoding": { "opcode": [15, 24], "modrm": "/0" }, "feature": "sse" }] },
+  { "mnemonic": "clflush", "summary": "Flush cache line", "forms": [{ "operands": ["m8"], "encoding": { "opcode": [15, 174], "modrm": "/7" }, "feature": "sse2" }] },
+  { "mnemonic": "clflushopt", "summary": "Flush cache line (optimized)", "forms": [{ "operands": ["m8"], "encoding": { "opcode": [15, 174], "modrm": "/7", "prefix": "0x66" }, "feature": "baseline" }] },
+  { "mnemonic": "rdrand", "summary": "Read random number", "forms": [
+    { "operands": ["r32"], "encoding": { "opcode": [15, 199], "modrm": "/6" }, "flags": { "set": "OSZAPC" }, "feature": "rdrand" },
+    { "operands": ["r64"], "encoding": { "opcode": [15, 199], "modrm": "/6", "rex_w": true }, "flags": { "set": "OSZAPC" }, "feature": "rdrand" }
+  ]},
+  { "mnemonic": "rdseed", "summary": "Read random seed", "forms": [
+    { "operands": ["r32"], "encoding": { "opcode": [15, 199], "modrm": "/7" }, "flags": { "set": "OSZAPC" }, "feature": "rdseed" },
+    { "operands": ["r64"], "encoding": { "opcode": [15, 199], "modrm": "/7", "rex_w": true }, "flags": { "set": "OSZAPC" }, "feature": "rdseed" }
+  ]},
+  { "mnemonic": "xgetbv", "summary": "Get extended control register", "forms": [{ "operands": [], "encoding": { "opcode": [15, 1, 208] }, "feature": "baseline" }] },
+  { "mnemonic": "xsetbv", "summary": "Set extended control register", "forms": [{ "operands": [], "encoding": { "opcode": [15, 1, 209] }, "feature": "baseline" }] }
+]

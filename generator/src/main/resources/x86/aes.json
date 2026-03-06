@@ -1,0 +1,9 @@
+[
+  { "mnemonic": "aesenc", "summary": "AES encrypt round", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 56, 220], "modrm": "reg", "prefix": "0x66" }, "feature": "aes" }] },
+  { "mnemonic": "aesenclast", "summary": "AES encrypt last round", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 56, 221], "modrm": "reg", "prefix": "0x66" }, "feature": "aes" }] },
+  { "mnemonic": "aesdec", "summary": "AES decrypt round", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 56, 222], "modrm": "reg", "prefix": "0x66" }, "feature": "aes" }] },
+  { "mnemonic": "aesdeclast", "summary": "AES decrypt last round", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 56, 223], "modrm": "reg", "prefix": "0x66" }, "feature": "aes" }] },
+  { "mnemonic": "aesimc", "summary": "AES inverse mix columns", "forms": [{ "operands": ["xmm", "xmm/m128"], "encoding": { "opcode": [15, 56, 219], "modrm": "reg", "prefix": "0x66" }, "feature": "aes" }] },
+  { "mnemonic": "aeskeygenassist", "summary": "AES key generation assist", "forms": [{ "operands": ["xmm", "xmm/m128", "imm8"], "encoding": { "opcode": [15, 58, 223], "modrm": "reg", "prefix": "0x66" }, "feature": "aes" }] },
+  { "mnemonic": "pclmulqdq", "summary": "Carry-less multiplication", "forms": [{ "operands": ["xmm", "xmm/m128", "imm8"], "encoding": { "opcode": [15, 58, 68], "modrm": "reg", "prefix": "0x66" }, "feature": "pclmulqdq" }] }
+]

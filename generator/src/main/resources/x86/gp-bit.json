@@ -1,0 +1,82 @@
+[
+  {
+    "mnemonic": "bt",
+    "summary": "Bit test",
+    "forms": [
+      { "operands": ["r/m32", "r32"], "encoding": { "opcode": [15, 163], "modrm": "reg" }, "flags": { "set": "C", "undefined": "OSAP" }, "feature": "baseline" },
+      { "operands": ["r/m64", "r64"], "encoding": { "opcode": [15, 163], "modrm": "reg", "rex_w": true }, "flags": { "set": "C", "undefined": "OSAP" }, "feature": "baseline" },
+      { "operands": ["r/m32", "imm8"], "encoding": { "opcode": [15, 186], "modrm": "/4" }, "flags": { "set": "C", "undefined": "OSAP" }, "feature": "baseline" },
+      { "operands": ["r/m64", "imm8"], "encoding": { "opcode": [15, 186], "modrm": "/4", "rex_w": true }, "flags": { "set": "C", "undefined": "OSAP" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "bts",
+    "summary": "Bit test and set",
+    "forms": [
+      { "operands": ["r/m32", "r32"], "encoding": { "opcode": [15, 171], "modrm": "reg" }, "flags": { "set": "C", "undefined": "OSAP" }, "feature": "baseline" },
+      { "operands": ["r/m64", "r64"], "encoding": { "opcode": [15, 171], "modrm": "reg", "rex_w": true }, "flags": { "set": "C", "undefined": "OSAP" }, "feature": "baseline" },
+      { "operands": ["r/m32", "imm8"], "encoding": { "opcode": [15, 186], "modrm": "/5" }, "flags": { "set": "C", "undefined": "OSAP" }, "feature": "baseline" },
+      { "operands": ["r/m64", "imm8"], "encoding": { "opcode": [15, 186], "modrm": "/5", "rex_w": true }, "flags": { "set": "C", "undefined": "OSAP" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "btr",
+    "summary": "Bit test and reset",
+    "forms": [
+      { "operands": ["r/m32", "r32"], "encoding": { "opcode": [15, 179], "modrm": "reg" }, "flags": { "set": "C", "undefined": "OSAP" }, "feature": "baseline" },
+      { "operands": ["r/m64", "r64"], "encoding": { "opcode": [15, 179], "modrm": "reg", "rex_w": true }, "flags": { "set": "C", "undefined": "OSAP" }, "feature": "baseline" },
+      { "operands": ["r/m32", "imm8"], "encoding": { "opcode": [15, 186], "modrm": "/6" }, "flags": { "set": "C", "undefined": "OSAP" }, "feature": "baseline" },
+      { "operands": ["r/m64", "imm8"], "encoding": { "opcode": [15, 186], "modrm": "/6", "rex_w": true }, "flags": { "set": "C", "undefined": "OSAP" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "btc",
+    "summary": "Bit test and complement",
+    "forms": [
+      { "operands": ["r/m32", "r32"], "encoding": { "opcode": [15, 187], "modrm": "reg" }, "flags": { "set": "C", "undefined": "OSAP" }, "feature": "baseline" },
+      { "operands": ["r/m64", "r64"], "encoding": { "opcode": [15, 187], "modrm": "reg", "rex_w": true }, "flags": { "set": "C", "undefined": "OSAP" }, "feature": "baseline" },
+      { "operands": ["r/m32", "imm8"], "encoding": { "opcode": [15, 186], "modrm": "/7" }, "flags": { "set": "C", "undefined": "OSAP" }, "feature": "baseline" },
+      { "operands": ["r/m64", "imm8"], "encoding": { "opcode": [15, 186], "modrm": "/7", "rex_w": true }, "flags": { "set": "C", "undefined": "OSAP" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "bsf",
+    "summary": "Bit scan forward",
+    "forms": [
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [15, 188], "modrm": "reg" }, "flags": { "set": "Z", "undefined": "OSAPC" }, "feature": "baseline" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [15, 188], "modrm": "reg", "rex_w": true }, "flags": { "set": "Z", "undefined": "OSAPC" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "bsr",
+    "summary": "Bit scan reverse",
+    "forms": [
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [15, 189], "modrm": "reg" }, "flags": { "set": "Z", "undefined": "OSAPC" }, "feature": "baseline" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [15, 189], "modrm": "reg", "rex_w": true }, "flags": { "set": "Z", "undefined": "OSAPC" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "popcnt",
+    "summary": "Population count (number of set bits)",
+    "forms": [
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [15, 184], "modrm": "reg", "prefix": "0xF3" }, "flags": { "set": "OSZAPC" }, "feature": "popcnt" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [15, 184], "modrm": "reg", "prefix": "0xF3", "rex_w": true }, "flags": { "set": "OSZAPC" }, "feature": "popcnt" }
+    ]
+  },
+  {
+    "mnemonic": "lzcnt",
+    "summary": "Count leading zero bits",
+    "forms": [
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [15, 189], "modrm": "reg", "prefix": "0xF3" }, "flags": { "set": "ZC", "undefined": "OSAP" }, "feature": "lzcnt" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [15, 189], "modrm": "reg", "prefix": "0xF3", "rex_w": true }, "flags": { "set": "ZC", "undefined": "OSAP" }, "feature": "lzcnt" }
+    ]
+  },
+  {
+    "mnemonic": "tzcnt",
+    "summary": "Count trailing zero bits",
+    "forms": [
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [15, 188], "modrm": "reg", "prefix": "0xF3" }, "flags": { "set": "ZC", "undefined": "OSAP" }, "feature": "bmi1" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [15, 188], "modrm": "reg", "prefix": "0xF3", "rex_w": true }, "flags": { "set": "ZC", "undefined": "OSAP" }, "feature": "bmi1" }
+    ]
+  }
+]

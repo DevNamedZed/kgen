@@ -1,0 +1,87 @@
+[
+  {
+    "mnemonic": "and",
+    "summary": "Logical AND",
+    "forms": [
+      { "operands": ["al", "imm8"], "encoding": { "opcode": [36] }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["eax", "imm32"], "encoding": { "opcode": [37] }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["rax", "imm32"], "encoding": { "opcode": [37], "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m8", "imm8"], "encoding": { "opcode": [128], "modrm": "/4" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "imm32"], "encoding": { "opcode": [129], "modrm": "/4" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "imm32"], "encoding": { "opcode": [129], "modrm": "/4", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "imm8"], "encoding": { "opcode": [131], "modrm": "/4" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "imm8"], "encoding": { "opcode": [131], "modrm": "/4", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m8", "r8"], "encoding": { "opcode": [32], "modrm": "reg" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "r32"], "encoding": { "opcode": [33], "modrm": "reg" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "r64"], "encoding": { "opcode": [33], "modrm": "reg", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r8", "r/m8"], "encoding": { "opcode": [34], "modrm": "reg" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [35], "modrm": "reg" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [35], "modrm": "reg", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "or",
+    "summary": "Logical OR",
+    "forms": [
+      { "operands": ["al", "imm8"], "encoding": { "opcode": [12] }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["eax", "imm32"], "encoding": { "opcode": [13] }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["rax", "imm32"], "encoding": { "opcode": [13], "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m8", "imm8"], "encoding": { "opcode": [128], "modrm": "/1" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "imm32"], "encoding": { "opcode": [129], "modrm": "/1" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "imm32"], "encoding": { "opcode": [129], "modrm": "/1", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "imm8"], "encoding": { "opcode": [131], "modrm": "/1" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "imm8"], "encoding": { "opcode": [131], "modrm": "/1", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m8", "r8"], "encoding": { "opcode": [8], "modrm": "reg" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "r32"], "encoding": { "opcode": [9], "modrm": "reg" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "r64"], "encoding": { "opcode": [9], "modrm": "reg", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r8", "r/m8"], "encoding": { "opcode": [10], "modrm": "reg" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [11], "modrm": "reg" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [11], "modrm": "reg", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "xor",
+    "summary": "Logical XOR",
+    "forms": [
+      { "operands": ["al", "imm8"], "encoding": { "opcode": [52] }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["eax", "imm32"], "encoding": { "opcode": [53] }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["rax", "imm32"], "encoding": { "opcode": [53], "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m8", "imm8"], "encoding": { "opcode": [128], "modrm": "/6" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "imm32"], "encoding": { "opcode": [129], "modrm": "/6" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "imm32"], "encoding": { "opcode": [129], "modrm": "/6", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "imm8"], "encoding": { "opcode": [131], "modrm": "/6" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "imm8"], "encoding": { "opcode": [131], "modrm": "/6", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m8", "r8"], "encoding": { "opcode": [48], "modrm": "reg" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "r32"], "encoding": { "opcode": [49], "modrm": "reg" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "r64"], "encoding": { "opcode": [49], "modrm": "reg", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r8", "r/m8"], "encoding": { "opcode": [50], "modrm": "reg" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [51], "modrm": "reg" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [51], "modrm": "reg", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "not",
+    "summary": "One's complement negation",
+    "forms": [
+      { "operands": ["r/m8"], "encoding": { "opcode": [246], "modrm": "/2" }, "feature": "baseline" },
+      { "operands": ["r/m16"], "encoding": { "opcode": [247], "modrm": "/2", "prefix": "0x66" }, "feature": "baseline" },
+      { "operands": ["r/m32"], "encoding": { "opcode": [247], "modrm": "/2" }, "feature": "baseline" },
+      { "operands": ["r/m64"], "encoding": { "opcode": [247], "modrm": "/2", "rex_w": true }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "test",
+    "summary": "Logical compare (AND without storing result)",
+    "forms": [
+      { "operands": ["al", "imm8"], "encoding": { "opcode": [168] }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["eax", "imm32"], "encoding": { "opcode": [169] }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["rax", "imm32"], "encoding": { "opcode": [169], "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m8", "imm8"], "encoding": { "opcode": [246], "modrm": "/0" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "imm32"], "encoding": { "opcode": [247], "modrm": "/0" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "imm32"], "encoding": { "opcode": [247], "modrm": "/0", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m8", "r8"], "encoding": { "opcode": [132], "modrm": "reg" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m32", "r32"], "encoding": { "opcode": [133], "modrm": "reg" }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" },
+      { "operands": ["r/m64", "r64"], "encoding": { "opcode": [133], "modrm": "reg", "rex_w": true }, "flags": { "set": "OSZPC", "undefined": "A" }, "feature": "baseline" }
+    ]
+  }
+]

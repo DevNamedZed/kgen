@@ -1,0 +1,281 @@
+[
+  {
+    "mnemonic": "mov",
+    "summary": "Move",
+    "forms": [
+      { "operands": ["r8", "r/m8"], "encoding": { "opcode": [138], "modrm": "reg" }, "feature": "baseline" },
+      { "operands": ["r/m8", "r8"], "encoding": { "opcode": [136], "modrm": "reg" }, "feature": "baseline" },
+      { "operands": ["r16", "r/m16"], "encoding": { "opcode": [139], "modrm": "reg", "prefix": "0x66" }, "feature": "baseline" },
+      { "operands": ["r/m16", "r16"], "encoding": { "opcode": [137], "modrm": "reg", "prefix": "0x66" }, "feature": "baseline" },
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [139], "modrm": "reg" }, "feature": "baseline" },
+      { "operands": ["r/m32", "r32"], "encoding": { "opcode": [137], "modrm": "reg" }, "feature": "baseline" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [139], "modrm": "reg", "rex_w": true }, "feature": "baseline" },
+      { "operands": ["r/m64", "r64"], "encoding": { "opcode": [137], "modrm": "reg", "rex_w": true }, "feature": "baseline" },
+      { "operands": ["r8", "imm8"], "encoding": { "opcode": [176], "plus_reg": true }, "feature": "baseline" },
+      { "operands": ["r16", "imm16"], "encoding": { "opcode": [184], "plus_reg": true, "prefix": "0x66" }, "feature": "baseline" },
+      { "operands": ["r32", "imm32"], "encoding": { "opcode": [184], "plus_reg": true }, "feature": "baseline" },
+      { "operands": ["r64", "imm64"], "encoding": { "opcode": [184], "plus_reg": true, "rex_w": true }, "feature": "baseline" },
+      { "operands": ["r/m8", "imm8"], "encoding": { "opcode": [198], "modrm": "/0" }, "feature": "baseline" },
+      { "operands": ["r/m16", "imm16"], "encoding": { "opcode": [199], "modrm": "/0", "prefix": "0x66" }, "feature": "baseline" },
+      { "operands": ["r/m32", "imm32"], "encoding": { "opcode": [199], "modrm": "/0" }, "feature": "baseline" },
+      { "operands": ["r/m64", "imm32"], "encoding": { "opcode": [199], "modrm": "/0", "rex_w": true }, "feature": "baseline" },
+      { "operands": ["al", "moffs8"], "encoding": { "opcode": [160] }, "feature": "baseline" },
+      { "operands": ["rax", "moffs64"], "encoding": { "opcode": [161], "rex_w": true }, "feature": "baseline" },
+      { "operands": ["moffs8", "al"], "encoding": { "opcode": [162] }, "feature": "baseline" },
+      { "operands": ["moffs64", "rax"], "encoding": { "opcode": [163], "rex_w": true }, "feature": "baseline" },
+      { "operands": ["r/m16", "sreg"], "encoding": { "opcode": [140], "modrm": "reg" }, "feature": "baseline" },
+      { "operands": ["sreg", "r/m16"], "encoding": { "opcode": [142], "modrm": "reg" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "movzx",
+    "summary": "Move with zero-extend",
+    "forms": [
+      { "operands": ["r16", "r/m8"], "encoding": { "opcode": [15, 182], "modrm": "reg", "prefix": "0x66" }, "feature": "baseline" },
+      { "operands": ["r32", "r/m8"], "encoding": { "opcode": [15, 182], "modrm": "reg" }, "feature": "baseline" },
+      { "operands": ["r64", "r/m8"], "encoding": { "opcode": [15, 182], "modrm": "reg", "rex_w": true }, "feature": "baseline" },
+      { "operands": ["r32", "r/m16"], "encoding": { "opcode": [15, 183], "modrm": "reg" }, "feature": "baseline" },
+      { "operands": ["r64", "r/m16"], "encoding": { "opcode": [15, 183], "modrm": "reg", "rex_w": true }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "movsx",
+    "summary": "Move with sign-extend",
+    "forms": [
+      { "operands": ["r16", "r/m8"], "encoding": { "opcode": [15, 190], "modrm": "reg", "prefix": "0x66" }, "feature": "baseline" },
+      { "operands": ["r32", "r/m8"], "encoding": { "opcode": [15, 190], "modrm": "reg" }, "feature": "baseline" },
+      { "operands": ["r64", "r/m8"], "encoding": { "opcode": [15, 190], "modrm": "reg", "rex_w": true }, "feature": "baseline" },
+      { "operands": ["r32", "r/m16"], "encoding": { "opcode": [15, 191], "modrm": "reg" }, "feature": "baseline" },
+      { "operands": ["r64", "r/m16"], "encoding": { "opcode": [15, 191], "modrm": "reg", "rex_w": true }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "movsxd",
+    "summary": "Move with sign-extend doubleword to quadword",
+    "forms": [
+      { "operands": ["r64", "r/m32"], "encoding": { "opcode": [99], "modrm": "reg", "rex_w": true }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "lea",
+    "summary": "Load effective address",
+    "forms": [
+      { "operands": ["r16", "m16"], "encoding": { "opcode": [141], "modrm": "reg", "prefix": "0x66" }, "feature": "baseline" },
+      { "operands": ["r32", "m32"], "encoding": { "opcode": [141], "modrm": "reg" }, "feature": "baseline" },
+      { "operands": ["r64", "m64"], "encoding": { "opcode": [141], "modrm": "reg", "rex_w": true }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "xchg",
+    "summary": "Exchange",
+    "forms": [
+      { "operands": ["rax", "r64"], "encoding": { "opcode": [144], "plus_reg": true, "rex_w": true }, "feature": "baseline" },
+      { "operands": ["eax", "r32"], "encoding": { "opcode": [144], "plus_reg": true }, "feature": "baseline" },
+      { "operands": ["ax", "r16"], "encoding": { "opcode": [144], "plus_reg": true, "prefix": "0x66" }, "feature": "baseline" },
+      { "operands": ["r/m8", "r8"], "encoding": { "opcode": [134], "modrm": "reg" }, "feature": "baseline" },
+      { "operands": ["r/m16", "r16"], "encoding": { "opcode": [135], "modrm": "reg", "prefix": "0x66" }, "feature": "baseline" },
+      { "operands": ["r/m32", "r32"], "encoding": { "opcode": [135], "modrm": "reg" }, "feature": "baseline" },
+      { "operands": ["r/m64", "r64"], "encoding": { "opcode": [135], "modrm": "reg", "rex_w": true }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "bswap",
+    "summary": "Byte swap",
+    "forms": [
+      { "operands": ["r32"], "encoding": { "opcode": [15, 200], "plus_reg": true }, "feature": "baseline" },
+      { "operands": ["r64"], "encoding": { "opcode": [15, 200], "plus_reg": true, "rex_w": true }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "cmpxchg",
+    "summary": "Compare and exchange",
+    "forms": [
+      { "operands": ["r/m8", "r8"], "encoding": { "opcode": [15, 176], "modrm": "reg" }, "flags": { "set": "OSZAPC" }, "feature": "baseline" },
+      { "operands": ["r/m16", "r16"], "encoding": { "opcode": [15, 177], "modrm": "reg", "prefix": "0x66" }, "flags": { "set": "OSZAPC" }, "feature": "baseline" },
+      { "operands": ["r/m32", "r32"], "encoding": { "opcode": [15, 177], "modrm": "reg" }, "flags": { "set": "OSZAPC" }, "feature": "baseline" },
+      { "operands": ["r/m64", "r64"], "encoding": { "opcode": [15, 177], "modrm": "reg", "rex_w": true }, "flags": { "set": "OSZAPC" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "cmpxchg8b",
+    "summary": "Compare and exchange 8 bytes",
+    "forms": [
+      { "operands": ["m64"], "encoding": { "opcode": [15, 199], "modrm": "/1" }, "flags": { "set": "Z" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "cmpxchg16b",
+    "summary": "Compare and exchange 16 bytes",
+    "forms": [
+      { "operands": ["m128"], "encoding": { "opcode": [15, 199], "modrm": "/1", "rex_w": true }, "flags": { "set": "Z" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "xadd",
+    "summary": "Exchange and add",
+    "forms": [
+      { "operands": ["r/m8", "r8"], "encoding": { "opcode": [15, 192], "modrm": "reg" }, "flags": { "set": "OSZAPC" }, "feature": "baseline" },
+      { "operands": ["r/m16", "r16"], "encoding": { "opcode": [15, 193], "modrm": "reg", "prefix": "0x66" }, "flags": { "set": "OSZAPC" }, "feature": "baseline" },
+      { "operands": ["r/m32", "r32"], "encoding": { "opcode": [15, 193], "modrm": "reg" }, "flags": { "set": "OSZAPC" }, "feature": "baseline" },
+      { "operands": ["r/m64", "r64"], "encoding": { "opcode": [15, 193], "modrm": "reg", "rex_w": true }, "flags": { "set": "OSZAPC" }, "feature": "baseline" }
+    ]
+  },
+  {
+    "mnemonic": "movbe",
+    "summary": "Move data after swapping bytes",
+    "forms": [
+      { "operands": ["r16", "m16"], "encoding": { "opcode": [15, 56, 240], "modrm": "reg", "prefix": "0x66" }, "feature": "movbe" },
+      { "operands": ["r32", "m32"], "encoding": { "opcode": [15, 56, 240], "modrm": "reg" }, "feature": "movbe" },
+      { "operands": ["r64", "m64"], "encoding": { "opcode": [15, 56, 240], "modrm": "reg", "rex_w": true }, "feature": "movbe" },
+      { "operands": ["m16", "r16"], "encoding": { "opcode": [15, 56, 241], "modrm": "reg", "prefix": "0x66" }, "feature": "movbe" },
+      { "operands": ["m32", "r32"], "encoding": { "opcode": [15, 56, 241], "modrm": "reg" }, "feature": "movbe" },
+      { "operands": ["m64", "r64"], "encoding": { "opcode": [15, 56, 241], "modrm": "reg", "rex_w": true }, "feature": "movbe" }
+    ]
+  },
+  {
+    "mnemonic": "cmova",   "summary": "Conditional move if above (CF=0, ZF=0)",
+    "forms": [
+      { "operands": ["r16", "r/m16"], "encoding": { "opcode": [15, 71], "modrm": "reg", "prefix": "0x66" }, "flags": { "tested": "CZ" }, "feature": "cmov" },
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [15, 71], "modrm": "reg" }, "flags": { "tested": "CZ" }, "feature": "cmov" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [15, 71], "modrm": "reg", "rex_w": true }, "flags": { "tested": "CZ" }, "feature": "cmov" }
+    ]
+  },
+  {
+    "mnemonic": "cmovae",  "summary": "Conditional move if above or equal (CF=0)",
+    "forms": [
+      { "operands": ["r16", "r/m16"], "encoding": { "opcode": [15, 67], "modrm": "reg", "prefix": "0x66" }, "flags": { "tested": "C" }, "feature": "cmov" },
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [15, 67], "modrm": "reg" }, "flags": { "tested": "C" }, "feature": "cmov" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [15, 67], "modrm": "reg", "rex_w": true }, "flags": { "tested": "C" }, "feature": "cmov" }
+    ]
+  },
+  {
+    "mnemonic": "cmovb",   "summary": "Conditional move if below (CF=1)",
+    "forms": [
+      { "operands": ["r16", "r/m16"], "encoding": { "opcode": [15, 66], "modrm": "reg", "prefix": "0x66" }, "flags": { "tested": "C" }, "feature": "cmov" },
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [15, 66], "modrm": "reg" }, "flags": { "tested": "C" }, "feature": "cmov" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [15, 66], "modrm": "reg", "rex_w": true }, "flags": { "tested": "C" }, "feature": "cmov" }
+    ]
+  },
+  {
+    "mnemonic": "cmovbe",  "summary": "Conditional move if below or equal (CF=1 or ZF=1)",
+    "forms": [
+      { "operands": ["r16", "r/m16"], "encoding": { "opcode": [15, 70], "modrm": "reg", "prefix": "0x66" }, "flags": { "tested": "CZ" }, "feature": "cmov" },
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [15, 70], "modrm": "reg" }, "flags": { "tested": "CZ" }, "feature": "cmov" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [15, 70], "modrm": "reg", "rex_w": true }, "flags": { "tested": "CZ" }, "feature": "cmov" }
+    ]
+  },
+  {
+    "mnemonic": "cmove",   "summary": "Conditional move if equal (ZF=1)",
+    "forms": [
+      { "operands": ["r16", "r/m16"], "encoding": { "opcode": [15, 68], "modrm": "reg", "prefix": "0x66" }, "flags": { "tested": "Z" }, "feature": "cmov" },
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [15, 68], "modrm": "reg" }, "flags": { "tested": "Z" }, "feature": "cmov" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [15, 68], "modrm": "reg", "rex_w": true }, "flags": { "tested": "Z" }, "feature": "cmov" }
+    ]
+  },
+  {
+    "mnemonic": "cmovg",   "summary": "Conditional move if greater (ZF=0, SF=OF)",
+    "forms": [
+      { "operands": ["r16", "r/m16"], "encoding": { "opcode": [15, 79], "modrm": "reg", "prefix": "0x66" }, "flags": { "tested": "OSZ" }, "feature": "cmov" },
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [15, 79], "modrm": "reg" }, "flags": { "tested": "OSZ" }, "feature": "cmov" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [15, 79], "modrm": "reg", "rex_w": true }, "flags": { "tested": "OSZ" }, "feature": "cmov" }
+    ]
+  },
+  {
+    "mnemonic": "cmovge",  "summary": "Conditional move if greater or equal (SF=OF)",
+    "forms": [
+      { "operands": ["r16", "r/m16"], "encoding": { "opcode": [15, 77], "modrm": "reg", "prefix": "0x66" }, "flags": { "tested": "OS" }, "feature": "cmov" },
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [15, 77], "modrm": "reg" }, "flags": { "tested": "OS" }, "feature": "cmov" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [15, 77], "modrm": "reg", "rex_w": true }, "flags": { "tested": "OS" }, "feature": "cmov" }
+    ]
+  },
+  {
+    "mnemonic": "cmovl",   "summary": "Conditional move if less (SF!=OF)",
+    "forms": [
+      { "operands": ["r16", "r/m16"], "encoding": { "opcode": [15, 76], "modrm": "reg", "prefix": "0x66" }, "flags": { "tested": "OS" }, "feature": "cmov" },
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [15, 76], "modrm": "reg" }, "flags": { "tested": "OS" }, "feature": "cmov" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [15, 76], "modrm": "reg", "rex_w": true }, "flags": { "tested": "OS" }, "feature": "cmov" }
+    ]
+  },
+  {
+    "mnemonic": "cmovle",  "summary": "Conditional move if less or equal (ZF=1 or SF!=OF)",
+    "forms": [
+      { "operands": ["r16", "r/m16"], "encoding": { "opcode": [15, 78], "modrm": "reg", "prefix": "0x66" }, "flags": { "tested": "OSZ" }, "feature": "cmov" },
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [15, 78], "modrm": "reg" }, "flags": { "tested": "OSZ" }, "feature": "cmov" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [15, 78], "modrm": "reg", "rex_w": true }, "flags": { "tested": "OSZ" }, "feature": "cmov" }
+    ]
+  },
+  {
+    "mnemonic": "cmovne",  "summary": "Conditional move if not equal (ZF=0)",
+    "forms": [
+      { "operands": ["r16", "r/m16"], "encoding": { "opcode": [15, 69], "modrm": "reg", "prefix": "0x66" }, "flags": { "tested": "Z" }, "feature": "cmov" },
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [15, 69], "modrm": "reg" }, "flags": { "tested": "Z" }, "feature": "cmov" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [15, 69], "modrm": "reg", "rex_w": true }, "flags": { "tested": "Z" }, "feature": "cmov" }
+    ]
+  },
+  {
+    "mnemonic": "cmovno",  "summary": "Conditional move if not overflow (OF=0)",
+    "forms": [
+      { "operands": ["r16", "r/m16"], "encoding": { "opcode": [15, 65], "modrm": "reg", "prefix": "0x66" }, "flags": { "tested": "O" }, "feature": "cmov" },
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [15, 65], "modrm": "reg" }, "flags": { "tested": "O" }, "feature": "cmov" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [15, 65], "modrm": "reg", "rex_w": true }, "flags": { "tested": "O" }, "feature": "cmov" }
+    ]
+  },
+  {
+    "mnemonic": "cmovnp",  "summary": "Conditional move if not parity (PF=0)",
+    "forms": [
+      { "operands": ["r16", "r/m16"], "encoding": { "opcode": [15, 75], "modrm": "reg", "prefix": "0x66" }, "flags": { "tested": "P" }, "feature": "cmov" },
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [15, 75], "modrm": "reg" }, "flags": { "tested": "P" }, "feature": "cmov" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [15, 75], "modrm": "reg", "rex_w": true }, "flags": { "tested": "P" }, "feature": "cmov" }
+    ]
+  },
+  {
+    "mnemonic": "cmovns",  "summary": "Conditional move if not sign (SF=0)",
+    "forms": [
+      { "operands": ["r16", "r/m16"], "encoding": { "opcode": [15, 73], "modrm": "reg", "prefix": "0x66" }, "flags": { "tested": "S" }, "feature": "cmov" },
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [15, 73], "modrm": "reg" }, "flags": { "tested": "S" }, "feature": "cmov" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [15, 73], "modrm": "reg", "rex_w": true }, "flags": { "tested": "S" }, "feature": "cmov" }
+    ]
+  },
+  {
+    "mnemonic": "cmovo",   "summary": "Conditional move if overflow (OF=1)",
+    "forms": [
+      { "operands": ["r16", "r/m16"], "encoding": { "opcode": [15, 64], "modrm": "reg", "prefix": "0x66" }, "flags": { "tested": "O" }, "feature": "cmov" },
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [15, 64], "modrm": "reg" }, "flags": { "tested": "O" }, "feature": "cmov" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [15, 64], "modrm": "reg", "rex_w": true }, "flags": { "tested": "O" }, "feature": "cmov" }
+    ]
+  },
+  {
+    "mnemonic": "cmovp",   "summary": "Conditional move if parity (PF=1)",
+    "forms": [
+      { "operands": ["r16", "r/m16"], "encoding": { "opcode": [15, 74], "modrm": "reg", "prefix": "0x66" }, "flags": { "tested": "P" }, "feature": "cmov" },
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [15, 74], "modrm": "reg" }, "flags": { "tested": "P" }, "feature": "cmov" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [15, 74], "modrm": "reg", "rex_w": true }, "flags": { "tested": "P" }, "feature": "cmov" }
+    ]
+  },
+  {
+    "mnemonic": "cmovs",   "summary": "Conditional move if sign (SF=1)",
+    "forms": [
+      { "operands": ["r16", "r/m16"], "encoding": { "opcode": [15, 72], "modrm": "reg", "prefix": "0x66" }, "flags": { "tested": "S" }, "feature": "cmov" },
+      { "operands": ["r32", "r/m32"], "encoding": { "opcode": [15, 72], "modrm": "reg" }, "flags": { "tested": "S" }, "feature": "cmov" },
+      { "operands": ["r64", "r/m64"], "encoding": { "opcode": [15, 72], "modrm": "reg", "rex_w": true }, "flags": { "tested": "S" }, "feature": "cmov" }
+    ]
+  },
+  {
+    "mnemonic": "cbw",  "summary": "Convert byte to word (AL -> AX)", "forms": [{ "operands": [], "encoding": { "opcode": [152], "prefix": "0x66" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "cwde", "summary": "Convert word to doubleword (AX -> EAX)", "forms": [{ "operands": [], "encoding": { "opcode": [152] }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "cdqe", "summary": "Convert doubleword to quadword (EAX -> RAX)", "forms": [{ "operands": [], "encoding": { "opcode": [152], "rex_w": true }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "cwd",  "summary": "Convert word to doubleword (AX -> DX:AX)", "forms": [{ "operands": [], "encoding": { "opcode": [153], "prefix": "0x66" }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "cdq",  "summary": "Convert doubleword to quadword (EAX -> EDX:EAX)", "forms": [{ "operands": [], "encoding": { "opcode": [153] }, "feature": "baseline" }]
+  },
+  {
+    "mnemonic": "cqo",  "summary": "Convert quadword to double-quadword (RAX -> RDX:RAX)", "forms": [{ "operands": [], "encoding": { "opcode": [153], "rex_w": true }, "feature": "baseline" }]
+  }
+]

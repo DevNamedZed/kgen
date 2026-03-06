@@ -1,0 +1,12 @@
+[
+  {
+    "mnemonic": "endbr64",
+    "summary": "End branch 64-bit (CET indirect branch tracking)",
+    "forms": [{ "operands": [], "encoding": { "opcode": [15, 30, 250] }, "feature": "cet" }]
+  },
+  {
+    "mnemonic": "endbr32",
+    "summary": "End branch 32-bit (CET indirect branch tracking)",
+    "forms": [{ "operands": [], "encoding": { "opcode": [15, 30, 251] }, "feature": "cet" }]
+  }
+]
