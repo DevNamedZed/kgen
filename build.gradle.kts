@@ -22,13 +22,17 @@ subprojects {
 
     tasks.withType<Test> {
         useJUnitPlatform()
+        jvmArgs("--enable-native-access=ALL-UNNAMED")
+        maxHeapSize = "1g"
+        forkEvery = 10
+        binaryResultsDirectory.set(layout.buildDirectory.dir("test-results/${name}/binary-${System.currentTimeMillis()}"))
     }
 
     configure<PublishingExtension> {
         publications {
             create<MavenPublication>("maven") {
                 from(components["java"])
-                artifactId = "kgen-${project.name}"
+                artifactId = if (project.name == "kgen") "kgen" else "kgen-${project.name}"
             }
         }
     }

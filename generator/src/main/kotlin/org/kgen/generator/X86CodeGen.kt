@@ -39,7 +39,7 @@ data class X86Flags(
 
 fun main() {
     val resourceDir = "generator/src/main/resources/x86"
-    val outputDir = "backend-x86_64/src/main/kotlin/com/kgen/x86"
+    val outputDir = "kgen/src/main/kotlin/org/kgen/backend/x86"
 
     val instructions = loadX86Instructions(File(resourceDir))
     val totalForms = instructions.sumOf { it.forms.size }
@@ -218,6 +218,24 @@ fun formToMethodSuffix(form: X86Form): String {
 
 data class MethodParam(val name: String, val type: String, val category: OpCategory)
 
+private val rmCategories = setOf(
+    OpCategory.RM8, OpCategory.RM16, OpCategory.RM32, OpCategory.RM64,
+    OpCategory.XMM_M32, OpCategory.XMM_M64, OpCategory.XMM_M128,
+    OpCategory.YMM_M256, OpCategory.ZMM_M512,
+    OpCategory.MM_M64, OpCategory.K_M16,
+)
+
+private val regCategories = setOf(
+    OpCategory.REG8, OpCategory.REG16, OpCategory.REG32, OpCategory.REG64,
+    OpCategory.XMM, OpCategory.YMM, OpCategory.ZMM,
+    OpCategory.MM, OpCategory.K,
+)
+
+fun isRmRForm(params: List<MethodParam>): Boolean {
+    if (params.size < 2) return false
+    return params[0].category in rmCategories && params[1].category in regCategories
+}
+
 fun formToParams(form: X86Form): List<MethodParam> {
     val params = mutableListOf<MethodParam>()
     val nameCounts = mutableMapOf<String, Int>()
@@ -305,7 +323,7 @@ fun flagsToLiteral(flags: X86Flags?): String {
 fun generateX86OperandType(out: File) {
     val sb = StringBuilder()
     sb.appendLine("// Generated — do not edit")
-    sb.appendLine("package org.kgen.x86")
+    sb.appendLine("package org.kgen.backend.x86")
     sb.appendLine()
     sb.appendLine("enum class X86OperandType {")
     val types = listOf(
@@ -359,7 +377,7 @@ fun generateX86Feature(instructions: List<X86Instruction>, out: File) {
     val features = instructions.flatMap { i -> i.forms.map { it.feature } }.distinct().sorted()
     val sb = StringBuilder()
     sb.appendLine("// Generated — do not edit")
-    sb.appendLine("package org.kgen.x86")
+    sb.appendLine("package org.kgen.backend.x86")
     sb.appendLine()
     sb.appendLine("enum class X86Feature(val specName: String) {")
     for ((i, f) in features.withIndex()) {
@@ -375,7 +393,7 @@ fun generateX86Feature(instructions: List<X86Instruction>, out: File) {
 fun generateX86InstructionData(instructions: List<X86Instruction>, out: File) {
     val sb = StringBuilder()
     sb.appendLine("// Generated — do not edit")
-    sb.appendLine("package org.kgen.x86")
+    sb.appendLine("package org.kgen.backend.x86")
     sb.appendLine()
     sb.appendLine("/** Encoding metadata for a single instruction form. */")
     sb.appendLine("data class X86EncodingInfo(")
@@ -447,7 +465,7 @@ fun generateX86InstructionData(instructions: List<X86Instruction>, out: File) {
 fun generateX86AssemblerOps(instructions: List<X86Instruction>, out: File) {
     val sb = StringBuilder()
     sb.appendLine("// Generated — do not edit")
-    sb.appendLine("package org.kgen.x86")
+    sb.appendLine("package org.kgen.backend.x86")
     sb.appendLine()
     sb.appendLine("/**")
     sb.appendLine(" * Generated assembler dispatch methods for x86-64.")
@@ -471,8 +489,25 @@ fun generateX86AssemblerOps(instructions: List<X86Instruction>, out: File) {
         data class Sig(val params: List<String>)
         val seen = mutableSetOf<Sig>()
 
-        for (form in insn.forms) {
-            val params = formToParams(form)
+        // Pre-compute form params to check for companion r,rm forms
+        val allFormParams = insn.forms.map { formToParams(it) }
+
+        for ((formIdx, form) in insn.forms.withIndex()) {
+            val rawParams = allFormParams[formIdx]
+            // For rm,r forms where a companion r,rm form exists, narrow the rm param to
+            // X86Memory. The r,rm form handles reg-reg; the rm,r form is only for mem-reg.
+            // This prevents overload ambiguity cross-module (X86Register implements all sized interfaces).
+            val gpRmCategories = setOf(OpCategory.RM8, OpCategory.RM16, OpCategory.RM32, OpCategory.RM64)
+            val params = if (isRmRForm(rawParams) && rawParams[0].category in gpRmCategories) {
+                val hasCompanion = allFormParams.any { other ->
+                    other !== rawParams && other.size >= 2 &&
+                        other[0].category in regCategories && other[1].category in rmCategories &&
+                        operandToKotlinType(rawParams[0].category) == operandToKotlinType(other[1].category)
+                }
+                if (hasCompanion) {
+                    listOf(rawParams[0].copy(name = "mem", type = "X86Memory")) + rawParams.drop(1)
+                } else rawParams
+            } else rawParams
             val sig = Sig(params.map { it.type })
 
             // Skip duplicate signatures within the same mnemonic
@@ -495,10 +530,18 @@ fun generateX86AssemblerOps(instructions: List<X86Instruction>, out: File) {
             }
 
             // Build the operand pass-through
-            val argList = if (params.isEmpty()) {
+            // For rm,r forms the encoder expects reg-field operand first, rm-field second.
+            // Since encodeLegacy always maps regs[0]->reg and regs[1]->r/m, we must swap
+            // the arguments when the API signature has rm first and r second.
+            val encoderParams = if (isRmRForm(rawParams)) {
+                listOf(params[1], params[0]) + params.drop(2)
+            } else {
+                params
+            }
+            val argList = if (encoderParams.isEmpty()) {
                 ""
             } else {
-                ", " + params.joinToString(", ") { it.name }
+                ", " + encoderParams.joinToString(", ") { it.name }
             }
 
             sb.appendLine("    /** ${insn.summary}: ${form.operands.joinToString(", ")} */")

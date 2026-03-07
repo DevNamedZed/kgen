@@ -2,20 +2,36 @@
 
 ## Module Structure
 
+Single `:kgen` module with hierarchical packages:
+
 ```
-kgen/
-├── ir/          Core IR: types, values, instructions, module model, builders, printer, verifier
-├── pass/        ModulePass interface, PassPipeline, optimization/lowering passes
-├── object/      Object file model + readers/writers (ELF, PE, Mach-O, WASM, JVM .class)
-├── linker/      Linker interface, full link options
-├── tools/       Binary utilities (inspector, patcher, diff, demangler, hex dump, loader)
-├── backend-wasm/    WASM code generator + assembler
-├── backend-jvm/     JVM bytecode generator (java.lang.classfile, no ASM library)
-├── backend-x86_64/  x86-64 native backend
-├── backend-arm64/   ARM64 native backend
-├── backend-riscv/   RISC-V native backend
-└── backend-msil/    MSIL/.NET backend
+org.kgen.ir.*              Core IR: types, values, instructions, module model, builders
+  ir.build                 IrBuilder, FunctionScope, DSL builders
+  ir.text                  IrPrinter, IrParser, IrSerializer
+  ir.verify                IrVerifier
+  ir.target                Target, CPU/feature enums
+  ir.codegen               CodeGenerator, Assembler, Disassembler, TargetRegistry
+  ir.types                 ClassDef, InterfaceDef, EnumDef, StructDef
+
+org.kgen.pass              ModulePass, PassPipeline, optimization passes
+
+org.kgen.binary.*          Object file model, readers/writers
+  binary.elf               ELF reader/writer/linker (static, dynamic, shared)
+  binary.pe                PE/COFF reader/writer/linker (exe, DLL)
+  binary.pe.clr            CLR metadata reader/writer
+  binary.macho             Mach-O reader/writer/linker
+  binary.jvm               JVM class file reader/writer
+  binary.ar                Archive reader/writer
+
+org.kgen.tools             Binary inspector, patcher, diff, demangler, hex dump
+
+org.kgen.backend.wasm.*    WASM backend (asm, codegen, disasm, module reader/writer)
+org.kgen.backend.x86.*     x86-64 backend (asm, codegen, disasm)
+org.kgen.backend.arm64.*   ARM64 backend (asm, codegen, disasm)
+org.kgen.backend.riscv.*   RISC-V backend (asm, codegen, disasm)
 ```
+
+Separate modules: `:cli` (22-command CLI tool), `:generator` (JSON spec → Kotlin codegen), `:integration` (end-to-end tests)
 
 ## Compilation Pipeline
 
@@ -169,21 +185,32 @@ IrBuilder ("the module")
 
 For tests and hand-written IR, there's also the `module { }` DSL (see `DslBuilders.kt`).
 
-## File Layout (`:ir` module)
+## File Layout (`:kgen` module, IR packages)
 
 ```
-ir/src/main/kotlin/com/kgen/ir/
+kgen/src/main/kotlin/org/kgen/ir/
 ├── Type.kt              Sealed type hierarchy (30+ type variants)
 ├── Value.kt             Value hierarchy (Parameter, InstructionRef, GlobalRef, Constants)
-├── Instruction.kt       165 instruction data classes with KDoc
-├── Module.kt            Module, IrFunction, BasicBlock, ClassDef, InterfaceDef, enums, etc.
-├── InstructionEmitter.kt Abstract base class with ~80 builder methods (shared by DSL + imperative)
-├── FunctionScope.kt     Structured function building: variables, if/while/for, named comparisons
-├── DslBuilders.kt       module() DSL, ModuleBuilder, FunctionBuilder, BlockBuilder, constant helpers
-├── IrBuilder.kt         Imperative builder with insertion points (LLVM IRBuilder-style)
-├── ClassDefBuilder.kt   classDef() / interfaceDef() DSL builders
-├── IrPrinter.kt         Module → human-readable IR text
-├── IrVerifier.kt        Structural + type verification
-├── IrSerializer.kt      Binary serialization (Module ↔ ByteArray)
-└── CodeGenerator.kt     Backend interfaces (CodeGenerator, Assembler, Disassembler, TargetRegistry)
+├── Instruction.kt       165 instruction data classes
+├── Module.kt            Module, IrFunction, BasicBlock
+├── build/
+│   ├── IrBuilder.kt         Imperative builder with insertion points
+│   ├── FunctionScope.kt     Structured: variables, if/while/for, comparisons
+│   ├── InstructionEmitter.kt Shared ~80 builder methods
+│   └── DslBuilders.kt       module() DSL, constant helpers
+├── text/
+│   ├── IrPrinter.kt         Module → human-readable text
+│   ├── IrParser.kt          Text → Module (recursive descent)
+│   └── IrSerializer.kt      Binary serialization (Module ↔ ByteArray)
+├── verify/
+│   └── IrVerifier.kt        SSA dominance + type checking
+├── target/
+│   └── Target.kt            Target, CPU enums, feature enums
+├── codegen/
+│   └── CodeGenerator.kt     CodeGenerator, Assembler, Disassembler, TargetRegistry
+└── types/
+    ├── ClassDef.kt          ClassDef, ClassDefBuilder
+    ├── InterfaceDef.kt      InterfaceDef
+    ├── EnumDef.kt           EnumDef, EnumVariant
+    └── StructDef.kt         StructDef
 ```

@@ -34,7 +34,7 @@ kgen folds these directly into the instruction set.
 ## Quick Start
 
 ```kotlin
-import com.kgen.ir.*
+import org.kgen.ir.*
 
 val mod = module("example") {
     function("add", listOf("a" to Type.I32, "b" to Type.I32), Type.I32) {

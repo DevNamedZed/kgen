@@ -7,19 +7,26 @@ and MSIL. Every subsystem is independently useful as a library.
 ## Maven Coordinates
 
 ```kotlin
-implementation("com.kgen:kgen-ir:0.1.0")
+implementation("org.kgen:kgen:0.1.0")
 ```
 
 ## Quick Example
 
 ```kotlin
-import com.kgen.ir.*
+import org.kgen.ir.*
+import org.kgen.ir.build.*
+import org.kgen.ir.text.*
+import org.kgen.ir.verify.*
+import org.kgen.ir.target.Target
 
-val ir = IrBuilder("example")
+val ir = IrBuilder("example", Target.wasm())
 
-val fn = ir.function("add", listOf("a" to Type.I32, "b" to Type.I32), Type.I32)
-fn.ret(fn.add(fn.param(0), fn.param(1)))
-fn.end()
+val params = ir.createFunction("add",
+    listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
+ir.positionAtEnd(ir.appendBlock("entry"))
+val sum = ir.add(params[0], params[1])
+ir.ret(sum)
+ir.finalizeFunction()
 
 val mod = ir.build()
 println(IrPrinter.print(mod))

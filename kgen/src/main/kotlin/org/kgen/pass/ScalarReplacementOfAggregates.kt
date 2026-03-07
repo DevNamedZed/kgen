@@ -1,0 +1,297 @@
+package org.kgen.pass
+
+import org.kgen.ir.*
+
+/**
+ * Scalar Replacement of Aggregates (SROA).
+ *
+ * Breaks aggregate allocas (structs, small fixed-size arrays) into individual
+ * scalar allocas per field. These can then be promoted by Mem2Reg.
+ *
+ * An aggregate alloca is replaceable if:
+ * - It allocates a struct or small fixed-size array (no dynamic numElements)
+ * - Every use of the alloca is a GEP with constant indices that drills down to a scalar
+ * - Every use of each GEP result is a Load or Store (no address escaping)
+ */
+class ScalarReplacementOfAggregates : ModulePass {
+
+    override fun run(module: Module): Module {
+        return module.copy(functions = module.functions.map { fn ->
+            if (fn.isExternal || fn.blocks.isEmpty()) fn else transformFunction(fn)
+        })
+    }
+
+    private fun transformFunction(fn: IrFunction): IrFunction {
+        val allocas = findReplaceableAllocas(fn)
+        if (allocas.isEmpty()) return fn
+
+        var nextId = findMaxInstructionId(fn) + 1
+        val replacements = mutableMapOf<String, Value>()
+        val gepToFieldAlloca = mutableMapOf<String, String>()
+        val newAllocas = mutableListOf<Instruction>()
+        val deadInsts = mutableSetOf<String>()
+
+        for ((allocaName, alloca) in allocas) {
+            val fieldTypes = flattenFields(alloca.allocType)
+            val fieldAllocaNames = mutableMapOf<List<Int>, String>()
+
+            for ((indices, fieldType) in fieldTypes) {
+                val fieldName = "%$nextId"
+                nextId++
+                val fieldAlloca = Instruction.Alloca(
+                    dest = InstructionRef(fieldName, Type.OpaquePointer),
+                    allocType = fieldType,
+                )
+                newAllocas.add(fieldAlloca)
+                fieldAllocaNames[indices] = fieldName
+            }
+
+            deadInsts.add(allocaName)
+
+            for (block in fn.blocks) {
+                for (inst in block.instructions) {
+                    if (inst is Instruction.GetElementPtr && inst.ptr.name == allocaName) {
+                        val indices = extractConstantIndices(inst) ?: continue
+                        val fieldKey = normalizeIndices(indices)
+                        val fieldAllocaName = fieldAllocaNames[fieldKey] ?: continue
+                        gepToFieldAlloca[inst.dest.name] = fieldAllocaName
+                        deadInsts.add(inst.dest.name)
+                    }
+                }
+            }
+        }
+
+        val resultBlocks = fn.blocks.map { block ->
+            val newInsts = mutableListOf<Instruction>()
+
+            if (block == fn.blocks[0]) {
+                newInsts.addAll(newAllocas)
+            }
+
+            for (inst in block.instructions) {
+                val destName = inst.result?.name
+                if (destName != null && destName in deadInsts) continue
+
+                when (inst) {
+                    is Instruction.Load -> {
+                        val fieldAlloca = gepToFieldAlloca[inst.ptr.name]
+                        if (fieldAlloca != null) {
+                            newInsts.add(inst.copy(ptr = InstructionRef(fieldAlloca, Type.OpaquePointer)))
+                        } else {
+                            newInsts.add(rewriteOperands(inst, replacements))
+                        }
+                    }
+                    is Instruction.Store -> {
+                        val fieldAlloca = gepToFieldAlloca[inst.ptr.name]
+                        if (fieldAlloca != null) {
+                            newInsts.add(inst.copy(
+                                value = rewriteValue(inst.value, replacements),
+                                ptr = InstructionRef(fieldAlloca, Type.OpaquePointer),
+                            ))
+                        } else {
+                            newInsts.add(rewriteOperands(inst, replacements))
+                        }
+                    }
+                    else -> newInsts.add(rewriteOperands(inst, replacements))
+                }
+            }
+            BasicBlock(block.label, newInsts)
+        }
+
+        return fn.copy(blocks = resultBlocks)
+    }
+
+    private fun findReplaceableAllocas(fn: IrFunction): Map<String, Instruction.Alloca> {
+        val allocas = mutableMapOf<String, Instruction.Alloca>()
+
+        for (block in fn.blocks) {
+            for (inst in block.instructions) {
+                if (inst is Instruction.Alloca && inst.numElements == null && isAggregate(inst.allocType)) {
+                    allocas[inst.dest.name] = inst
+                }
+            }
+        }
+
+        if (allocas.isEmpty()) return emptyMap()
+
+        val gepResults = mutableMapOf<String, String>()
+        val nonReplaceable = mutableSetOf<String>()
+
+        for (block in fn.blocks) {
+            for (inst in block.instructions) {
+                if (inst is Instruction.GetElementPtr && inst.ptr.name in allocas) {
+                    val indices = extractConstantIndices(inst)
+                    if (indices == null) {
+                        nonReplaceable.add(inst.ptr.name)
+                        continue
+                    }
+                    val allocType = allocas[inst.ptr.name]!!.allocType
+                    val fieldType = resolveFieldType(allocType, normalizeIndices(indices))
+                    if (fieldType == null || isAggregate(fieldType)) {
+                        nonReplaceable.add(inst.ptr.name)
+                        continue
+                    }
+                    gepResults[inst.dest.name] = inst.ptr.name
+                    continue
+                }
+
+                for (op in allOperands(inst)) {
+                    val opName = op.name
+                    if (opName in allocas) {
+                        if (inst !is Instruction.GetElementPtr) {
+                            nonReplaceable.add(opName)
+                        }
+                    }
+                    if (opName in gepResults) {
+                        if (inst !is Instruction.Load && inst !is Instruction.Store) {
+                            nonReplaceable.add(gepResults[opName]!!)
+                        }
+                    }
+                }
+            }
+        }
+
+        return allocas.filterKeys { it !in nonReplaceable }
+    }
+
+    private fun isAggregate(type: Type): Boolean = when (type) {
+        is Type.Struct -> true
+        is Type.Array -> type.size <= MAX_ARRAY_SIZE
+        else -> false
+    }
+
+    private fun flattenFields(type: Type, prefix: List<Int> = emptyList()): List<Pair<List<Int>, Type>> {
+        return when (type) {
+            is Type.Struct -> type.fields.flatMapIndexed { i, fieldType ->
+                val path = prefix + i
+                if (isAggregate(fieldType)) flattenFields(fieldType, path)
+                else listOf(path to fieldType)
+            }
+            is Type.Array -> (0 until type.size.toInt()).flatMap { i ->
+                val path = prefix + i
+                if (isAggregate(type.element)) flattenFields(type.element, path)
+                else listOf(path to type.element)
+            }
+            else -> listOf(prefix to type)
+        }
+    }
+
+    private fun resolveFieldType(type: Type, indices: List<Int>): Type? {
+        var current = type
+        for (idx in indices) {
+            current = when (current) {
+                is Type.Struct -> current.fields.getOrNull(idx) ?: return null
+                is Type.Array -> if (idx < current.size) current.element else return null
+                else -> return null
+            }
+        }
+        return current
+    }
+
+    private fun extractConstantIndices(gep: Instruction.GetElementPtr): List<Int>? {
+        return gep.indices.map { idx ->
+            when (idx) {
+                is Constant.I32 -> idx.value
+                is Constant.I64 -> idx.value.toInt()
+                else -> return null
+            }
+        }
+    }
+
+    private fun normalizeIndices(indices: List<Int>): List<Int> {
+        return if (indices.isNotEmpty() && indices[0] == 0) indices.drop(1) else indices
+    }
+
+    private fun allOperands(inst: Instruction): List<Value> = when (inst) {
+        is Instruction.Load -> listOf(inst.ptr)
+        is Instruction.Store -> listOf(inst.value, inst.ptr)
+        is Instruction.GetElementPtr -> listOf(inst.ptr) + inst.indices
+        is Instruction.Call -> inst.args
+        is Instruction.Ret -> listOfNotNull(inst.value)
+        is Instruction.Add -> listOf(inst.lhs, inst.rhs)
+        is Instruction.Sub -> listOf(inst.lhs, inst.rhs)
+        is Instruction.Mul -> listOf(inst.lhs, inst.rhs)
+        is Instruction.ICmp -> listOf(inst.lhs, inst.rhs)
+        is Instruction.Select -> listOf(inst.condition, inst.trueValue, inst.falseValue)
+        is Instruction.Phi -> inst.incoming.map { it.first }
+        is Instruction.PtrToInt -> listOf(inst.value)
+        is Instruction.IntToPtr -> listOf(inst.value)
+        is Instruction.BitCast -> listOf(inst.value)
+        is Instruction.CondBr -> listOf(inst.condition)
+        is Instruction.ExtractValue -> listOf(inst.aggregate)
+        is Instruction.InsertValue -> listOf(inst.aggregate, inst.element)
+        else -> emptyList()
+    }
+
+    private fun rewriteValue(v: Value, replacements: Map<String, Value>): Value =
+        if (v is InstructionRef || v is Parameter) replacements[v.name] ?: v else v
+
+    private fun rewriteOperands(inst: Instruction, replacements: Map<String, Value>): Instruction {
+        if (replacements.isEmpty()) return inst
+        fun rw(v: Value): Value = rewriteValue(v, replacements)
+        return when (inst) {
+            is Instruction.Add -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Instruction.Sub -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Instruction.Mul -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Instruction.SDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Instruction.UDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Instruction.SRem -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Instruction.URem -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Instruction.And -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Instruction.Or -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Instruction.Xor -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Instruction.Shl -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Instruction.LShr -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Instruction.AShr -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Instruction.Neg -> inst.copy(operand = rw(inst.operand))
+            is Instruction.ICmp -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Instruction.FAdd -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Instruction.FSub -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Instruction.FMul -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Instruction.FDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Instruction.FNeg -> inst.copy(operand = rw(inst.operand))
+            is Instruction.FCmp -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Instruction.ZExt -> inst.copy(value = rw(inst.value))
+            is Instruction.SExt -> inst.copy(value = rw(inst.value))
+            is Instruction.IntTrunc -> inst.copy(value = rw(inst.value))
+            is Instruction.Trunc -> inst.copy(operand = rw(inst.operand))
+            is Instruction.Ret -> inst.copy(value = inst.value?.let { rw(it) })
+            is Instruction.Call -> inst.copy(args = inst.args.map { rw(it) })
+            is Instruction.Select -> inst.copy(condition = rw(inst.condition), trueValue = rw(inst.trueValue), falseValue = rw(inst.falseValue))
+            is Instruction.Store -> inst.copy(value = rw(inst.value), ptr = rw(inst.ptr))
+            is Instruction.Load -> inst.copy(ptr = rw(inst.ptr))
+            is Instruction.CondBr -> inst.copy(condition = rw(inst.condition))
+            is Instruction.SIToFP -> inst.copy(value = rw(inst.value))
+            is Instruction.UIToFP -> inst.copy(value = rw(inst.value))
+            is Instruction.FPToSI -> inst.copy(value = rw(inst.value))
+            is Instruction.FPToUI -> inst.copy(value = rw(inst.value))
+            is Instruction.FPExt -> inst.copy(value = rw(inst.value))
+            is Instruction.FPTrunc -> inst.copy(value = rw(inst.value))
+            is Instruction.GetElementPtr -> inst.copy(ptr = rw(inst.ptr), indices = inst.indices.map { rw(it) })
+            is Instruction.Phi -> inst.copy(incoming = inst.incoming.map { (v, l) -> rw(v) to l })
+            is Instruction.ExtractValue -> inst.copy(aggregate = rw(inst.aggregate))
+            is Instruction.InsertValue -> inst.copy(aggregate = rw(inst.aggregate), element = rw(inst.element))
+            else -> inst
+        }
+    }
+
+    private fun findMaxInstructionId(fn: IrFunction): Int {
+        var max = 0
+        for (block in fn.blocks) {
+            for (inst in block.instructions) {
+                val ref = inst.result as? InstructionRef ?: continue
+                val id = ref.name.removePrefix("%").toIntOrNull() ?: continue
+                if (id > max) max = id
+            }
+        }
+        for (p in fn.params) {
+            val id = p.name.removePrefix("%").toIntOrNull()
+            if (id != null && id > max) max = id
+        }
+        return max
+    }
+
+    companion object {
+        private const val MAX_ARRAY_SIZE = 16L
+    }
+}

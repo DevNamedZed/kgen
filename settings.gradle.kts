@@ -1,22 +1,15 @@
 rootProject.name = "kgen"
 
-// Core
-include("ir")
-include("pass")
-include("object")
-include("linker")
-include("tools")
+include("kgen")
 
-// Code generation
+// Code generation (separate — has gson dependency + application plugin)
 include("generator")
 
-// Backends
-include("backend-jvm")
-include("backend-arm64")
-include("backend-x86_64")
-include("backend-wasm")
-include("backend-riscv")
-include("backend-msil")
+// CLI (separate — has GraalVM native-image plugin)
+include("cli")
 
 // Integration tests
 include("integration")
+
+// Example language (JIT + mixed-mode demo)
+include("examples:lang")

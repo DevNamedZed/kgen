@@ -22,7 +22,7 @@ fun main(args: Array<String>) {
         "generator/src/main/resources/wasm"
     }
     val outputDir = args.getOrElse(1) {
-        "backend-wasm/src/main/kotlin/com/kgen/wasm"
+        "kgen/src/main/kotlin/org/kgen/backend/wasm"
     }
 
     val opcodes = loadOpcodes(File(resourceDir))
@@ -65,7 +65,7 @@ fun loadOpcodes(dir: File): List<WasmOp> {
 fun generateWasmOpCode(opcodes: List<WasmOp>, out: File) {
     val sb = StringBuilder()
     sb.appendLine("// Generated — do not edit")
-    sb.appendLine("package org.kgen.wasm")
+    sb.appendLine("package org.kgen.backend.wasm")
     sb.appendLine()
     sb.appendLine("enum class WasmOpCode(")
     sb.appendLine("    val opcode: Int,")
@@ -106,7 +106,7 @@ fun generateWasmOpCode(opcodes: List<WasmOp>, out: File) {
 fun generateWasmAssembler(opcodes: List<WasmOp>, out: File) {
     val sb = StringBuilder()
     sb.appendLine("// Generated — do not edit")
-    sb.appendLine("package org.kgen.wasm")
+    sb.appendLine("package org.kgen.backend.wasm")
     sb.appendLine()
     sb.appendLine("/** Generated assembler methods for all WASM opcodes. */")
     sb.appendLine("abstract class WasmAssemblerOps {")
@@ -166,7 +166,7 @@ fun generateWasmAssembler(opcodes: List<WasmOp>, out: File) {
 fun generateWasmDisassemblerTable(opcodes: List<WasmOp>, out: File) {
     val sb = StringBuilder()
     sb.appendLine("// Generated — do not edit")
-    sb.appendLine("package org.kgen.wasm")
+    sb.appendLine("package org.kgen.backend.wasm")
     sb.appendLine()
     sb.appendLine("/** Generated lookup table for WASM disassembly. */")
     sb.appendLine("object WasmDisassemblerTable {")
