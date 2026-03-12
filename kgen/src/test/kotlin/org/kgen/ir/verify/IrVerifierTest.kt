@@ -1388,6 +1388,345 @@ class IrVerifierTest {
         assertTrue(result.isValid, result.toString())
     }
 
+    // --- GCRoot / InteriorPtr gc strategy ---
+
+    @Test
+    fun `GCRoot without gc strategy fails`() {
+        val mod = Module(
+            name = "bad",
+            functions = listOf(
+                IrFunction(
+                    name = "no_gc",
+                    params = listOf(Parameter("p", Type.OpaquePointer, 0)),
+                    returnType = Type.Void,
+                    blocks = listOf(
+                        BasicBlock("entry", listOf(
+                            Instruction.GCRoot(Parameter("p", Type.OpaquePointer, 0), null),
+                            Instruction.Ret(null),
+                        ))
+                    ),
+                )
+            ),
+        )
+
+        val result = IrVerifier.verify(mod)
+        assertFalse(result.isValid)
+        assertTrue(result.errors.any { it.message.contains("GCRoot") && it.message.contains("gc strategy") }, result.toString())
+    }
+
+    @Test
+    fun `GCRoot with gc strategy passes`() {
+        val mod = Module(
+            name = "good",
+            functions = listOf(
+                IrFunction(
+                    name = "with_gc",
+                    params = listOf(Parameter("p", Type.OpaquePointer, 0)),
+                    returnType = Type.Void,
+                    blocks = listOf(
+                        BasicBlock("entry", listOf(
+                            Instruction.GCRoot(Parameter("p", Type.OpaquePointer, 0), null),
+                            Instruction.Ret(null),
+                        ))
+                    ),
+                    gc = "shadow-stack",
+                )
+            ),
+        )
+
+        val result = IrVerifier.verify(mod)
+        assertTrue(result.isValid, result.toString())
+    }
+
+    @Test
+    fun `InteriorPtr without gc strategy fails`() {
+        val refType = Type.Reference(Type.ClassRef("Obj"))
+        val mod = Module(
+            name = "bad",
+            functions = listOf(
+                IrFunction(
+                    name = "no_gc",
+                    params = listOf(Parameter("obj", refType, 0)),
+                    returnType = Type.Void,
+                    blocks = listOf(
+                        BasicBlock("entry", listOf(
+                            Instruction.InteriorPtr(InstructionRef("%0", Type.OpaquePointer), Parameter("obj", refType, 0), i32(0), Type.I32),
+                            Instruction.Ret(null),
+                        ))
+                    ),
+                )
+            ),
+        )
+
+        val result = IrVerifier.verify(mod)
+        assertFalse(result.isValid)
+        assertTrue(result.errors.any { it.message.contains("InteriorPtr") && it.message.contains("gc strategy") }, result.toString())
+    }
+
+    // --- Coroutine ordering ---
+
+    @Test
+    fun `CoroEnd without CoroBegin fails`() {
+        val mod = Module(
+            name = "bad",
+            functions = listOf(
+                IrFunction(
+                    name = "no_begin",
+                    params = listOf(Parameter("h", Type.OpaquePointer, 0)),
+                    returnType = Type.Void,
+                    blocks = listOf(
+                        BasicBlock("entry", listOf(
+                            Instruction.CoroEnd(Parameter("h", Type.OpaquePointer, 0)),
+                            Instruction.Ret(null),
+                        ))
+                    ),
+                )
+            ),
+        )
+
+        val result = IrVerifier.verify(mod)
+        assertFalse(result.isValid)
+        assertTrue(result.errors.any { it.message.contains("CoroBegin") }, result.toString())
+    }
+
+    @Test
+    fun `CoroEnd dominated by CoroBegin passes`() {
+        val mod = Module(
+            name = "good",
+            functions = listOf(
+                IrFunction(
+                    name = "coro",
+                    params = listOf(Parameter("id", Type.OpaquePointer, 0), Parameter("mem", Type.OpaquePointer, 1)),
+                    returnType = Type.Void,
+                    blocks = listOf(
+                        BasicBlock("entry", listOf(
+                            Instruction.CoroBegin(InstructionRef("%h", Type.OpaquePointer), Parameter("id", Type.OpaquePointer, 0), Parameter("mem", Type.OpaquePointer, 1)),
+                            Instruction.CoroEnd(InstructionRef("%h", Type.OpaquePointer)),
+                            Instruction.Ret(null),
+                        ))
+                    ),
+                )
+            ),
+        )
+
+        val result = IrVerifier.verify(mod)
+        assertTrue(result.isValid, result.toString())
+    }
+
+    @Test
+    fun `CoroResume not dominated by CoroBegin fails`() {
+        val mod = Module(
+            name = "bad",
+            functions = listOf(
+                IrFunction(
+                    name = "coro",
+                    params = listOf(Parameter("id", Type.OpaquePointer, 0), Parameter("mem", Type.OpaquePointer, 1)),
+                    returnType = Type.Void,
+                    blocks = listOf(
+                        BasicBlock("entry", listOf(
+                            Instruction.CoroResume(Parameter("id", Type.OpaquePointer, 0)),
+                            Instruction.Br("body"),
+                        )),
+                        BasicBlock("body", listOf(
+                            Instruction.CoroBegin(InstructionRef("%h", Type.OpaquePointer), Parameter("id", Type.OpaquePointer, 0), Parameter("mem", Type.OpaquePointer, 1)),
+                            Instruction.CoroEnd(InstructionRef("%h", Type.OpaquePointer)),
+                            Instruction.Ret(null),
+                        )),
+                    ),
+                )
+            ),
+        )
+
+        val result = IrVerifier.verify(mod)
+        assertFalse(result.isValid)
+        assertTrue(result.errors.any { it.message.contains("CoroResume") && it.message.contains("not dominated") }, result.toString())
+    }
+
+    // --- TagSwitch exhaustiveness ---
+
+    @Test
+    fun `TagSwitch without default and missing variants fails`() {
+        val unionType = Type.TaggedUnion("Shape", Type.I32, listOf(
+            TaggedVariant("Circle", 0, listOf(Type.F64)),
+            TaggedVariant("Rect", 1, listOf(Type.F64, Type.F64)),
+            TaggedVariant("Triangle", 2, listOf(Type.F64, Type.F64, Type.F64)),
+        ))
+        val mod = Module(
+            name = "bad",
+            functions = listOf(
+                IrFunction(
+                    name = "partial_switch",
+                    params = listOf(Parameter("s", unionType, 0)),
+                    returnType = Type.Void,
+                    blocks = listOf(
+                        BasicBlock("entry", listOf(
+                            Instruction.TagSwitch(Parameter("s", unionType, 0), listOf(
+                                Pair("Circle", "circle_bb"),
+                            ), defaultTarget = null),
+                        )),
+                        BasicBlock("circle_bb", listOf(Instruction.Ret(null))),
+                    ),
+                )
+            ),
+        )
+
+        val result = IrVerifier.verify(mod)
+        assertFalse(result.isValid)
+        assertTrue(result.errors.any { it.message.contains("missing variants") }, result.toString())
+    }
+
+    @Test
+    fun `TagSwitch without default covering all variants passes`() {
+        val unionType = Type.TaggedUnion("Shape", Type.I32, listOf(
+            TaggedVariant("Circle", 0, listOf(Type.F64)),
+            TaggedVariant("Rect", 1, listOf(Type.F64, Type.F64)),
+        ))
+        val mod = Module(
+            name = "good",
+            functions = listOf(
+                IrFunction(
+                    name = "exhaustive_switch",
+                    params = listOf(Parameter("s", unionType, 0)),
+                    returnType = Type.Void,
+                    blocks = listOf(
+                        BasicBlock("entry", listOf(
+                            Instruction.TagSwitch(Parameter("s", unionType, 0), listOf(
+                                Pair("Circle", "circle_bb"),
+                                Pair("Rect", "rect_bb"),
+                            ), defaultTarget = null),
+                        )),
+                        BasicBlock("circle_bb", listOf(Instruction.Ret(null))),
+                        BasicBlock("rect_bb", listOf(Instruction.Ret(null))),
+                    ),
+                )
+            ),
+        )
+
+        val result = IrVerifier.verify(mod)
+        assertTrue(result.isValid, result.toString())
+    }
+
+    @Test
+    fun `TagSwitch with default and partial cases passes`() {
+        val unionType = Type.TaggedUnion("Shape", Type.I32, listOf(
+            TaggedVariant("Circle", 0, listOf(Type.F64)),
+            TaggedVariant("Rect", 1, listOf(Type.F64, Type.F64)),
+        ))
+        val mod = Module(
+            name = "good",
+            functions = listOf(
+                IrFunction(
+                    name = "partial_with_default",
+                    params = listOf(Parameter("s", unionType, 0)),
+                    returnType = Type.Void,
+                    blocks = listOf(
+                        BasicBlock("entry", listOf(
+                            Instruction.TagSwitch(Parameter("s", unionType, 0), listOf(
+                                Pair("Circle", "circle_bb"),
+                            ), defaultTarget = "default_bb"),
+                        )),
+                        BasicBlock("circle_bb", listOf(Instruction.Ret(null))),
+                        BasicBlock("default_bb", listOf(Instruction.Ret(null))),
+                    ),
+                )
+            ),
+        )
+
+        val result = IrVerifier.verify(mod)
+        assertTrue(result.isValid, result.toString())
+    }
+
+    // --- CatchValue validation ---
+
+    @Test
+    fun `CatchValue outside catch handler fails`() {
+        val exType = Type.ClassRef("Exception")
+        val mod = Module(
+            name = "bad",
+            functions = listOf(
+                IrFunction(
+                    name = "bad_catch",
+                    params = emptyList(),
+                    returnType = Type.Void,
+                    blocks = listOf(
+                        BasicBlock("entry", listOf(
+                            Instruction.CatchValue(InstructionRef("%0", Type.Reference(exType)), exType),
+                            Instruction.Ret(null),
+                        ))
+                    ),
+                )
+            ),
+        )
+
+        val result = IrVerifier.verify(mod)
+        assertFalse(result.isValid)
+        assertTrue(result.errors.any { it.message.contains("CatchValue") && it.message.contains("not in a catch handler") }, result.toString())
+    }
+
+    @Test
+    fun `CatchValue in catch handler with matching type passes`() {
+        val exType = Type.ClassRef("Exception")
+        val mod = Module(
+            name = "good",
+            functions = listOf(
+                IrFunction(
+                    name = "good_catch",
+                    params = emptyList(),
+                    returnType = Type.Void,
+                    blocks = listOf(
+                        BasicBlock("entry", listOf(
+                            Instruction.TryCatchRegion("try_body", listOf(
+                                CatchHandler(exType, "handler"),
+                            )),
+                            Instruction.Br("try_body"),
+                        )),
+                        BasicBlock("try_body", listOf(Instruction.Ret(null))),
+                        BasicBlock("handler", listOf(
+                            Instruction.CatchValue(InstructionRef("%0", Type.Reference(exType)), exType),
+                            Instruction.Ret(null),
+                        )),
+                    ),
+                )
+            ),
+        )
+
+        val result = IrVerifier.verify(mod)
+        assertTrue(result.isValid, result.toString())
+    }
+
+    @Test
+    fun `CatchValue with mismatched exception type fails`() {
+        val exType = Type.ClassRef("Exception")
+        val otherType = Type.ClassRef("IOException")
+        val mod = Module(
+            name = "bad",
+            functions = listOf(
+                IrFunction(
+                    name = "bad_catch_type",
+                    params = emptyList(),
+                    returnType = Type.Void,
+                    blocks = listOf(
+                        BasicBlock("entry", listOf(
+                            Instruction.TryCatchRegion("try_body", listOf(
+                                CatchHandler(exType, "handler"),
+                            )),
+                            Instruction.Br("try_body"),
+                        )),
+                        BasicBlock("try_body", listOf(Instruction.Ret(null))),
+                        BasicBlock("handler", listOf(
+                            Instruction.CatchValue(InstructionRef("%0", Type.Reference(otherType)), otherType),
+                            Instruction.Ret(null),
+                        )),
+                    ),
+                )
+            ),
+        )
+
+        val result = IrVerifier.verify(mod)
+        assertFalse(result.isValid)
+        assertTrue(result.errors.any { it.message.contains("CatchValue exception type") && it.message.contains("doesn't match") }, result.toString())
+    }
+
     @Test
     fun `invoke validates arg types`() {
         val mod = Module(

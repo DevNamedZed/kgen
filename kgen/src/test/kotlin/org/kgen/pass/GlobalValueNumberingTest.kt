@@ -199,18 +199,20 @@ class GlobalValueNumberingTest {
     }
 
     @Test
-    fun `preserves loads`() {
+    fun `eliminates redundant load with no intervening store`() {
+        // Two consecutive loads from the same pointer with no store between
+        // are redundant — the second can be eliminated via alias analysis.
         val module = buildAndGvn {
             val params = createFunction("f", listOf(Param("p", Type.Pointer(Type.I32))), Type.I32)
             positionAtEnd(appendBlock("entry"))
             val a = load(Type.I32, params[0])
-            val b = load(Type.I32, params[0])  // NOT redundant — memory may change
+            val b = load(Type.I32, params[0])  // redundant — no intervening store
             val sum = add(a, b)
             ret(sum)
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
         val loadCount = insts.count { it is Instruction.Load }
-        assertEquals(2, loadCount, "Loads should not be eliminated by GVN")
+        assertEquals(1, loadCount, "Second load should be eliminated (no intervening store)")
     }
 }

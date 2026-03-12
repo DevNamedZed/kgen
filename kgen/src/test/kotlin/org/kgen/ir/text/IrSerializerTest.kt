@@ -181,4 +181,78 @@ class IrSerializerTest {
         val restoredText = IrPrinter.print(restored)
         assertEquals(original, restoredText)
     }
+
+    @Test
+    fun `round-trip module constraints`() {
+        val mod = Module(
+            name = "constrained",
+            constraints = IrConstraints.NATIVE,
+            functions = listOf(
+                IrFunction("f", emptyList(), Type.Void, listOf(BasicBlock("entry", listOf(Instruction.Ret(null))))),
+            ),
+        )
+
+        val restored = serializer.deserialize(serializer.serialize(mod))
+        assertNotNull(restored.constraints)
+        assertEquals(mod.constraints, restored.constraints)
+        assertTrue(IrCategory.ARITHMETIC in restored.constraints!!)
+        assertTrue(IrCategory.MEMORY in restored.constraints!!)
+        assertFalse(IrCategory.OBJECT in restored.constraints!!)
+    }
+
+    @Test
+    fun `round-trip null constraints`() {
+        val mod = Module(name = "unconstrained")
+        val restored = serializer.deserialize(serializer.serialize(mod))
+        assertNull(restored.constraints)
+    }
+
+    @Test
+    fun `round-trip submodules`() {
+        val mod = Module(
+            name = "with_submodules",
+            functions = listOf(
+                IrFunction("native_fn", emptyList(), Type.Void, listOf(BasicBlock("entry", listOf(Instruction.Ret(null))))),
+                IrFunction("managed_fn", emptyList(), Type.Void, listOf(BasicBlock("entry", listOf(Instruction.Ret(null))))),
+            ),
+            globals = listOf(Global("g", Type.I32)),
+            submodules = listOf(
+                Submodule("native_part", IrConstraints.NATIVE, listOf("native_fn"), listOf("g")),
+                Submodule("managed_part", IrConstraints.MANAGED_VM, listOf("managed_fn"), emptyList()),
+            ),
+        )
+
+        val restored = serializer.deserialize(serializer.serialize(mod))
+        assertEquals(2, restored.submodules.size)
+
+        val native = restored.submodules[0]
+        assertEquals("native_part", native.name)
+        assertEquals(IrConstraints.NATIVE, native.constraints)
+        assertEquals(listOf("native_fn"), native.functions)
+        assertEquals(listOf("g"), native.globals)
+
+        val managed = restored.submodules[1]
+        assertEquals("managed_part", managed.name)
+        assertEquals(IrConstraints.MANAGED_VM, managed.constraints)
+        assertEquals(listOf("managed_fn"), managed.functions)
+        assertTrue(managed.globals.isEmpty())
+    }
+
+    @Test
+    fun `round-trip constraints and submodules preserve printer output`() {
+        val mod = Module(
+            name = "full",
+            constraints = IrConstraints.MIXED,
+            functions = listOf(
+                IrFunction("f", emptyList(), Type.Void, listOf(BasicBlock("entry", listOf(Instruction.Ret(null))))),
+            ),
+            submodules = listOf(
+                Submodule("sub", IrConstraints.NATIVE, listOf("f"), emptyList()),
+            ),
+        )
+
+        val original = IrPrinter.print(mod)
+        val restored = serializer.deserialize(serializer.serialize(mod))
+        assertEquals(original, IrPrinter.print(restored))
+    }
 }

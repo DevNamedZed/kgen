@@ -8,6 +8,7 @@ data class MachOFile(
     val uuid: ByteArray?,
     val mainEntryOffset: Long?,
     val sourceVersion: Long?,
+    val chainedFixups: ChainedFixups? = null,
 ) {
     val isObject: Boolean get() = header.fileType == MachO.MH_OBJECT
     val isExecutable: Boolean get() = header.fileType == MachO.MH_EXECUTE

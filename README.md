@@ -1,18 +1,34 @@
 # kgen
 
-Compiler backend toolkit for the JVM. One IR in, native binaries out.
+> **Experimental** — APIs are unstable and subject to change.
+
+Compiler infrastructure and binary toolkit for the JVM. Build compilers, JITs, binary analysis tools, and native executables — all from Java or Kotlin, with zero native dependencies.
 
 ```
-Your Language → [Parser] → kgen IR → [Optimize] → x86-64 / ARM64 / WASM / RISC-V
-                                                         ↓
-                                                   ELF / PE / Mach-O / .wasm
+Source → [Your Frontend] → kgen IR → [Optimize] → x86-64 / ARM64 / RISC-V / WASM
+                                                          ↓
+                                                    ELF / PE / Mach-O / .wasm
 ```
 
-Pure JVM, no native dependencies.
+## Use cases
+
+**Build a compiler.** Emit kgen IR from your parser. The optimizer and code generators handle the rest — register allocation, instruction selection, binary output. Ship native executables for Linux, Windows, and macOS from one codebase.
+
+**JIT-compile at runtime.** Load IR modules into the JIT engine, call compiled functions directly from Java via `MethodHandle`. Supports tiered compilation and lazy symbol resolution.
+
+**Compile Java classes to native.** Feed `.class` files to `NativeCompiler` and get a standalone ELF, PE, or Mach-O executable. No JVM required at runtime.
+
+**Generate code at runtime.** `DynamicMethod` compiles a single function on demand — define the body with the IR builder, call `invoke()`, get native performance with no intermediate files.
+
+**Analyze binaries.** Read ELF, PE/COFF, Mach-O, WASM modules, JVM class files, and .NET assemblies. Query symbols, imports, relocations, sections, CLR metadata. Disassemble x86-64, ARM64, RISC-V, WASM, JVM bytecode, and CIL.
+
+**Patch and transform binaries.** Rewrite RPATHs, rename symbols, diff binaries section-by-section. Demangle Itanium, MSVC, and Rust name schemes.
+
+**Write an assembler.** Use the assembler APIs directly — `X86Assembler`, `Arm64Assembler`, `RiscVAssembler`, `WasmAssembler` — for structured machine code emission with type-safe register and memory operand models.
 
 ## Examples
 
-### Compile IR to an ELF executable
+### IR to native executable
 
 ```java
 var ir = new IrBuilder("mymodule", Target.x86_64());
@@ -29,39 +45,56 @@ byte[] elf = new X86CodeGenerator().generate(ir.build(),
 Files.write(Path.of("output"), elf);
 ```
 
-### Hello world with dynamic linking
+### JIT compilation
 
-```kotlin
-val ir = IrBuilder("hello", Target.x86_64())
+```java
+var jit = new JitEngine(new X86CodeGenerator());
+jit.addModule(irModule);
 
-val strRef = ir.addGlobal("msg", Type.Array(Type.I8, 14),
-    Constant.StringConst("Hello, World!"), isConstant = true, linkage = Linkage.INTERNAL)
-ir.declareFunction("puts", listOf(Param("s", Type.OpaquePointer)), Type.I32)
-
-ir.createFunction("main", emptyList(), Type.I32)
-ir.positionAtEnd(ir.appendBlock("entry"))
-ir.call("puts", listOf(strRef), Type.I32)
-ir.ret(Constant.I32(0))
-ir.finalizeFunction()
-
-val binary = X86CodeGenerator().generate(ir.build(),
-    CodeGenOptions(outputFormat = OutputFormat.BINARY))
+// Get a MethodHandle and call it
+MethodHandle add = jit.handle("add",
+    FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
+int result = (int) add.invokeExact(2, 3); // 5
 ```
 
-### Read and inspect binaries
+### Java to native executable
+
+```java
+byte[] classBytes = Files.readAllBytes(Path.of("App.class"));
+byte[] exe = new NativeCompiler(Target.x86_64(), OutputPlatform.LINUX)
+    .compile(List.of(classBytes), "com/example/App");
+Files.write(Path.of("app"), exe);
+// ./app runs without a JVM
+```
+
+### Runtime code generation
+
+```java
+var square = DynamicMethod.native_("square",
+    new Signature(Type.I32, List.of(new Param("x", Type.I32))));
+square.body((ir, params) -> {
+    ir.ret(ir.mul(params.get(0), params.get(0)));
+});
+int result = (int) square.invoke(7); // 49
+```
+
+### Binary inspection
 
 ```kotlin
+// ELF
 val elf = ElfReader.read(File("/usr/bin/ls").readBytes())
 for (sym in elf.symbols) println("${sym.name} @ 0x${sym.value.toString(16)}")
 
+// PE
 val pe = PeReader.read(File("kernel32.dll").readBytes())
 for (imp in pe.importDirectories) println("${imp.name}: ${imp.entries.size} imports")
 
-val instructions = X86Disassembler().disassembleRaw(codeBytes, baseAddress = 0x401000)
-for (inst in instructions) println(inst)  // "0x00401000:  push rbp"
+// Unified reflection API — works across ELF, PE, Mach-O, WASM, JVM, CLR
+val mod = Module.fromFile("libc.so.6")
+for (fn in mod.functions()) println("${fn.name()}: ${fn.signature()}")
 ```
 
-### Use the assembler directly
+### Assembler
 
 ```kotlin
 val asm = X86Assembler()
@@ -73,9 +106,15 @@ asm.ret_()
 val machineCode: ByteArray = asm.assemble()
 ```
 
-### CLI
+### Disassembler
 
-The `kgen` CLI builds as a native binary via GraalVM native-image.
+```kotlin
+val disasm = X86Disassembler()
+val instructions = disasm.disassembleRaw(codeBytes, baseAddress = 0x401000)
+for (inst in instructions) println(inst) // "0x00401000:  push rbp"
+```
+
+### CLI
 
 ```bash
 kgen compile hello.ir -t x86_64 -o hello
@@ -90,31 +129,69 @@ kgen classinfo App.class -c
 kgen wasminfo module.wasm --all
 ```
 
-## What's in the box
+The CLI builds as a native binary via GraalVM native-image (~18 MB, no JVM startup).
 
-**IR** — SSA-based, LLVM-style. ~120 instruction types. Text and binary serialization. Full verifier.
+## Architecture
 
-**Optimization** — Mem2Reg, constant folding, DCE, GVN, inlining, jump threading, LICM, SROA. Preset pipelines O0–O3.
+### IR
 
-**Backends** — x86-64 (full: 918 instruction forms, VEX/EVEX, register allocator, SSE2 FP, varargs, structs), ARM64 (full: AAPCS64, FP), RISC-V (RV64IMAFDC assembler/disassembler, RV64IM codegen), WASM (406 opcodes, module reader/writer).
+SSA-based, LLVM-style. ~120 instruction types covering arithmetic, control flow, memory, aggregates, exceptions, atomics, SIMD, GC intrinsics, and debug info. Text and binary serialization. Full verifier. Tiered: high-level IR for managed targets (JVM, WASM), low-level for native, with lowering passes to convert between them.
 
-**Binary formats** — Read, write, and link ELF, PE/COFF, Mach-O. Read/write WASM modules, JVM class files, .NET CLR metadata, ar archives.
+### Optimization
 
-**Tools** — Binary inspection, patching, diffing, demangling (Itanium/MSVC/Rust), hex dump. All usable as APIs or via the CLI.
+Mem2Reg, constant folding, DCE, GVN, inlining, jump threading, LICM, SROA. Preset pipelines O0–O3. Pass infrastructure supports custom passes.
+
+### Code generators
+
+| Target | Assembler | Disassembler | Code generator |
+|--------|-----------|--------------|----------------|
+| x86-64 | 918 instruction forms, VEX/EVEX | Full | Full (register allocator, SSE2 FP, varargs, structs, TLS) |
+| ARM64 | Full | Full | Full (AAPCS64, FP, TLS) |
+| RISC-V | RV64IMAFDC | Full | RV64IM (FP, TLS) |
+| WASM | 406 opcodes | Full | Full (module reader/writer) |
+| JVM | Full | Full | Full (class file reader/writer/builder) |
+| CIL/.NET | Full | Full | Full (CLR metadata, mixed-mode) |
+
+### Binary formats
+
+Read, write, and link ELF (32/64-bit). Read, write PE/COFF. Read, write Mach-O (including chained fixups). Read/write WASM modules, JVM class files, .NET CLR metadata, ar archives (.a/.lib, GNU + BSD).
+
+Static and dynamic linkers for ELF. Shared library linker for Mach-O (.dylib).
+
+### JIT engine
+
+Compiles IR to native code, loads into executable memory, resolves symbols, patches relocations. Tiered compilation (interpreter tier-0, baseline tier-1, optimized tier-2). Lazy stubs for deferred compilation. Managed runtime with bump-heap allocator and mark-sweep GC.
+
+### Reflection
+
+Unified binary inspection API across ELF, PE, Mach-O, WASM, JVM class files, and .NET assemblies. Query symbols, functions, types, methods, fields from any supported format through a single interface. Runtime process introspection on Linux and Windows.
+
+### Java-to-native compilation
+
+Compiles JVM bytecode to native code. Supports arithmetic, branches, loops, recursion, instance methods, object allocation, static/instance fields, arrays, string constants, exception handling, `invokedynamic` (string concat, lambdas), vtable dispatch. Platform-conditional compilation via `Kgen.isWindows()` / `Kgen.isLinux()` / `Kgen.isMacOS()` compile-time constants.
 
 ## Building
 
 Requires JDK 21+.
 
 ```bash
-./gradlew test
-./gradlew :cli:shadowJar
-JAVA_HOME=/path/to/graalvm ./gradlew :cli:nativeCompile
+./gradlew test                    # run tests (~14,500)
+./gradlew :cli:shadowJar          # fat JAR
+JAVA_HOME=/path/to/graalvm ./gradlew :cli:nativeCompile  # native binary
+```
+
+## Maven coordinates
+
+```xml
+<dependency>
+    <groupId>org.kgen</groupId>
+    <artifactId>kgen</artifactId>
+</dependency>
 ```
 
 ## Status
 
-Work in progress.
+Experimental. Under active development. APIs will change.
 
 ## License
 

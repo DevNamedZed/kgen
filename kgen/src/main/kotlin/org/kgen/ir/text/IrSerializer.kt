@@ -52,6 +52,24 @@ class IrSerializer {
             writeString(out, it.key)
             writeMetadata(out, it.value)
         }
+
+        // Constraints
+        if (m.constraints != null) {
+            out.writeByte(1)
+            writeList(out, m.constraints.toList()) { out.writeByte(it.ordinal) }
+        } else {
+            out.writeByte(0)
+        }
+
+        // Submodules
+        writeList(out, m.submodules) { writeSubmodule(out, it) }
+    }
+
+    private fun writeSubmodule(out: DataOutputStream, sub: Submodule) {
+        writeString(out, sub.name)
+        writeList(out, sub.constraints.toList()) { out.writeByte(it.ordinal) }
+        writeList(out, sub.functions) { writeString(out, it) }
+        writeList(out, sub.globals) { writeString(out, it) }
     }
 
     private fun readModule(inp: DataInputStream): Module {
@@ -73,6 +91,15 @@ class IrSerializer {
             readString(inp) to readMetadata(inp)
         }.toMap()
 
+        // Constraints
+        val hasConstraints = inp.readByte().toInt()
+        val constraints = if (hasConstraints == 1) {
+            readList(inp) { IrCategory.entries[inp.readByte().toInt()] }.toSet()
+        } else null
+
+        // Submodules
+        val submodules = readList(inp) { readSubmodule(inp) }
+
         return Module(
             name = name,
             targetTriple = targetTriple,
@@ -87,7 +114,17 @@ class IrSerializer {
             metadata = metadata,
             sourceFile = sourceFile,
             targetFeatures = targetFeatures,
+            constraints = constraints,
+            submodules = submodules,
         )
+    }
+
+    private fun readSubmodule(inp: DataInputStream): Submodule {
+        val name = readString(inp)
+        val constraints = readList(inp) { IrCategory.entries[inp.readByte().toInt()] }.toSet()
+        val functions = readList(inp) { readString(inp) }
+        val globals = readList(inp) { readString(inp) }
+        return Submodule(name, constraints, functions, globals)
     }
 
     // Type serialization
@@ -329,6 +366,8 @@ class IrSerializer {
             is Instruction.AShr -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); out.writeBoolean(inst.exact) }
             is Instruction.RotateLeft -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeValue(out, inst.amount) }
             is Instruction.RotateRight -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeValue(out, inst.amount) }
+            is Instruction.Rotl -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeValue(out, inst.amount) }
+            is Instruction.Rotr -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeValue(out, inst.amount) }
 
             is Instruction.Ctlz -> { writeValue(out, inst.dest); writeValue(out, inst.operand); out.writeBoolean(inst.isZeroPoison) }
             is Instruction.Cttz -> { writeValue(out, inst.dest); writeValue(out, inst.operand); out.writeBoolean(inst.isZeroPoison) }
@@ -452,6 +491,11 @@ class IrSerializer {
             is Instruction.Box -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.boxType) }
             is Instruction.Unbox -> { writeValue(out, inst.dest); writeValue(out, inst.obj); writeType(out, inst.unboxType) }
 
+            is Instruction.CatchValue -> { writeValue(out, inst.dest); writeType(out, inst.exceptionType) }
+            is Instruction.MakeWeakRef -> { writeValue(out, inst.dest); writeValue(out, inst.obj) }
+            is Instruction.ReadWeakRef -> { writeValue(out, inst.dest); writeValue(out, inst.weakRef) }
+            is Instruction.ClearWeakRef -> writeValue(out, inst.weakRef)
+
             is Instruction.ClosureCreate -> { writeValue(out, inst.dest); writeValue(out, inst.function); writeList(out, inst.captures) { writeValue(out, it) }; writeType(out, inst.closureType) }
             is Instruction.ClosureInvoke -> { writeNullableValue(out, inst.dest); writeValue(out, inst.closure); writeList(out, inst.args) { writeValue(out, it) }; writeType(out, inst.returnType) }
 
@@ -547,6 +591,8 @@ class IrSerializer {
         I_ASHR -> Instruction.AShr(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), inp.readBoolean())
         I_ROTL -> Instruction.RotateLeft(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
         I_ROTR -> Instruction.RotateRight(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_ROTL2 -> Instruction.Rotl(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_ROTR2 -> Instruction.Rotr(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
 
         I_CTLZ -> Instruction.Ctlz(readValue(inp) as InstructionRef, readValue(inp), inp.readBoolean())
         I_CTTZ -> Instruction.Cttz(readValue(inp) as InstructionRef, readValue(inp), inp.readBoolean())
@@ -659,6 +705,11 @@ class IrSerializer {
 
         I_BOX -> Instruction.Box(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
         I_UNBOX -> Instruction.Unbox(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
+
+        I_CATCHVALUE -> Instruction.CatchValue(readValue(inp) as InstructionRef, readType(inp))
+        I_MAKEWEAKREF -> Instruction.MakeWeakRef(readValue(inp) as InstructionRef, readValue(inp))
+        I_READWEAKREF -> Instruction.ReadWeakRef(readValue(inp) as InstructionRef, readValue(inp))
+        I_CLEARWEAKREF -> Instruction.ClearWeakRef(readValue(inp))
 
         I_CLOSURE_CREATE -> Instruction.ClosureCreate(readValue(inp) as InstructionRef, readValue(inp), readList(inp) { readValue(inp) }, readType(inp) as Type.Function)
         I_CLOSURE_INVOKE -> Instruction.ClosureInvoke(readNullableValue(inp) as InstructionRef?, readValue(inp), readList(inp) { readValue(inp) }, readType(inp))
@@ -978,6 +1029,7 @@ class IrSerializer {
         is Instruction.And -> I_AND; is Instruction.Or -> I_OR; is Instruction.Xor -> I_XOR; is Instruction.Not -> I_NOT
         is Instruction.Shl -> I_SHL; is Instruction.LShr -> I_LSHR; is Instruction.AShr -> I_ASHR
         is Instruction.RotateLeft -> I_ROTL; is Instruction.RotateRight -> I_ROTR
+        is Instruction.Rotl -> I_ROTL2; is Instruction.Rotr -> I_ROTR2
         is Instruction.Ctlz -> I_CTLZ; is Instruction.Cttz -> I_CTTZ; is Instruction.Ctpop -> I_CTPOP
         is Instruction.BSwap -> I_BSWAP; is Instruction.BitReverse -> I_BITREVERSE
         is Instruction.ICmp -> I_ICMP; is Instruction.FCmp -> I_FCMP
@@ -1019,6 +1071,8 @@ class IrSerializer {
         is Instruction.MonitorEnter -> I_MONITORENTER; is Instruction.MonitorExit -> I_MONITOREXIT
         is Instruction.Throw -> I_THROW; is Instruction.TryCatchRegion -> I_TRYCATCH
         is Instruction.Box -> I_BOX; is Instruction.Unbox -> I_UNBOX
+        is Instruction.CatchValue -> I_CATCHVALUE; is Instruction.MakeWeakRef -> I_MAKEWEAKREF
+        is Instruction.ReadWeakRef -> I_READWEAKREF; is Instruction.ClearWeakRef -> I_CLEARWEAKREF
         is Instruction.ClosureCreate -> I_CLOSURE_CREATE; is Instruction.ClosureInvoke -> I_CLOSURE_INVOKE
         is Instruction.ConstructVariant -> I_CONSTRUCT_VARIANT; is Instruction.GetTag -> I_GETTAG
         is Instruction.GetVariantField -> I_GETVARIANTFIELD; is Instruction.TagSwitch -> I_TAGSWITCH
@@ -1036,7 +1090,7 @@ class IrSerializer {
 
     companion object {
         private const val MAGIC = 0x4B47454E // "KGEN"
-        private const val VERSION = 1
+        private const val VERSION = 2
 
         // Type tags
         private const val T_I1 = 0; private const val T_I8 = 1; private const val T_I16 = 2; private const val T_I32 = 3
@@ -1125,5 +1179,8 @@ class IrSerializer {
         private const val I_ASSUME = 163; private const val I_EXPECT = 164
         private const val I_PIN = 165; private const val I_UNPIN = 166; private const val I_INTERIOR_PTR = 167
         private const val I_WRITE_BARRIER = 168; private const val I_READ_BARRIER = 169; private const val I_MANAGED_CALL = 170
+        private const val I_ROTL2 = 171; private const val I_ROTR2 = 172
+        private const val I_CATCHVALUE = 173; private const val I_MAKEWEAKREF = 174
+        private const val I_READWEAKREF = 175; private const val I_CLEARWEAKREF = 176
     }
 }

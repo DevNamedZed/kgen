@@ -6,11 +6,12 @@ enum class ElfSegmentType(val code: Int) {
     INTERP(3),
     NOTE(4),
     PHDR(6),
+    TLS(7),
     GNU_STACK(0x6474e551),
     GNU_RELRO(0x6474e552);
 
     companion object {
-        fun fromCode(code: Int) = entries.firstOrNull { it.code == code }
+        @JvmStatic fun fromCode(code: Int) = entries.firstOrNull { it.code == code }
     }
 }
 

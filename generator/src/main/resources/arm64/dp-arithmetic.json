@@ -1,0 +1,90 @@
+[
+  {
+    "mnemonic": "add",
+    "summary": "Add",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "8B000000", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "0B000000", "format": "reg3" } },
+      { "operands": ["x", "x", "imm12"], "encoding": { "base": "91000000", "format": "reg2_imm12" } },
+      { "operands": ["w", "w", "imm12"], "encoding": { "base": "11000000", "format": "reg2_imm12" } }
+    ]
+  },
+  {
+    "mnemonic": "adds",
+    "summary": "Add and set flags",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "AB000000", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "2B000000", "format": "reg3" } },
+      { "operands": ["x", "x", "imm12"], "encoding": { "base": "B1000000", "format": "reg2_imm12" } },
+      { "operands": ["w", "w", "imm12"], "encoding": { "base": "31000000", "format": "reg2_imm12" } }
+    ]
+  },
+  {
+    "mnemonic": "sub",
+    "summary": "Subtract",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "CB000000", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "4B000000", "format": "reg3" } },
+      { "operands": ["x", "x", "imm12"], "encoding": { "base": "D1000000", "format": "reg2_imm12" } },
+      { "operands": ["w", "w", "imm12"], "encoding": { "base": "51000000", "format": "reg2_imm12" } }
+    ]
+  },
+  {
+    "mnemonic": "subs",
+    "summary": "Subtract and set flags",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "EB000000", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "6B000000", "format": "reg3" } },
+      { "operands": ["x", "x", "imm12"], "encoding": { "base": "F1000000", "format": "reg2_imm12" } },
+      { "operands": ["w", "w", "imm12"], "encoding": { "base": "71000000", "format": "reg2_imm12" } }
+    ]
+  },
+  {
+    "mnemonic": "adc",
+    "summary": "Add with carry",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "9A000000", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "1A000000", "format": "reg3" } }
+    ]
+  },
+  {
+    "mnemonic": "adcs",
+    "summary": "Add with carry and set flags",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "BA000000", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "3A000000", "format": "reg3" } }
+    ]
+  },
+  {
+    "mnemonic": "sbc",
+    "summary": "Subtract with carry",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "DA000000", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "5A000000", "format": "reg3" } }
+    ]
+  },
+  {
+    "mnemonic": "sbcs",
+    "summary": "Subtract with carry and set flags",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "FA000000", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "7A000000", "format": "reg3" } }
+    ]
+  },
+  {
+    "mnemonic": "neg",
+    "summary": "Negate (alias: SUB Rd, ZR, Rm)",
+    "forms": [
+      { "operands": ["x", "x"], "encoding": { "base": "CB0003E0", "format": "rd_rm" } },
+      { "operands": ["w", "w"], "encoding": { "base": "4B0003E0", "format": "rd_rm" } }
+    ]
+  },
+  {
+    "mnemonic": "negs",
+    "summary": "Negate and set flags (alias: SUBS Rd, ZR, Rm)",
+    "forms": [
+      { "operands": ["x", "x"], "encoding": { "base": "EB0003E0", "format": "rd_rm" } },
+      { "operands": ["w", "w"], "encoding": { "base": "6B0003E0", "format": "rd_rm" } }
+    ]
+  }
+]

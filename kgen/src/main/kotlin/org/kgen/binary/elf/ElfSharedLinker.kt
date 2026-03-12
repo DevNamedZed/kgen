@@ -36,9 +36,10 @@ class ElfSharedLinker(
         require(objects.isNotEmpty()) { "No object files to link" }
         val merger = SectionMerger(objects)
         val symbols = SymbolResolver(objects, merger).resolve()
-        val layout = SharedLayout(merger, symbols, soname, sharedLibs)
-        val relocated = RelocationApplier(objects, merger, symbols, layout).apply()
-        return SharedEmitter(layout, relocated, merger, symbols, machine).emit()
+        val layout = SharedLayout(merger, symbols, soname, sharedLibs, objects, machine)
+        val applier = RelocationApplier(objects, merger, symbols, layout, machine)
+        val relocated = applier.apply()
+        return SharedEmitter(layout, relocated, applier.dataRelocations, merger, symbols, machine).emit()
     }
 
     private data class SectionPlacement(
@@ -55,6 +56,8 @@ class ElfSharedLinker(
         val size: Long,
     )
 
+    private data class DebugSection(val name: String, val data: ByteArray)
+
     private class SectionMerger(private val objects: List<ObjectFile>) {
         val text = ByteArrayOutputStream()
         val data = ByteArrayOutputStream()
@@ -64,10 +67,17 @@ class ElfSharedLinker(
         val dataPlacements = mutableListOf<SectionPlacement>()
         val rodataPlacements = mutableListOf<SectionPlacement>()
         val sectionKindMap = mutableMapOf<Pair<Int, String>, SectionKind>()
+        val debugSections = mutableListOf<DebugSection>()
 
         init {
+            val debugBufs = mutableMapOf<String, ByteArrayOutputStream>()
+
             for ((objIdx, obj) in objects.withIndex()) {
                 for (sec in obj.sections) {
+                    if (sec.kind.isNonLoaded) {
+                        debugBufs.getOrPut(sec.name) { ByteArrayOutputStream() }.write(sec.data)
+                        continue
+                    }
                     val (stream, placements) = when (sec.kind) {
                         SectionKind.TEXT -> text to textPlacements
                         SectionKind.DATA -> data to dataPlacements
@@ -79,6 +89,10 @@ class ElfSharedLinker(
                     sectionKindMap[objIdx to sec.name] = sec.kind
                     stream.write(sec.data)
                 }
+            }
+
+            for ((name, buf) in debugBufs) {
+                debugSections.add(DebugSection(name, buf.toByteArray()))
             }
         }
 
@@ -114,6 +128,9 @@ class ElfSharedLinker(
                         val placement = merger.placementsFor(kind)
                             .firstOrNull { it.objIdx == objIdx && it.sectionName == sym.section }
                             ?: continue
+                        val existing = globalSymbols[sym.name]
+                        // GLOBAL always wins over WEAK; skip if existing is GLOBAL
+                        if (existing != null && existing.binding == SymbolBinding.GLOBAL && sym.binding == SymbolBinding.WEAK) continue
                         globalSymbols[sym.name] = ResolvedSymbol(
                             sym.name, sym.value + placement.mergedOffset, kind, objIdx,
                             sym.binding, sym.kind, sym.size,
@@ -139,6 +156,8 @@ class ElfSharedLinker(
         val symbols: SymbolResolver,
         soname: String?,
         sharedLibs: List<String>,
+        objects: List<ObjectFile>,
+        machine: Int,
     ) {
         val importedSymbols = symbols.importedSymbols
         val exportedSymbols = symbols.exportedSymbols
@@ -178,6 +197,13 @@ class ElfSharedLinker(
         val dataOffset: Long; val dataVaddr: Long
         val rwVaddrBase: Long; val rwSegmentFileSize: Long
 
+        val hasDebugSections = merger.debugSections.isNotEmpty()
+        val debugOffsets = mutableListOf<Long>()
+        val shstrtabOffset: Long
+        val shstrtabData: ByteArray
+        val shoff: Long
+        val numShdrs: Int
+
         // Data relocations that need R_RELATIVE at runtime
         val dataRelocations = mutableListOf<Long>()
 
@@ -200,8 +226,9 @@ class ElfSharedLinker(
             // Exported symbols (defined) — will patch value after layout
             for (sym in exportedSymbols) {
                 val elfType = if (sym.kind == SymbolKind.FUNCTION) ElfSymbolType.FUNC else ElfSymbolType.OBJECT
+                val elfBind = if (sym.binding == SymbolBinding.WEAK) ElfSymbolBinding.WEAK else ElfSymbolBinding.GLOBAL
                 writeSymEntry(dynsymBuf, dynstrSymOffsets[sym.name]!!,
-                    Elf.stInfo(ElfSymbolBinding.GLOBAL, elfType),
+                    Elf.stInfo(elfBind, elfType),
                     ElfSymbolVisibility.DEFAULT.code,
                     1, // shndx placeholder (will be patched or ignored by loader)
                     0, // value placeholder — patched after layout
@@ -218,22 +245,26 @@ class ElfSharedLinker(
             val gotSize = (gotReserved + numPltEntries) * GOT_ENTRY_SIZE
             pltSize = if (numPltEntries > 0) PLT0_SIZE + numPltEntries * PLT_ENTRY_SIZE else 0
 
-            // Compute number of R_RELATIVE entries for .rela.dyn (data section abs relocs)
-            // We'll compute the actual count after layout, but need to reserve space now
-            // Count absolute data relocations from the input objects
+            // Count absolute data relocations that need R_RELATIVE at runtime.
+            // In a shared library, absolute relocations in .data become R_RELATIVE
+            // so the dynamic linker can fix them up when the library is loaded at
+            // a different base address.
             var numRelaDyn = 0
-            // We won't know exact count until we see the relocations, but we can count them
-            // from the input objects
-            // Actually let's just count them now from the objects' relocations
-            // Any R_64 relocation in .data will become R_RELATIVE
-            // We'll handle this in RelocationApplier; for layout we need the count
-            for (obj in symbols.globalSymbols.values) { /* just iterating */ }
-            // Actually the caller passes objects through merger, but we don't have them here.
-            // We'll just set relaDynSize = 0 for now and not emit .rela.dyn if not needed.
-            // The static linker handles data relocs at link time; for .so, absolute data
-            // relocations become R_RELATIVE. But for simplicity in this first implementation,
-            // we resolve everything at link time assuming PIC code.
-            relaDynSize = 0
+            for ((objIdx, obj) in objects.withIndex()) {
+                for (rel in obj.relocations) {
+                    if (rel.section == null) continue
+                    val relKind = merger.sectionKindMap[objIdx to rel.section] ?: continue
+                    if (relKind != SectionKind.DATA && relKind != SectionKind.RODATA) continue
+                    val isAbsolute = when (machine) {
+                        ElfMachine.X86_64.code -> rel.type == RelocationType.X86_64.R_64
+                        ElfMachine.AARCH64.code -> rel.type == RelocationType.AArch64.ABS64
+                        ElfMachine.RISCV.code -> rel.type == RelocationType.RiscV.R_64
+                        else -> false
+                    }
+                    if (isAbsolute) numRelaDyn++
+                }
+            }
+            relaDynSize = numRelaDyn.toLong() * Elf.RELA64_SIZE
 
             // RX segment layout
             var off = headerSize.toLong()
@@ -270,6 +301,11 @@ class ElfSharedLinker(
                 dynEntries.add(ElfDynamicTag.PLTREL.code to ElfDynamicTag.RELA.code.toLong())
                 dynEntries.add(ElfDynamicTag.JMPREL.code to relaPltVaddr)
             }
+            if (relaDynSize > 0) {
+                dynEntries.add(ElfDynamicTag.RELA.code to relaDynVaddr)
+                dynEntries.add(ElfDynamicTag.RELASZ.code to relaDynSize)
+                dynEntries.add(ElfDynamicTag.RELAENT.code to Elf.RELA64_SIZE.toLong())
+            }
             dynEntries.add(ElfDynamicTag.NULL.code to 0L)
             dynamicEntries = dynEntries
             dynamicSize = dynEntries.size * 16
@@ -280,6 +316,33 @@ class ElfSharedLinker(
             dataOffset = rwOff; dataVaddr = rwVaddrBase + (rwOff - gotOffset)
             rwOff += dataBytes.size
             rwSegmentFileSize = rwOff - gotOffset
+
+            var dbgOff = rwOff
+            if (hasDebugSections) {
+                for (dbg in merger.debugSections) {
+                    debugOffsets.add(dbgOff)
+                    dbgOff += dbg.data.size
+                }
+                val shstrtabBuf = ByteArrayOutputStream()
+                shstrtabBuf.write(0)
+                for (dbg in merger.debugSections) {
+                    shstrtabBuf.write(dbg.name.toByteArray(Charsets.US_ASCII))
+                    shstrtabBuf.write(0)
+                }
+                shstrtabBuf.write(".shstrtab".toByteArray(Charsets.US_ASCII))
+                shstrtabBuf.write(0)
+                shstrtabData = shstrtabBuf.toByteArray()
+                shstrtabOffset = dbgOff
+                dbgOff += shstrtabData.size
+                numShdrs = 1 + merger.debugSections.size + 1
+                dbgOff = align(dbgOff, 8)
+                shoff = dbgOff
+            } else {
+                shstrtabData = ByteArray(0)
+                shstrtabOffset = 0
+                shoff = 0
+                numShdrs = 0
+            }
         }
 
         val sectionKindVaddr: Map<SectionKind, Long>
@@ -363,44 +426,157 @@ class ElfSharedLinker(
         private val merger: SectionMerger,
         private val symbols: SymbolResolver,
         private val layout: SharedLayout,
+        private val machine: Int,
     ) {
+        /** Vaddrs of data slots that need R_RELATIVE dynamic relocations. */
+        val dataRelocations = mutableListOf<Pair<Long, Long>>() // (vaddr, resolved value)
+
+        /** Apply relocations to text and data, returning the relocated text bytes. */
         fun apply(): ByteArray {
             val symVaddrs = layout.symbolVaddrs()
             val pltVaddrs = layout.pltSymbolVaddrs()
             val textBytes = merger.text.toByteArray().copyOf()
+            val dataBytes = merger.data.toByteArray().copyOf()
 
             for ((objIdx, obj) in objects.withIndex()) {
                 for (rel in obj.relocations) {
                     if (rel.section == null) continue
                     val relKind = merger.sectionKindMap[objIdx to rel.section] ?: continue
-                    if (relKind != SectionKind.TEXT) continue
-
-                    val placement = merger.textPlacements
-                        .firstOrNull { it.objIdx == objIdx && it.sectionName == rel.section }
-                        ?: continue
-                    val patchOffset = (placement.mergedOffset + rel.offset).toInt()
-                    val patchVaddr = layout.textVaddr + patchOffset
 
                     val targetVaddr = symVaddrs[rel.symbol] ?: pltVaddrs[rel.symbol]
                         ?: throw IllegalStateException("Undefined symbol: ${rel.symbol}")
 
-                    applyRelocation(textBytes, patchOffset, patchVaddr, targetVaddr, rel)
+                    when (relKind) {
+                        SectionKind.TEXT -> {
+                            val placement = merger.textPlacements
+                                .firstOrNull { it.objIdx == objIdx && it.sectionName == rel.section }
+                                ?: continue
+                            val patchOffset = (placement.mergedOffset + rel.offset).toInt()
+                            val patchVaddr = layout.textVaddr + patchOffset
+                            applyTextRelocation(textBytes, patchOffset, patchVaddr, targetVaddr, rel)
+                        }
+                        SectionKind.DATA -> {
+                            val placement = merger.dataPlacements
+                                .firstOrNull { it.objIdx == objIdx && it.sectionName == rel.section }
+                                ?: continue
+                            val patchOffset = (placement.mergedOffset + rel.offset).toInt()
+                            val patchVaddr = layout.dataVaddr + patchOffset
+                            applyDataRelocation(dataBytes, patchOffset, patchVaddr, targetVaddr, rel)
+                        }
+                        else -> continue
+                    }
                 }
             }
+
+            // Copy relocated data back to merger's data stream
+            val mergedData = merger.data.toByteArray()
+            System.arraycopy(dataBytes, 0, mergedData, 0, minOf(dataBytes.size, mergedData.size))
+
             return textBytes
         }
 
-        private fun applyRelocation(
+        private fun applyTextRelocation(
             text: ByteArray, offset: Int, patchVaddr: Long, targetVaddr: Long, rel: Relocation,
         ) {
-            when (rel.type) {
-                RelocationType.X86_64.PC32, RelocationType.X86_64.PLT32 -> {
-                    putI32(text, offset, (targetVaddr + rel.addend - patchVaddr).toInt())
+            when (machine) {
+                ElfMachine.X86_64.code -> when (rel.type) {
+                    RelocationType.X86_64.PC32, RelocationType.X86_64.PLT32 ->
+                        putI32(text, offset, (targetVaddr + rel.addend - patchVaddr).toInt())
+                    RelocationType.X86_64.R_32, RelocationType.X86_64.R_32S ->
+                        putI32(text, offset, (targetVaddr + rel.addend).toInt())
+                    else -> error("Unsupported x86-64 text relocation: ${rel.type}")
                 }
-                RelocationType.X86_64.R_32, RelocationType.X86_64.R_32S -> {
-                    putI32(text, offset, (targetVaddr + rel.addend).toInt())
+                ElfMachine.AARCH64.code -> when (rel.type) {
+                    RelocationType.AArch64.CALL26, RelocationType.AArch64.JUMP26 -> {
+                        val disp = ((targetVaddr + rel.addend - patchVaddr) shr 2).toInt()
+                        val insn = readI32(text, offset)
+                        putI32(text, offset, (insn and 0xFC000000.toInt()) or (disp and 0x03FFFFFF))
+                    }
+                    RelocationType.AArch64.ADR_PREL_PG_HI21 -> {
+                        val page = ((targetVaddr + rel.addend) and -4096L) - (patchVaddr and -4096L)
+                        val immHi = ((page shr 12) and 0x7FFFF).toInt()
+                        val immLo = ((page shr 12) shr 19 and 0x3).toInt()
+                        val insn = readI32(text, offset)
+                        putI32(text, offset, (insn and 0x9F00001F.toInt()) or (immHi shl 5) or (immLo shl 29))
+                    }
+                    RelocationType.AArch64.ADD_ABS_LO12_NC -> {
+                        val imm = ((targetVaddr + rel.addend) and 0xFFF).toInt()
+                        val insn = readI32(text, offset)
+                        putI32(text, offset, (insn and 0xFFC003FF.toInt()) or (imm shl 10))
+                    }
+                    else -> error("Unsupported ARM64 text relocation: ${rel.type}")
                 }
-                else -> throw IllegalStateException("Unsupported relocation type: ${rel.type}")
+                ElfMachine.RISCV.code -> when (rel.type) {
+                    RelocationType.RiscV.CALL, RelocationType.RiscV.CALL_PLT -> {
+                        val delta = targetVaddr + rel.addend - patchVaddr
+                        val hi = ((delta + 0x800) shr 12).toInt()
+                        val lo = (delta.toInt()) and 0xFFF
+                        val auipc = readI32(text, offset)
+                        putI32(text, offset, (auipc and 0xFFF) or (hi shl 12))
+                        val jalr = readI32(text, offset + 4)
+                        putI32(text, offset + 4, (jalr and 0x000FFFFF) or (lo shl 20))
+                    }
+                    RelocationType.RiscV.PCREL_HI20 -> {
+                        val delta = targetVaddr + rel.addend - patchVaddr
+                        val hi = ((delta + 0x800) shr 12).toInt()
+                        val existing = readI32(text, offset)
+                        putI32(text, offset, (existing and 0xFFF) or (hi shl 12))
+                    }
+                    RelocationType.RiscV.LO12_I -> {
+                        val value = (targetVaddr + rel.addend).toInt() and 0xFFF
+                        val existing = readI32(text, offset)
+                        putI32(text, offset, (existing and 0x000FFFFF) or (value shl 20))
+                    }
+                    RelocationType.RiscV.LO12_S -> {
+                        val value = (targetVaddr + rel.addend).toInt() and 0xFFF
+                        val imm11_5 = (value shr 5) and 0x7F
+                        val imm4_0 = value and 0x1F
+                        val existing = readI32(text, offset)
+                        val mask = (0x7F shl 25) or (0x1F shl 7)
+                        putI32(text, offset, (existing and mask.inv()) or (imm11_5 shl 25) or (imm4_0 shl 7))
+                    }
+                    RelocationType.RiscV.JAL -> {
+                        val delta = (targetVaddr + rel.addend - patchVaddr).toInt()
+                        val existing = readI32(text, offset)
+                        val imm20 = (delta shr 20) and 0x1
+                        val imm10_1 = (delta shr 1) and 0x3FF
+                        val imm11 = (delta shr 11) and 0x1
+                        val imm19_12 = (delta shr 12) and 0xFF
+                        val encoded = (imm20 shl 31) or (imm10_1 shl 21) or (imm11 shl 20) or (imm19_12 shl 12)
+                        putI32(text, offset, (existing and 0xFFF) or encoded)
+                    }
+                    RelocationType.RiscV.BRANCH -> {
+                        val delta = (targetVaddr + rel.addend - patchVaddr).toInt()
+                        val existing = readI32(text, offset)
+                        val imm12 = (delta shr 12) and 0x1
+                        val imm10_5 = (delta shr 5) and 0x3F
+                        val imm4_1 = (delta shr 1) and 0xF
+                        val imm11 = (delta shr 11) and 0x1
+                        val encoded = (imm12 shl 31) or (imm10_5 shl 25) or (imm4_1 shl 8) or (imm11 shl 7)
+                        val mask = (0x1 shl 31) or (0x3F shl 25) or (0xF shl 8) or (0x1 shl 7)
+                        putI32(text, offset, (existing and mask.inv()) or encoded)
+                    }
+                    RelocationType.RiscV.RELAX -> { /* no-op */ }
+                    else -> error("Unsupported RISC-V text relocation: ${rel.type}")
+                }
+                else -> error("Unsupported machine for text relocation: $machine")
+            }
+        }
+
+        private fun applyDataRelocation(
+            data: ByteArray, offset: Int, patchVaddr: Long, targetVaddr: Long, rel: Relocation,
+        ) {
+            val isAbsolute = when (machine) {
+                ElfMachine.X86_64.code -> rel.type == RelocationType.X86_64.R_64
+                ElfMachine.AARCH64.code -> rel.type == RelocationType.AArch64.ABS64
+                ElfMachine.RISCV.code -> rel.type == RelocationType.RiscV.R_64
+                else -> false
+            }
+            if (isAbsolute) {
+                val value = targetVaddr + rel.addend
+                putI64(data, offset, value)
+                // Record for R_RELATIVE dynamic relocation
+                dataRelocations.add(patchVaddr to value)
             }
         }
 
@@ -410,11 +586,22 @@ class ElfSharedLinker(
             data[offset + 2] = ((value shr 16) and 0xFF).toByte()
             data[offset + 3] = ((value shr 24) and 0xFF).toByte()
         }
+
+        private fun putI64(data: ByteArray, offset: Int, value: Long) {
+            for (b in 0 until 8) data[offset + b] = ((value shr (b * 8)) and 0xFF).toByte()
+        }
+
+        private fun readI32(data: ByteArray, offset: Int): Int =
+            (data[offset].toInt() and 0xFF) or
+                ((data[offset + 1].toInt() and 0xFF) shl 8) or
+                ((data[offset + 2].toInt() and 0xFF) shl 16) or
+                ((data[offset + 3].toInt() and 0xFF) shl 24)
     }
 
     private class SharedEmitter(
         private val layout: SharedLayout,
         private val relocatedText: ByteArray,
+        private val dataRelocations: List<Pair<Long, Long>>,
         private val merger: SectionMerger,
         private val symbols: SymbolResolver,
         private val machine: Int,
@@ -425,6 +612,10 @@ class ElfSharedLinker(
             emitProgramHeaders(buf)
             emitRxSegment(buf)
             emitRwSegment(buf)
+            if (layout.hasDebugSections) {
+                emitDebugSections(buf)
+                emitSectionHeaders(buf)
+            }
             return buf.toByteArray()
         }
 
@@ -440,14 +631,14 @@ class ElfSharedLinker(
             writeU32(buf, Elf.VERSION)
             writeU64(buf, 0) // entry point — shared libraries have no entry
             writeU64(buf, Elf.EHDR64_SIZE.toLong()) // phoff
-            writeU64(buf, 0) // shoff
+            writeU64(buf, layout.shoff) // shoff
             writeU32(buf, 0) // flags
             writeU16(buf, Elf.EHDR64_SIZE)
             writeU16(buf, Elf.PHDR64_SIZE)
             writeU16(buf, layout.numPhdrs)
-            writeU16(buf, 0) // shentsize
-            writeU16(buf, 0) // shnum
-            writeU16(buf, 0) // shstrndx
+            writeU16(buf, if (layout.hasDebugSections) Elf.SHDR64_SIZE else 0)
+            writeU16(buf, layout.numShdrs)
+            writeU16(buf, if (layout.hasDebugSections) layout.numShdrs - 1 else 0)
         }
 
         private fun emitProgramHeaders(buf: ByteArrayOutputStream) {
@@ -479,6 +670,9 @@ class ElfSharedLinker(
             if (layout.relaPltSize > 0) {
                 padTo(buf, layout.relaPltOffset.toInt()); buf.write(buildRelaPlt())
             }
+            if (layout.relaDynSize > 0) {
+                padTo(buf, layout.relaDynOffset.toInt()); buf.write(buildRelaDyn())
+            }
             if (layout.pltSize > 0) {
                 padTo(buf, layout.pltOffset.toInt()); buf.write(buildPlt())
             }
@@ -487,6 +681,42 @@ class ElfSharedLinker(
             if (rodataBytes.isNotEmpty()) {
                 padTo(buf, layout.rodataOffset.toInt()); buf.write(rodataBytes)
             }
+        }
+
+        private fun emitDebugSections(buf: ByteArrayOutputStream) {
+            for ((i, dbg) in merger.debugSections.withIndex()) {
+                padTo(buf, layout.debugOffsets[i].toInt())
+                buf.write(dbg.data)
+            }
+            padTo(buf, layout.shstrtabOffset.toInt())
+            buf.write(layout.shstrtabData)
+        }
+
+        private fun emitSectionHeaders(buf: ByteArrayOutputStream) {
+            padTo(buf, layout.shoff.toInt())
+            writeSectionHeader(buf, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+            var nameOff = 1
+            for ((i, dbg) in merger.debugSections.withIndex()) {
+                writeSectionHeader(buf, nameOff, ElfSectionType.PROGBITS.code,
+                    0, 0, layout.debugOffsets[i], dbg.data.size.toLong(),
+                    0, 0, 1, 0)
+                nameOff += dbg.name.length + 1
+            }
+            writeSectionHeader(buf, nameOff, ElfSectionType.STRTAB.code,
+                0, 0, layout.shstrtabOffset, layout.shstrtabData.size.toLong(),
+                0, 0, 1, 0)
+        }
+
+        private fun writeSectionHeader(
+            buf: ByteArrayOutputStream,
+            name: Int, type: Int, flags: Long, addr: Long, offset: Long, size: Long,
+            link: Int, info: Int, addralign: Long, entsize: Long,
+        ) {
+            writeU32(buf, name); writeU32(buf, type)
+            writeU64(buf, flags); writeU64(buf, addr)
+            writeU64(buf, offset); writeU64(buf, size)
+            writeU32(buf, link); writeU32(buf, info)
+            writeU64(buf, addralign); writeU64(buf, entsize)
         }
 
         private fun emitRwSegment(buf: ByteArrayOutputStream) {
@@ -515,18 +745,45 @@ class ElfSharedLinker(
 
         private fun buildRelaPlt(): ByteArray {
             val buf = ByteArrayOutputStream()
+            val jumpSlotType = when (machine) {
+                ElfMachine.AARCH64.code -> RelocationType.AArch64.JUMP_SLOT.value.toLong()
+                ElfMachine.RISCV.code -> RelocationType.RiscV.JUMP_SLOT.value.toLong()
+                else -> RelocationType.X86_64.JUMP_SLOT.value.toLong()
+            }
             for (i in layout.importedSymbols.indices) {
                 val gotEntryVaddr = layout.gotVaddr + (3 + i) * GOT_ENTRY_SIZE
                 val symIdx = layout.importSymIdxBase + i
                 writeU64(buf, gotEntryVaddr)
-                writeU64(buf, (symIdx.toLong() shl 32) or RelocationType.X86_64.JUMP_SLOT.value.toLong())
+                writeU64(buf, (symIdx.toLong() shl 32) or jumpSlotType)
                 writeS64(buf, 0)
+            }
+            return buf.toByteArray()
+        }
+
+        private fun buildRelaDyn(): ByteArray {
+            val buf = ByteArrayOutputStream()
+            val relativeType = when (machine) {
+                ElfMachine.AARCH64.code -> RelocationType.AArch64.RELATIVE.value.toLong()
+                ElfMachine.RISCV.code -> RelocationType.RiscV.RELATIVE.value.toLong()
+                else -> RelocationType.X86_64.RELATIVE.value.toLong()
+            }
+            for ((vaddr, value) in dataRelocations) {
+                writeU64(buf, vaddr)
+                writeU64(buf, relativeType) // sym=0, type=R_RELATIVE
+                writeS64(buf, value)        // addend = resolved absolute value
             }
             return buf.toByteArray()
         }
 
         private fun buildPlt(): ByteArray {
             if (layout.numPltEntries == 0) return ByteArray(0)
+            return when (machine) {
+                ElfMachine.AARCH64.code -> buildPltArm64()
+                else -> buildPltX86()
+            }
+        }
+
+        private fun buildPltX86(): ByteArray {
             val buf = ByteArrayOutputStream()
             // PLT0: push GOT[1]; jmp GOT[2]
             val got1Rip = layout.gotVaddr + 8 - (layout.pltVaddr + 6)
@@ -536,7 +793,7 @@ class ElfSharedLinker(
             buf.write(byteArrayOf(0xFF.toByte(), 0x25))
             writeU32(buf, got2Rip.toInt())
             buf.write(ByteArray(4)) // padding
-            // PLT entries
+            // PLT entries: jmp *GOT[n]; push index; jmp PLT0
             for (i in 0 until layout.numPltEntries) {
                 val entryVaddr = layout.pltVaddr + PLT0_SIZE + i * PLT_ENTRY_SIZE
                 val gotEntryVaddr = layout.gotVaddr + (3 + i) * GOT_ENTRY_SIZE
@@ -548,6 +805,48 @@ class ElfSharedLinker(
                 writeU32(buf, (layout.pltVaddr - (entryVaddr + 16)).toInt())
             }
             return buf.toByteArray()
+        }
+
+        private fun buildPltArm64(): ByteArray {
+            val buf = ByteArrayOutputStream()
+            // PLT0: stp x16, x30, [sp, #-16]!; adrp x16, GOT; ldr x17, [x16, #GOT@lo12]; add x16, x16, #GOT@lo12; br x17
+            val got0Page = (layout.gotVaddr and -4096L) - (layout.pltVaddr and -4096L)
+            val got0Lo = (layout.gotVaddr and 0xFFF).toInt()
+            writeArm64Insn(buf, 0xA9BF7BF0.toInt()) // stp x16, x30, [sp, #-16]!
+            writeArm64Insn(buf, adrp(16, got0Page))
+            writeArm64Insn(buf, ldrImm64(17, 16, got0Lo + 16)) // GOT[2]
+            writeArm64Insn(buf, 0xD61F0220.toInt())             // br x17
+            // PLT entries: adrp x16, GOT[n]@page; ldr x17, [x16, GOT[n]@lo12]; br x17; nop
+            for (i in 0 until layout.numPltEntries) {
+                val entryVaddr = layout.pltVaddr + PLT0_SIZE + i.toLong() * PLT_ENTRY_SIZE
+                val gotEntryVaddr = layout.gotVaddr + (3 + i).toLong() * GOT_ENTRY_SIZE
+                val page = (gotEntryVaddr and -4096L) - (entryVaddr and -4096L)
+                val lo = (gotEntryVaddr and 0xFFF).toInt()
+                writeArm64Insn(buf, adrp(16, page))
+                writeArm64Insn(buf, ldrImm64(17, 16, lo))
+                writeArm64Insn(buf, 0xD61F0220.toInt()) // br x17
+                writeArm64Insn(buf, 0xD503201F.toInt())          // nop
+            }
+            return buf.toByteArray()
+        }
+
+        private fun adrp(rd: Int, pageOffset: Long): Int {
+            val immHi = ((pageOffset shr 12) and 0x7FFFF).toInt()
+            val immLo = ((pageOffset shr 12) shr 19 and 0x3).toInt()
+            return 0x90000000.toInt() or rd or (immHi shl 5) or (immLo shl 29)
+        }
+
+        private fun ldrImm64(rt: Int, rn: Int, offset: Int): Int =
+            0xF9400000.toInt() or rt or (rn shl 5) or ((offset / 8) shl 10)
+
+        private fun addImm(rd: Int, rn: Int, imm: Int): Int =
+            0x91000000.toInt() or rd or (rn shl 5) or ((imm and 0xFFF) shl 10)
+
+        private fun writeArm64Insn(buf: ByteArrayOutputStream, insn: Int) {
+            buf.write(insn and 0xFF)
+            buf.write((insn shr 8) and 0xFF)
+            buf.write((insn shr 16) and 0xFF)
+            buf.write((insn shr 24) and 0xFF)
         }
 
         private fun writePhdr(

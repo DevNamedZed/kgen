@@ -3,8 +3,8 @@ package org.kgen.cli.cmd
 import org.kgen.binary.elf.ElfReader
 import org.kgen.binary.macho.MachOReader
 import org.kgen.binary.pe.PeReader
-import org.kgen.tools.Inspectors
-import org.kgen.tools.UniversalDemangler
+import org.kgen.binary.inspect.Inspectors
+import org.kgen.binary.mangling.UniversalDemangler
 import org.kgen.cli.*
 
 object SymbolsCommand {

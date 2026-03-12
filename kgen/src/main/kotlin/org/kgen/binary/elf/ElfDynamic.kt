@@ -29,7 +29,7 @@ enum class ElfDynamicTag(val code: Long) {
     FLAGS_1(0x6ffffffb);
 
     companion object {
-        fun fromCode(code: Long) = entries.firstOrNull { it.code == code }
+        @JvmStatic fun fromCode(code: Long) = entries.firstOrNull { it.code == code }
     }
 }
 

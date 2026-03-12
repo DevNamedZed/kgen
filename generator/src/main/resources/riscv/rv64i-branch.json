@@ -1,0 +1,65 @@
+[
+  {
+    "mnemonic": "beq",
+    "summary": "Branch if equal",
+    "forms": [
+      { "operands": ["gp", "gp", "imm12"], "encoding": { "opcode": 99, "funct3": 0, "format": "B" } },
+      { "operands": ["gp", "gp", "label"], "encoding": { "opcode": 99, "funct3": 0, "format": "B_LABEL" } }
+    ]
+  },
+  {
+    "mnemonic": "bne",
+    "summary": "Branch if not equal",
+    "forms": [
+      { "operands": ["gp", "gp", "imm12"], "encoding": { "opcode": 99, "funct3": 1, "format": "B" } },
+      { "operands": ["gp", "gp", "label"], "encoding": { "opcode": 99, "funct3": 1, "format": "B_LABEL" } }
+    ]
+  },
+  {
+    "mnemonic": "blt",
+    "summary": "Branch if less than (signed)",
+    "forms": [
+      { "operands": ["gp", "gp", "imm12"], "encoding": { "opcode": 99, "funct3": 4, "format": "B" } },
+      { "operands": ["gp", "gp", "label"], "encoding": { "opcode": 99, "funct3": 4, "format": "B_LABEL" } }
+    ]
+  },
+  {
+    "mnemonic": "bge",
+    "summary": "Branch if greater than or equal (signed)",
+    "forms": [
+      { "operands": ["gp", "gp", "imm12"], "encoding": { "opcode": 99, "funct3": 5, "format": "B" } },
+      { "operands": ["gp", "gp", "label"], "encoding": { "opcode": 99, "funct3": 5, "format": "B_LABEL" } }
+    ]
+  },
+  {
+    "mnemonic": "bltu",
+    "summary": "Branch if less than (unsigned)",
+    "forms": [
+      { "operands": ["gp", "gp", "imm12"], "encoding": { "opcode": 99, "funct3": 6, "format": "B" } },
+      { "operands": ["gp", "gp", "label"], "encoding": { "opcode": 99, "funct3": 6, "format": "B_LABEL" } }
+    ]
+  },
+  {
+    "mnemonic": "bgeu",
+    "summary": "Branch if greater than or equal (unsigned)",
+    "forms": [
+      { "operands": ["gp", "gp", "imm12"], "encoding": { "opcode": 99, "funct3": 7, "format": "B" } },
+      { "operands": ["gp", "gp", "label"], "encoding": { "opcode": 99, "funct3": 7, "format": "B_LABEL" } }
+    ]
+  },
+  {
+    "mnemonic": "jal",
+    "summary": "Jump and link",
+    "forms": [
+      { "operands": ["gp", "imm"], "encoding": { "opcode": 111, "format": "J" } },
+      { "operands": ["gp", "label"], "encoding": { "opcode": 111, "format": "J_LABEL" } }
+    ]
+  },
+  {
+    "mnemonic": "jalr",
+    "summary": "Jump and link register",
+    "forms": [
+      { "operands": ["gp", "gp", "imm12"], "encoding": { "opcode": 103, "funct3": 0, "format": "I" } }
+    ]
+  }
+]

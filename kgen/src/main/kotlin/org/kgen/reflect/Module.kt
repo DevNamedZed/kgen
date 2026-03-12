@@ -120,6 +120,93 @@ class Module private constructor(
         return symbolCache.firstOrNull { it.offset() == entry }?.function()
     }
 
+    // -- Disassembly --
+
+    /**
+     * Disassemble a function by name.
+     * Uses the module's architecture to select the correct disassembler.
+     * Returns null if the symbol is not found or has no code.
+     */
+    fun disassemble(name: String): List<Instruction>? {
+        val sym = symbol(name) ?: return null
+        return disassemble(sym)
+    }
+
+    /**
+     * Disassemble a symbol's code.
+     */
+    fun disassemble(sym: Symbol): List<Instruction>? {
+        return disassemble(sym.function() ?: return null)
+    }
+
+    /**
+     * Disassemble a function.
+     */
+    fun disassemble(func: Function): List<Instruction>? {
+        val codeBytes = extractCode(func.offset(), func.size()) ?: return null
+        return disassembleBytes(codeBytes, func.offset())
+    }
+
+    /**
+     * Disassemble raw bytes using this module's architecture.
+     */
+    fun disassembleBytes(code: ByteArray, baseAddress: Long = 0): List<Instruction> {
+        return when (obj.arch.arch) {
+            ArchType.X86_64, ArchType.X86 -> {
+                val dis = org.kgen.target.x86.disasm.X86Disassembler()
+                dis.disassemble(code, baseAddress).map { insn ->
+                    object : Instruction {
+                        override val address: Long = insn.address
+                        override val bytes: ByteArray = insn.bytes
+                        override val mnemonic: String = insn.mnemonic
+                        override fun operandsText(): String = insn.operands
+                        override fun text(): String = insn.toString()
+                    }
+                }
+            }
+            ArchType.AARCH64 -> {
+                val dis = org.kgen.target.arm64.disasm.Arm64Disassembler()
+                dis.disassemble(code, baseAddress)
+            }
+            ArchType.RISCV64, ArchType.RISCV32 -> {
+                val dis = org.kgen.target.riscv.disasm.RiscVDisassembler()
+                dis.disassemble(code, baseAddress)
+            }
+            ArchType.JVM -> {
+                val dis = org.kgen.target.jvm.asm.JvmDisassembler()
+                val insns = dis.disassemble(code)
+                insns.map { insn ->
+                    object : Instruction {
+                        override val address: Long = baseAddress + insn.offset
+                        override val bytes: ByteArray = code.copyOfRange(insn.offset, insn.offset + insn.size)
+                        override val mnemonic: String = insn.opcode.name.lowercase()
+                        override fun operandsText(): String = insn.operands
+                        override fun text(): String = insn.toString()
+                    }
+                }
+            }
+            ArchType.WASM32, ArchType.WASM64 -> {
+                val dis = org.kgen.target.wasm.disasm.WasmDisassembler()
+                dis.disassemble(code)
+            }
+            else -> emptyList()
+        }
+    }
+
+    private fun extractCode(offset: Long, size: Long): ByteArray? {
+        if (size <= 0) return null
+        // Find the text section containing this offset
+        val textSection = obj.sections.firstOrNull { section ->
+            section.kind == SectionKind.TEXT
+                    && offset >= section.address
+                    && offset + size <= section.address + section.data.size
+        } ?: return null
+        val start = (offset - textSection.address).toInt()
+        val end = start + size.toInt()
+        if (start < 0 || end > textSection.data.size) return null
+        return textSection.data.copyOfRange(start, end)
+    }
+
     // -- Types --
 
     /** All types discoverable from metadata (JVM class files, CLR assemblies). */
@@ -149,15 +236,15 @@ class Module private constructor(
         } else null
     }
 
-    private val classFileCache: org.kgen.binary.jvm.ClassFile? by lazy {
+    private val classFileCache: org.kgen.target.jvm.ClassFile? by lazy {
         if (obj.format == ObjectFormat.JVM_CLASS && rawBytes.isNotEmpty()) {
-            try { org.kgen.binary.jvm.JvmClassReader.read(rawBytes) } catch (_: Throwable) { null }
+            try { org.kgen.target.jvm.JvmClassReader.read(rawBytes) } catch (_: Throwable) { null }
         } else null
     }
 
-    private val wasmCache: org.kgen.backend.wasm.module.WasmModule? by lazy {
+    private val wasmCache: org.kgen.target.wasm.module.WasmModule? by lazy {
         if (obj.format == ObjectFormat.WASM_MODULE && rawBytes.isNotEmpty()) {
-            try { org.kgen.backend.wasm.module.WasmModuleReader.read(rawBytes) } catch (_: Throwable) { null }
+            try { org.kgen.target.wasm.module.WasmModuleReader.read(rawBytes) } catch (_: Throwable) { null }
         } else null
     }
 
@@ -171,6 +258,11 @@ class Module private constructor(
                 val pe = pe() ?: return@lazy emptyList()
                 val clr = pe.clrMetadata ?: return@lazy emptyList()
                 ClrTypeMapper.map(clr, this)
+            }
+            ObjectFormat.ELF, ObjectFormat.PE_COFF, ObjectFormat.MACH_O -> {
+                val debugInfo = try { org.kgen.binary.dwarf.DwarfReader.read(obj) } catch (_: Throwable) { null }
+                if (debugInfo != null) org.kgen.binary.dwarf.DwarfTypeMapper.map(debugInfo, this)
+                else emptyList()
             }
             else -> emptyList()
         }
@@ -186,13 +278,13 @@ class Module private constructor(
     fun machO(): org.kgen.binary.macho.MachOFile? = machOCache
 
     /** The JVM class file model, or null if not a .class file. */
-    fun classFile(): org.kgen.binary.jvm.ClassFile? = classFileCache
+    fun classFile(): org.kgen.target.jvm.ClassFile? = classFileCache
 
     /** The CLR metadata, or null if not a .NET assembly. */
     fun clr(): org.kgen.binary.pe.clr.ClrMetadata? = peCache?.clrMetadata
 
     /** The WASM module model, or null if not a .wasm file. */
-    fun wasm(): org.kgen.backend.wasm.module.WasmModule? = wasmCache
+    fun wasm(): org.kgen.target.wasm.module.WasmModule? = wasmCache
 
     // -- Raw bytes --
 
@@ -200,6 +292,88 @@ class Module private constructor(
 
     /** Access the underlying ObjectFile model. */
     fun objectFile(): ObjectFile = obj
+
+    /**
+     * Writes this module to disk at the given path.
+     *
+     * For modules loaded from files or bytes, this writes the current binary content.
+     * Format-specific models (ELF, PE, JVM, WASM) can be modified before saving —
+     * pass `rewrite = true` to regenerate from the format-specific model.
+     *
+     * ```java
+     * var module = Module.fromFile("input.o");
+     * module.save("output.o");
+     *
+     * // Modify and rewrite
+     * var cf = module.classFile();
+     * // ... modify cf ...
+     * module.save("Modified.class", true);
+     * ```
+     */
+    @JvmOverloads
+    fun save(path: String, rewrite: Boolean = false) = save(Path.of(path), rewrite)
+
+    @JvmOverloads
+    fun save(path: Path, rewrite: Boolean = false) {
+        val bytes = if (rewrite) rewriteBytes() else rawBytes
+        require(bytes.isNotEmpty()) { "No binary data to save (module created from ObjectFile without raw bytes)" }
+        Files.write(path, bytes)
+    }
+
+    fun toBytes(rewrite: Boolean = false): ByteArray {
+        return if (rewrite) rewriteBytes() else rawBytes.copyOf()
+    }
+
+    private fun rewriteBytes(): ByteArray {
+        return when (obj.format) {
+            ObjectFormat.JVM_CLASS -> {
+                val cf = classFile() ?: throw IllegalStateException("Cannot reconstruct JVM class file")
+                org.kgen.target.jvm.JvmClassWriter.write(cf)
+            }
+            ObjectFormat.WASM_MODULE -> {
+                val wasm = wasm() ?: throw IllegalStateException("Cannot reconstruct WASM module")
+                org.kgen.target.wasm.module.WasmModuleWriter.write(wasm)
+            }
+            ObjectFormat.ELF -> {
+                val machine = elfMachineCode()
+                org.kgen.binary.elf.ElfObjectWriter(machine).write(obj)
+            }
+            ObjectFormat.PE_COFF -> {
+                val machine = coffMachineCode()
+                org.kgen.binary.pe.CoffObjectWriter(machine).write(obj)
+            }
+            ObjectFormat.MACH_O -> {
+                val (cpuType, cpuSub) = machoCpuType()
+                org.kgen.binary.macho.MachOObjectWriter(cpuType, cpuSub).write(obj)
+            }
+            else -> throw UnsupportedOperationException("Rewrite not supported for ${obj.format}")
+        }
+    }
+
+    private fun elfMachineCode(): Int {
+        return when (obj.arch.arch) {
+            ArchType.X86_64 -> org.kgen.binary.elf.ElfMachine.X86_64.code
+            ArchType.AARCH64 -> org.kgen.binary.elf.ElfMachine.AARCH64.code
+            ArchType.RISCV64, ArchType.RISCV32 -> org.kgen.binary.elf.ElfMachine.RISCV.code
+            else -> org.kgen.binary.elf.ElfMachine.X86_64.code
+        }
+    }
+
+    private fun coffMachineCode(): Int {
+        return when (obj.arch.arch) {
+            ArchType.X86_64 -> org.kgen.binary.pe.PeConstants.MACHINE_AMD64
+            ArchType.AARCH64 -> org.kgen.binary.pe.PeConstants.MACHINE_ARM64
+            else -> org.kgen.binary.pe.PeConstants.MACHINE_AMD64
+        }
+    }
+
+    private fun machoCpuType(): Pair<Int, Int> {
+        return when (obj.arch.arch) {
+            ArchType.X86_64 -> org.kgen.binary.macho.MachO.CPU_TYPE_X86_64 to org.kgen.binary.macho.MachO.CPU_SUBTYPE_ALL
+            ArchType.AARCH64 -> org.kgen.binary.macho.MachO.CPU_TYPE_ARM64 to org.kgen.binary.macho.MachO.CPU_SUBTYPE_ALL
+            else -> org.kgen.binary.macho.MachO.CPU_TYPE_X86_64 to org.kgen.binary.macho.MachO.CPU_SUBTYPE_ALL
+        }
+    }
 
     override fun toString(): String = "Module($name, ${obj.format}, ${obj.arch.arch})"
 
@@ -250,7 +424,7 @@ class Module private constructor(
         init {
             // Register built-in readers
             try { builtinReaders.add(org.kgen.binary.elf.ElfObjectFileReader()) } catch (_: Throwable) {}
-            try { builtinReaders.add(org.kgen.binary.jvm.JvmObjectFileReader()) } catch (_: Throwable) {}
+            try { builtinReaders.add(org.kgen.target.jvm.JvmObjectFileReader()) } catch (_: Throwable) {}
             try { builtinReaders.add(org.kgen.binary.pe.PeObjectFileReader()) } catch (_: Throwable) {}
             try { builtinReaders.add(org.kgen.binary.macho.MachOObjectFileReader()) } catch (_: Throwable) {}
         }

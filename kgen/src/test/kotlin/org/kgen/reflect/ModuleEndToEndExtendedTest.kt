@@ -4,8 +4,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.binary.*
 import org.kgen.binary.elf.ElfObjectWriter
-import org.kgen.backend.x86.codegen.X86CodeGenerator
-import org.kgen.backend.riscv.codegen.RiscVCodeGenerator
+import org.kgen.target.x86.codegen.X86CodeGenerator
+import org.kgen.target.riscv.codegen.RiscVCodeGenerator
 import org.kgen.ir.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target

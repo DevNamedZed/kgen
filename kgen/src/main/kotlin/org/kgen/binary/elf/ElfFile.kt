@@ -1,7 +1,7 @@
 package org.kgen.binary.elf
 
 /**
- * Structured representation of an ELF64 binary.
+ * Structured representation of an ELF binary (both ELF32 and ELF64).
  *
  * This is the primary output of [ElfReader]. All headers, sections, segments,
  * symbols, and relocations are accessible as structured data.

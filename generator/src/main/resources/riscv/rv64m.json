@@ -1,0 +1,93 @@
+[
+  {
+    "mnemonic": "mul",
+    "summary": "Multiply",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 51, "funct3": 0, "funct7": 1, "format": "R" }, "feature": "m" }
+    ]
+  },
+  {
+    "mnemonic": "mulh",
+    "summary": "Multiply high (signed x signed)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 51, "funct3": 1, "funct7": 1, "format": "R" }, "feature": "m" }
+    ]
+  },
+  {
+    "mnemonic": "mulhsu",
+    "summary": "Multiply high (signed x unsigned)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 51, "funct3": 2, "funct7": 1, "format": "R" }, "feature": "m" }
+    ]
+  },
+  {
+    "mnemonic": "mulhu",
+    "summary": "Multiply high (unsigned x unsigned)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 51, "funct3": 3, "funct7": 1, "format": "R" }, "feature": "m" }
+    ]
+  },
+  {
+    "mnemonic": "div",
+    "summary": "Divide (signed)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 51, "funct3": 4, "funct7": 1, "format": "R" }, "feature": "m" }
+    ]
+  },
+  {
+    "mnemonic": "divu",
+    "summary": "Divide (unsigned)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 51, "funct3": 5, "funct7": 1, "format": "R" }, "feature": "m" }
+    ]
+  },
+  {
+    "mnemonic": "rem",
+    "summary": "Remainder (signed)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 51, "funct3": 6, "funct7": 1, "format": "R" }, "feature": "m" }
+    ]
+  },
+  {
+    "mnemonic": "remu",
+    "summary": "Remainder (unsigned)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 51, "funct3": 7, "funct7": 1, "format": "R" }, "feature": "m" }
+    ]
+  },
+  {
+    "mnemonic": "mulw",
+    "summary": "Multiply word (32-bit)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 59, "funct3": 0, "funct7": 1, "format": "R" }, "feature": "m" }
+    ]
+  },
+  {
+    "mnemonic": "divw",
+    "summary": "Divide word (signed, 32-bit)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 59, "funct3": 4, "funct7": 1, "format": "R" }, "feature": "m" }
+    ]
+  },
+  {
+    "mnemonic": "divuw",
+    "summary": "Divide word (unsigned, 32-bit)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 59, "funct3": 5, "funct7": 1, "format": "R" }, "feature": "m" }
+    ]
+  },
+  {
+    "mnemonic": "remw",
+    "summary": "Remainder word (signed, 32-bit)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 59, "funct3": 6, "funct7": 1, "format": "R" }, "feature": "m" }
+    ]
+  },
+  {
+    "mnemonic": "remuw",
+    "summary": "Remainder word (unsigned, 32-bit)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 59, "funct3": 7, "funct7": 1, "format": "R" }, "feature": "m" }
+    ]
+  }
+]

@@ -130,6 +130,83 @@ class IrVerifier {
             }
         }
 
+        // Entry block must not be a branch target (no predecessors)
+        if (fn.blocks.isNotEmpty()) {
+            val entryLabel = fn.blocks[0].label
+            val allTargets = mutableSetOf<String>()
+            for (block in fn.blocks) {
+                if (block.instructions.isNotEmpty()) {
+                    allTargets += terminatorTargets(block.instructions.last())
+                }
+            }
+            if (entryLabel in allTargets) {
+                error("Entry block %$entryLabel in $ctx has predecessors (must not be a branch target)")
+            }
+        }
+
+        // Invoke unwind destination must begin with LandingPad
+        for (block in fn.blocks) {
+            for (inst in block.instructions) {
+                if (inst is Instruction.Invoke) {
+                    val unwindBlock = fn.blocks.find { it.label == inst.unwindDest }
+                    if (unwindBlock != null && unwindBlock.instructions.isNotEmpty()) {
+                        val firstNonDebug = unwindBlock.instructions.firstOrNull {
+                            it !is Instruction.DebugLoc && it !is Instruction.DebugValue && it !is Instruction.DebugDeclare
+                        }
+                        if (firstNonDebug != null && firstNonDebug !is Instruction.LandingPad) {
+                            error("Invoke unwind destination %${inst.unwindDest} in $ctx must begin with LandingPad")
+                        }
+                    }
+                }
+            }
+        }
+
+        // Functions with Invoke or LandingPad require a personality function
+        val hasInvoke = fn.blocks.any { b -> b.instructions.any { it is Instruction.Invoke } }
+        val hasLandingPad = fn.blocks.any { b -> b.instructions.any { it is Instruction.LandingPad } }
+        val hasSeh = fn.blocks.any { b -> b.instructions.any { it is Instruction.CatchSwitch || it is Instruction.CatchPad || it is Instruction.CleanupPad } }
+        if ((hasInvoke || hasLandingPad || hasSeh) && fn.personality == null) {
+            error("Function $ctx uses exception handling but has no personality function")
+        }
+
+        // GCRoot and InteriorPtr require a gc strategy on the function
+        if (fn.gc == null) {
+            for (block in fn.blocks) {
+                for (inst in block.instructions) {
+                    if (inst is Instruction.GCRoot) {
+                        error("GCRoot in $ctx requires a gc strategy (fn.gc must be set)")
+                    }
+                    if (inst is Instruction.InteriorPtr) {
+                        error("InteriorPtr in $ctx requires a gc strategy (fn.gc must be set)")
+                    }
+                }
+            }
+        }
+
+        // Coroutine ordering: CoroEnd/CoroSuspend/CoroResume/CoroDestroy/CoroSize must be dominated by CoroBegin
+        val hasCoroBegin = fn.blocks.any { b -> b.instructions.any { it is Instruction.CoroBegin } }
+        val hasOtherCoro = fn.blocks.any { b -> b.instructions.any {
+            it is Instruction.CoroEnd || it is Instruction.CoroSuspend ||
+            it is Instruction.CoroResume || it is Instruction.CoroDestroy || it is Instruction.CoroSize
+        }}
+        if (!hasCoroBegin && hasOtherCoro) {
+            error("Coroutine instructions in $ctx require a CoroBegin")
+        }
+        if (hasCoroBegin && hasOtherCoro && fn.blocks.isNotEmpty() && blockLabels.size == fn.blocks.size &&
+            fn.blocks.all { it.instructions.isNotEmpty() && isTerminator(it.instructions.last()) }) {
+            val idom = computeImmediateDominators(fn)
+            val coroBeginBlock = fn.blocks.first { b -> b.instructions.any { it is Instruction.CoroBegin } }.label
+            for (block in fn.blocks) {
+                for (inst in block.instructions) {
+                    val isCoroDep = inst is Instruction.CoroEnd || inst is Instruction.CoroSuspend ||
+                        inst is Instruction.CoroResume || inst is Instruction.CoroDestroy || inst is Instruction.CoroSize
+                    if (isCoroDep && !dominates(coroBeginBlock, block.label, idom)) {
+                        error("${inst::class.simpleName} in block %${block.label} of $ctx is not dominated by CoroBegin")
+                    }
+                }
+            }
+        }
+
         // SSA dominance and use-def checks (only if no structural errors so far that would break CFG analysis)
         if (fn.blocks.isNotEmpty() && blockLabels.size == fn.blocks.size && fn.blocks.all { it.instructions.isNotEmpty() && isTerminator(it.instructions.last()) }) {
             verifySsaDominance(fn)
@@ -196,6 +273,7 @@ class IrVerifier {
         is Instruction.CatchRet -> listOf(inst.dest)
         is Instruction.CleanupRet -> listOfNotNull(inst.unwindDest)
         is Instruction.TagSwitch -> inst.cases.map { it.second } + listOfNotNull(inst.defaultTarget)
+        is Instruction.DebugTrap -> listOfNotNull(inst.successor)
         else -> emptyList()
     }
 
@@ -431,6 +509,8 @@ class IrVerifier {
         is Instruction.AShr -> listOf(inst.lhs, inst.rhs)
         is Instruction.RotateLeft -> listOf(inst.value, inst.amount)
         is Instruction.RotateRight -> listOf(inst.value, inst.amount)
+        is Instruction.Rotl -> listOf(inst.value, inst.amount)
+        is Instruction.Rotr -> listOf(inst.value, inst.amount)
         is Instruction.Ctlz -> listOf(inst.operand)
         is Instruction.Cttz -> listOf(inst.operand)
         is Instruction.Ctpop -> listOf(inst.operand)
@@ -523,6 +603,10 @@ class IrVerifier {
         is Instruction.TryCatchRegion -> emptyList()
         is Instruction.Box -> listOf(inst.value)
         is Instruction.Unbox -> listOf(inst.obj)
+        is Instruction.CatchValue -> emptyList()
+        is Instruction.MakeWeakRef -> listOf(inst.obj)
+        is Instruction.ReadWeakRef -> listOf(inst.weakRef)
+        is Instruction.ClearWeakRef -> listOf(inst.weakRef)
         is Instruction.ClosureCreate -> listOf(inst.function) + inst.captures
         is Instruction.ClosureInvoke -> listOf(inst.closure) + inst.args
         is Instruction.ConstructVariant -> inst.fields
@@ -621,6 +705,8 @@ class IrVerifier {
             is Instruction.AShr -> verifyIntBinOp(inst.lhs, inst.rhs, ctx, "ashr")
             is Instruction.RotateLeft -> verifyIntBinOp(inst.value, inst.amount, ctx, "rotl")
             is Instruction.RotateRight -> verifyIntBinOp(inst.value, inst.amount, ctx, "rotr")
+            is Instruction.Rotl -> verifyIntBinOp(inst.value, inst.amount, ctx, "rotl")
+            is Instruction.Rotr -> verifyIntBinOp(inst.value, inst.amount, ctx, "rotr")
 
             // Bit manipulation: operand must be integer
             is Instruction.Not -> verifyIntUnary(inst.operand, ctx, "not")
@@ -843,10 +929,19 @@ class IrVerifier {
                 inst.finallyBlock?.let { verifyBlockRef(it, blockLabels, ctx, "trycatch finally") }
             }
 
-            // High-level: TagSwitch block refs
+            // High-level: TagSwitch block refs + exhaustiveness
             is Instruction.TagSwitch -> {
                 for ((_, target) in inst.cases) verifyBlockRef(target, blockLabels, ctx, "tagswitch case")
                 inst.defaultTarget?.let { verifyBlockRef(it, blockLabels, ctx, "tagswitch default") }
+                if (inst.defaultTarget == null && inst.union.type is Type.TaggedUnion) {
+                    val unionType = inst.union.type as Type.TaggedUnion
+                    val variantNames = unionType.variants.map { it.name }.toSet()
+                    val caseNames = inst.cases.map { it.first }.toSet()
+                    val missing = variantNames - caseNames
+                    if (missing.isNotEmpty()) {
+                        error("tagswitch without default in $ctx is missing variants: ${missing.joinToString()}")
+                    }
+                }
             }
 
             // Select result type
@@ -950,6 +1045,41 @@ class IrVerifier {
             is Instruction.ArraySet -> {
                 if (!isIntegerType(inst.index.type)) {
                     error("arrayset index must be integer type in $ctx")
+                }
+            }
+
+            is Instruction.Box -> {
+                if (inst.dest.type !is Type.Reference) {
+                    error("box result must be Reference type in $ctx, got ${inst.dest.type}")
+                }
+            }
+            is Instruction.Unbox -> {
+                if (inst.obj.type !is Type.Reference) {
+                    error("unbox operand must be Reference type in $ctx, got ${inst.obj.type}")
+                }
+            }
+            is Instruction.MonitorEnter -> {
+                if (inst.obj.type !is Type.Reference) {
+                    error("monitorenter operand must be Reference type in $ctx, got ${inst.obj.type}")
+                }
+            }
+            is Instruction.MonitorExit -> {
+                if (inst.obj.type !is Type.Reference) {
+                    error("monitorexit operand must be Reference type in $ctx, got ${inst.obj.type}")
+                }
+            }
+
+            // CatchValue: must be in a catch handler block with matching exception type
+            is Instruction.CatchValue -> {
+                val currentBlock = ctx.substringAfter("block %").substringBefore(" ")
+                val catchHandlers = fn.blocks.flatMap { b ->
+                    b.instructions.filterIsInstance<Instruction.TryCatchRegion>().flatMap { it.catches }
+                }
+                val matchingHandler = catchHandlers.find { it.handlerBlock == currentBlock }
+                if (matchingHandler == null) {
+                    error("CatchValue in $ctx is not in a catch handler block")
+                } else if (matchingHandler.exceptionType != inst.exceptionType) {
+                    error("CatchValue exception type doesn't match CatchHandler declaration in $ctx")
                 }
             }
 

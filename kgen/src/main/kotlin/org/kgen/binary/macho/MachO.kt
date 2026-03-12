@@ -32,6 +32,7 @@ object MachO {
     const val CPU_SUBTYPE_ARM64E = 0x00000002
 
     // Load command types
+    const val LC_SEGMENT = 0x01
     const val LC_SEGMENT_64 = 0x19
     const val LC_SYMTAB = 0x02
     const val LC_DYSYMTAB = 0x0B
@@ -92,4 +93,7 @@ object MachO {
         return magic == MH_MAGIC_64.toLong() || magic == MH_CIGAM_64.toLong() ||
                magic == MH_MAGIC_32.toLong() || magic == MH_CIGAM_32.toLong()
     }
+
+    fun isMachOOrFat(bytes: ByteArray): Boolean =
+        isMachO(bytes) || MachOFatBinary.isFat(bytes)
 }

@@ -1,0 +1,74 @@
+[
+  {
+    "mnemonic": "and",
+    "summary": "Bitwise AND",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "8A000000", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "0A000000", "format": "reg3" } }
+    ]
+  },
+  {
+    "mnemonic": "ands",
+    "summary": "Bitwise AND and set flags",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "EA000000", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "6A000000", "format": "reg3" } }
+    ]
+  },
+  {
+    "mnemonic": "orr",
+    "summary": "Bitwise OR",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "AA000000", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "2A000000", "format": "reg3" } }
+    ]
+  },
+  {
+    "mnemonic": "orn",
+    "summary": "Bitwise OR NOT",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "AA200000", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "2A200000", "format": "reg3" } }
+    ]
+  },
+  {
+    "mnemonic": "eor",
+    "summary": "Bitwise exclusive OR",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "CA000000", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "4A000000", "format": "reg3" } }
+    ]
+  },
+  {
+    "mnemonic": "eon",
+    "summary": "Bitwise exclusive OR NOT",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "CA200000", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "4A200000", "format": "reg3" } }
+    ]
+  },
+  {
+    "mnemonic": "bic",
+    "summary": "Bitwise bit clear (AND NOT)",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "8A200000", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "0A200000", "format": "reg3" } }
+    ]
+  },
+  {
+    "mnemonic": "bics",
+    "summary": "Bitwise bit clear and set flags",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "EA200000", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "6A200000", "format": "reg3" } }
+    ]
+  },
+  {
+    "mnemonic": "mvn",
+    "summary": "Bitwise NOT (alias: ORN Rd, ZR, Rm)",
+    "forms": [
+      { "operands": ["x", "x"], "encoding": { "base": "AA2003E0", "format": "rd_rm" } },
+      { "operands": ["w", "w"], "encoding": { "base": "2A2003E0", "format": "rd_rm" } }
+    ]
+  }
+]

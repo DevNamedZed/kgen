@@ -9,6 +9,14 @@ object Elf {
     const val PHDR64_SIZE = 56
     const val SYM64_SIZE = 24
     const val RELA64_SIZE = 24
+    const val REL64_SIZE = 16
+
+    const val EHDR32_SIZE = 52
+    const val SHDR32_SIZE = 40
+    const val PHDR32_SIZE = 32
+    const val SYM32_SIZE = 16
+    const val RELA32_SIZE = 12
+    const val REL32_SIZE = 8
 
     const val SHN_UNDEF = 0
     const val SHN_ABS = 0xFFF1

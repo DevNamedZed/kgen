@@ -1,0 +1,30 @@
+[
+  {
+    "mnemonic": "ecall",
+    "summary": "Environment call",
+    "forms": [
+      { "operands": [], "encoding": { "opcode": 115, "funct3": 0, "funct7": 0, "format": "SYSTEM" } }
+    ]
+  },
+  {
+    "mnemonic": "ebreak",
+    "summary": "Environment breakpoint",
+    "forms": [
+      { "operands": [], "encoding": { "opcode": 115, "funct3": 0, "funct7": 0, "imm": 1, "format": "SYSTEM" } }
+    ]
+  },
+  {
+    "mnemonic": "fence",
+    "summary": "Memory fence",
+    "forms": [
+      { "operands": [], "encoding": { "opcode": 15, "funct3": 0, "format": "SYSTEM" } }
+    ]
+  },
+  {
+    "mnemonic": "fenceI",
+    "summary": "Instruction fence",
+    "forms": [
+      { "operands": [], "encoding": { "opcode": 15, "funct3": 1, "format": "SYSTEM" } }
+    ]
+  }
+]

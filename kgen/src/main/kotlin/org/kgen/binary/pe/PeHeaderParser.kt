@@ -1,5 +1,6 @@
 package org.kgen.binary.pe
 
+import org.kgen.binary.TLSDirectory
 import org.kgen.binary.pe.clr.ClrMetadata
 import org.kgen.binary.pe.clr.ClrTableParser
 import java.nio.ByteBuffer
@@ -42,6 +43,11 @@ internal class PeHeaderParser(private val buf: ByteBuffer, private val raw: Byte
         val exports = if (isPe) PeExportParser(buf, raw, rvaResolver).parseExports(dataDirectories) else null
         val baseRelocs = if (isPe) parseBaseRelocations(dataDirectories) else emptyList()
         val clr = if (isPe) parseClr(dataDirectories) else null
+        val resources = if (isPe) parseResources(dataDirectories) else null
+        val tlsDirectory = if (isPe) parseTlsDirectory(dataDirectories, optionalHeader) else null
+        val exceptionEntries = if (isPe) parseExceptionEntries(sections) else emptyList()
+        val debugEntries = if (isPe) parseDebugDirectory(dataDirectories) else emptyList()
+        val loadConfig = if (isPe) parseLoadConfig(dataDirectories, optionalHeader) else null
 
         return PeFile(
             isPe = isPe,
@@ -55,6 +61,11 @@ internal class PeHeaderParser(private val buf: ByteBuffer, private val raw: Byte
             baseRelocations = baseRelocs,
             clrMetadata = clr,
             dataDirectories = dataDirectories,
+            resources = resources,
+            tlsDirectory = tlsDirectory,
+            exceptionEntries = exceptionEntries,
+            debugEntries = debugEntries,
+            loadConfig = loadConfig,
         )
     }
 
@@ -97,6 +108,7 @@ internal class PeHeaderParser(private val buf: ByteBuffer, private val raw: Byte
             sizeOfUninitializedData = buf.getInt(off + 12),
             entryPointRVA = buf.getInt(off + 16),
             baseOfCode = buf.getInt(off + 20),
+            baseOfData = if (isPe32Plus) 0 else buf.getInt(off + 24),
             imageBase = if (isPe32Plus) buf.getLong(off + 24) else (buf.getInt(off + 28).toLong() and 0xFFFFFFFFL),
             sectionAlignment = buf.getInt(off + 32),
             fileAlignment = buf.getInt(off + 36),
@@ -259,6 +271,221 @@ internal class PeHeaderParser(private val buf: ByteBuffer, private val raw: Byte
         if (metaOff + metadataSize > raw.size) return null
 
         return ClrTableParser(buf, raw).parse(metaOff, metadataSize, majorRtVer, minorRtVer, flags, entryPointToken)
+    }
+
+    private fun parseResources(dataDirectories: List<PeDataDirectory>): PeResourceDirectory? {
+        if (dataDirectories.size <= PeDataDirectory.RESOURCE) return null
+        val dd = dataDirectories[PeDataDirectory.RESOURCE]
+        if (dd.isEmpty) return null
+        val rsrcBase = rvaToFileOffset(dd.rva) ?: return null
+        if (rsrcBase + 16 > raw.size) return null
+        return parseResourceDir(rsrcBase, rsrcBase, dd.rva)
+    }
+
+    private fun parseResourceDir(offset: Int, rsrcBase: Int, rsrcRva: Int): PeResourceDirectory {
+        if (offset + 16 > raw.size) return PeResourceDirectory(entries = emptyList())
+        val characteristics = buf.getInt(offset)
+        val timeDateStamp = buf.getInt(offset + 4)
+        val majorVersion = buf.getShort(offset + 8)
+        val minorVersion = buf.getShort(offset + 10)
+        val namedEntries = buf.getShort(offset + 12).toInt() and 0xFFFF
+        val idEntries = buf.getShort(offset + 14).toInt() and 0xFFFF
+        val totalEntries = namedEntries + idEntries
+
+        val entries = mutableListOf<PeResourceEntry>()
+        for (i in 0 until totalEntries) {
+            val entryOff = offset + 16 + i * 8
+            if (entryOff + 8 > raw.size) break
+            val nameOrId = buf.getInt(entryOff)
+            val dataOrDir = buf.getInt(entryOff + 4)
+
+            val name = if (nameOrId < 0) {
+                val nameOff = rsrcBase + (nameOrId and 0x7FFFFFFF)
+                if (nameOff + 2 <= raw.size) {
+                    val len = buf.getShort(nameOff).toInt() and 0xFFFF
+                    if (nameOff + 2 + len * 2 <= raw.size) {
+                        val chars = CharArray(len) { buf.getChar(nameOff + 2 + it * 2) }
+                        String(chars)
+                    } else null
+                } else null
+            } else null
+            val id = if (nameOrId >= 0) nameOrId else null
+
+            if (dataOrDir < 0) {
+                val subdirOff = rsrcBase + (dataOrDir and 0x7FFFFFFF)
+                val subdir = parseResourceDir(subdirOff, rsrcBase, rsrcRva)
+                entries.add(PeResourceEntry(id = id, name = name, directory = subdir))
+            } else {
+                val dataEntryOff = rsrcBase + dataOrDir
+                if (dataEntryOff + 16 <= raw.size) {
+                    val dataRva = buf.getInt(dataEntryOff)
+                    val dataSize = buf.getInt(dataEntryOff + 4)
+                    val codePage = buf.getInt(dataEntryOff + 8)
+                    val reserved = buf.getInt(dataEntryOff + 12)
+                    val fileOff = rvaToFileOffset(dataRva)
+                    val bytes = if (fileOff != null && fileOff + dataSize <= raw.size) {
+                        raw.copyOfRange(fileOff, fileOff + dataSize)
+                    } else ByteArray(0)
+                    entries.add(PeResourceEntry(id = id, name = name,
+                        data = PeResourceData(dataRva, dataSize, codePage, reserved, bytes)))
+                }
+            }
+        }
+        return PeResourceDirectory(characteristics, timeDateStamp, majorVersion, minorVersion, entries)
+    }
+
+    private fun parseTlsDirectory(dataDirectories: List<PeDataDirectory>, opt: PeOptionalHeader?): TLSDirectory? {
+        if (dataDirectories.size <= PeDataDirectory.TLS) return null
+        val dd = dataDirectories[PeDataDirectory.TLS]
+        if (dd.isEmpty) return null
+        val off = rvaToFileOffset(dd.rva) ?: return null
+        val isPe32Plus = opt?.magic == PeConstants.PE32PLUS_MAGIC
+        if (isPe32Plus) {
+            if (off + 40 > raw.size) return null
+            return TLSDirectory(
+                rawDataStart = buf.getLong(off),
+                rawDataEnd = buf.getLong(off + 8),
+                indexAddress = buf.getLong(off + 16),
+                callbacksAddress = buf.getLong(off + 24),
+                zeroFillSize = buf.getInt(off + 32).toLong() and 0xFFFFFFFFL,
+                characteristics = buf.getInt(off + 36),
+            )
+        } else {
+            if (off + 24 > raw.size) return null
+            return TLSDirectory(
+                rawDataStart = buf.getInt(off).toLong() and 0xFFFFFFFFL,
+                rawDataEnd = buf.getInt(off + 4).toLong() and 0xFFFFFFFFL,
+                indexAddress = buf.getInt(off + 8).toLong() and 0xFFFFFFFFL,
+                callbacksAddress = buf.getInt(off + 12).toLong() and 0xFFFFFFFFL,
+                zeroFillSize = buf.getInt(off + 16).toLong() and 0xFFFFFFFFL,
+                characteristics = buf.getInt(off + 20),
+            )
+        }
+    }
+
+    private fun parseExceptionEntries(sections: List<PeSection>): List<PeExceptionParser.ParsedEntry> {
+        val pdataSection = sections.firstOrNull { it.name == ".pdata" } ?: return emptyList()
+        val xdataSection = sections.firstOrNull { it.name == ".xdata" } ?: return emptyList()
+        val pdataData = pdataSection.data ?: return emptyList()
+        val xdataData = xdataSection.data ?: return emptyList()
+        return try {
+            PeExceptionParser.parse(pdataData, xdataData, xdataSection.virtualAddress)
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun parseDebugDirectory(dataDirectories: List<PeDataDirectory>): List<PeDebugEntry> {
+        if (dataDirectories.size <= PeDataDirectory.DEBUG) return emptyList()
+        val dd = dataDirectories[PeDataDirectory.DEBUG]
+        if (dd.isEmpty) return emptyList()
+        val fileOff = rvaToFileOffset(dd.rva) ?: return emptyList()
+
+        val entryCount = dd.size / PeDebugEntry.ENTRY_SIZE
+        val result = mutableListOf<PeDebugEntry>()
+        for (i in 0 until entryCount) {
+            val off = fileOff + i * PeDebugEntry.ENTRY_SIZE
+            if (off + PeDebugEntry.ENTRY_SIZE > raw.size) break
+
+            val characteristics = buf.getInt(off)
+            val timeDateStamp = buf.getInt(off + 4)
+            val majorVersion = buf.getShort(off + 8).toInt() and 0xFFFF
+            val minorVersion = buf.getShort(off + 10).toInt() and 0xFFFF
+            val type = buf.getInt(off + 12)
+            val sizeOfData = buf.getInt(off + 16)
+            val addressOfRawData = buf.getInt(off + 20)
+            val pointerToRawData = buf.getInt(off + 24)
+
+            val data = if (pointerToRawData > 0 && sizeOfData > 0 && pointerToRawData + sizeOfData <= raw.size) {
+                raw.copyOfRange(pointerToRawData, pointerToRawData + sizeOfData)
+            } else ByteArray(0)
+
+            result.add(PeDebugEntry(
+                characteristics = characteristics,
+                timeDateStamp = timeDateStamp,
+                majorVersion = majorVersion,
+                minorVersion = minorVersion,
+                type = type,
+                sizeOfData = sizeOfData,
+                addressOfRawData = addressOfRawData,
+                pointerToRawData = pointerToRawData,
+                data = data,
+            ))
+        }
+        return result
+    }
+
+    private fun parseLoadConfig(dataDirectories: List<PeDataDirectory>, opt: PeOptionalHeader?): PeLoadConfig? {
+        if (dataDirectories.size <= PeDataDirectory.LOAD_CONFIG) return null
+        val dd = dataDirectories[PeDataDirectory.LOAD_CONFIG]
+        if (dd.isEmpty) return null
+        val off = rvaToFileOffset(dd.rva) ?: return null
+        val isPe32Plus = opt?.magic == PeConstants.PE32PLUS_MAGIC
+
+        // Minimum size check (first field is Size)
+        if (off + 4 > raw.size) return null
+        val size = buf.getInt(off)
+        if (size < 64) return null // too small to have meaningful fields
+
+        if (isPe32Plus) {
+            if (off + minOf(size, 148) > raw.size) return null
+            return PeLoadConfig(
+                size = size,
+                timeDateStamp = buf.getInt(off + 4),
+                majorVersion = buf.getShort(off + 8).toInt() and 0xFFFF,
+                minorVersion = buf.getShort(off + 10).toInt() and 0xFFFF,
+                globalFlagsClear = buf.getInt(off + 12),
+                globalFlagsSet = buf.getInt(off + 16),
+                criticalSectionDefaultTimeout = buf.getInt(off + 20),
+                deCommitFreeBlockThreshold = buf.getLong(off + 24),
+                deCommitTotalFreeThreshold = buf.getLong(off + 32),
+                lockPrefixTable = buf.getLong(off + 40),
+                maximumAllocationSize = buf.getLong(off + 48),
+                virtualMemoryThreshold = buf.getLong(off + 56),
+                processAffinityMask = buf.getLong(off + 64),
+                processHeapFlags = buf.getInt(off + 72),
+                csdVersion = buf.getShort(off + 76).toInt() and 0xFFFF,
+                dependentLoadFlags = buf.getShort(off + 78).toInt() and 0xFFFF,
+                editList = buf.getLong(off + 80),
+                securityCookie = buf.getLong(off + 88),
+                seHandlerTable = buf.getLong(off + 96),
+                seHandlerCount = buf.getLong(off + 104),
+                guardCfCheckFunctionPointer = if (size >= 120) buf.getLong(off + 112) else 0,
+                guardCfDispatchFunctionPointer = if (size >= 128) buf.getLong(off + 120) else 0,
+                guardCfFunctionTable = if (size >= 136) buf.getLong(off + 128) else 0,
+                guardCfFunctionCount = if (size >= 144) buf.getLong(off + 136) else 0,
+                guardFlags = if (size >= 148) buf.getInt(off + 144) else 0,
+            )
+        } else {
+            if (off + minOf(size, 100) > raw.size) return null
+            return PeLoadConfig(
+                size = size,
+                timeDateStamp = buf.getInt(off + 4),
+                majorVersion = buf.getShort(off + 8).toInt() and 0xFFFF,
+                minorVersion = buf.getShort(off + 10).toInt() and 0xFFFF,
+                globalFlagsClear = buf.getInt(off + 12),
+                globalFlagsSet = buf.getInt(off + 16),
+                criticalSectionDefaultTimeout = buf.getInt(off + 20),
+                deCommitFreeBlockThreshold = buf.getInt(off + 24).toLong() and 0xFFFFFFFFL,
+                deCommitTotalFreeThreshold = buf.getInt(off + 28).toLong() and 0xFFFFFFFFL,
+                lockPrefixTable = buf.getInt(off + 32).toLong() and 0xFFFFFFFFL,
+                maximumAllocationSize = buf.getInt(off + 36).toLong() and 0xFFFFFFFFL,
+                virtualMemoryThreshold = buf.getInt(off + 40).toLong() and 0xFFFFFFFFL,
+                processAffinityMask = buf.getInt(off + 44).toLong() and 0xFFFFFFFFL,
+                processHeapFlags = buf.getInt(off + 48),
+                csdVersion = buf.getShort(off + 52).toInt() and 0xFFFF,
+                dependentLoadFlags = buf.getShort(off + 54).toInt() and 0xFFFF,
+                editList = buf.getInt(off + 56).toLong() and 0xFFFFFFFFL,
+                securityCookie = buf.getInt(off + 60).toLong() and 0xFFFFFFFFL,
+                seHandlerTable = buf.getInt(off + 64).toLong() and 0xFFFFFFFFL,
+                seHandlerCount = buf.getInt(off + 68).toLong() and 0xFFFFFFFFL,
+                guardCfCheckFunctionPointer = if (size >= 76) buf.getInt(off + 72).toLong() and 0xFFFFFFFFL else 0,
+                guardCfDispatchFunctionPointer = if (size >= 80) buf.getInt(off + 76).toLong() and 0xFFFFFFFFL else 0,
+                guardCfFunctionTable = if (size >= 84) buf.getInt(off + 80).toLong() and 0xFFFFFFFFL else 0,
+                guardCfFunctionCount = if (size >= 88) buf.getInt(off + 84).toLong() and 0xFFFFFFFFL else 0,
+                guardFlags = if (size >= 92) buf.getInt(off + 88) else 0,
+            )
+        }
     }
 
     private fun rvaToFileOffset(rva: Int): Int? {

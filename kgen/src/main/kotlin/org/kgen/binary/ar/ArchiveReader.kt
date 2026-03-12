@@ -44,13 +44,27 @@ object ArchiveReader {
             val symbols = mutableListOf<ArchiveSymbol>()
             val members = mutableListOf<ArchiveMember>()
 
+            var isFirstSlash = true
             for (raw in rawMembers) {
                 when {
-                    raw.headerName == "/" && raw === rawMembers.firstOrNull { it.headerName == "/" } -> {
-                        symbols.addAll(parseGnuSymtab(raw))
+                    raw.headerName == "/" && isFirstSlash -> {
+                        isFirstSlash = false
+                        if (variant == ArchiveVariant.COFF) {
+                            // First COFF linker member: big-endian count + offsets + strings
+                            // Parse as fallback; prefer second member if present
+                            symbols.addAll(parseCoffFirstLinkerMember(raw))
+                        } else {
+                            symbols.addAll(parseGnuSymtab(raw))
+                        }
                     }
                     raw.headerName == "/" && variant == ArchiveVariant.COFF -> {
-                        // Second linker member in COFF — skip (already have symbols from first)
+                        // Second COFF linker member: little-endian, more efficient format
+                        // This is the authoritative symbol table for COFF .lib files
+                        val coffSymbols = parseCoffSecondLinkerMember(raw)
+                        if (coffSymbols.isNotEmpty()) {
+                            symbols.clear()
+                            symbols.addAll(coffSymbols)
+                        }
                     }
                     raw.headerName == "//" -> {
                         // Long name table — already parsed
@@ -210,6 +224,79 @@ object ArchiveReader {
             for (i in 0 until count) {
                 val name = readNullTerminated(strPos)
                 symbols.add(ArchiveSymbol(name = name, memberOffset = offsets[i].toLong()))
+                strPos += name.length + 1
+            }
+            return symbols
+        }
+
+        /**
+         * Parses the COFF first linker member ("/" — first occurrence).
+         *
+         * Format: big-endian symbol count, big-endian offsets, null-terminated strings.
+         * Identical layout to GNU symtab but semantically part of COFF.
+         */
+        private fun parseCoffFirstLinkerMember(member: RawMember): List<ArchiveSymbol> {
+            if (member.size < 4) return emptyList()
+            val off = member.dataOffset
+            val buf = ByteBuffer.wrap(data, off, member.size).order(ByteOrder.BIG_ENDIAN)
+            val count = buf.getInt()
+            if (count < 0 || member.size < 4 + count * 4) return emptyList()
+
+            val offsets = IntArray(count) { buf.getInt() }
+            val stringStart = off + 4 + count * 4
+            val symbols = mutableListOf<ArchiveSymbol>()
+
+            var strPos = stringStart
+            for (i in 0 until count) {
+                val name = readNullTerminated(strPos)
+                symbols.add(ArchiveSymbol(name = name, memberOffset = offsets[i].toLong()))
+                strPos += name.length + 1
+            }
+            return symbols
+        }
+
+        /**
+         * Parses the COFF second linker member ("/" — second occurrence).
+         *
+         * Format (all little-endian):
+         *   - uint32 memberCount
+         *   - uint32[memberCount] memberOffsets (file offsets to each archive member header)
+         *   - uint32 symbolCount
+         *   - uint16[symbolCount] memberIndices (1-based index into memberOffsets)
+         *   - null-terminated symbol name strings
+         */
+        private fun parseCoffSecondLinkerMember(member: RawMember): List<ArchiveSymbol> {
+            if (member.size < 4) return emptyList()
+            val off = member.dataOffset
+            val buf = ByteBuffer.wrap(data, off, member.size).order(ByteOrder.LITTLE_ENDIAN)
+
+            val memberCount = buf.getInt()
+            if (memberCount < 0 || member.size < 4 + memberCount * 4 + 4) return emptyList()
+
+            val memberOffsets = IntArray(memberCount) { buf.getInt() }
+
+            val symbolCount = buf.getInt()
+            if (symbolCount < 0) return emptyList()
+            val minSize = 4 + memberCount * 4 + 4 + symbolCount * 2
+            if (member.size < minSize) return emptyList()
+
+            val memberIndices = IntArray(symbolCount) {
+                buf.getShort().toInt() and 0xFFFF // unsigned short, 1-based
+            }
+
+            val stringStart = off + 4 + memberCount * 4 + 4 + symbolCount * 2
+            val symbols = mutableListOf<ArchiveSymbol>()
+
+            var strPos = stringStart
+            for (i in 0 until symbolCount) {
+                val name = readNullTerminated(strPos)
+                val memberIdx = memberIndices[i] - 1 // convert 1-based to 0-based
+                val memberOffset = if (memberIdx in memberOffsets.indices) {
+                    memberOffsets[memberIdx].toLong()
+                } else {
+                    0L
+                }
+                symbols.add(ArchiveSymbol(name = name, memberOffset = memberOffset))
                 strPos += name.length + 1
             }
             return symbols

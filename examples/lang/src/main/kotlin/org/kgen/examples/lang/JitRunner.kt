@@ -3,7 +3,12 @@ package org.kgen.examples.lang
 import org.kgen.ir.Module
 import org.kgen.jit.JitEngine
 import org.kgen.jit.SymbolResolver
-import org.kgen.jit.runtime.*
+import org.kgen.jit.TieredCompilation
+import org.kgen.runtime.*
+import org.kgen.runtime.gc.*
+import org.kgen.runtime.exec.*
+import org.kgen.pass.OptLevel
+import org.kgen.pass.PassPipeline
 import java.lang.foreign.*
 import java.lang.foreign.ValueLayout.JAVA_LONG
 import java.lang.invoke.MethodHandles
@@ -112,10 +117,98 @@ class JitRunner : AutoCloseable {
             rt.gc().collect()
             rt.gc().collectionCount()
         }
+
+        // String helpers (strings are arrays of char codes)
+
+        // str_len(s) -> length (alias for array_len)
+        registerCallback("str_len", 1) { args ->
+            rt.heap().readField(args[0], 0)
+        }
+
+        // str_get(s, idx) -> char code
+        registerCallback("str_get", 2) { args ->
+            val dataOffset = args[0] + ObjectLayout.HEADER_SIZE + 8 + args[1] * 8
+            val bytes = rt.heap().readBytes(dataOffset, 8)
+            var value = 0L
+            for (i in 0 until 8) value = value or ((bytes[i].toLong() and 0xFF) shl (i * 8))
+            value
+        }
+
+        // str_eq(s1, s2) -> 1 if equal, 0 if not
+        registerCallback("str_eq", 2) { args ->
+            val len1 = rt.heap().readField(args[0], 0)
+            val len2 = rt.heap().readField(args[1], 0)
+            if (len1 != len2) return@registerCallback 0L
+            for (i in 0 until len1) {
+                val off1 = args[0] + ObjectLayout.HEADER_SIZE + 8 + i * 8
+                val off2 = args[1] + ObjectLayout.HEADER_SIZE + 8 + i * 8
+                val b1 = rt.heap().readBytes(off1, 8)
+                val b2 = rt.heap().readBytes(off2, 8)
+                if (!b1.contentEquals(b2)) return@registerCallback 0L
+            }
+            1L
+        }
+
+        // str_concat(s1, s2) -> new string
+        registerCallback("str_concat", 2) { args ->
+            val len1 = rt.heap().readField(args[0], 0)
+            val len2 = rt.heap().readField(args[1], 0)
+            val totalLen = len1 + len2
+            val totalDataSize = 8 + totalLen * 8
+            val layout = ObjectLayout(
+                name = "Array",
+                size = totalDataSize.toInt(),
+                fields = listOf(FieldDescriptor("length", 0, 8, false)),
+                typeId = ARRAY_TYPE_ID,
+            )
+            val newArr = rt.heap().allocate(layout)
+            rt.heap().writeField(newArr, 0, totalLen)
+            // Copy s1 elements
+            for (i in 0 until len1) {
+                val srcOff = args[0] + ObjectLayout.HEADER_SIZE + 8 + i * 8
+                val dstOff = newArr + ObjectLayout.HEADER_SIZE + 8 + i * 8
+                rt.heap().writeBytes(dstOff, rt.heap().readBytes(srcOff, 8))
+            }
+            // Copy s2 elements
+            for (i in 0 until len2) {
+                val srcOff = args[1] + ObjectLayout.HEADER_SIZE + 8 + i * 8
+                val dstOff = newArr + ObjectLayout.HEADER_SIZE + 8 + (len1 + i) * 8
+                rt.heap().writeBytes(dstOff, rt.heap().readBytes(srcOff, 8))
+            }
+            newArr
+        }
     }
 
     /** Get the managed runtime (only available after enableManagedRuntime). */
     fun runtime(): DefaultManagedRuntime? = runtime
+
+    /** Read a string from the managed heap (string handle → Kotlin String). */
+    fun readString(handle: Long): String {
+        val rt = runtime ?: throw IllegalStateException("Managed runtime not enabled")
+        val len = rt.heap().readField(handle, 0)
+        val sb = StringBuilder(len.toInt())
+        for (i in 0 until len) {
+            val offset = handle + ObjectLayout.HEADER_SIZE + 8 + i * 8
+            val bytes = rt.heap().readBytes(offset, 8)
+            var value = 0L
+            for (j in 0 until 8) value = value or ((bytes[j].toLong() and 0xFF) shl (j * 8))
+            sb.append(value.toInt().toChar())
+        }
+        return sb.toString()
+    }
+
+    /**
+     * Enable tiered compilation — functions start at O0 and get recompiled
+     * with optimization after the given number of calls.
+     */
+    fun enableTieredCompilation(threshold: Int = 100, pipeline: PassPipeline = OptLevel.O2.pipeline()) {
+        val tiered = TieredCompilation(threshold)
+        tiered.setTier1Pipeline(pipeline)
+        jit.setTieredCompilation(tiered)
+    }
+
+    /** Get the tiered compilation stats, if enabled. */
+    fun tieredCompilation(): TieredCompilation? = jit.tieredCompilation()
 
     /**
      * Enable resolving symbols from the host process (libc, loaded libraries).
@@ -144,6 +237,26 @@ class JitRunner : AutoCloseable {
     fun runInt(source: String, functionName: String, vararg args: Long): Int {
         load(source)
         return jit.callInt(functionName, *args)
+    }
+
+    fun runDouble(source: String, functionName: String, vararg args: Double): Double {
+        load(source)
+        return callDouble(functionName, *args)
+    }
+
+    fun callDouble(functionName: String, vararg args: Double): Double {
+        val descriptor = FunctionDescriptor.of(
+            ValueLayout.JAVA_DOUBLE,
+            *Array(args.size) { ValueLayout.JAVA_DOUBLE }
+        )
+        val handle = jit.handle(functionName, descriptor)
+        return when (args.size) {
+            0 -> handle.invoke() as Double
+            1 -> handle.invoke(args[0]) as Double
+            2 -> handle.invoke(args[0], args[1]) as Double
+            3 -> handle.invoke(args[0], args[1], args[2]) as Double
+            else -> handle.invokeWithArguments(*args.map { it as Any }.toTypedArray()) as Double
+        }
     }
 
     fun call(functionName: String, vararg args: Long): Long {

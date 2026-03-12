@@ -48,7 +48,7 @@ class QualifiedNameExtendedTest {
     @Test
     fun clrGenericArity3() {
         val name = QualifiedName.parse("System.Tuple`3")
-        assertEquals("Tuple", name.simpleName())
+        assertEquals("Tuple", name.name())
         assertEquals(3, name.genericArity())
         assertTrue(name.isGeneric())
     }
@@ -66,8 +66,8 @@ class QualifiedNameExtendedTest {
         assertTrue(name.isNested())
         assertEquals("Enumerator", name.name())
         val outer = name.outerType()!!
-        assertEquals("Dictionary`2", outer.name())
-        assertEquals("Dictionary", outer.simpleName())
+        assertEquals("Dictionary`2", outer.rawName())
+        assertEquals("Dictionary", outer.name())
         assertEquals(2, outer.genericArity())
     }
 
@@ -145,7 +145,7 @@ class QualifiedNameExtendedTest {
     @Test
     fun ofWithNamespaceAndGeneric() {
         val name = QualifiedName.of("System.Collections.Generic", "HashSet`1")
-        assertEquals("HashSet", name.simpleName())
+        assertEquals("HashSet", name.name())
         assertEquals(1, name.genericArity())
         assertEquals("System.Collections.Generic", name.namespace())
     }
@@ -163,7 +163,6 @@ class QualifiedNameExtendedTest {
     fun matchingJvmToDot() {
         val jvm = QualifiedName.parse("java/util/List")
         val dot = QualifiedName.of("java.util", "List")
-        assertTrue(jvm.matches(dot))
         assertEquals(jvm, dot)
     }
 
@@ -171,14 +170,14 @@ class QualifiedNameExtendedTest {
     fun notMatchingDifferentNamespace() {
         val a = QualifiedName.parse("java/util/List")
         val b = QualifiedName.parse("java/awt/List")
-        assertFalse(a.matches(b))
+        assertNotEquals(a, b)
     }
 
     @Test
     fun notMatchingDifferentName() {
         val a = QualifiedName.parse("System.String")
         val b = QualifiedName.parse("System.Object")
-        assertFalse(a.matches(b))
+        assertNotEquals(a, b)
     }
 
     @Test

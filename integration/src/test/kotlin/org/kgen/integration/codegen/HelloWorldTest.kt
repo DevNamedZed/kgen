@@ -6,10 +6,10 @@ import org.junit.jupiter.api.condition.EnabledOnOs
 import org.junit.jupiter.api.condition.OS
 import org.kgen.ir.*
 import org.kgen.ir.build.*
-import org.kgen.ir.codegen.*
+import org.kgen.codegen.*
 import org.kgen.ir.target.Target
 import org.kgen.pass.OptLevel
-import org.kgen.backend.x86.codegen.X86CodeGenerator
+import org.kgen.target.x86.codegen.X86CodeGenerator
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder

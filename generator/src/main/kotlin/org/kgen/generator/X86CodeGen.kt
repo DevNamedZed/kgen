@@ -39,7 +39,7 @@ data class X86Flags(
 
 fun main() {
     val resourceDir = "generator/src/main/resources/x86"
-    val outputDir = "kgen/src/main/kotlin/org/kgen/backend/x86"
+    val outputDir = "kgen/src/main/kotlin/org/kgen/target/x86"
 
     val instructions = loadX86Instructions(File(resourceDir))
     val totalForms = instructions.sumOf { it.forms.size }
@@ -323,7 +323,7 @@ fun flagsToLiteral(flags: X86Flags?): String {
 fun generateX86OperandType(out: File) {
     val sb = StringBuilder()
     sb.appendLine("// Generated — do not edit")
-    sb.appendLine("package org.kgen.backend.x86")
+    sb.appendLine("package org.kgen.target.x86")
     sb.appendLine()
     sb.appendLine("enum class X86OperandType {")
     val types = listOf(
@@ -377,7 +377,7 @@ fun generateX86Feature(instructions: List<X86Instruction>, out: File) {
     val features = instructions.flatMap { i -> i.forms.map { it.feature } }.distinct().sorted()
     val sb = StringBuilder()
     sb.appendLine("// Generated — do not edit")
-    sb.appendLine("package org.kgen.backend.x86")
+    sb.appendLine("package org.kgen.target.x86")
     sb.appendLine()
     sb.appendLine("enum class X86Feature(val specName: String) {")
     for ((i, f) in features.withIndex()) {
@@ -393,7 +393,7 @@ fun generateX86Feature(instructions: List<X86Instruction>, out: File) {
 fun generateX86InstructionData(instructions: List<X86Instruction>, out: File) {
     val sb = StringBuilder()
     sb.appendLine("// Generated — do not edit")
-    sb.appendLine("package org.kgen.backend.x86")
+    sb.appendLine("package org.kgen.target.x86")
     sb.appendLine()
     sb.appendLine("/** Encoding metadata for a single instruction form. */")
     sb.appendLine("data class X86EncodingInfo(")
@@ -465,7 +465,7 @@ fun generateX86InstructionData(instructions: List<X86Instruction>, out: File) {
 fun generateX86AssemblerOps(instructions: List<X86Instruction>, out: File) {
     val sb = StringBuilder()
     sb.appendLine("// Generated — do not edit")
-    sb.appendLine("package org.kgen.backend.x86")
+    sb.appendLine("package org.kgen.target.x86")
     sb.appendLine()
     sb.appendLine("/**")
     sb.appendLine(" * Generated assembler dispatch methods for x86-64.")
@@ -481,6 +481,21 @@ fun generateX86AssemblerOps(instructions: List<X86Instruction>, out: File) {
     sb.appendLine("    protected abstract fun encodeVex(enc: X86EncodingInfo, vararg operands: Any)")
     sb.appendLine("    protected abstract fun encodeEvex(enc: X86EncodingInfo, vararg operands: Any)")
     sb.appendLine()
+    sb.appendLine("    /** Check if a register is the accumulator (AL/AX/EAX/RAX — encoding 0). */")
+    sb.appendLine("    private fun isAccumulator(r: Any): Boolean {")
+    sb.appendLine("        val reg = r as? X86Register")
+    sb.appendLine("        return reg != null && reg.encoding() == 0")
+    sb.appendLine("    }")
+    sb.appendLine()
+
+    // Accumulator categories and their corresponding r/m cast types
+    val accumCategories = setOf(OpCategory.AL, OpCategory.AX, OpCategory.EAX, OpCategory.RAX)
+    val accumToOperandType = mapOf(
+        OpCategory.AL to "X86Operand8",
+        OpCategory.AX to "X86Operand16",
+        OpCategory.EAX to "X86Operand32",
+        OpCategory.RAX to "X86Operand64",
+    )
 
     for (insn in instructions) {
         val methodName = sanitizeMnemonic(insn.mnemonic)
@@ -492,8 +507,30 @@ fun generateX86AssemblerOps(instructions: List<X86Instruction>, out: File) {
         // Pre-compute form params to check for companion r,rm forms
         val allFormParams = insn.forms.map { formToParams(it) }
 
+        // Pre-collect accumulator forms for this instruction, keyed by their register type signature.
+        // These get merged into the register-typed overload with an isAccumulator() guard.
+        data class AccumInfo(val encLiteral: String, val encoder: String, val form: X86Form)
+        val accumForms = mutableMapOf<Sig, AccumInfo>()
+        for ((formIdx, form) in insn.forms.withIndex()) {
+            val params = allFormParams[formIdx]
+            if (params.isNotEmpty() && params[0].category in accumCategories) {
+                val sig = Sig(params.map { it.type })
+                val encLiteral = encodingToLiteral(form.encoding)
+                val encoder = when {
+                    form.encoding.evex != null -> "encodeEvex"
+                    form.encoding.vex != null || form.encoding.vex_map != null -> "encodeVex"
+                    else -> "encodeLegacy"
+                }
+                accumForms[sig] = AccumInfo(encLiteral, encoder, form)
+            }
+        }
+
         for ((formIdx, form) in insn.forms.withIndex()) {
             val rawParams = allFormParams[formIdx]
+
+            // Skip accumulator-only forms — they are folded into the register-typed overload below
+            if (rawParams.isNotEmpty() && rawParams[0].category in accumCategories) continue
+
             // For rm,r forms where a companion r,rm form exists, narrow the rm param to
             // X86Memory. The r,rm form handles reg-reg; the rm,r form is only for mem-reg.
             // This prevents overload ambiguity cross-module (X86Register implements all sized interfaces).
@@ -549,6 +586,38 @@ fun generateX86AssemblerOps(instructions: List<X86Instruction>, out: File) {
             sb.appendLine("        $encoder(X86EncodingInfo($encLiteral)$argList)")
             sb.appendLine("    }")
             sb.appendLine()
+
+            // If this is an r/m form and there's a corresponding accumulator form,
+            // also generate a register-typed overload with isAccumulator() guard.
+            // The register overload uses the short accumulator encoding for AL/AX/EAX/RAX,
+            // and delegates to the r/m form for all other registers.
+            if (rawParams.isNotEmpty() && rawParams[0].category in gpRmCategories) {
+                // Map RM category to the register type and check for accumulator form
+                val regType = operandToKotlinType(rawParams[0].category).replace("Operand", "Register")
+                val rmType = operandToKotlinType(rawParams[0].category)
+                val regParams = listOf(rawParams[0].copy(name = "r1", type = regType)) + params.drop(1)
+                val regSig = Sig(regParams.map { it.type })
+
+                val accumInfo = accumForms[regSig]
+                if (accumInfo != null && seen.add(regSig)) {
+                    val regParamStr = regParams.joinToString(", ") { "${it.name}: ${it.type}" }
+                    val delegateArgs = listOf("r1 as $rmType") + params.drop(1).map { it.name }
+                    // For forms like xchg where the accumulator form's other operand is also a register
+                    // (not an immediate), either operand could be the accumulator (commutative).
+                    val otherParamsAreRegs = regParams.drop(1).all { it.category in regCategories }
+                    val accumCheck = if (otherParamsAreRegs && regParams.size == 2) {
+                        "isAccumulator(r1) || isAccumulator(${regParams[1].name})"
+                    } else {
+                        "isAccumulator(r1)"
+                    }
+                    sb.appendLine("    /** ${insn.summary}: ${accumInfo.form.operands.joinToString(", ")} (accumulator short form) / ${form.operands.joinToString(", ")} */")
+                    sb.appendLine("    fun $methodName($regParamStr) {")
+                    sb.appendLine("        if ($accumCheck) ${accumInfo.encoder}(X86EncodingInfo(${accumInfo.encLiteral}), r1, ${regParams.drop(1).joinToString(", ") { it.name }})")
+                    sb.appendLine("        else $methodName(${delegateArgs.joinToString(", ")})")
+                    sb.appendLine("    }")
+                    sb.appendLine()
+                }
+            }
         }
     }
 

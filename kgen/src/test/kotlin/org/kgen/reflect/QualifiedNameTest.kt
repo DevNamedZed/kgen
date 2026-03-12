@@ -12,7 +12,7 @@ class QualifiedNameTest {
     fun simpleName() {
         val name = QualifiedName.parse("strlen")
         assertEquals("strlen", name.name())
-        assertEquals("strlen", name.simpleName())
+        assertEquals("strlen", name.name())
         assertNull(name.namespace())
         assertEquals("strlen", name.fullName())
         assertFalse(name.isGeneric())
@@ -32,7 +32,7 @@ class QualifiedNameTest {
     fun clrSimple() {
         val name = QualifiedName.parse("System.String")
         assertEquals("String", name.name())
-        assertEquals("String", name.simpleName())
+        assertEquals("String", name.name())
         assertEquals("System", name.namespace())
         assertEquals("System.String", name.fullName())
     }
@@ -48,8 +48,8 @@ class QualifiedNameTest {
     @Test
     fun clrGenericArity() {
         val name = QualifiedName.parse("System.Collections.Generic.List`1")
-        assertEquals("List`1", name.name())
-        assertEquals("List", name.simpleName())
+        assertEquals("List`1", name.rawName())
+        assertEquals("List", name.name())
         assertEquals("System.Collections.Generic", name.namespace())
         assertTrue(name.isGeneric())
         assertEquals(1, name.genericArity())
@@ -58,8 +58,8 @@ class QualifiedNameTest {
     @Test
     fun clrGenericArityTwo() {
         val name = QualifiedName.parse("System.Collections.Generic.Dictionary`2")
-        assertEquals("Dictionary`2", name.name())
-        assertEquals("Dictionary", name.simpleName())
+        assertEquals("Dictionary`2", name.rawName())
+        assertEquals("Dictionary", name.name())
         assertEquals(2, name.genericArity())
     }
 
@@ -180,22 +180,22 @@ class QualifiedNameTest {
     @Test
     fun ofNamespaceAndName() {
         val name = QualifiedName.of("System.Collections.Generic", "List`1")
-        assertEquals("List`1", name.name())
-        assertEquals("List", name.simpleName())
+        assertEquals("List`1", name.rawName())
+        assertEquals("List", name.name())
         assertEquals("System.Collections.Generic", name.namespace())
         assertEquals(1, name.genericArity())
     }
 
     @Test
     fun ofFullName() {
-        val name = QualifiedName.of("System.String")
+        val name = QualifiedName.parse("System.String")
         assertEquals("String", name.name())
         assertEquals("System", name.namespace())
     }
 
     @Test
     fun ofSimpleName() {
-        val name = QualifiedName.of("strlen")
+        val name = QualifiedName.parse("strlen")
         assertEquals("strlen", name.name())
         assertNull(name.namespace())
     }
@@ -206,7 +206,6 @@ class QualifiedNameTest {
     fun matchingSameFormat() {
         val a = QualifiedName.parse("System.String")
         val b = QualifiedName.parse("System.String")
-        assertTrue(a.matches(b))
         assertEquals(a, b)
         assertEquals(a.hashCode(), b.hashCode())
     }
@@ -215,7 +214,6 @@ class QualifiedNameTest {
     fun matchingCrossFormat() {
         val jvm = QualifiedName.parse("java/lang/String")
         val dot = QualifiedName.of("java.lang", "String")
-        assertTrue(jvm.matches(dot))
         assertEquals(jvm, dot)
     }
 
@@ -223,7 +221,6 @@ class QualifiedNameTest {
     fun notMatching() {
         val a = QualifiedName.parse("System.String")
         val b = QualifiedName.parse("System.Int32")
-        assertFalse(a.matches(b))
         assertNotEquals(a, b)
     }
 

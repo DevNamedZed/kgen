@@ -129,6 +129,17 @@ class Mem2Reg : ModulePass {
             renameBlock(entry)
         }
 
+        // Resolve transitive replacements: if %6 → %7 and %7 → %15, then %6 → %15
+        for (key in globalReplacements.keys.toList()) {
+            var value = globalReplacements[key] ?: continue
+            val seen = mutableSetOf(key)
+            while (value is InstructionRef && value.name in globalReplacements && value.name !in seen) {
+                seen.add(value.name)
+                value = globalReplacements[value.name]!!
+            }
+            globalReplacements[key] = value
+        }
+
         // Rewrite all remaining instructions to use SSA replacements
         val resultBlocks = fn.blocks.map { block ->
             val insts = blockInsts[block.label]!!

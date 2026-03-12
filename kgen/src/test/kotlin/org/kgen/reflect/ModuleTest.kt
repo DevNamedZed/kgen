@@ -2,7 +2,9 @@ package org.kgen.reflect
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.io.TempDir
 import org.kgen.binary.*
+import java.nio.file.Path
 
 class ModuleTest {
 
@@ -243,5 +245,152 @@ class ModuleTest {
         val module = Module.fromObjectFile(testObjectFile(symbols = syms))
         val func = module.function("main")!!
         assertSame(module, func.module())
+    }
+
+    // -- Disassembly --
+
+    @Test
+    fun disassembleX86Function() {
+        // x86-64: mov eax, 42; ret (B8 2A 00 00 00  C3)
+        val code = byteArrayOf(0xB8.toByte(), 0x2A, 0x00, 0x00, 0x00, 0xC3.toByte())
+        val section = Section(".text", SectionKind.TEXT, code, address = 0)
+        val syms = listOf(
+            org.kgen.binary.Symbol("getFortyTwo", 0, code.size.toLong(), ".text",
+                SymbolBinding.GLOBAL, SymbolKind.FUNCTION),
+        )
+        val module = Module.fromObjectFile(testObjectFile(
+            symbols = syms,
+            sections = listOf(section),
+        ))
+
+        val insns = module.disassemble("getFortyTwo")
+        assertNotNull(insns)
+        assertTrue(insns!!.isNotEmpty())
+        assertEquals("mov", insns[0].mnemonic)
+    }
+
+    @Test
+    fun disassembleNotFound() {
+        val module = Module.fromObjectFile(testObjectFile())
+        assertNull(module.disassemble("nonexistent"))
+    }
+
+    @Test
+    fun disassembleBytesX86() {
+        // nop; ret (90 C3)
+        val code = byteArrayOf(0x90.toByte(), 0xC3.toByte())
+        val module = Module.fromObjectFile(testObjectFile())
+        val insns = module.disassembleBytes(code)
+        assertEquals(2, insns.size)
+        assertEquals("nop", insns[0].mnemonic)
+        assertEquals("ret", insns[1].mnemonic)
+    }
+
+    @Test
+    fun disassembleJvmBytes() {
+        // iload_0, iload_1, iadd, ireturn
+        val code = byteArrayOf(0x1A, 0x1B, 0x60, 0xAC.toByte())
+        val module = Module.fromObjectFile(testObjectFile(
+            format = ObjectFormat.JVM_CLASS,
+            arch = Architecture(ArchType.JVM),
+        ))
+        val insns = module.disassembleBytes(code)
+        assertEquals(4, insns.size)
+        assertEquals("iload_0", insns[0].mnemonic)
+        assertEquals("iload_1", insns[1].mnemonic)
+        assertEquals("iadd", insns[2].mnemonic)
+        assertEquals("ireturn", insns[3].mnemonic)
+    }
+
+    @Test
+    fun disassembleArm64Bytes() {
+        // ret (0xD65F03C0)
+        val code = byteArrayOf(0xC0.toByte(), 0x03, 0x5F, 0xD6.toByte())
+        val module = Module.fromObjectFile(testObjectFile(
+            arch = Architecture(ArchType.AARCH64),
+        ))
+        val insns = module.disassembleBytes(code)
+        assertEquals(1, insns.size)
+        assertEquals("ret", insns[0].mnemonic)
+    }
+
+    @Test
+    fun disassembleRiscvBytes() {
+        // ret = jalr zero, ra, 0 (0x00008067)
+        val code = byteArrayOf(0x67, 0x80.toByte(), 0x00, 0x00)
+        val module = Module.fromObjectFile(testObjectFile(
+            arch = Architecture(ArchType.RISCV64),
+        ))
+        val insns = module.disassembleBytes(code)
+        assertEquals(1, insns.size)
+        // May be "ret" pseudo or "jalr"
+        assertTrue(insns[0].mnemonic == "ret" || insns[0].mnemonic == "jalr")
+    }
+
+    // -- Save / toBytes --
+
+    private fun loadClassFixture(): Module {
+        val url = javaClass.getResource("/fixtures/java/Calculator.class")!!
+        return Module.fromFile(Path.of(url.toURI()).toString())
+    }
+
+    @Test
+    fun saveCopiesRawBytes(@TempDir tmp: Path) {
+        val module = loadClassFixture()
+        val outPath = tmp.resolve("copy.class")
+        module.save(outPath)
+        val original = module.bytes()
+        val saved = java.nio.file.Files.readAllBytes(outPath)
+        assertArrayEquals(original, saved)
+    }
+
+    @Test
+    fun saveStringOverload(@TempDir tmp: Path) {
+        val module = loadClassFixture()
+        val outPath = tmp.resolve("copy2.class").toString()
+        module.save(outPath)
+        val saved = java.nio.file.Files.readAllBytes(Path.of(outPath))
+        assertArrayEquals(module.bytes(), saved)
+    }
+
+    @Test
+    fun toBytesReturnsCopy() {
+        val module = loadClassFixture()
+        val a = module.toBytes()
+        val b = module.toBytes()
+        assertArrayEquals(a, b)
+        assertNotSame(a, b)
+    }
+
+    @Test
+    fun saveRewriteJvm(@TempDir tmp: Path) {
+        val module = loadClassFixture()
+        val outPath = tmp.resolve("rewritten.class")
+        module.save(outPath, rewrite = true)
+        // Rewritten class should be loadable
+        val reloaded = Module.fromFile(outPath)
+        assertEquals(ObjectFormat.JVM_CLASS, reloaded.format())
+        assertTrue(reloaded.bytes().isNotEmpty())
+    }
+
+    @Test
+    fun saveEmptyModuleFails(@TempDir tmp: Path) {
+        val module = Module.fromObjectFile(testObjectFile())
+        val outPath = tmp.resolve("empty.o")
+        assertThrows(IllegalArgumentException::class.java) {
+            module.save(outPath)
+        }
+    }
+
+    @Test
+    fun toBytesRewriteJvm() {
+        val module = loadClassFixture()
+        val rewritten = module.toBytes(rewrite = true)
+        assertTrue(rewritten.isNotEmpty())
+        // Should start with 0xCAFEBABE
+        assertEquals(0xCA.toByte(), rewritten[0])
+        assertEquals(0xFE.toByte(), rewritten[1])
+        assertEquals(0xBA.toByte(), rewritten[2])
+        assertEquals(0xBE.toByte(), rewritten[3])
     }
 }

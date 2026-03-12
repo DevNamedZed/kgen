@@ -1,0 +1,16 @@
+[
+  {
+    "mnemonic": "lui",
+    "summary": "Load upper immediate",
+    "forms": [
+      { "operands": ["gp", "imm"], "encoding": { "opcode": 55, "format": "U" } }
+    ]
+  },
+  {
+    "mnemonic": "auipc",
+    "summary": "Add upper immediate to PC",
+    "forms": [
+      { "operands": ["gp", "imm"], "encoding": { "opcode": 23, "format": "U" } }
+    ]
+  }
+]

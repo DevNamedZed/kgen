@@ -1,0 +1,79 @@
+[
+  {
+    "mnemonic": "lb",
+    "summary": "Load byte (sign-extend)",
+    "forms": [
+      { "operands": ["gp", "mem"], "encoding": { "opcode": 3, "funct3": 0, "format": "I_LOAD" } }
+    ]
+  },
+  {
+    "mnemonic": "lh",
+    "summary": "Load halfword (sign-extend)",
+    "forms": [
+      { "operands": ["gp", "mem"], "encoding": { "opcode": 3, "funct3": 1, "format": "I_LOAD" } }
+    ]
+  },
+  {
+    "mnemonic": "lw",
+    "summary": "Load word (sign-extend)",
+    "forms": [
+      { "operands": ["gp", "mem"], "encoding": { "opcode": 3, "funct3": 2, "format": "I_LOAD" } }
+    ]
+  },
+  {
+    "mnemonic": "ld",
+    "summary": "Load doubleword",
+    "forms": [
+      { "operands": ["gp", "mem"], "encoding": { "opcode": 3, "funct3": 3, "format": "I_LOAD" } }
+    ]
+  },
+  {
+    "mnemonic": "lbu",
+    "summary": "Load byte (zero-extend)",
+    "forms": [
+      { "operands": ["gp", "mem"], "encoding": { "opcode": 3, "funct3": 4, "format": "I_LOAD" } }
+    ]
+  },
+  {
+    "mnemonic": "lhu",
+    "summary": "Load halfword (zero-extend)",
+    "forms": [
+      { "operands": ["gp", "mem"], "encoding": { "opcode": 3, "funct3": 5, "format": "I_LOAD" } }
+    ]
+  },
+  {
+    "mnemonic": "lwu",
+    "summary": "Load word (zero-extend)",
+    "forms": [
+      { "operands": ["gp", "mem"], "encoding": { "opcode": 3, "funct3": 6, "format": "I_LOAD" } }
+    ]
+  },
+  {
+    "mnemonic": "sb",
+    "summary": "Store byte",
+    "forms": [
+      { "operands": ["gp", "mem"], "encoding": { "opcode": 35, "funct3": 0, "format": "S" } }
+    ]
+  },
+  {
+    "mnemonic": "sh",
+    "summary": "Store halfword",
+    "forms": [
+      { "operands": ["gp", "mem"], "encoding": { "opcode": 35, "funct3": 1, "format": "S" } }
+    ]
+  },
+  {
+    "mnemonic": "sw",
+    "summary": "Store word",
+    "forms": [
+      { "operands": ["gp", "mem"], "encoding": { "opcode": 35, "funct3": 2, "format": "S" } }
+    ]
+  },
+  {
+    "mnemonic": "sd",
+    "summary": "Store doubleword",
+    "forms": [
+      { "operands": ["gp", "mem"], "encoding": { "opcode": 35, "funct3": 3, "format": "S" } }
+    ]
+  }
+]

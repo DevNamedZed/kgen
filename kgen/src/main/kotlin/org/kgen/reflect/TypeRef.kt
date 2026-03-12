@@ -23,8 +23,21 @@ class TypeRef private constructor(
         else -> qname?.fullName() ?: kind.name.lowercase()
     }
 
-    fun isResolved(): Boolean = false // TODO: resolve against a Module's type table
-    fun resolve(): Any? = null        // TODO: returns TypeInfo when implemented
+    /** Returns true if this type reference can be resolved against the given [module]. */
+    fun isResolved(module: Module): Boolean = resolve(module) != null
+
+    /** Resolve this type reference against the given [module]'s type table. */
+    fun resolve(module: Module): TypeInfo? = when (kind) {
+        Kind.NAMED -> module.type(fullName())
+        Kind.PRIMITIVE -> module.type(fullName())
+        Kind.ARRAY -> element?.resolve(module)?.let { module.type(fullName()) }
+        else -> null
+    }
+
+    @Deprecated("Use isResolved(module) instead", ReplaceWith("isResolved(module)"))
+    fun isResolved(): Boolean = false
+    @Deprecated("Use resolve(module) instead", ReplaceWith("resolve(module)"))
+    fun resolve(): Any? = null
 
     fun isArray(): Boolean = kind == Kind.ARRAY
     fun isPointer(): Boolean = kind == Kind.POINTER
@@ -67,7 +80,7 @@ class TypeRef private constructor(
         @JvmField val LONG = I64
 
         private fun primitive(name: String): TypeRef =
-            TypeRef(QualifiedName.of(name), Kind.PRIMITIVE)
+            TypeRef(QualifiedName.parse(name), Kind.PRIMITIVE)
 
         @JvmStatic
         fun of(name: String): TypeRef = TypeRef(QualifiedName.parse(name), Kind.NAMED)
@@ -86,6 +99,6 @@ class TypeRef private constructor(
 
         @JvmStatic
         fun genericParam(name: String): TypeRef =
-            TypeRef(QualifiedName.of(name), Kind.GENERIC_PARAM)
+            TypeRef(QualifiedName.parse(name), Kind.GENERIC_PARAM)
     }
 }

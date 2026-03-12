@@ -1,0 +1,86 @@
+[
+  {
+    "mnemonic": "sxtw",
+    "summary": "Sign-extend word to 64-bit (alias: SBFM Xd, Xn, #0, #31)",
+    "forms": [
+      { "operands": ["x", "w"], "encoding": { "base": "93407C00", "format": "reg2" } }
+    ]
+  },
+  {
+    "mnemonic": "sxth",
+    "summary": "Sign-extend halfword (alias: SBFM Rd, Rn, #0, #15)",
+    "forms": [
+      { "operands": ["x", "w"], "encoding": { "base": "93403C00", "format": "reg2" } },
+      { "operands": ["w", "w"], "encoding": { "base": "13003C00", "format": "reg2" } }
+    ]
+  },
+  {
+    "mnemonic": "sxtb",
+    "summary": "Sign-extend byte (alias: SBFM Rd, Rn, #0, #7)",
+    "forms": [
+      { "operands": ["x", "w"], "encoding": { "base": "93401C00", "format": "reg2" } },
+      { "operands": ["w", "w"], "encoding": { "base": "13001C00", "format": "reg2" } }
+    ]
+  },
+  {
+    "mnemonic": "uxtb",
+    "summary": "Unsigned extend byte (alias: UBFM Wd, Wn, #0, #7)",
+    "forms": [
+      { "operands": ["w", "w"], "encoding": { "base": "53001C00", "format": "reg2" } }
+    ]
+  },
+  {
+    "mnemonic": "uxth",
+    "summary": "Unsigned extend halfword (alias: UBFM Wd, Wn, #0, #15)",
+    "forms": [
+      { "operands": ["w", "w"], "encoding": { "base": "53003C00", "format": "reg2" } }
+    ]
+  },
+  {
+    "mnemonic": "cls",
+    "summary": "Count leading sign bits",
+    "forms": [
+      { "operands": ["x", "x"], "encoding": { "base": "DAC01400", "format": "reg2" } },
+      { "operands": ["w", "w"], "encoding": { "base": "5AC01400", "format": "reg2" } }
+    ]
+  },
+  {
+    "mnemonic": "clz",
+    "summary": "Count leading zeros",
+    "forms": [
+      { "operands": ["x", "x"], "encoding": { "base": "DAC01000", "format": "reg2" } },
+      { "operands": ["w", "w"], "encoding": { "base": "5AC01000", "format": "reg2" } }
+    ]
+  },
+  {
+    "mnemonic": "rbit",
+    "summary": "Reverse bits",
+    "forms": [
+      { "operands": ["x", "x"], "encoding": { "base": "DAC00000", "format": "reg2" } },
+      { "operands": ["w", "w"], "encoding": { "base": "5AC00000", "format": "reg2" } }
+    ]
+  },
+  {
+    "mnemonic": "rev",
+    "summary": "Reverse bytes",
+    "forms": [
+      { "operands": ["x", "x"], "encoding": { "base": "DAC00C00", "format": "reg2" } },
+      { "operands": ["w", "w"], "encoding": { "base": "5AC00800", "format": "reg2" } }
+    ]
+  },
+  {
+    "mnemonic": "rev16",
+    "summary": "Reverse bytes in 16-bit halfwords",
+    "forms": [
+      { "operands": ["x", "x"], "encoding": { "base": "DAC00400", "format": "reg2" } },
+      { "operands": ["w", "w"], "encoding": { "base": "5AC00400", "format": "reg2" } }
+    ]
+  },
+  {
+    "mnemonic": "rev32",
+    "summary": "Reverse bytes in 32-bit words",
+    "forms": [
+      { "operands": ["x", "x"], "encoding": { "base": "DAC00800", "format": "reg2" } }
+    ]
+  }
+]

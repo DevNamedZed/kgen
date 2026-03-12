@@ -3,8 +3,8 @@ package org.kgen.integration.runtime
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.reflect.*
-import org.kgen.backend.x86.X86Register
-import org.kgen.backend.x86.asm.X86Assembler
+import org.kgen.target.x86.X86Register
+import org.kgen.target.x86.asm.X86Assembler
 
 class CodeViewTest {
 

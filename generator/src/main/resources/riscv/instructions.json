@@ -1,0 +1,14 @@
+{
+  "files": [
+    "rv64i-arithmetic.json",
+    "rv64i-immediate.json",
+    "rv64i-load-store.json",
+    "rv64i-branch.json",
+    "rv64i-upper.json",
+    "rv64i-system.json",
+    "rv64m.json",
+    "rv64f.json",
+    "rv64d.json",
+    "rv64a.json"
+  ]
+}

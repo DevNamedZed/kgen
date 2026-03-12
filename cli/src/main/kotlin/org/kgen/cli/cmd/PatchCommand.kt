@@ -1,6 +1,6 @@
 package org.kgen.cli.cmd
 
-import org.kgen.tools.ElfBinaryPatcher
+import org.kgen.binary.patch.ElfBinaryPatcher
 import org.kgen.cli.*
 import java.io.File
 

@@ -24,10 +24,11 @@ class LoopInvariantCodeMotion : ModulePass {
         val loops = findNaturalLoops(fn, cfg, domTree)
         if (loops.isEmpty()) return fn
 
+        val aa = BasicAliasAnalysis(fn)
         var blocks = fn.blocks.toMutableList()
 
         for (loop in loops) {
-            blocks = hoistLoop(blocks, loop, cfg)
+            blocks = hoistLoop(blocks, loop, cfg, aa)
         }
 
         return fn.copy(blocks = blocks)
@@ -37,6 +38,7 @@ class LoopInvariantCodeMotion : ModulePass {
         blocks: MutableList<BasicBlock>,
         loop: NaturalLoop,
         cfg: Cfg,
+        aa: AliasAnalysis,
     ): MutableList<BasicBlock> {
         val loopBlocks = loop.body
         val header = loop.header
@@ -51,6 +53,15 @@ class LoopInvariantCodeMotion : ModulePass {
             }
         }
 
+        // Collect all stores inside the loop for alias checking
+        val loopStores = mutableListOf<Instruction>()
+        for (block in blocks) {
+            if (block.label !in loopBlocks) continue
+            for (inst in block.instructions) {
+                if (aa.writesMemory(inst)) loopStores.add(inst)
+            }
+        }
+
         // Identify loop-invariant instructions (iterative fixed point)
         val invariant = mutableSetOf<String>()
         var changed = true
@@ -61,7 +72,7 @@ class LoopInvariantCodeMotion : ModulePass {
                 for (inst in block.instructions) {
                     val result = inst.result ?: continue
                     if (result.name in invariant) continue
-                    if (!canHoist(inst)) continue
+                    if (!canHoist(inst, loopStores, aa)) continue
                     if (allOperandsInvariant(inst, loopDefs, invariant)) {
                         invariant.add(result.name)
                         changed = true
@@ -134,8 +145,12 @@ class LoopInvariantCodeMotion : ModulePass {
         }.toMutableList()
     }
 
-    private fun canHoist(inst: Instruction): Boolean = when (inst) {
-        // Pure computation instructions can be hoisted
+    private fun canHoist(
+        inst: Instruction,
+        loopStores: List<Instruction>,
+        aa: AliasAnalysis,
+    ): Boolean = when (inst) {
+        // Pure computation instructions can always be hoisted
         is Instruction.Add, is Instruction.Sub, is Instruction.Mul,
         is Instruction.SDiv, is Instruction.UDiv, is Instruction.SRem, is Instruction.URem,
         is Instruction.And, is Instruction.Or, is Instruction.Xor,
@@ -147,7 +162,17 @@ class LoopInvariantCodeMotion : ModulePass {
         is Instruction.SIToFP, is Instruction.UIToFP, is Instruction.FPToSI, is Instruction.FPToUI,
         is Instruction.FPTrunc, is Instruction.FPExt,
         is Instruction.Select, is Instruction.GetElementPtr -> true
-        // Cannot hoist: loads, stores, calls, branches, phis, allocas
+
+        // Loads can be hoisted if they don't alias any memory write in the loop
+        is Instruction.Load -> {
+            !inst.volatile && loopStores.all { store ->
+                val storePtr = aa.memoryPointer(store)
+                // If we can't determine the write target (e.g., calls), assume it may alias
+                storePtr != null && aa.alias(inst.ptr, storePtr) == AliasResult.NoAlias
+            }
+        }
+
+        // Cannot hoist: stores, calls, branches, phis, allocas
         else -> false
     }
 
@@ -204,6 +229,7 @@ class LoopInvariantCodeMotion : ModulePass {
         is Instruction.FPExt -> listOf(inst.value)
         is Instruction.Select -> listOf(inst.condition, inst.trueValue, inst.falseValue)
         is Instruction.GetElementPtr -> listOf(inst.ptr) + inst.indices
+        is Instruction.Load -> listOf(inst.ptr)
         else -> emptyList()
     }
 

@@ -85,6 +85,8 @@ enum class SymbolFlag {
     ACC_PUBLIC,
     ACC_PRIVATE,
     ACC_PROTECTED,
+    ACC_VOLATILE,
+    ACC_TRANSIENT,
 
     // WASM
     WASM_EXPORT,

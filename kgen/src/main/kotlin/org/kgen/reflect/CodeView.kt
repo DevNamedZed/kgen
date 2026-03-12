@@ -1,10 +1,10 @@
 package org.kgen.reflect
 
-import org.kgen.backend.x86.disasm.X86Disassembler
-import org.kgen.backend.x86.disasm.X86Instruction
-import org.kgen.backend.arm64.disasm.Arm64Disassembler
-import org.kgen.backend.arm64.disasm.Arm64Instruction
-import org.kgen.backend.riscv.disasm.RiscVDisassembler
+import org.kgen.target.x86.disasm.X86Disassembler
+import org.kgen.target.x86.disasm.X86Instruction
+import org.kgen.target.arm64.disasm.Arm64Disassembler
+import org.kgen.target.arm64.disasm.Arm64Instruction
+import org.kgen.target.riscv.disasm.RiscVDisassembler
 
 /**
  * Disassemble native code from a live address or byte array.

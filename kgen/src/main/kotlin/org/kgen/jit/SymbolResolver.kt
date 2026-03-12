@@ -1,6 +1,6 @@
 package org.kgen.jit
 
-import org.kgen.reflect.ProcessSymbols
+import org.kgen.reflect.process.ProcessSymbols
 
 /**
  * Resolves symbol names to addresses. Multiple resolvers can be chained

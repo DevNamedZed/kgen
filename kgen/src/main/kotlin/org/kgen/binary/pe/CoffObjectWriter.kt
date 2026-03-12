@@ -115,6 +115,14 @@ class CoffObjectWriter(private val machine: Int = PeConstants.MACHINE_AMD64) {
                         PeConstants.IMAGE_SCN_MEM_READ
                     SectionKind.BSS -> PeConstants.IMAGE_SCN_CNT_UNINITIALIZED_DATA or
                         PeConstants.IMAGE_SCN_MEM_READ or PeConstants.IMAGE_SCN_MEM_WRITE
+                    SectionKind.DEBUG_INFO, SectionKind.DEBUG_ABBREV, SectionKind.DEBUG_LINE,
+                    SectionKind.DEBUG_STR, SectionKind.DEBUG_RANGES, SectionKind.DEBUG_LOC,
+                    SectionKind.DEBUG_FRAME, SectionKind.DEBUG_ARANGES, SectionKind.DEBUG_PUBNAMES,
+                    SectionKind.DEBUG_PUBTYPES, SectionKind.DEBUG_MACRO, SectionKind.DEBUG_LINE_STR,
+                    SectionKind.DEBUG_STR_OFFSETS, SectionKind.DEBUG_ADDR, SectionKind.DEBUG_RNGLISTS,
+                    SectionKind.DEBUG_LOCLISTS ->
+                        PeConstants.IMAGE_SCN_CNT_INITIALIZED_DATA or
+                        PeConstants.IMAGE_SCN_MEM_READ or PeConstants.IMAGE_SCN_MEM_DISCARDABLE
                     else -> continue
                 } or alignCharacteristic(sec.align)
                 sections.add(SectionInfo(sec, chars))
@@ -195,7 +203,9 @@ class CoffObjectWriter(private val machine: Int = PeConstants.MACHINE_AMD64) {
                 val coffType = when (rel.type) {
                     is RelocationType.COFF_X86_64 -> rel.type.value
                     is RelocationType.X86_64 -> mapElfToCoffReloc(rel.type)
-                    else -> continue
+                    is RelocationType.COFF_ARM64 -> rel.type.value
+                    is RelocationType.AArch64 -> mapAarch64ToCoffReloc(rel.type)
+                    else -> error("Unsupported relocation type for COFF: ${rel.type}")
                 }
                 targetSection.relocations.add(CoffRelocation(
                     virtualAddress = rel.offset.toInt(),
@@ -214,6 +224,22 @@ class CoffObjectWriter(private val machine: Int = PeConstants.MACHINE_AMD64) {
             RelocationType.X86_64.R_32 -> RelocationType.COFF_X86_64.ADDR32.value
             RelocationType.X86_64.R_32S -> RelocationType.COFF_X86_64.ADDR32.value
             else -> RelocationType.COFF_X86_64.REL32.value
+        }
+
+        private fun mapAarch64ToCoffReloc(type: RelocationType.AArch64): Int = when (type) {
+            RelocationType.AArch64.CALL26, RelocationType.AArch64.JUMP26 -> RelocationType.COFF_ARM64.BRANCH26.value
+            RelocationType.AArch64.ADR_PREL_PG_HI21 -> RelocationType.COFF_ARM64.PAGEBASE_REL21.value
+            RelocationType.AArch64.ADD_ABS_LO12_NC -> RelocationType.COFF_ARM64.PAGEOFFSET_12A.value
+            RelocationType.AArch64.LDST8_ABS_LO12_NC,
+            RelocationType.AArch64.LDST16_ABS_LO12_NC,
+            RelocationType.AArch64.LDST32_ABS_LO12_NC,
+            RelocationType.AArch64.LDST64_ABS_LO12_NC,
+            RelocationType.AArch64.LDST128_ABS_LO12_NC -> RelocationType.COFF_ARM64.PAGEOFFSET_12L.value
+            RelocationType.AArch64.ABS64 -> RelocationType.COFF_ARM64.ADDR64.value
+            RelocationType.AArch64.ABS32 -> RelocationType.COFF_ARM64.ADDR32.value
+            RelocationType.AArch64.CONDBR19 -> RelocationType.COFF_ARM64.BRANCH19.value
+            RelocationType.AArch64.TSTBR14 -> RelocationType.COFF_ARM64.BRANCH14.value
+            else -> RelocationType.COFF_ARM64.ADDR64.value
         }
 
         private fun buildStringTable(symbols: List<SymbolEntry>): CoffStringTable {

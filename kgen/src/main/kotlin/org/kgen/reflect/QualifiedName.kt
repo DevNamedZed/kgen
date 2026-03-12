@@ -9,8 +9,8 @@ package org.kgen.reflect
  *
  * ```java
  * var name = QualifiedName.parse("System.Collections.Generic.List`1");
- * name.name();          // "List`1"
- * name.simpleName();    // "List"
+ * name.name();          // "List"
+ * name.rawName();       // "List`1"
  * name.namespace();     // "System.Collections.Generic"
  * name.genericArity();  // 1
  *
@@ -29,15 +29,18 @@ class QualifiedName private constructor(
     private val ns: String?,
     private val typeName: String,
     private val outer: QualifiedName?,
+    private val genericArgs: List<QualifiedName> = emptyList(),
     private val arrayElement: QualifiedName? = null,
     private val arrayDimensions: Int = 0,
 ) {
-    fun name(): String = typeName
-
-    fun simpleName(): String {
+    /** The simple type name, stripping CLR generic arity (e.g., "List" not "List`1"). */
+    fun name(): String {
         val backtick = typeName.indexOf('`')
         return if (backtick >= 0) typeName.substring(0, backtick) else typeName
     }
+
+    /** The raw type name including CLR generic arity suffix (e.g., "List`1"). */
+    fun rawName(): String = typeName
 
     fun namespace(): String? = ns
 
@@ -58,17 +61,17 @@ class QualifiedName private constructor(
         }
     }
 
-    fun isGeneric(): Boolean = genericArity() > 0 || genericArguments().isNotEmpty()
+    fun isGeneric(): Boolean = genericArity() > 0 || genericArgs.isNotEmpty()
 
     fun genericArity(): Int {
         val backtick = typeName.indexOf('`')
         if (backtick >= 0) {
             return typeName.substring(backtick + 1).toIntOrNull() ?: 0
         }
-        return parsedGenericArgs?.size ?: 0
+        return genericArgs.size
     }
 
-    fun genericArguments(): List<QualifiedName> = parsedGenericArgs ?: emptyList()
+    fun genericArguments(): List<QualifiedName> = genericArgs
 
     fun isNested(): Boolean = outer != null
 
@@ -95,10 +98,6 @@ class QualifiedName private constructor(
         return result
     }
 
-    fun matches(other: QualifiedName): Boolean = fullName() == other.fullName()
-
-    private var parsedGenericArgs: List<QualifiedName>? = null
-
     override fun toString(): String = fullName()
 
     override fun equals(other: Any?): Boolean {
@@ -110,7 +109,6 @@ class QualifiedName private constructor(
     override fun hashCode(): Int = fullName().hashCode()
 
     companion object {
-        // JVM primitive type names
         @JvmField val BOOLEAN = QualifiedName(null, "boolean", null)
         @JvmField val BYTE = QualifiedName(null, "byte", null)
         @JvmField val CHAR = QualifiedName(null, "char", null)
@@ -121,7 +119,6 @@ class QualifiedName private constructor(
         @JvmField val DOUBLE = QualifiedName(null, "double", null)
         @JvmField val VOID = QualifiedName(null, "void", null)
 
-        // CLR built-in type aliases
         @JvmField val CLR_BOOL = QualifiedName("System", "Boolean", null)
         @JvmField val CLR_BYTE = QualifiedName("System", "Byte", null)
         @JvmField val CLR_SBYTE = QualifiedName("System", "SByte", null)
@@ -139,7 +136,6 @@ class QualifiedName private constructor(
         @JvmField val CLR_VOID = QualifiedName("System", "Void", null)
         @JvmField val CLR_INTPTR = QualifiedName("System", "IntPtr", null)
 
-        // JVM well-known types
         @JvmField val JVM_STRING = QualifiedName("java.lang", "String", null)
         @JvmField val JVM_OBJECT = QualifiedName("java.lang", "Object", null)
         @JvmField val JVM_CLASS = QualifiedName("java.lang", "Class", null)
@@ -160,16 +156,10 @@ class QualifiedName private constructor(
         )
 
         @JvmStatic
-        fun of(fullName: String): QualifiedName = parse(fullName)
-
-        @JvmStatic
         fun of(namespace: String, name: String): QualifiedName {
             return QualifiedName(namespace.ifEmpty { null }, name, null)
         }
 
-        /**
-         * Parses a JVM type descriptor like `Ljava/lang/String;`, `[I`, `[[D`, `Z`, etc.
-         */
         @JvmStatic
         fun fromDescriptor(descriptor: String): QualifiedName {
             val trimmed = descriptor.trim()
@@ -185,7 +175,7 @@ class QualifiedName private constructor(
                     var i = pos
                     while (i < desc.length && desc[i] == '[') { dims++; i++ }
                     val (element, end) = parseDescriptor(desc, i)
-                    QualifiedName(null, element.fullName(), null, element, dims) to end
+                    QualifiedName(null, element.fullName(), null, emptyList(), element, dims) to end
                 }
                 'L' -> {
                     val semi = desc.indexOf(';', pos)
@@ -201,10 +191,6 @@ class QualifiedName private constructor(
             }
         }
 
-        /**
-         * Resolves a CLR keyword alias (like `int`, `string`, `bool`) to its full System type name.
-         * Returns null if the alias is not recognized.
-         */
         @JvmStatic
         fun fromClrAlias(alias: String): QualifiedName? = CLR_PRIMITIVES[alias]
 
@@ -285,8 +271,7 @@ class QualifiedName private constructor(
 
             val base = parse(basePart)
             val args = splitTemplateArgs(templateContent).map { parse(it.trim()) }
-            base.parsedGenericArgs = args
-            return base
+            return QualifiedName(base.ns, base.typeName, base.outer, args, base.arrayElement, base.arrayDimensions)
         }
 
         private fun splitTemplateArgs(content: String): List<String> {

@@ -1,0 +1,50 @@
+[
+  {
+    "mnemonic": "csel",
+    "summary": "Conditional select",
+    "forms": [
+      { "operands": ["x", "x", "x", "cond"], "encoding": { "base": "9A800000", "format": "csel" } },
+      { "operands": ["w", "w", "w", "cond"], "encoding": { "base": "1A800000", "format": "csel" } }
+    ]
+  },
+  {
+    "mnemonic": "csinc",
+    "summary": "Conditional select increment",
+    "forms": [
+      { "operands": ["x", "x", "x", "cond"], "encoding": { "base": "9A800400", "format": "csel" } },
+      { "operands": ["w", "w", "w", "cond"], "encoding": { "base": "1A800400", "format": "csel" } }
+    ]
+  },
+  {
+    "mnemonic": "csinv",
+    "summary": "Conditional select invert",
+    "forms": [
+      { "operands": ["x", "x", "x", "cond"], "encoding": { "base": "DA800000", "format": "csel" } },
+      { "operands": ["w", "w", "w", "cond"], "encoding": { "base": "5A800000", "format": "csel" } }
+    ]
+  },
+  {
+    "mnemonic": "csneg",
+    "summary": "Conditional select negate",
+    "forms": [
+      { "operands": ["x", "x", "x", "cond"], "encoding": { "base": "DA800400", "format": "csel" } },
+      { "operands": ["w", "w", "w", "cond"], "encoding": { "base": "5A800400", "format": "csel" } }
+    ]
+  },
+  {
+    "mnemonic": "cset",
+    "summary": "Conditional set (alias: CSINC Rd, ZR, ZR, invert(cond))",
+    "forms": [
+      { "operands": ["x", "cond"], "encoding": { "base": "9A9F07E0", "format": "rd_cond" } },
+      { "operands": ["w", "cond"], "encoding": { "base": "1A9F07E0", "format": "rd_cond" } }
+    ]
+  },
+  {
+    "mnemonic": "csetm",
+    "summary": "Conditional set mask (alias: CSINV Rd, ZR, ZR, invert(cond))",
+    "forms": [
+      { "operands": ["x", "cond"], "encoding": { "base": "DA9F03E0", "format": "rd_cond" } },
+      { "operands": ["w", "cond"], "encoding": { "base": "5A9F03E0", "format": "rd_cond" } }
+    ]
+  }
+]

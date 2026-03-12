@@ -1,0 +1,156 @@
+[
+  {
+    "mnemonic": "lrW",
+    "summary": "Load-reserved word",
+    "forms": [
+      { "operands": ["gp", "gp"], "encoding": { "opcode": 47, "funct3": 2, "funct5": 2, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  },
+  {
+    "mnemonic": "scW",
+    "summary": "Store-conditional word",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 47, "funct3": 2, "funct5": 3, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  },
+  {
+    "mnemonic": "amoswapW",
+    "summary": "Atomic swap word",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 47, "funct3": 2, "funct5": 1, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  },
+  {
+    "mnemonic": "amoaddW",
+    "summary": "Atomic add word",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 47, "funct3": 2, "funct5": 0, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  },
+  {
+    "mnemonic": "amoxorW",
+    "summary": "Atomic XOR word",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 47, "funct3": 2, "funct5": 4, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  },
+  {
+    "mnemonic": "amoandW",
+    "summary": "Atomic AND word",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 47, "funct3": 2, "funct5": 12, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  },
+  {
+    "mnemonic": "amoorW",
+    "summary": "Atomic OR word",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 47, "funct3": 2, "funct5": 8, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  },
+  {
+    "mnemonic": "amominW",
+    "summary": "Atomic minimum word (signed)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 47, "funct3": 2, "funct5": 16, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  },
+  {
+    "mnemonic": "amomaxW",
+    "summary": "Atomic maximum word (signed)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 47, "funct3": 2, "funct5": 20, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  },
+  {
+    "mnemonic": "amominuW",
+    "summary": "Atomic minimum word (unsigned)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 47, "funct3": 2, "funct5": 24, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  },
+  {
+    "mnemonic": "amomaxuW",
+    "summary": "Atomic maximum word (unsigned)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 47, "funct3": 2, "funct5": 28, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  },
+  {
+    "mnemonic": "lrD",
+    "summary": "Load-reserved doubleword",
+    "forms": [
+      { "operands": ["gp", "gp"], "encoding": { "opcode": 47, "funct3": 3, "funct5": 2, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  },
+  {
+    "mnemonic": "scD",
+    "summary": "Store-conditional doubleword",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 47, "funct3": 3, "funct5": 3, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  },
+  {
+    "mnemonic": "amoswapD",
+    "summary": "Atomic swap doubleword",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 47, "funct3": 3, "funct5": 1, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  },
+  {
+    "mnemonic": "amoaddD",
+    "summary": "Atomic add doubleword",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 47, "funct3": 3, "funct5": 0, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  },
+  {
+    "mnemonic": "amoxorD",
+    "summary": "Atomic XOR doubleword",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 47, "funct3": 3, "funct5": 4, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  },
+  {
+    "mnemonic": "amoandD",
+    "summary": "Atomic AND doubleword",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 47, "funct3": 3, "funct5": 12, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  },
+  {
+    "mnemonic": "amoorD",
+    "summary": "Atomic OR doubleword",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 47, "funct3": 3, "funct5": 8, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  },
+  {
+    "mnemonic": "amominD",
+    "summary": "Atomic minimum doubleword (signed)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 47, "funct3": 3, "funct5": 16, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  },
+  {
+    "mnemonic": "amomaxD",
+    "summary": "Atomic maximum doubleword (signed)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 47, "funct3": 3, "funct5": 20, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  },
+  {
+    "mnemonic": "amominuD",
+    "summary": "Atomic minimum doubleword (unsigned)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 47, "funct3": 3, "funct5": 24, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  },
+  {
+    "mnemonic": "amomaxuD",
+    "summary": "Atomic maximum doubleword (unsigned)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 47, "funct3": 3, "funct5": 28, "format": "R_ATOMIC" }, "feature": "a" }
+    ]
+  }
+]

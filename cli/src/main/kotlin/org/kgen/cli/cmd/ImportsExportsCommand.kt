@@ -3,8 +3,8 @@ package org.kgen.cli.cmd
 import org.kgen.binary.elf.ElfReader
 import org.kgen.binary.macho.MachOReader
 import org.kgen.binary.pe.PeReader
-import org.kgen.backend.wasm.module.WasmModuleReader
-import org.kgen.tools.Inspectors
+import org.kgen.target.wasm.module.WasmModuleReader
+import org.kgen.binary.inspect.Inspectors
 import org.kgen.cli.*
 
 object ImportsCommand {

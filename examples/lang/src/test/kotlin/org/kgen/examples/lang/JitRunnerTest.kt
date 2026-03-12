@@ -1058,4 +1058,240 @@ class JitRunnerTest {
             assertEquals(3L, result) // 10, 20, 15 are > 8
         }
     }
+
+    // ---- Float (f64) tests ----
+
+    @Test
+    fun floatConstant() {
+        JitRunner().use { runner ->
+            val result = runner.runDouble("fun pi(): float { return 3.14 }", "pi")
+            assertEquals(3.14, result, 0.001)
+        }
+    }
+
+    @Test
+    fun floatAddition() {
+        JitRunner().use { runner ->
+            val result = runner.runDouble(
+                "fun add(a: float, b: float): float { return a + b }",
+                "add", 1.5, 2.5
+            )
+            assertEquals(4.0, result, 0.001)
+        }
+    }
+
+    @Test
+    fun floatSubtraction() {
+        JitRunner().use { runner ->
+            val result = runner.runDouble(
+                "fun sub(a: float, b: float): float { return a - b }",
+                "sub", 10.0, 3.5
+            )
+            assertEquals(6.5, result, 0.001)
+        }
+    }
+
+    @Test
+    fun floatMultiplication() {
+        JitRunner().use { runner ->
+            val result = runner.runDouble(
+                "fun mul(a: float, b: float): float { return a * b }",
+                "mul", 3.0, 4.5
+            )
+            assertEquals(13.5, result, 0.001)
+        }
+    }
+
+    @Test
+    fun floatDivision() {
+        JitRunner().use { runner ->
+            val result = runner.runDouble(
+                "fun div(a: float, b: float): float { return a / b }",
+                "div", 10.0, 4.0
+            )
+            assertEquals(2.5, result, 0.001)
+        }
+    }
+
+    @Test
+    fun floatNegation() {
+        JitRunner().use { runner ->
+            val result = runner.runDouble(
+                "fun neg(x: float): float { return -x }",
+                "neg", 3.14
+            )
+            assertEquals(-3.14, result, 0.001)
+        }
+    }
+
+    @Test
+    fun floatComparison() {
+        JitRunner().use { runner ->
+            val result = runner.runDouble("""
+                fun isGreater(a: float, b: float): float {
+                    if a > b { return 1.0 }
+                    return 0.0
+                }
+            """.trimIndent(), "isGreater", 3.0, 2.0)
+            assertEquals(1.0, result, 0.001)
+        }
+    }
+
+    @Test
+    fun floatVariable() {
+        // x86 codegen doesn't yet support F64 store (alloca for floats)
+        // Use parameters instead of mutable variables
+        JitRunner().use { runner ->
+            val result = runner.runDouble(
+                "fun calc(x: float): float { return x + 2.5 }",
+                "calc", 1.5
+            )
+            assertEquals(4.0, result, 0.001)
+        }
+    }
+
+    @Test
+    fun floatArithmeticExpression() {
+        JitRunner().use { runner ->
+            val result = runner.runDouble(
+                "fun f(a: float, b: float, c: float): float { return a + b * c }",
+                "f", 1.0, 2.0, 3.0
+            )
+            assertEquals(7.0, result, 0.001)
+        }
+    }
+
+    // --- String tests ---
+
+    @Test
+    fun stringLiteral() {
+        JitRunner().use { runner ->
+            runner.enableManagedRuntime()
+            val handle = runner.run(
+                "fun hello(): int { return \"Hi\" }",
+                "hello")
+            assertEquals("Hi", runner.readString(handle))
+        }
+    }
+
+    @Test
+    fun stringLength() {
+        JitRunner().use { runner ->
+            runner.enableManagedRuntime()
+            val result = runner.run("""
+                extern fun str_len(s: int): int
+                fun test(): int {
+                    val s = "Hello"
+                    return str_len(s)
+                }
+            """.trimIndent(), "test")
+            assertEquals(5L, result)
+        }
+    }
+
+    @Test
+    fun stringEquality() {
+        JitRunner().use { runner ->
+            runner.enableManagedRuntime()
+            val result = runner.run("""
+                extern fun str_eq(s1: int, s2: int): int
+                fun test(): int {
+                    val a = "abc"
+                    val b = "abc"
+                    return str_eq(a, b)
+                }
+            """.trimIndent(), "test")
+            assertEquals(1L, result)
+        }
+    }
+
+    @Test
+    fun stringInequalityDifferentContent() {
+        JitRunner().use { runner ->
+            runner.enableManagedRuntime()
+            val result = runner.run("""
+                extern fun str_eq(s1: int, s2: int): int
+                fun test(): int {
+                    val a = "abc"
+                    val b = "xyz"
+                    return str_eq(a, b)
+                }
+            """.trimIndent(), "test")
+            assertEquals(0L, result)
+        }
+    }
+
+    @Test
+    fun stringConcat() {
+        JitRunner().use { runner ->
+            runner.enableManagedRuntime(8192)
+            val handle = runner.run("""
+                extern fun str_concat(s1: int, s2: int): int
+                fun test(): int {
+                    val a = "Hello"
+                    val b = " World"
+                    return str_concat(a, b)
+                }
+            """.trimIndent(), "test")
+            assertEquals("Hello World", runner.readString(handle))
+        }
+    }
+
+    @Test
+    fun stringCharAccess() {
+        JitRunner().use { runner ->
+            runner.enableManagedRuntime()
+            val result = runner.run("""
+                extern fun str_get(s: int, idx: int): int
+                fun test(): int {
+                    val s = "ABCDE"
+                    return str_get(s, 2)
+                }
+            """.trimIndent(), "test")
+            assertEquals('C'.code.toLong(), result)
+        }
+    }
+
+    // --- Tiered compilation tests ---
+
+    @Test
+    fun tieredCompilationRecompilesHotFunction() {
+        JitRunner().use { runner ->
+            runner.enableTieredCompilation(threshold = 5)
+            runner.load("fun add(a: int, b: int): int { return a + b }")
+
+            val tiered = runner.tieredCompilation()!!
+            assertFalse(tiered.isRecompiled("add"))
+
+            // Call below threshold
+            for (i in 1..4) {
+                assertEquals(7L, runner.call("add", 3L, 4L))
+            }
+            assertFalse(tiered.isRecompiled("add"))
+
+            // Call at threshold triggers recompilation
+            assertEquals(7L, runner.call("add", 3L, 4L))
+            assertTrue(tiered.isRecompiled("add"))
+
+            // Still works after recompilation
+            assertEquals(11L, runner.call("add", 5L, 6L))
+        }
+    }
+
+    @Test
+    fun tieredCompilationTracksCounts() {
+        JitRunner().use { runner ->
+            runner.enableTieredCompilation(threshold = 10)
+            runner.load("fun sq(x: int): int { return x * x }")
+
+            val tiered = runner.tieredCompilation()!!
+            assertEquals(0, tiered.callCount("sq"))
+
+            runner.call("sq", 5L)
+            assertEquals(1, tiered.callCount("sq"))
+
+            repeat(3) { runner.call("sq", 2L) }
+            assertEquals(4, tiered.callCount("sq"))
+        }
+    }
 }

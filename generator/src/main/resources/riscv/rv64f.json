@@ -1,0 +1,184 @@
+[
+  {
+    "mnemonic": "flw",
+    "summary": "Load single-precision float",
+    "forms": [
+      { "operands": ["fp", "mem"], "encoding": { "opcode": 7, "funct3": 2, "format": "I_LOAD" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fsw",
+    "summary": "Store single-precision float",
+    "forms": [
+      { "operands": ["fp", "mem"], "encoding": { "opcode": 39, "funct3": 2, "format": "S" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "faddS",
+    "summary": "Single-precision add",
+    "forms": [
+      { "operands": ["fp", "fp", "fp"], "encoding": { "opcode": 83, "funct5": 0, "fmt": 0, "format": "R_FP" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fsubS",
+    "summary": "Single-precision subtract",
+    "forms": [
+      { "operands": ["fp", "fp", "fp"], "encoding": { "opcode": 83, "funct5": 4, "fmt": 0, "format": "R_FP" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fmulS",
+    "summary": "Single-precision multiply",
+    "forms": [
+      { "operands": ["fp", "fp", "fp"], "encoding": { "opcode": 83, "funct5": 8, "fmt": 0, "format": "R_FP" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fdivS",
+    "summary": "Single-precision divide",
+    "forms": [
+      { "operands": ["fp", "fp", "fp"], "encoding": { "opcode": 83, "funct5": 12, "fmt": 0, "format": "R_FP" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fsqrtS",
+    "summary": "Single-precision square root",
+    "forms": [
+      { "operands": ["fp", "fp"], "encoding": { "opcode": 83, "funct5": 44, "fmt": 0, "format": "R_FP_UNARY" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fsgnjS",
+    "summary": "Single-precision sign inject",
+    "forms": [
+      { "operands": ["fp", "fp", "fp"], "encoding": { "opcode": 83, "funct5": 16, "fmt": 0, "funct3": 0, "format": "R_FP_NOROUND" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fsgnjnS",
+    "summary": "Single-precision sign inject negate",
+    "forms": [
+      { "operands": ["fp", "fp", "fp"], "encoding": { "opcode": 83, "funct5": 16, "fmt": 0, "funct3": 1, "format": "R_FP_NOROUND" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fsgnjxS",
+    "summary": "Single-precision sign inject XOR",
+    "forms": [
+      { "operands": ["fp", "fp", "fp"], "encoding": { "opcode": 83, "funct5": 16, "fmt": 0, "funct3": 2, "format": "R_FP_NOROUND" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fminS",
+    "summary": "Single-precision minimum",
+    "forms": [
+      { "operands": ["fp", "fp", "fp"], "encoding": { "opcode": 83, "funct5": 20, "fmt": 0, "funct3": 0, "format": "R_FP_NOROUND" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fmaxS",
+    "summary": "Single-precision maximum",
+    "forms": [
+      { "operands": ["fp", "fp", "fp"], "encoding": { "opcode": 83, "funct5": 20, "fmt": 0, "funct3": 1, "format": "R_FP_NOROUND" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "feqS",
+    "summary": "Single-precision compare equal",
+    "forms": [
+      { "operands": ["gp", "fp", "fp"], "encoding": { "opcode": 83, "funct5": 80, "fmt": 0, "funct3": 2, "format": "R_FP_CMP" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fltS",
+    "summary": "Single-precision compare less than",
+    "forms": [
+      { "operands": ["gp", "fp", "fp"], "encoding": { "opcode": 83, "funct5": 80, "fmt": 0, "funct3": 1, "format": "R_FP_CMP" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fleS",
+    "summary": "Single-precision compare less than or equal",
+    "forms": [
+      { "operands": ["gp", "fp", "fp"], "encoding": { "opcode": 83, "funct5": 80, "fmt": 0, "funct3": 0, "format": "R_FP_CMP" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fcvtWS",
+    "summary": "Convert float to signed 32-bit integer",
+    "forms": [
+      { "operands": ["gp", "fp"], "encoding": { "opcode": 83, "funct5": 96, "fmt": 0, "rs2": 0, "format": "R_FP_CVT" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fcvtWuS",
+    "summary": "Convert float to unsigned 32-bit integer",
+    "forms": [
+      { "operands": ["gp", "fp"], "encoding": { "opcode": 83, "funct5": 96, "fmt": 0, "rs2": 1, "format": "R_FP_CVT" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fcvtLS",
+    "summary": "Convert float to signed 64-bit integer",
+    "forms": [
+      { "operands": ["gp", "fp"], "encoding": { "opcode": 83, "funct5": 96, "fmt": 0, "rs2": 2, "format": "R_FP_CVT" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fcvtLuS",
+    "summary": "Convert float to unsigned 64-bit integer",
+    "forms": [
+      { "operands": ["gp", "fp"], "encoding": { "opcode": 83, "funct5": 96, "fmt": 0, "rs2": 3, "format": "R_FP_CVT" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fcvtSW",
+    "summary": "Convert signed 32-bit integer to float",
+    "forms": [
+      { "operands": ["fp", "gp"], "encoding": { "opcode": 83, "funct5": 104, "fmt": 0, "rs2": 0, "format": "R_FP_CVT" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fcvtSWu",
+    "summary": "Convert unsigned 32-bit integer to float",
+    "forms": [
+      { "operands": ["fp", "gp"], "encoding": { "opcode": 83, "funct5": 104, "fmt": 0, "rs2": 1, "format": "R_FP_CVT" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fcvtSL",
+    "summary": "Convert signed 64-bit integer to float",
+    "forms": [
+      { "operands": ["fp", "gp"], "encoding": { "opcode": 83, "funct5": 104, "fmt": 0, "rs2": 2, "format": "R_FP_CVT" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fcvtSLu",
+    "summary": "Convert unsigned 64-bit integer to float",
+    "forms": [
+      { "operands": ["fp", "gp"], "encoding": { "opcode": 83, "funct5": 104, "fmt": 0, "rs2": 3, "format": "R_FP_CVT" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fmvXW",
+    "summary": "Move float bits to integer register",
+    "forms": [
+      { "operands": ["gp", "fp"], "encoding": { "opcode": 83, "funct5": 112, "fmt": 0, "funct3": 0, "rs2": 0, "format": "R_FP_CVT" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fmvWX",
+    "summary": "Move integer bits to float register",
+    "forms": [
+      { "operands": ["fp", "gp"], "encoding": { "opcode": 83, "funct5": 120, "fmt": 0, "funct3": 0, "rs2": 0, "format": "R_FP_CVT" }, "feature": "f" }
+    ]
+  },
+  {
+    "mnemonic": "fclassS",
+    "summary": "Classify single-precision float",
+    "forms": [
+      { "operands": ["gp", "fp"], "encoding": { "opcode": 83, "funct5": 112, "fmt": 0, "funct3": 1, "rs2": 0, "format": "R_FP_CVT" }, "feature": "f" }
+    ]
+  }
+]

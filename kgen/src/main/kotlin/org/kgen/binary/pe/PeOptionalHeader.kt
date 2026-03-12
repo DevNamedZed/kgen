@@ -9,6 +9,8 @@ data class PeOptionalHeader(
     val sizeOfUninitializedData: Int,
     val entryPointRVA: Int,
     val baseOfCode: Int,
+    /** Base of data section (PE32 only, 0 for PE32+). */
+    val baseOfData: Int = 0,
     val imageBase: Long,
     val sectionAlignment: Int,
     val fileAlignment: Int,
@@ -28,7 +30,9 @@ data class PeOptionalHeader(
     val sizeOfHeapReserve: Long,
     val sizeOfHeapCommit: Long,
     val numberOfDataDirectories: Int,
-)
+) {
+    val isPe32Plus: Boolean get() = magic == PeConstants.PE32PLUS_MAGIC
+}
 
 data class PeDataDirectory(val rva: Int, val size: Int) {
     val isEmpty: Boolean get() = rva == 0 && size == 0

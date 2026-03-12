@@ -1,10 +1,10 @@
 package org.kgen.reflect
 
-import org.kgen.binary.Section
 import org.kgen.binary.SymbolBinding
 import org.kgen.binary.SymbolFlag
 import org.kgen.binary.SymbolKind
 import org.kgen.binary.SymbolVisibility
+import org.kgen.binary.mangling.Demangler
 
 /**
  * A rich, navigable symbol within a module.

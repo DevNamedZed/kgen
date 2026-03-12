@@ -6,11 +6,11 @@ import org.kgen.binary.macho.MachO
 import org.kgen.binary.macho.MachOReader
 import org.kgen.binary.pe.PeReader
 import org.kgen.binary.pe.PeConstants
-import org.kgen.backend.wasm.module.WasmModule
-import org.kgen.backend.wasm.module.WasmModuleReader
-import org.kgen.backend.wasm.disasm.WasmDisassembler
-import org.kgen.binary.jvm.JvmClassReader
-import org.kgen.binary.jvm.AccessFlags
+import org.kgen.target.wasm.module.WasmModule
+import org.kgen.target.wasm.module.WasmModuleReader
+import org.kgen.target.wasm.disasm.WasmDisassembler
+import org.kgen.target.jvm.JvmClassReader
+import org.kgen.target.jvm.AccessFlags
 import org.kgen.binary.ar.ArchiveReader
 import org.kgen.cli.*
 

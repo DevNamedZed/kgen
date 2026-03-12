@@ -18,7 +18,7 @@ object SectionsCommand {
             else -> {
                 // Fall back to generic inspector
                 try {
-                    val inspector = org.kgen.tools.Inspectors.forBytes(data)
+                    val inspector = org.kgen.binary.inspect.Inspectors.forBytes(data)
                     val sections = inspector.sections(data)
                     println("  %-4s %-24s %-10s %-12s %-12s %-8s %-6s".format(
                         "Idx", "Name", "Kind", "Size", "Address", "Offset", "Align"))

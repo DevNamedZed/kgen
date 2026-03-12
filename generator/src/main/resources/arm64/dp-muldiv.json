@@ -1,0 +1,78 @@
+[
+  {
+    "mnemonic": "mul",
+    "summary": "Multiply (alias: MADD Rd, Rn, Rm, ZR)",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "9B007C00", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "1B007C00", "format": "reg3" } }
+    ]
+  },
+  {
+    "mnemonic": "madd",
+    "summary": "Multiply-add (Rd = Ra + Rn * Rm)",
+    "forms": [
+      { "operands": ["x", "x", "x", "x"], "encoding": { "base": "9B000000", "format": "reg4" } },
+      { "operands": ["w", "w", "w", "w"], "encoding": { "base": "1B000000", "format": "reg4" } }
+    ]
+  },
+  {
+    "mnemonic": "msub",
+    "summary": "Multiply-subtract (Rd = Ra - Rn * Rm)",
+    "forms": [
+      { "operands": ["x", "x", "x", "x"], "encoding": { "base": "9B008000", "format": "reg4" } },
+      { "operands": ["w", "w", "w", "w"], "encoding": { "base": "1B008000", "format": "reg4" } }
+    ]
+  },
+  {
+    "mnemonic": "mneg",
+    "summary": "Multiply-negate (alias: MSUB Rd, Rn, Rm, ZR)",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "9B00FC00", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "1B00FC00", "format": "reg3" } }
+    ]
+  },
+  {
+    "mnemonic": "smulh",
+    "summary": "Signed multiply high (64x64→128, upper 64)",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "9B407C00", "format": "reg3" } }
+    ]
+  },
+  {
+    "mnemonic": "umulh",
+    "summary": "Unsigned multiply high (64x64→128, upper 64)",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "9BC07C00", "format": "reg3" } }
+    ]
+  },
+  {
+    "mnemonic": "smaddl",
+    "summary": "Signed multiply-add long (Xd = Xa + Wn * Wm)",
+    "forms": [
+      { "operands": ["x", "w", "w", "x"], "encoding": { "base": "9B200000", "format": "reg4" } }
+    ]
+  },
+  {
+    "mnemonic": "umaddl",
+    "summary": "Unsigned multiply-add long (Xd = Xa + Wn * Wm)",
+    "forms": [
+      { "operands": ["x", "w", "w", "x"], "encoding": { "base": "9BA00000", "format": "reg4" } }
+    ]
+  },
+  {
+    "mnemonic": "sdiv",
+    "summary": "Signed divide",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "9AC00C00", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "1AC00C00", "format": "reg3" } }
+    ]
+  },
+  {
+    "mnemonic": "udiv",
+    "summary": "Unsigned divide",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "9AC00800", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "1AC00800", "format": "reg3" } }
+    ]
+  }
+]

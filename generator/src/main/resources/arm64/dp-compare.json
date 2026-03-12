@@ -1,0 +1,28 @@
+[
+  {
+    "mnemonic": "cmp",
+    "summary": "Compare (alias: SUBS ZR, Rn, Rm/imm)",
+    "forms": [
+      { "operands": ["x", "x"], "encoding": { "base": "EB00001F", "format": "rn_rm" } },
+      { "operands": ["w", "w"], "encoding": { "base": "6B00001F", "format": "rn_rm" } },
+      { "operands": ["x", "imm12"], "encoding": { "base": "F100001F", "format": "rn_imm12" } },
+      { "operands": ["w", "imm12"], "encoding": { "base": "7100001F", "format": "rn_imm12" } }
+    ]
+  },
+  {
+    "mnemonic": "cmn",
+    "summary": "Compare negative (alias: ADDS ZR, Rn, Rm)",
+    "forms": [
+      { "operands": ["x", "x"], "encoding": { "base": "AB00001F", "format": "rn_rm" } },
+      { "operands": ["w", "w"], "encoding": { "base": "2B00001F", "format": "rn_rm" } }
+    ]
+  },
+  {
+    "mnemonic": "tst",
+    "summary": "Test bits (alias: ANDS ZR, Rn, Rm)",
+    "forms": [
+      { "operands": ["x", "x"], "encoding": { "base": "EA00001F", "format": "rn_rm" } },
+      { "operands": ["w", "w"], "encoding": { "base": "6A00001F", "format": "rn_rm" } }
+    ]
+  }
+]

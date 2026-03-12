@@ -428,8 +428,8 @@ class ElfObjectWriterExtendedTest {
         ))
         val buf = le(result)
         val shnum = readU16(buf, 60)
-        // null + .text + .symtab + .strtab + .shstrtab = 5 (debug and note skipped)
-        assertEquals(5, shnum)
+        // null + .text + .debug_info + .symtab + .strtab + .shstrtab = 6 (note skipped, debug preserved)
+        assertEquals(6, shnum)
     }
 
     @Test

@@ -1,0 +1,93 @@
+[
+  {
+    "mnemonic": "addi",
+    "summary": "Add immediate",
+    "forms": [
+      { "operands": ["gp", "gp", "imm12"], "encoding": { "opcode": 19, "funct3": 0, "format": "I" } }
+    ]
+  },
+  {
+    "mnemonic": "slti",
+    "summary": "Set less than immediate (signed)",
+    "forms": [
+      { "operands": ["gp", "gp", "imm12"], "encoding": { "opcode": 19, "funct3": 2, "format": "I" } }
+    ]
+  },
+  {
+    "mnemonic": "sltiu",
+    "summary": "Set less than immediate (unsigned)",
+    "forms": [
+      { "operands": ["gp", "gp", "imm12"], "encoding": { "opcode": 19, "funct3": 3, "format": "I" } }
+    ]
+  },
+  {
+    "mnemonic": "xori",
+    "summary": "Bitwise XOR immediate",
+    "forms": [
+      { "operands": ["gp", "gp", "imm12"], "encoding": { "opcode": 19, "funct3": 4, "format": "I" } }
+    ]
+  },
+  {
+    "mnemonic": "ori",
+    "summary": "Bitwise OR immediate",
+    "forms": [
+      { "operands": ["gp", "gp", "imm12"], "encoding": { "opcode": 19, "funct3": 6, "format": "I" } }
+    ]
+  },
+  {
+    "mnemonic": "andi",
+    "summary": "Bitwise AND immediate",
+    "forms": [
+      { "operands": ["gp", "gp", "imm12"], "encoding": { "opcode": 19, "funct3": 7, "format": "I" } }
+    ]
+  },
+  {
+    "mnemonic": "slli",
+    "summary": "Shift left logical immediate",
+    "forms": [
+      { "operands": ["gp", "gp", "shamt"], "encoding": { "opcode": 19, "funct3": 1, "funct7": 0, "format": "I_SHIFT" } }
+    ]
+  },
+  {
+    "mnemonic": "srli",
+    "summary": "Shift right logical immediate",
+    "forms": [
+      { "operands": ["gp", "gp", "shamt"], "encoding": { "opcode": 19, "funct3": 5, "funct7": 0, "format": "I_SHIFT" } }
+    ]
+  },
+  {
+    "mnemonic": "srai",
+    "summary": "Shift right arithmetic immediate",
+    "forms": [
+      { "operands": ["gp", "gp", "shamt"], "encoding": { "opcode": 19, "funct3": 5, "funct7": 16, "format": "I_SHIFT" } }
+    ]
+  },
+  {
+    "mnemonic": "addiw",
+    "summary": "Add immediate word (32-bit)",
+    "forms": [
+      { "operands": ["gp", "gp", "imm12"], "encoding": { "opcode": 27, "funct3": 0, "format": "I" } }
+    ]
+  },
+  {
+    "mnemonic": "slliw",
+    "summary": "Shift left logical immediate word (32-bit)",
+    "forms": [
+      { "operands": ["gp", "gp", "shamt"], "encoding": { "opcode": 27, "funct3": 1, "funct7": 0, "format": "I_SHIFT" } }
+    ]
+  },
+  {
+    "mnemonic": "srliw",
+    "summary": "Shift right logical immediate word (32-bit)",
+    "forms": [
+      { "operands": ["gp", "gp", "shamt"], "encoding": { "opcode": 27, "funct3": 5, "funct7": 0, "format": "I_SHIFT" } }
+    ]
+  },
+  {
+    "mnemonic": "sraiw",
+    "summary": "Shift right arithmetic immediate word (32-bit)",
+    "forms": [
+      { "operands": ["gp", "gp", "shamt"], "encoding": { "opcode": 27, "funct3": 5, "funct7": 16, "format": "I_SHIFT" } }
+    ]
+  }
+]

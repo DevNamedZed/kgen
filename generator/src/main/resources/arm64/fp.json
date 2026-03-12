@@ -1,0 +1,248 @@
+[
+  {
+    "mnemonic": "fadd",
+    "summary": "Floating-point add",
+    "forms": [
+      { "operands": ["d", "d", "d"], "encoding": { "base": "1E602800", "format": "reg3" }, "feature": "fp" },
+      { "operands": ["s", "s", "s"], "encoding": { "base": "1E202800", "format": "reg3" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fsub",
+    "summary": "Floating-point subtract",
+    "forms": [
+      { "operands": ["d", "d", "d"], "encoding": { "base": "1E603800", "format": "reg3" }, "feature": "fp" },
+      { "operands": ["s", "s", "s"], "encoding": { "base": "1E203800", "format": "reg3" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fmul",
+    "summary": "Floating-point multiply",
+    "forms": [
+      { "operands": ["d", "d", "d"], "encoding": { "base": "1E600800", "format": "reg3" }, "feature": "fp" },
+      { "operands": ["s", "s", "s"], "encoding": { "base": "1E200800", "format": "reg3" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fdiv",
+    "summary": "Floating-point divide",
+    "forms": [
+      { "operands": ["d", "d", "d"], "encoding": { "base": "1E601800", "format": "reg3" }, "feature": "fp" },
+      { "operands": ["s", "s", "s"], "encoding": { "base": "1E201800", "format": "reg3" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fneg",
+    "summary": "Floating-point negate",
+    "forms": [
+      { "operands": ["d", "d"], "encoding": { "base": "1E614000", "format": "reg2" }, "feature": "fp" },
+      { "operands": ["s", "s"], "encoding": { "base": "1E214000", "format": "reg2" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fabs",
+    "summary": "Floating-point absolute value",
+    "forms": [
+      { "operands": ["d", "d"], "encoding": { "base": "1E60C000", "format": "reg2" }, "feature": "fp" },
+      { "operands": ["s", "s"], "encoding": { "base": "1E20C000", "format": "reg2" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fsqrt",
+    "summary": "Floating-point square root",
+    "forms": [
+      { "operands": ["d", "d"], "encoding": { "base": "1E61C000", "format": "reg2" }, "feature": "fp" },
+      { "operands": ["s", "s"], "encoding": { "base": "1E21C000", "format": "reg2" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fmadd",
+    "summary": "Floating-point fused multiply-add (Fd = Fa + Fn * Fm)",
+    "forms": [
+      { "operands": ["d", "d", "d", "d"], "encoding": { "base": "1F400000", "format": "reg4" }, "feature": "fp" },
+      { "operands": ["s", "s", "s", "s"], "encoding": { "base": "1F000000", "format": "reg4" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fmsub",
+    "summary": "Floating-point fused multiply-subtract",
+    "forms": [
+      { "operands": ["d", "d", "d", "d"], "encoding": { "base": "1F408000", "format": "reg4" }, "feature": "fp" },
+      { "operands": ["s", "s", "s", "s"], "encoding": { "base": "1F008000", "format": "reg4" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fmov",
+    "summary": "Floating-point move",
+    "forms": [
+      { "operands": ["d", "d"], "encoding": { "base": "1E604000", "format": "reg2" }, "feature": "fp" },
+      { "operands": ["s", "s"], "encoding": { "base": "1E204000", "format": "reg2" }, "feature": "fp" },
+      { "operands": ["d", "x"], "encoding": { "base": "9E670000", "format": "reg2" }, "feature": "fp" },
+      { "operands": ["s", "w"], "encoding": { "base": "1E270000", "format": "reg2" }, "feature": "fp" },
+      { "operands": ["x", "d"], "encoding": { "base": "9E660000", "format": "reg2" }, "feature": "fp" },
+      { "operands": ["w", "s"], "encoding": { "base": "1E260000", "format": "reg2" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fcmp",
+    "summary": "Floating-point compare",
+    "forms": [
+      { "operands": ["d", "d"], "encoding": { "base": "1E602000", "format": "fp_cmp" }, "feature": "fp" },
+      { "operands": ["s", "s"], "encoding": { "base": "1E202000", "format": "fp_cmp" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fcmpZero",
+    "summary": "Floating-point compare to zero",
+    "forms": [
+      { "operands": ["d"], "encoding": { "base": "1E602008", "format": "fp_cmp_zero" }, "feature": "fp" },
+      { "operands": ["s"], "encoding": { "base": "1E202008", "format": "fp_cmp_zero" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fcsel",
+    "summary": "Floating-point conditional select",
+    "forms": [
+      { "operands": ["d", "d", "d", "cond"], "encoding": { "base": "1E600C00", "format": "csel" }, "feature": "fp" },
+      { "operands": ["s", "s", "s", "cond"], "encoding": { "base": "1E200C00", "format": "csel" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "scvtf",
+    "summary": "Signed integer to floating-point",
+    "forms": [
+      { "operands": ["d", "x"], "encoding": { "base": "9E620000", "format": "reg2" }, "feature": "fp" },
+      { "operands": ["d", "w"], "encoding": { "base": "1E620000", "format": "reg2" }, "feature": "fp" },
+      { "operands": ["s", "w"], "encoding": { "base": "1E220000", "format": "reg2" }, "feature": "fp" },
+      { "operands": ["s", "x"], "encoding": { "base": "9E220000", "format": "reg2" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "ucvtf",
+    "summary": "Unsigned integer to floating-point",
+    "forms": [
+      { "operands": ["d", "x"], "encoding": { "base": "9E630000", "format": "reg2" }, "feature": "fp" },
+      { "operands": ["d", "w"], "encoding": { "base": "1E630000", "format": "reg2" }, "feature": "fp" },
+      { "operands": ["s", "w"], "encoding": { "base": "1E230000", "format": "reg2" }, "feature": "fp" },
+      { "operands": ["s", "x"], "encoding": { "base": "9E230000", "format": "reg2" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fcvtzs",
+    "summary": "Floating-point to signed integer, round toward zero",
+    "forms": [
+      { "operands": ["x", "d"], "encoding": { "base": "9E780000", "format": "reg2" }, "feature": "fp" },
+      { "operands": ["w", "s"], "encoding": { "base": "1E380000", "format": "reg2" }, "feature": "fp" },
+      { "operands": ["w", "d"], "encoding": { "base": "1E780000", "format": "reg2" }, "feature": "fp" },
+      { "operands": ["x", "s"], "encoding": { "base": "9E380000", "format": "reg2" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fcvtzu",
+    "summary": "Floating-point to unsigned integer, round toward zero",
+    "forms": [
+      { "operands": ["x", "d"], "encoding": { "base": "9E790000", "format": "reg2" }, "feature": "fp" },
+      { "operands": ["w", "s"], "encoding": { "base": "1E390000", "format": "reg2" }, "feature": "fp" },
+      { "operands": ["w", "d"], "encoding": { "base": "1E790000", "format": "reg2" }, "feature": "fp" },
+      { "operands": ["x", "s"], "encoding": { "base": "9E390000", "format": "reg2" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fcvt",
+    "summary": "Floating-point convert precision",
+    "forms": [
+      { "operands": ["d", "s"], "encoding": { "base": "1E22C000", "format": "reg2" }, "feature": "fp" },
+      { "operands": ["s", "d"], "encoding": { "base": "1E624000", "format": "reg2" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fldr",
+    "summary": "Floating-point load register",
+    "forms": [
+      { "operands": ["d", "x", "imm12"], "encoding": { "base": "FD400000", "format": "ldst_uoff" }, "feature": "fp" },
+      { "operands": ["s", "x", "imm12"], "encoding": { "base": "BD400000", "format": "ldst_uoff" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fstr",
+    "summary": "Floating-point store register",
+    "forms": [
+      { "operands": ["d", "x", "imm12"], "encoding": { "base": "FD000000", "format": "ldst_uoff" }, "feature": "fp" },
+      { "operands": ["s", "x", "imm12"], "encoding": { "base": "BD000000", "format": "ldst_uoff" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fldur",
+    "summary": "Floating-point load register (unscaled offset)",
+    "forms": [
+      { "operands": ["d", "x", "imm"], "encoding": { "base": "FC400000", "format": "ldst_simm9" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fstur",
+    "summary": "Floating-point store register (unscaled offset)",
+    "forms": [
+      { "operands": ["d", "x", "imm"], "encoding": { "base": "FC000000", "format": "ldst_simm9" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fstp",
+    "summary": "Floating-point store pair",
+    "forms": [
+      { "operands": ["d", "d", "x", "imm"], "encoding": { "base": "6D000000", "format": "ldst_pair" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fldp",
+    "summary": "Floating-point load pair",
+    "forms": [
+      { "operands": ["d", "d", "x", "imm"], "encoding": { "base": "6D400000", "format": "ldst_pair" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fstpPre",
+    "summary": "Floating-point store pair pre-index",
+    "forms": [
+      { "operands": ["d", "d", "x", "imm"], "encoding": { "base": "6D800000", "format": "ldst_pair" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fldpPost",
+    "summary": "Floating-point load pair post-index",
+    "forms": [
+      { "operands": ["d", "d", "x", "imm"], "encoding": { "base": "6CC00000", "format": "ldst_pair" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fmin",
+    "summary": "Floating-point minimum",
+    "forms": [
+      { "operands": ["d", "d", "d"], "encoding": { "base": "1E605800", "format": "reg3" }, "feature": "fp" },
+      { "operands": ["s", "s", "s"], "encoding": { "base": "1E205800", "format": "reg3" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fmax",
+    "summary": "Floating-point maximum",
+    "forms": [
+      { "operands": ["d", "d", "d"], "encoding": { "base": "1E604800", "format": "reg3" }, "feature": "fp" },
+      { "operands": ["s", "s", "s"], "encoding": { "base": "1E204800", "format": "reg3" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fnmadd",
+    "summary": "Floating-point negated fused multiply-add",
+    "forms": [
+      { "operands": ["d", "d", "d", "d"], "encoding": { "base": "1F600000", "format": "reg4" }, "feature": "fp" },
+      { "operands": ["s", "s", "s", "s"], "encoding": { "base": "1F200000", "format": "reg4" }, "feature": "fp" }
+    ]
+  },
+  {
+    "mnemonic": "fnmsub",
+    "summary": "Floating-point negated fused multiply-subtract",
+    "forms": [
+      { "operands": ["d", "d", "d", "d"], "encoding": { "base": "1F608000", "format": "reg4" }, "feature": "fp" },
+      { "operands": ["s", "s", "s", "s"], "encoding": { "base": "1F208000", "format": "reg4" }, "feature": "fp" }
+    ]
+  }
+]

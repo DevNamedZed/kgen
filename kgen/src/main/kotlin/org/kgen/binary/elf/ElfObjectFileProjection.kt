@@ -183,6 +183,8 @@ internal object ElfObjectFileProjection {
                 ?: RelocationType.Generic("R_X86_64_$typeValue", typeValue)
             ElfMachine.AARCH64 -> RelocationType.AArch64.entries.firstOrNull { it.value == typeValue }
                 ?: RelocationType.Generic("R_AARCH64_$typeValue", typeValue)
+            ElfMachine.RISCV -> RelocationType.RiscV.entries.firstOrNull { it.value == typeValue }
+                ?: RelocationType.Generic("R_RISCV_$typeValue", typeValue)
             else -> RelocationType.Generic("R_UNKNOWN_$typeValue", typeValue)
         }
     }
@@ -217,11 +219,16 @@ internal object ElfObjectFileProjection {
         )
     }
 
-    private fun resolveArchitecture(elf: ElfFile): Architecture = when (elf.header.machine) {
-        ElfMachine.X86_64 -> Architecture(ArchType.X86_64)
-        ElfMachine.AARCH64 -> Architecture(ArchType.AARCH64)
-        ElfMachine.RISCV -> Architecture(ArchType.RISCV64)
-        else -> Architecture(ArchType.X86_64)
+    private fun resolveArchitecture(elf: ElfFile): Architecture {
+        val is32 = elf.header.elfClass == ElfClass.ELF32
+        return when (elf.header.machine) {
+            ElfMachine.I386 -> Architecture(ArchType.X86)
+            ElfMachine.ARM -> Architecture(ArchType.ARM)
+            ElfMachine.X86_64 -> Architecture(ArchType.X86_64)
+            ElfMachine.AARCH64 -> Architecture(ArchType.AARCH64)
+            ElfMachine.RISCV -> Architecture(if (is32) ArchType.RISCV32 else ArchType.RISCV64)
+            else -> Architecture(if (is32) ArchType.X86 else ArchType.X86_64)
+        }
     }
 
     private fun buildMetadata(elf: ElfFile): ObjectMetadata {

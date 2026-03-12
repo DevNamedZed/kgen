@@ -1,6 +1,6 @@
 package org.kgen.cli.cmd
 
-import org.kgen.tools.Inspectors
+import org.kgen.binary.inspect.Inspectors
 import org.kgen.cli.*
 
 object SizeCommand {

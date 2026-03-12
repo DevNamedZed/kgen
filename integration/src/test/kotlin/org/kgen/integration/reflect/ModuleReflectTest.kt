@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
-import org.kgen.backend.x86.codegen.X86CodeGenerator
+import org.kgen.target.x86.codegen.X86CodeGenerator
 import org.kgen.binary.*
 import org.kgen.reflect.Module as ReflectModule
 import org.kgen.reflect.Signature

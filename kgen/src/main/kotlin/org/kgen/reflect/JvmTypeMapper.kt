@@ -1,7 +1,7 @@
 package org.kgen.reflect
 
-import org.kgen.binary.jvm.AccessFlags
-import org.kgen.binary.jvm.ClassFile
+import org.kgen.target.jvm.AccessFlags
+import org.kgen.target.jvm.ClassFile
 
 /**
  * Maps a JVM [ClassFile] to reflect [TypeInfo] with methods, fields, and constructors.

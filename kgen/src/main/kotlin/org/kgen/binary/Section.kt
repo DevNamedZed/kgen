@@ -154,6 +154,17 @@ enum class SectionKind {
     // Generic
     CUSTOM,
     UNKNOWN,
+    ;
+
+    val isDebug: Boolean get() = when (this) {
+        DEBUG_INFO, DEBUG_ABBREV, DEBUG_LINE, DEBUG_STR, DEBUG_RANGES, DEBUG_LOC,
+        DEBUG_FRAME, DEBUG_ARANGES, DEBUG_PUBNAMES, DEBUG_PUBTYPES, DEBUG_MACRO,
+        DEBUG_LINE_STR, DEBUG_STR_OFFSETS, DEBUG_ADDR, DEBUG_RNGLISTS, DEBUG_LOCLISTS -> true
+        else -> false
+    }
+
+    /** True for sections that should be included in the binary but not loaded into memory. */
+    val isNonLoaded: Boolean get() = isDebug || this == CUSTOM
 }
 
 enum class SectionFlag {

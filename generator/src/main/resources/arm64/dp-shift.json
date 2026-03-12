@@ -1,0 +1,34 @@
+[
+  {
+    "mnemonic": "lsl",
+    "summary": "Logical shift left (register)",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "9AC02000", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "1AC02000", "format": "reg3" } }
+    ]
+  },
+  {
+    "mnemonic": "lsr",
+    "summary": "Logical shift right (register)",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "9AC02400", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "1AC02400", "format": "reg3" } }
+    ]
+  },
+  {
+    "mnemonic": "asr",
+    "summary": "Arithmetic shift right (register)",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "9AC02800", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "1AC02800", "format": "reg3" } }
+    ]
+  },
+  {
+    "mnemonic": "ror",
+    "summary": "Rotate right (register)",
+    "forms": [
+      { "operands": ["x", "x", "x"], "encoding": { "base": "9AC02C00", "format": "reg3" } },
+      { "operands": ["w", "w", "w"], "encoding": { "base": "1AC02C00", "format": "reg3" } }
+    ]
+  }
+]

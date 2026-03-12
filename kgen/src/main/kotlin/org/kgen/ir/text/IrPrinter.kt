@@ -39,7 +39,19 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
         if (m.targetFeatures.isNotEmpty()) {
             line("target features = ${m.targetFeatures.joinToString(", ") { quote(it) }}")
         }
+        m.constraints?.let {
+            line("constraints = { ${it.joinToString(", ") { c -> c.name }} }")
+        }
         blank()
+
+        for (sub in m.submodules) {
+            val cats = sub.constraints.joinToString(", ") { it.name }
+            line("submodule ${quote(sub.name)} constraints { $cats } {")
+            for (fn in sub.functions) line("  function @$fn")
+            for (g in sub.globals) line("  global @$g")
+            line("}")
+        }
+        if (m.submodules.isNotEmpty()) blank()
 
         for (alias in m.aliases) {
             line("type @${alias.name} = ${typeStr(alias.type)}")
@@ -244,6 +256,8 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
         is Instruction.AShr -> "${inst.dest.name} = ashr${if (inst.exact) " exact" else ""} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
         is Instruction.RotateLeft -> "${inst.dest.name} = rotl ${typeStr(inst.value.type)} ${valStr(inst.value)}, ${valStr(inst.amount)}"
         is Instruction.RotateRight -> "${inst.dest.name} = rotr ${typeStr(inst.value.type)} ${valStr(inst.value)}, ${valStr(inst.amount)}"
+        is Instruction.Rotl -> "${inst.dest.name} = rotl ${typeStr(inst.value.type)} ${valStr(inst.value)}, ${valStr(inst.amount)}"
+        is Instruction.Rotr -> "${inst.dest.name} = rotr ${typeStr(inst.value.type)} ${valStr(inst.value)}, ${valStr(inst.amount)}"
 
         // Bit manipulation
         is Instruction.Ctlz -> "${inst.dest.name} = ctlz ${typeStr(inst.operand.type)} ${valStr(inst.operand)}${if (inst.isZeroPoison) " zero_poison" else ""}"
@@ -487,6 +501,12 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
         // High-level: Box/unbox
         is Instruction.Box -> "${inst.dest.name} = box ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.boxType)}"
         is Instruction.Unbox -> "${inst.dest.name} = unbox ${valStr(inst.obj)} to ${typeStr(inst.unboxType)}"
+
+        // High-level: Weak references
+        is Instruction.CatchValue -> "${inst.dest.name} = catch.value ${typeStr(inst.exceptionType)}"
+        is Instruction.MakeWeakRef -> "${inst.dest.name} = make.weakref ${valStr(inst.obj)}"
+        is Instruction.ReadWeakRef -> "${inst.dest.name} = read.weakref ${valStr(inst.weakRef)}"
+        is Instruction.ClearWeakRef -> "clear.weakref ${valStr(inst.weakRef)}"
 
         // High-level: Closures
         is Instruction.ClosureCreate -> {

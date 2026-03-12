@@ -1,6 +1,8 @@
 package org.kgen.ir.target
 
 import org.kgen.ir.CallingConvention
+import org.kgen.ir.IrCategory
+import org.kgen.ir.IrConstraints
 
 /**
  * Compilation target. Determines valid instructions, calling conventions, pointer sizes,
@@ -36,6 +38,13 @@ data class Target internal constructor(
     val defaultCallingConv: CallingConvention,
     val classFileVersion: Int? = null,
 ) {
+    /** Default instruction constraints for this target. Returns `null` (all allowed) for native targets. */
+    fun defaultConstraints(): Set<IrCategory>? = when (arch) {
+        Arch.JVM, Arch.MSIL -> IrConstraints.MANAGED_VM
+        Arch.MSIL_MIXED -> IrConstraints.ALL
+        else -> null
+    }
+
     fun has(feature: TargetFeature): Boolean = feature in features
 
     fun enable(feature: TargetFeature): Target = copy(features = features + feature)

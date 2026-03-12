@@ -181,4 +181,27 @@ class IrPrinterTest {
         val text = IrPrinter.print(mod)
         assertTrue(text.contains("switch i32 %x, label %default"))
     }
+
+    @Test
+    fun `prints module constraints`() {
+        val mod = Module(name = "test", constraints = IrConstraints.NATIVE)
+        val text = IrPrinter.print(mod)
+        assertTrue(text.contains("constraints = {"), text)
+        assertTrue(text.contains("ARITHMETIC"), text)
+        assertTrue(text.contains("MEMORY"), text)
+    }
+
+    @Test
+    fun `prints submodules`() {
+        val mod = Module(
+            name = "test",
+            submodules = listOf(
+                Submodule("native_part", IrConstraints.NATIVE, listOf("foo"), listOf("bar")),
+            ),
+        )
+        val text = IrPrinter.print(mod)
+        assertTrue(text.contains("submodule \"native_part\""), text)
+        assertTrue(text.contains("function @foo"), text)
+        assertTrue(text.contains("global @bar"), text)
+    }
 }

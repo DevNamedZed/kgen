@@ -34,11 +34,12 @@ data class ObjectMetadata(
     val heapSize: Long? = null,
     val flags: Set<ObjectFlag> = emptySet(),
     val osAbi: OsAbi = OsAbi.NONE,
+    val moduleName: String? = null,
     val properties: Map<String, String> = emptyMap(),
 )
 
 enum class ObjectFlag {
-    EXECUTABLE, RELOCATABLE, SHARED_LIBRARY, CORE_DUMP,
+    EXECUTABLE, RELOCATABLE, SHARED_LIBRARY, DLL, CORE_DUMP,
     POSITION_INDEPENDENT, LARGE_ADDRESS_AWARE,
     NO_EXEC_STACK, RELRO, BIND_NOW,
 }

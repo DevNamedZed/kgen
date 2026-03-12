@@ -1,5 +1,6 @@
 package org.kgen.binary.pe
 
+import org.kgen.binary.TLSDirectory
 import org.kgen.binary.pe.clr.ClrMetadata
 
 /**
@@ -49,6 +50,11 @@ data class PeFile(
     val baseRelocations: List<PeBaseRelocation>,
     val clrMetadata: ClrMetadata?,
     val dataDirectories: List<PeDataDirectory>,
+    val resources: PeResourceDirectory? = null,
+    val tlsDirectory: TLSDirectory? = null,
+    val exceptionEntries: List<PeExceptionParser.ParsedEntry> = emptyList(),
+    val debugEntries: List<PeDebugEntry> = emptyList(),
+    val loadConfig: PeLoadConfig? = null,
 ) {
     val isExecutable: Boolean get() = coffHeader.characteristics and PeConstants.IMAGE_FILE_EXECUTABLE_IMAGE != 0
     val isDll: Boolean get() = coffHeader.characteristics and PeConstants.IMAGE_FILE_DLL != 0

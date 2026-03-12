@@ -1,6 +1,6 @@
 package org.kgen.cli.cmd
 
-import org.kgen.tools.ElfBinaryDiff
+import org.kgen.binary.diff.ElfBinaryDiff
 import org.kgen.cli.*
 
 object DiffCommand {

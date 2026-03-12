@@ -1,0 +1,16 @@
+{
+  "files": [
+    "dp-arithmetic.json",
+    "dp-logical.json",
+    "dp-shift.json",
+    "dp-muldiv.json",
+    "dp-move.json",
+    "dp-extend.json",
+    "dp-compare.json",
+    "dp-csel.json",
+    "branch.json",
+    "ldst.json",
+    "fp.json",
+    "system.json"
+  ]
+}

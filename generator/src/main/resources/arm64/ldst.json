@@ -1,0 +1,131 @@
+[
+  {
+    "mnemonic": "ldr",
+    "summary": "Load register",
+    "forms": [
+      { "operands": ["x", "x", "imm12"], "encoding": { "base": "F9400000", "format": "ldst_uoff" }, "feature": "baseline" },
+      { "operands": ["w", "x", "imm12"], "encoding": { "base": "B9400000", "format": "ldst_uoff" } }
+    ]
+  },
+  {
+    "mnemonic": "str",
+    "summary": "Store register",
+    "forms": [
+      { "operands": ["x", "x", "imm12"], "encoding": { "base": "F9000000", "format": "ldst_uoff" } },
+      { "operands": ["w", "x", "imm12"], "encoding": { "base": "B9000000", "format": "ldst_uoff" } }
+    ]
+  },
+  {
+    "mnemonic": "ldur",
+    "summary": "Load register (unscaled offset)",
+    "forms": [
+      { "operands": ["x", "x", "imm"], "encoding": { "base": "F8400000", "format": "ldst_simm9" } },
+      { "operands": ["w", "x", "imm"], "encoding": { "base": "B8400000", "format": "ldst_simm9" } }
+    ]
+  },
+  {
+    "mnemonic": "stur",
+    "summary": "Store register (unscaled offset)",
+    "forms": [
+      { "operands": ["x", "x", "imm"], "encoding": { "base": "F8000000", "format": "ldst_simm9" } },
+      { "operands": ["w", "x", "imm"], "encoding": { "base": "B8000000", "format": "ldst_simm9" } }
+    ]
+  },
+  {
+    "mnemonic": "ldrb",
+    "summary": "Load register byte",
+    "forms": [
+      { "operands": ["w", "x", "imm12"], "encoding": { "base": "39400000", "format": "ldst_uoff" } }
+    ]
+  },
+  {
+    "mnemonic": "strb",
+    "summary": "Store register byte",
+    "forms": [
+      { "operands": ["w", "x", "imm12"], "encoding": { "base": "39000000", "format": "ldst_uoff" } }
+    ]
+  },
+  {
+    "mnemonic": "ldrh",
+    "summary": "Load register halfword",
+    "forms": [
+      { "operands": ["w", "x", "imm12"], "encoding": { "base": "79400000", "format": "ldst_uoff" } }
+    ]
+  },
+  {
+    "mnemonic": "strh",
+    "summary": "Store register halfword",
+    "forms": [
+      { "operands": ["w", "x", "imm12"], "encoding": { "base": "79000000", "format": "ldst_uoff" } }
+    ]
+  },
+  {
+    "mnemonic": "ldrsb",
+    "summary": "Load register signed byte",
+    "forms": [
+      { "operands": ["x", "x", "imm12"], "encoding": { "base": "39800000", "format": "ldst_uoff" } },
+      { "operands": ["w", "x", "imm12"], "encoding": { "base": "39C00000", "format": "ldst_uoff" } }
+    ]
+  },
+  {
+    "mnemonic": "ldrsh",
+    "summary": "Load register signed halfword",
+    "forms": [
+      { "operands": ["x", "x", "imm12"], "encoding": { "base": "79800000", "format": "ldst_uoff" } },
+      { "operands": ["w", "x", "imm12"], "encoding": { "base": "79C00000", "format": "ldst_uoff" } }
+    ]
+  },
+  {
+    "mnemonic": "ldrsw",
+    "summary": "Load register signed word",
+    "forms": [
+      { "operands": ["x", "x", "imm12"], "encoding": { "base": "B9800000", "format": "ldst_uoff" } }
+    ]
+  },
+  {
+    "mnemonic": "stp",
+    "summary": "Store pair of registers",
+    "forms": [
+      { "operands": ["x", "x", "x", "imm"], "encoding": { "base": "A9000000", "format": "ldst_pair" } },
+      { "operands": ["w", "w", "x", "imm"], "encoding": { "base": "29000000", "format": "ldst_pair" } }
+    ]
+  },
+  {
+    "mnemonic": "ldp",
+    "summary": "Load pair of registers",
+    "forms": [
+      { "operands": ["x", "x", "x", "imm"], "encoding": { "base": "A9400000", "format": "ldst_pair" } },
+      { "operands": ["w", "w", "x", "imm"], "encoding": { "base": "29400000", "format": "ldst_pair" } }
+    ]
+  },
+  {
+    "mnemonic": "stpPre",
+    "summary": "Store pair pre-index",
+    "forms": [
+      { "operands": ["x", "x", "x", "imm"], "encoding": { "base": "A9800000", "format": "ldst_pair" } }
+    ]
+  },
+  {
+    "mnemonic": "ldpPost",
+    "summary": "Load pair post-index",
+    "forms": [
+      { "operands": ["x", "x", "x", "imm"], "encoding": { "base": "A8C00000", "format": "ldst_pair" } }
+    ]
+  },
+  {
+    "mnemonic": "ldar",
+    "summary": "Load-acquire register",
+    "forms": [
+      { "operands": ["x", "x"], "encoding": { "base": "C8DFFC00", "format": "ldst_acquire" } },
+      { "operands": ["w", "x"], "encoding": { "base": "88DFFC00", "format": "ldst_acquire" } }
+    ]
+  },
+  {
+    "mnemonic": "stlr",
+    "summary": "Store-release register",
+    "forms": [
+      { "operands": ["x", "x"], "encoding": { "base": "C89FFC00", "format": "ldst_acquire" } },
+      { "operands": ["w", "x"], "encoding": { "base": "889FFC00", "format": "ldst_acquire" } }
+    ]
+  }
+]

@@ -6,6 +6,6 @@ enum class ElfObjectType(val code: Int) {
     DYN(3);
 
     companion object {
-        fun fromCode(code: Int) = entries.firstOrNull { it.code == code }
+        @JvmStatic fun fromCode(code: Int) = entries.firstOrNull { it.code == code }
     }
 }

@@ -125,7 +125,7 @@ class InliningExtendedTest {
     }
 
     @Test
-    fun `does not inline function with multiple blocks`() {
+    fun `inlines function with multiple blocks`() {
         val module = buildAndInline {
             val p = createFunction("multiblock", listOf(Param("c", Type.I1)), Type.I32)
             positionAtEnd(appendBlock("entry"))
@@ -142,8 +142,11 @@ class InliningExtendedTest {
             ret(r)
             finalizeFunction()
         }
-        val mainInsts = module.functions[1].blocks[0].instructions
-        assertTrue(mainInsts.any { it is Instruction.Call }, "Multi-block function should not be inlined")
+        // Multi-block functions should now be inlined — no Call instructions remain
+        val allInsts = module.functions[1].blocks.flatMap { it.instructions }
+        assertFalse(allInsts.any { it is Instruction.Call }, "Multi-block function should be inlined")
+        // The inlined function should contain a CondBr (from the multiblock's entry)
+        assertTrue(allInsts.any { it is Instruction.CondBr }, "Inlined function should have CondBr")
     }
 
     @Test

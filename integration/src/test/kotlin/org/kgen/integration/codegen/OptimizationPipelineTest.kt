@@ -6,7 +6,7 @@ import org.kgen.ir.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 import org.kgen.pass.OptLevel
-import org.kgen.backend.x86.codegen.X86CodeGenerator
+import org.kgen.target.x86.codegen.X86CodeGenerator
 
 class OptimizationPipelineTest {
 
@@ -42,7 +42,7 @@ class OptimizationPipelineTest {
         assertEquals(0x55, code[0].toInt() and 0xFF, "push rbp")
         assertEquals(0xC3, code.last().toInt() and 0xFF, "ret")
 
-        val disasm = org.kgen.backend.x86.disasm.X86Disassembler()
+        val disasm = org.kgen.target.x86.disasm.X86Disassembler()
         val insts = disasm.disassembleRaw(code)
         assertEquals(code.size, insts.sumOf { it.size },
             "All bytes decoded: ${insts.map { it.text() }}")
@@ -87,7 +87,7 @@ class OptimizationPipelineTest {
         assertTrue(code.isNotEmpty())
         assertEquals(0xC3, code.last().toInt() and 0xFF, "ret")
 
-        val disasm = org.kgen.backend.x86.disasm.X86Disassembler()
+        val disasm = org.kgen.target.x86.disasm.X86Disassembler()
         val insts = disasm.disassembleRaw(code)
         assertEquals(code.size, insts.sumOf { it.size },
             "Clean decode: ${insts.map { it.text() }}")

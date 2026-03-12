@@ -3,6 +3,7 @@ package org.kgen.binary.elf
 import org.kgen.binary.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
+import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -41,13 +42,12 @@ class ElfReaderTest {
     }
 
     @Test
-    fun `canRead returns false for ELF32`() {
-        val bytes = writeObj(sections = listOf(
-            Section(".text", SectionKind.TEXT, byteArrayOf(0xC3.toByte()), align = 1)
-        ))
-        // Patch ELF class to 32-bit
-        bytes[4] = ElfClass.ELF32.code.toByte()
-        assertFalse(reader.canRead(bytes))
+    fun `canRead returns true for ELF32`() {
+        val bytes = buildMinimalElf32(
+            machine = ElfMachine.I386.code,
+            textData = byteArrayOf(0xC3.toByte()),
+        )
+        assertTrue(ElfReader.canRead(bytes))
     }
 
     @Test
@@ -742,5 +742,314 @@ class ElfReaderTest {
             Section(".text", SectionKind.TEXT, byteArrayOf(0xC3.toByte()), align = 1)
         ))
         assertEquals(ObjectFormat.ELF, detectFormat(bytes))
+    }
+
+    // ELF32 tests
+
+    @Test
+    fun `reads ELF32 header`() {
+        val bytes = buildMinimalElf32(machine = ElfMachine.I386.code, textData = byteArrayOf(0xC3.toByte()))
+        val elf = ElfReader.read(bytes)
+        assertEquals(ElfClass.ELF32, elf.header.elfClass)
+        assertEquals(ElfMachine.I386, elf.header.machine)
+        assertEquals(ElfObjectType.REL, elf.header.type)
+    }
+
+    @Test
+    fun `reads ELF32 sections`() {
+        val textData = byteArrayOf(0x55, 0x89.toByte(), 0xE5.toByte(), 0xC3.toByte())
+        val bytes = buildMinimalElf32(machine = ElfMachine.I386.code, textData = textData)
+        val elf = ElfReader.read(bytes)
+        val text = elf.sections.firstOrNull { it.name == ".text" }
+        assertNotNull(text)
+        assertArrayEquals(textData, text!!.data)
+    }
+
+    @Test
+    fun `reads ELF32 symbols`() {
+        val bytes = buildMinimalElf32WithSymbol(
+            machine = ElfMachine.I386.code,
+            textData = ByteArray(16),
+            symbolName = "main",
+            symbolValue = 0,
+            symbolSize = 16,
+        )
+        val elf = ElfReader.read(bytes)
+        val main = elf.symbols.firstOrNull { it.name == "main" }
+        assertNotNull(main)
+        assertEquals(0L, main!!.value)
+        assertEquals(16L, main.size)
+        assertEquals(ElfSymbolBinding.GLOBAL, main.binding)
+        assertEquals(ElfSymbolType.FUNC, main.type)
+    }
+
+    @Test
+    fun `ELF32 projects to correct architecture`() {
+        val bytes = buildMinimalElf32(machine = ElfMachine.I386.code, textData = byteArrayOf(0xC3.toByte()))
+        val elf = ElfReader.read(bytes)
+        val obj = ElfReader.toObjectFile(elf)
+        assertEquals(ArchType.X86, obj.arch.arch)
+    }
+
+    @Test
+    fun `ELF32 ARM projects to ARM architecture`() {
+        val bytes = buildMinimalElf32(machine = ElfMachine.ARM.code, textData = byteArrayOf(0x1E, 0xFF.toByte(), 0x2F, 0xE1.toByte()))
+        val elf = ElfReader.read(bytes)
+        val obj = ElfReader.toObjectFile(elf)
+        assertEquals(ArchType.ARM, obj.arch.arch)
+    }
+
+    @Test
+    fun `ELF32 relocatable has RELOCATABLE flag`() {
+        val bytes = buildMinimalElf32(machine = ElfMachine.I386.code, textData = byteArrayOf(0xCC.toByte()))
+        val elf = ElfReader.read(bytes)
+        val obj = ElfReader.toObjectFile(elf)
+        assertTrue(ObjectFlag.RELOCATABLE in obj.metadata.flags)
+    }
+
+    @Test
+    fun `reads ELF32 with RELA relocations`() {
+        val bytes = buildMinimalElf32WithRelocation(
+            machine = ElfMachine.I386.code,
+            textData = ByteArray(16),
+            symbolName = "puts",
+            relOffset = 5,
+            relType = 4, // R_386_PLT32
+            relAddend = -4,
+        )
+        val elf = ElfReader.read(bytes)
+        assertEquals(1, elf.relocations.size)
+        val rel = elf.relocations[0]
+        assertEquals(5L, rel.offset)
+        assertEquals("puts", rel.symbolName)
+        assertEquals(4, rel.type)
+        assertEquals(-4L, rel.addend)
+    }
+
+    // ELF32 binary builders
+
+    private fun buildMinimalElf32(machine: Int, textData: ByteArray): ByteArray {
+        val shstrtab = buildShstrtab(listOf("", ".text", ".shstrtab"))
+        val shstrtabNameOffsets = resolveShstrtabOffsets(listOf("", ".text", ".shstrtab"))
+
+        val textOffset = Elf.EHDR32_SIZE
+        val shstrtabOffset = textOffset + textData.size
+        val shoff = align(shstrtabOffset + shstrtab.size, 4)
+        val sectionCount = 3 // NULL + .text + .shstrtab
+
+        val buf = ByteArrayOutputStream()
+        writeElf32Header(buf, machine, shoff, sectionCount, shstrtabIdx = 2)
+        buf.write(textData)
+        buf.write(shstrtab)
+        padTo(buf, shoff)
+
+        // NULL section header
+        writeShdr32(buf, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        // .text
+        writeShdr32(buf, shstrtabNameOffsets[1], ElfSectionType.PROGBITS.code,
+            (ElfSectionFlags.ALLOC or ElfSectionFlags.EXECINSTR).toInt(),
+            0, textOffset, textData.size, 0, 0, 1, 0)
+        // .shstrtab
+        writeShdr32(buf, shstrtabNameOffsets[2], ElfSectionType.STRTAB.code,
+            0, 0, shstrtabOffset, shstrtab.size, 0, 0, 1, 0)
+
+        return buf.toByteArray()
+    }
+
+    private fun buildMinimalElf32WithSymbol(
+        machine: Int, textData: ByteArray,
+        symbolName: String, symbolValue: Int, symbolSize: Int,
+    ): ByteArray {
+        val names = listOf("", ".text", ".symtab", ".strtab", ".shstrtab")
+        val shstrtab = buildShstrtab(names)
+        val shstrtabNameOffsets = resolveShstrtabOffsets(names)
+
+        val strtabBytes = buildShstrtab(listOf("", symbolName))
+        val symNameOffset = 1 // after the leading NUL
+
+        // Two symbols: NULL + the user symbol
+        val symtabSize = Elf.SYM32_SIZE * 2
+        val symtabData = ByteArray(symtabSize)
+        val symBuf = ByteBuffer.wrap(symtabData).order(ByteOrder.LITTLE_ENDIAN)
+        // NULL symbol (first 16 bytes are zero)
+        // User symbol at offset SYM32_SIZE
+        val symOff = Elf.SYM32_SIZE
+        symBuf.putInt(symOff, symNameOffset)
+        symBuf.putInt(symOff + 4, symbolValue)
+        symBuf.putInt(symOff + 8, symbolSize)
+        symtabData[symOff + 12] = Elf.stInfo(ElfSymbolBinding.GLOBAL, ElfSymbolType.FUNC).toByte()
+        symtabData[symOff + 13] = 0 // other
+        symBuf.putShort(symOff + 14, 1) // shndx = .text section index
+
+        val textOffset = Elf.EHDR32_SIZE
+        val symtabOffset = textOffset + textData.size
+        val strtabOffset = symtabOffset + symtabSize
+        val shstrtabOffset = strtabOffset + strtabBytes.size
+        val shoff = align(shstrtabOffset + shstrtab.size, 4)
+        val sectionCount = 5 // NULL + .text + .symtab + .strtab + .shstrtab
+
+        val buf = ByteArrayOutputStream()
+        writeElf32Header(buf, machine, shoff, sectionCount, shstrtabIdx = 4)
+        buf.write(textData)
+        buf.write(symtabData)
+        buf.write(strtabBytes)
+        buf.write(shstrtab)
+        padTo(buf, shoff)
+
+        writeShdr32(buf, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        writeShdr32(buf, shstrtabNameOffsets[1], ElfSectionType.PROGBITS.code,
+            (ElfSectionFlags.ALLOC or ElfSectionFlags.EXECINSTR).toInt(),
+            0, textOffset, textData.size, 0, 0, 1, 0)
+        writeShdr32(buf, shstrtabNameOffsets[2], ElfSectionType.SYMTAB.code,
+            0, 0, symtabOffset, symtabSize, 3, 1, 4, Elf.SYM32_SIZE)
+        writeShdr32(buf, shstrtabNameOffsets[3], ElfSectionType.STRTAB.code,
+            0, 0, strtabOffset, strtabBytes.size, 0, 0, 1, 0)
+        writeShdr32(buf, shstrtabNameOffsets[4], ElfSectionType.STRTAB.code,
+            0, 0, shstrtabOffset, shstrtab.size, 0, 0, 1, 0)
+
+        return buf.toByteArray()
+    }
+
+    private fun buildMinimalElf32WithRelocation(
+        machine: Int, textData: ByteArray,
+        symbolName: String, relOffset: Int, relType: Int, relAddend: Int,
+    ): ByteArray {
+        val names = listOf("", ".text", ".rela.text", ".symtab", ".strtab", ".shstrtab")
+        val shstrtab = buildShstrtab(names)
+        val shstrtabNameOffsets = resolveShstrtabOffsets(names)
+
+        val strtabBytes = buildShstrtab(listOf("", symbolName))
+
+        // Two symbols: NULL + the user symbol (undefined)
+        val symtabSize = Elf.SYM32_SIZE * 2
+        val symtabData = ByteArray(symtabSize)
+        val symBuf = ByteBuffer.wrap(symtabData).order(ByteOrder.LITTLE_ENDIAN)
+        val symOff = Elf.SYM32_SIZE
+        symBuf.putInt(symOff, 1)
+        symBuf.putInt(symOff + 4, 0) // value
+        symBuf.putInt(symOff + 8, 0) // size
+        symtabData[symOff + 12] = Elf.stInfo(ElfSymbolBinding.GLOBAL, ElfSymbolType.NOTYPE).toByte()
+        symBuf.putShort(symOff + 14, 0) // SHN_UNDEF
+
+        // RELA entry (12 bytes for ELF32)
+        val relaSize = Elf.RELA32_SIZE
+        val relaData = ByteArray(relaSize)
+        val relaBuf = ByteBuffer.wrap(relaData).order(ByteOrder.LITTLE_ENDIAN)
+        relaBuf.putInt(0, relOffset)
+        relaBuf.putInt(4, (1 shl 8) or (relType and 0xFF)) // symIdx=1, type
+        relaBuf.putInt(8, relAddend)
+
+        val textOffset = Elf.EHDR32_SIZE
+        val relaOffset = textOffset + textData.size
+        val symtabOffset = relaOffset + relaSize
+        val strtabOffset = symtabOffset + symtabSize
+        val shstrtabOffset = strtabOffset + strtabBytes.size
+        val shoff = align(shstrtabOffset + shstrtab.size, 4)
+        val sectionCount = 6
+
+        val buf = ByteArrayOutputStream()
+        writeElf32Header(buf, machine, shoff, sectionCount, shstrtabIdx = 5)
+        buf.write(textData)
+        buf.write(relaData)
+        buf.write(symtabData)
+        buf.write(strtabBytes)
+        buf.write(shstrtab)
+        padTo(buf, shoff)
+
+        writeShdr32(buf, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        writeShdr32(buf, shstrtabNameOffsets[1], ElfSectionType.PROGBITS.code,
+            (ElfSectionFlags.ALLOC or ElfSectionFlags.EXECINSTR).toInt(),
+            0, textOffset, textData.size, 0, 0, 1, 0)
+        writeShdr32(buf, shstrtabNameOffsets[2], ElfSectionType.RELA.code,
+            ElfSectionFlags.INFO_LINK.toInt(),
+            0, relaOffset, relaSize, 3, 1, 4, Elf.RELA32_SIZE)
+        writeShdr32(buf, shstrtabNameOffsets[3], ElfSectionType.SYMTAB.code,
+            0, 0, symtabOffset, symtabSize, 4, 1, 4, Elf.SYM32_SIZE)
+        writeShdr32(buf, shstrtabNameOffsets[4], ElfSectionType.STRTAB.code,
+            0, 0, strtabOffset, strtabBytes.size, 0, 0, 1, 0)
+        writeShdr32(buf, shstrtabNameOffsets[5], ElfSectionType.STRTAB.code,
+            0, 0, shstrtabOffset, shstrtab.size, 0, 0, 1, 0)
+
+        return buf.toByteArray()
+    }
+
+    private fun writeElf32Header(buf: ByteArrayOutputStream, machine: Int, shoff: Int, shnum: Int, shstrtabIdx: Int) {
+        buf.write(Elf.MAGIC)
+        buf.write(ElfClass.ELF32.code)
+        buf.write(ElfData.LSB.code)
+        buf.write(Elf.VERSION)
+        buf.write(0) // OS/ABI
+        buf.write(ByteArray(8)) // padding
+        writeU16(buf, ElfObjectType.REL.code)
+        writeU16(buf, machine)
+        writeU32(buf, Elf.VERSION)
+        writeU32(buf, 0) // e_entry
+        writeU32(buf, 0) // e_phoff
+        writeU32(buf, shoff) // e_shoff
+        writeU32(buf, 0) // e_flags
+        writeU16(buf, Elf.EHDR32_SIZE)
+        writeU16(buf, Elf.PHDR32_SIZE)
+        writeU16(buf, 0) // phnum
+        writeU16(buf, Elf.SHDR32_SIZE)
+        writeU16(buf, shnum)
+        writeU16(buf, shstrtabIdx)
+    }
+
+    private fun writeShdr32(
+        buf: ByteArrayOutputStream,
+        name: Int, type: Int, flags: Int, addr: Int, offset: Int, size: Int,
+        link: Int, info: Int, addralign: Int, entsize: Int,
+    ) {
+        writeU32(buf, name)
+        writeU32(buf, type)
+        writeU32(buf, flags)
+        writeU32(buf, addr)
+        writeU32(buf, offset)
+        writeU32(buf, size)
+        writeU32(buf, link)
+        writeU32(buf, info)
+        writeU32(buf, addralign)
+        writeU32(buf, entsize)
+    }
+
+    private fun buildShstrtab(names: List<String>): ByteArray {
+        val buf = ByteArrayOutputStream()
+        for (name in names) {
+            buf.write(name.toByteArray(Charsets.US_ASCII))
+            buf.write(0)
+        }
+        return buf.toByteArray()
+    }
+
+    private fun resolveShstrtabOffsets(names: List<String>): List<Int> {
+        val offsets = mutableListOf<Int>()
+        var pos = 0
+        for (name in names) {
+            offsets.add(pos)
+            pos += name.length + 1
+        }
+        return offsets
+    }
+
+    private fun align(value: Int, alignment: Int): Int {
+        if (alignment <= 1) return value
+        return (value + alignment - 1) and (alignment - 1).inv()
+    }
+
+    private fun padTo(buf: ByteArrayOutputStream, target: Int) {
+        val current = buf.size()
+        if (current < target) buf.write(ByteArray(target - current))
+    }
+
+    private fun writeU16(buf: ByteArrayOutputStream, v: Int) {
+        buf.write(v and 0xFF)
+        buf.write((v shr 8) and 0xFF)
+    }
+
+    private fun writeU32(buf: ByteArrayOutputStream, v: Int) {
+        buf.write(v and 0xFF)
+        buf.write((v shr 8) and 0xFF)
+        buf.write((v shr 16) and 0xFF)
+        buf.write((v shr 24) and 0xFF)
     }
 }

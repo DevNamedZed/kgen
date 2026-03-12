@@ -5,7 +5,10 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 /**
- * Writes Unix archive (.a) files in GNU or BSD format.
+ * Writes Unix archive (.a) and Windows static library (.lib) files.
+ *
+ * Supports GNU, BSD, and COFF archive variants. COFF archives write both
+ * linker members: first (big-endian) and second (little-endian with indexed lookup).
  *
  * Usage:
  *   val writer = ArchiveWriter()
@@ -29,16 +32,19 @@ class ArchiveWriter(
         buf.write("!<arch>\n".toByteArray(Charsets.US_ASCII))
 
         // Phase 1: compute member offsets (needed for symtab)
-        val longNameTable = if (variant == ArchiveVariant.GNU) buildLongNameTable(members) else null
+        val longNameTable = if (variant == ArchiveVariant.GNU || variant == ArchiveVariant.COFF) buildLongNameTable(members) else null
         val memberOffsets = computeMemberOffsets(members, symbols, longNameTable)
 
-        // Phase 2: write symbol table
+        // Phase 2: write symbol table(s)
         if (symbols.isNotEmpty()) {
             val resolvedSymbols = resolveSymbolOffsets(symbols, memberOffsets)
             writeSymtab(buf, resolvedSymbols)
+            if (variant == ArchiveVariant.COFF) {
+                writeCoffSecondLinkerMember(buf, resolvedSymbols, memberOffsets)
+            }
         }
 
-        // Phase 3: write long name table (GNU only)
+        // Phase 3: write long name table (GNU and COFF)
         if (longNameTable != null && longNameTable.data.isNotEmpty()) {
             writeMemberHeader(buf, "//", longNameTable.data.size, 0, 0, 0, 0)
             buf.write(longNameTable.data)
@@ -94,11 +100,18 @@ class ArchiveWriter(
     ): Map<Int, Long> {
         var offset = 8L // "!<arch>\n"
 
-        // Symbol table size
+        // First symbol table (symtab / first linker member) size
         if (symbols.isNotEmpty()) {
             val symtabSize = computeSymtabSize(symbols)
             offset += 60 + symtabSize
             if (symtabSize % 2 != 0) offset++
+
+            // COFF second linker member
+            if (variant == ArchiveVariant.COFF) {
+                val secondSize = computeCoffSecondLinkerMemberSize(symbols, members.size)
+                offset += 60 + secondSize
+                if (secondSize % 2 != 0) offset++
+            }
         }
 
         // Long name table
@@ -161,6 +174,72 @@ class ArchiveWriter(
         if (data.size % 2 != 0) buf.write('\n'.code)
     }
 
+    /**
+     * Computes the size of the COFF second linker member data.
+     *
+     * Format: memberCount(4) + memberOffsets(4*N) + symbolCount(4) + indices(2*S) + strings
+     */
+    private fun computeCoffSecondLinkerMemberSize(symbols: List<ArchiveSymbol>, memberCount: Int): Int {
+        val stringSize = symbols.sumOf { it.name.length + 1 }
+        return 4 + memberCount * 4 + 4 + symbols.size * 2 + stringSize
+    }
+
+    /**
+     * Writes the COFF second linker member with little-endian format.
+     *
+     * Format:
+     *   - uint32 memberCount (LE)
+     *   - uint32[memberCount] memberOffsets (LE) — file offsets to each member header
+     *   - uint32 symbolCount (LE)
+     *   - uint16[symbolCount] memberIndices (LE) — 1-based index into memberOffsets
+     *   - null-terminated symbol name strings
+     */
+    private fun writeCoffSecondLinkerMember(
+        buf: ByteArrayOutputStream,
+        symbols: List<ArchiveSymbol>,
+        memberOffsets: Map<Int, Long>,
+    ) {
+        val memberCount = memberOffsets.size
+        val sortedMemberEntries = memberOffsets.entries.sortedBy { it.key }
+        val offsetToIndex = mutableMapOf<Long, Int>() // file offset → 1-based index
+        for ((idx, entry) in sortedMemberEntries.withIndex()) {
+            offsetToIndex[entry.value] = idx + 1
+        }
+
+        val symData = ByteArrayOutputStream()
+
+        // Member count + offsets (little-endian)
+        val headerBuf = ByteBuffer.allocate(4 + memberCount * 4 + 4 + symbols.size * 2)
+            .order(ByteOrder.LITTLE_ENDIAN)
+        headerBuf.putInt(memberCount)
+        for (entry in sortedMemberEntries) {
+            headerBuf.putInt(entry.value.toInt())
+        }
+
+        // Symbol count + indices (little-endian, 1-based)
+        headerBuf.putInt(symbols.size)
+        for (sym in symbols) {
+            val memberIdx = offsetToIndex[sym.memberOffset] ?: 1
+            headerBuf.putShort(memberIdx.toShort())
+        }
+
+        headerBuf.flip()
+        val headerBytes = ByteArray(headerBuf.remaining())
+        headerBuf.get(headerBytes)
+        symData.write(headerBytes)
+
+        // Symbol name strings
+        for (sym in symbols) {
+            symData.write(sym.name.toByteArray(Charsets.US_ASCII))
+            symData.write(0)
+        }
+
+        val data = symData.toByteArray()
+        writeMemberHeader(buf, "/", data.size, 0, 0, 0, 0)
+        buf.write(data)
+        if (data.size % 2 != 0) buf.write('\n'.code)
+    }
+
     private fun formatMemberName(name: String, longNameTable: LongNameTable?, memberIndex: Int): String {
         return when {
             variant == ArchiveVariant.BSD && name.length > 15 -> {
@@ -168,7 +247,7 @@ class ArchiveWriter(
                 val padLen = if (nameBytes.size % 4 != 0) 4 - nameBytes.size % 4 else 0
                 "#1/${nameBytes.size + padLen}"
             }
-            variant == ArchiveVariant.GNU && longNameTable != null -> {
+            (variant == ArchiveVariant.GNU || variant == ArchiveVariant.COFF) && longNameTable != null -> {
                 val tableOffset = longNameTable.offsets[memberIndex]
                 if (tableOffset != null) "/$tableOffset" else "$name/"
             }

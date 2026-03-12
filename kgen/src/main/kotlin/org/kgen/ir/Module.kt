@@ -27,4 +27,6 @@ data class Module(
     val comdats: List<ComdatDef> = emptyList(),
     val moduleInlineAsm: String? = null,
     val moduleFlags: Map<String, ModuleFlagValue> = emptyMap(),
+    val constraints: Set<IrCategory>? = null,
+    val submodules: List<Submodule> = emptyList(),
 )

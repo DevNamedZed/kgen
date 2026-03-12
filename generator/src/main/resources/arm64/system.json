@@ -1,0 +1,72 @@
+[
+  {
+    "mnemonic": "nop",
+    "summary": "No operation",
+    "forms": [
+      { "operands": [], "encoding": { "base": "D503201F", "format": "no_operand" } }
+    ]
+  },
+  {
+    "mnemonic": "brk",
+    "summary": "Breakpoint",
+    "forms": [
+      { "operands": ["imm16"], "encoding": { "base": "D4200000", "format": "exception" } }
+    ]
+  },
+  {
+    "mnemonic": "svc",
+    "summary": "Supervisor call",
+    "forms": [
+      { "operands": ["imm16"], "encoding": { "base": "D4000001", "format": "exception" } }
+    ]
+  },
+  {
+    "mnemonic": "hlt",
+    "summary": "Halt",
+    "forms": [
+      { "operands": ["imm16"], "encoding": { "base": "D4400000", "format": "exception" } }
+    ]
+  },
+  {
+    "mnemonic": "adr",
+    "summary": "Form PC-relative address (±1MB)",
+    "forms": [
+      { "operands": ["x", "label"], "encoding": { "base": "10000000", "format": "adr" } }
+    ]
+  },
+  {
+    "mnemonic": "adrp",
+    "summary": "Form PC-relative address to 4KB page (±4GB)",
+    "forms": [
+      { "operands": ["x", "label"], "encoding": { "base": "90000000", "format": "adr" } }
+    ]
+  },
+  {
+    "mnemonic": "clrex",
+    "summary": "Clear exclusive monitor",
+    "forms": [
+      { "operands": [], "encoding": { "base": "D503305F", "format": "no_operand" } }
+    ]
+  },
+  {
+    "mnemonic": "isb",
+    "summary": "Instruction synchronization barrier",
+    "forms": [
+      { "operands": [], "encoding": { "base": "D5033FDF", "format": "no_operand" } }
+    ]
+  },
+  {
+    "mnemonic": "dsb",
+    "summary": "Data synchronization barrier",
+    "forms": [
+      { "operands": [], "encoding": { "base": "D503309F", "format": "no_operand" } }
+    ]
+  },
+  {
+    "mnemonic": "dmb",
+    "summary": "Data memory barrier",
+    "forms": [
+      { "operands": [], "encoding": { "base": "D50330BF", "format": "no_operand" } }
+    ]
+  }
+]

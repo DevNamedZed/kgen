@@ -3,11 +3,11 @@ package org.kgen.cli.cmd
 import org.kgen.cli.*
 import org.kgen.ir.text.IrParser
 import org.kgen.ir.text.IrSerializer
-import org.kgen.ir.codegen.*
-import org.kgen.backend.x86.codegen.X86CodeGenerator
-import org.kgen.backend.wasm.codegen.WasmCodeGenerator
-import org.kgen.backend.arm64.codegen.Arm64CodeGenerator
-import org.kgen.backend.riscv.codegen.RiscVCodeGenerator
+import org.kgen.codegen.*
+import org.kgen.target.x86.codegen.X86CodeGenerator
+import org.kgen.target.wasm.codegen.WasmCodeGenerator
+import org.kgen.target.arm64.codegen.Arm64CodeGenerator
+import org.kgen.target.riscv.codegen.RiscVCodeGenerator
 import java.io.ByteArrayInputStream
 import java.io.File
 

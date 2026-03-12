@@ -1,6 +1,6 @@
 package org.kgen.cli.cmd
 
-import org.kgen.tools.*
+import org.kgen.binary.mangling.*
 import org.kgen.cli.*
 
 object DemangleCommand {
@@ -8,7 +8,7 @@ object DemangleCommand {
         val parsed = parseArgs(args)
         val format = parsed.get("format")
 
-        val demangler: Demangler = when (format) {
+        val demangler: DemanglerStrategy = when (format) {
             "itanium" -> ItaniumDemangler()
             "msvc" -> MsvcDemangler()
             "rust" -> RustDemangler()

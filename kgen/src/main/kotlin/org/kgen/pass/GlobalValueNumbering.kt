@@ -12,8 +12,12 @@ import org.kgen.ir.*
  * This is a simplified dominator-based GVN that processes blocks in
  * dominator tree order, maintaining a scoped value table.
  *
- * Handles: arithmetic, bitwise, comparisons, conversions, GEP.
- * Does NOT handle: loads (would need alias analysis), calls (side effects).
+ * Handles: arithmetic, bitwise, comparisons, conversions, GEP, loads.
+ * Does NOT handle: calls (side effects).
+ *
+ * Load elimination uses [BasicAliasAnalysis] to determine when intervening
+ * stores can be proven not to alias a cached load, allowing redundant loads
+ * to be eliminated even across stores to unrelated memory.
  */
 class GlobalValueNumbering : ModulePass {
 
@@ -28,6 +32,7 @@ class GlobalValueNumbering : ModulePass {
         val idom = computeImmediateDominators(fn, cfg)
         val domChildren = buildDomTree(fn, idom)
         val entry = fn.blocks[0].label
+        val aa = BasicAliasAnalysis(fn)
 
         val replacements = mutableMapOf<String, Value>()
         val blockInsts = fn.blocks.associate { it.label to it.instructions.toMutableList() }
@@ -44,7 +49,7 @@ class GlobalValueNumbering : ModulePass {
                 val rewritten = rewriteOperands(inst, replacements)
                 insts[i] = rewritten
 
-                val key = computeKey(rewritten)
+                val key = computeKey(rewritten, aa)
                 if (key != null) {
                     val existing = valueTable.lookup(key)
                     if (existing != null) {
@@ -54,9 +59,22 @@ class GlobalValueNumbering : ModulePass {
                     } else {
                         val result = rewritten.result
                         if (result != null) {
-                            valueTable.insert(key, result)
+                            if (rewritten is Instruction.Load) {
+                                valueTable.insertLoad(key, result, rewritten.ptr)
+                            } else {
+                                valueTable.insert(key, result)
+                            }
                         }
                     }
+                }
+
+                // Stores invalidate load entries for aliasing pointers
+                if (rewritten is Instruction.Store) {
+                    valueTable.invalidateLoads(rewritten.ptr, aa)
+                }
+                // Calls may write to any memory — invalidate all loads
+                if (rewritten is Instruction.Call || rewritten is Instruction.Invoke) {
+                    valueTable.invalidateAllLoads()
                 }
             }
 
@@ -80,7 +98,7 @@ class GlobalValueNumbering : ModulePass {
         return fn.copy(blocks = resultBlocks)
     }
 
-    private fun computeKey(inst: Instruction): String? = when (inst) {
+    private fun computeKey(inst: Instruction, aa: AliasAnalysis): String? = when (inst) {
         is Instruction.Add -> "add(${vn(inst.lhs)},${vn(inst.rhs)})"
         is Instruction.Sub -> "sub(${vn(inst.lhs)},${vn(inst.rhs)})"
         is Instruction.Mul -> "mul(${vn(inst.lhs)},${vn(inst.rhs)})"
@@ -115,6 +133,8 @@ class GlobalValueNumbering : ModulePass {
         is Instruction.FPTrunc -> "fptrunc.${inst.dest.type}(${vn(inst.value)})"
         is Instruction.GetElementPtr -> "gep.${inst.baseType}(${vn(inst.ptr)},${inst.indices.joinToString(",") { vn(it) }})"
         is Instruction.Select -> "select(${vn(inst.condition)},${vn(inst.trueValue)},${vn(inst.falseValue)})"
+        // Loads: two loads from the same pointer with no intervening store produce the same value
+        is Instruction.Load -> if (!inst.volatile) "load.${inst.loadType}(${vn(inst.ptr)})" else null
         else -> null
     }
 
@@ -122,10 +142,18 @@ class GlobalValueNumbering : ModulePass {
 
     private class ScopedValueTable {
         private val scopes = ArrayDeque<MutableMap<String, Value>>()
+        // Track the actual pointer Value for each load key, so alias analysis works correctly
+        private val loadPointers = ArrayDeque<MutableMap<String, Value>>()
 
-        fun pushScope() { scopes.addFirst(mutableMapOf()) }
+        fun pushScope() {
+            scopes.addFirst(mutableMapOf())
+            loadPointers.addFirst(mutableMapOf())
+        }
 
-        fun popScope() { scopes.removeFirst() }
+        fun popScope() {
+            scopes.removeFirst()
+            loadPointers.removeFirst()
+        }
 
         fun lookup(key: String): Value? {
             for (scope in scopes) {
@@ -136,6 +164,45 @@ class GlobalValueNumbering : ModulePass {
 
         fun insert(key: String, value: Value) {
             scopes.first()[key] = value
+        }
+
+        fun insertLoad(key: String, value: Value, ptr: Value) {
+            scopes.first()[key] = value
+            loadPointers.first()[key] = ptr
+        }
+
+        /**
+         * Invalidate load entries that may alias the stored pointer.
+         */
+        fun invalidateLoads(storePtr: Value, aa: AliasAnalysis) {
+            for (i in scopes.indices) {
+                val scope = scopes.elementAt(i)
+                val ptrs = loadPointers.elementAt(i)
+                val toRemove = scope.keys.filter { key ->
+                    if (!key.startsWith("load.")) return@filter false
+                    val loadPtr = ptrs[key] ?: return@filter true // unknown ptr → invalidate
+                    aa.alias(storePtr, loadPtr) != AliasResult.NoAlias
+                }
+                for (k in toRemove) {
+                    scope.remove(k)
+                    ptrs.remove(k)
+                }
+            }
+        }
+
+        /**
+         * Invalidate all load entries (e.g., after a call that may write memory).
+         */
+        fun invalidateAllLoads() {
+            for (i in scopes.indices) {
+                val scope = scopes.elementAt(i)
+                val ptrs = loadPointers.elementAt(i)
+                val loadKeys = scope.keys.filter { it.startsWith("load.") }
+                for (k in loadKeys) {
+                    scope.remove(k)
+                    ptrs.remove(k)
+                }
+            }
         }
     }
 

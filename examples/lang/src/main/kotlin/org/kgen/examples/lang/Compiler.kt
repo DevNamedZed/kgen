@@ -17,12 +17,31 @@ class Compiler(private val target: Target = Target.x86_64()) {
         val ir = IrBuilder(moduleName(program), target)
 
         // First pass: declare all extern functions
+        val declaredExterns = mutableSetOf<String>()
         for (fn in program.functions) {
             if (fn.mode == FunMode.EXTERN) {
                 val params = fn.params.map { Param(it.name, langTypeToIr(it.type)) }
                 val retType = langTypeToIr(fn.returnType)
                 ir.declareFunction(fn.name, params, retType)
+                declaredExterns.add(fn.name)
             }
+        }
+
+        // Auto-declare string helper externs if string literals are used
+        if (hasStringLiterals(program) || hasStringType(program)) {
+            val i64 = Type.I64
+            if ("new_array" !in declaredExterns)
+                ir.declareFunction("new_array", listOf(Param("size", i64)), i64)
+            if ("array_set" !in declaredExterns)
+                ir.declareFunction("array_set", listOf(Param("arr", i64), Param("idx", i64), Param("val", i64)), i64)
+            if ("str_len" !in declaredExterns)
+                ir.declareFunction("str_len", listOf(Param("s", i64)), i64)
+            if ("str_get" !in declaredExterns)
+                ir.declareFunction("str_get", listOf(Param("s", i64), Param("idx", i64)), i64)
+            if ("str_eq" !in declaredExterns)
+                ir.declareFunction("str_eq", listOf(Param("s1", i64), Param("s2", i64)), i64)
+            if ("str_concat" !in declaredExterns)
+                ir.declareFunction("str_concat", listOf(Param("s1", i64), Param("s2", i64)), i64)
         }
 
         // Second pass: compile all functions with bodies
@@ -201,7 +220,7 @@ class Compiler(private val target: Target = Target.x86_64()) {
             is IntLiteral -> Constant.I64(expr.value)
             is FloatLiteral -> Constant.F64(expr.value)
             is BoolLiteral -> Constant.I1(expr.value)
-            is StringLiteral -> Constant.I64(0) // placeholder
+            is StringLiteral -> compileStringLiteral(ctx, expr)
             is Ident -> loadVariable(ctx, expr.name)
             is BinaryExpr -> compileBinary(ctx, expr)
             is UnaryExpr -> compileUnary(ctx, expr)
@@ -260,6 +279,28 @@ class Compiler(private val target: Target = Target.x86_64()) {
         return ctx.ir.call(fnRef, args, retType) ?: Constant.I64(0)
     }
 
+    private fun compileStringLiteral(ctx: FunctionContext, expr: StringLiteral): Value {
+        val chars = expr.value
+        val ir = ctx.ir
+        val i64 = Type.I64
+        val fnType1 = Type.Function(listOf(i64), i64)
+        val fnType3 = Type.Function(listOf(i64, i64, i64), i64)
+
+        // new_array(len)
+        val arr = ir.call(GlobalRef("new_array", fnType1), listOf(Constant.I64(chars.length.toLong())), i64)
+            ?: throw LangError("Failed to call new_array", 0, 0)
+
+        // array_set(arr, i, charCode) for each character
+        for ((i, ch) in chars.withIndex()) {
+            ir.call(
+                GlobalRef("array_set", fnType3),
+                listOf(arr, Constant.I64(i.toLong()), Constant.I64(ch.code.toLong())),
+                i64
+            )
+        }
+        return arr
+    }
+
     private fun lookupReturnType(ctx: FunctionContext, name: String): Type {
         val decl = ctx.program.functions.firstOrNull { it.name == name }
             ?: throw LangError("Unknown function: $name", 0, 0)
@@ -276,6 +317,33 @@ class Compiler(private val target: Target = Target.x86_64()) {
         LangType.STRING -> Constant.I64(0)
         LangType.VOID -> Constant.I64(0)
     }
+
+    private fun hasStringLiterals(program: Program): Boolean {
+        fun checkExpr(expr: Expr): Boolean = when (expr) {
+            is StringLiteral -> true
+            is BinaryExpr -> checkExpr(expr.left) || checkExpr(expr.right)
+            is UnaryExpr -> checkExpr(expr.operand)
+            is CallExpr -> expr.args.any { checkExpr(it) }
+            else -> false
+        }
+        fun checkStmt(stmt: Stmt): Boolean = when (stmt) {
+            is VarDecl -> checkExpr(stmt.value)
+            is Assignment -> checkExpr(stmt.value)
+            is ReturnStmt -> stmt.value?.let { checkExpr(it) } ?: false
+            is ExprStmt -> checkExpr(stmt.expr)
+            is IfStmt -> checkExpr(stmt.condition) || stmt.thenBlock.stmts.any { checkStmt(it) }
+                || (stmt.elseBlock?.stmts?.any { checkStmt(it) } ?: false)
+            is WhileStmt -> checkExpr(stmt.condition) || stmt.body.stmts.any { checkStmt(it) }
+        }
+        return program.functions.any { fn ->
+            fn.body?.stmts?.any { checkStmt(it) } ?: false
+        }
+    }
+
+    private fun hasStringType(program: Program): Boolean =
+        program.functions.any { fn ->
+            fn.returnType == LangType.STRING || fn.params.any { it.type == LangType.STRING }
+        }
 
     companion object {
         fun langTypeToIr(type: LangType): Type = when (type) {

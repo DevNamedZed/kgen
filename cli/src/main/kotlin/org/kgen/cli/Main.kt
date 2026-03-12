@@ -39,6 +39,10 @@ fun main(args: Array<String>) {
 
         // Compilation
         "compile"    -> CompileCommand.run(rest)
+        "native-compile" -> NativeCompileCommand.run(rest)
+        "native-lib" -> NativeLibCommand.run(rest)
+        "package"    -> PackageCommand.run(rest)
+        "inspect"    -> KgenInspectCommand.run(rest)
 
         // Archive
         "ar"         -> ArCommand.run(rest)
@@ -85,6 +89,10 @@ Display:
 
 Compilation:
   compile <file.ir>        Compile IR to binary (-t target -o output)
+  native-compile <*.class> Compile Java class files to native executable
+  native-lib <*.class>     Compile Java class files to shared library (.so/.dll)
+  package <*.class>        Package into native executable with kgen metadata
+  inspect <executable>     Show kgen metadata from a packaged executable
 
 Manipulation:
   demangle [names...]      Demangle symbol names (args or stdin)
@@ -196,6 +204,46 @@ Options:
   -t, --target TARGET    Target: wasm, x86_64, aarch64, riscv
   -o, --output FILE      Output file (required)
   -O, --opt LEVEL        Optimization: 0 (default), 1, 2, 3, s, z""")
+
+        "native-compile" -> println("""kgen native-compile <class-files...> -o <output>
+
+Compile Java .class files to a standalone native executable.
+
+Options:
+  -o, --output FILE     Output executable path (required)
+  -t, --target ARCH     Target architecture: x86_64 (default), aarch64, riscv64
+  -p, --platform OS     Target platform: linux (default), windows, macos
+  -m, --main CLASS      Main class (fully qualified, e.g. com/example/Main)""")
+
+        "native-lib" -> println("""kgen native-lib <class-files...> -o <output>
+
+Compile Java .class files to a shared library (.so/.dll).
+Methods annotated with @KgenExport become exported symbols.
+
+Options:
+  -o, --output FILE     Output library path (required)
+  -t, --target ARCH     Target architecture: x86_64 (default), aarch64, riscv64
+  -p, --platform OS     Target platform: linux (default), windows
+  --header FILE         Generate C header file for exported functions
+  --soname NAME         Shared library soname""")
+
+        "package" -> println("""kgen package <class-files...> -o <output>
+
+Package Java .class files into a native executable with embedded kgen metadata.
+
+Options:
+  -o, --output FILE     Output executable path (required)
+  -t, --target ARCH     Target architecture: x86_64 (default), aarch64, riscv64
+  -p, --platform OS     Target platform: linux (default), windows, macos
+  -m, --main CLASS      Main class (fully qualified)
+  --name NAME           Module name
+  --version VER         Module version
+  --resources DIR       Embed resources from directory""")
+
+        "inspect" -> println("""kgen inspect <executable>
+
+Show kgen metadata from a packaged native executable.
+Reads .kgen.meta, .kgen.types, and .kgen.resources sections.""")
 
         "info" -> println("""kgen info <file> [options]
 

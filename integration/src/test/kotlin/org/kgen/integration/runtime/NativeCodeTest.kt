@@ -6,9 +6,9 @@ import org.kgen.reflect.*
 import org.kgen.ir.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
-import org.kgen.backend.x86.X86Register
-import org.kgen.backend.x86.asm.X86Assembler
-import org.kgen.backend.x86.codegen.X86CodeGenerator
+import org.kgen.target.x86.X86Register
+import org.kgen.target.x86.asm.X86Assembler
+import org.kgen.target.x86.codegen.X86CodeGenerator
 
 class NativeCodeTest {
 

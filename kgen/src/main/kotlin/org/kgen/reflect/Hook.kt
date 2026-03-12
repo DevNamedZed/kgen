@@ -1,6 +1,7 @@
 package org.kgen.reflect
 
 import org.kgen.binary.elf.ElfReader
+import org.kgen.binary.macho.MachOReader
 import org.kgen.binary.pe.PeReader
 import java.io.File
 
@@ -165,8 +166,61 @@ object Hook {
         return IatHookImpl(iatAddress, original)
     }
 
+    // --- Stub hooks (Mach-O) ---
+
+    /**
+     * Find the `__la_symbol_ptr` entry for [symbolName] in the Mach-O binary at [binaryPath].
+     * Returns null if not found.
+     *
+     * The `__la_symbol_ptr` table is the Mach-O equivalent of ELF's GOT — each entry
+     * is a function pointer that the dynamic linker fills in on first call.
+     */
+    @JvmStatic
+    fun findStubEntry(binaryPath: String, symbolName: String): StubEntry? {
+        val data = File(binaryPath).readBytes()
+        val macho = MachOReader.read(data)
+
+        val laSymbolPtr = macho.sectionByName("__DATA", "__la_symbol_ptr") ?: return null
+
+        // The indirect symbol table maps __la_symbol_ptr entries to symbol indices.
+        // For simplicity, match by symbol name in the symbol table and check
+        // if the symbol appears as an undefined external import.
+        val undefinedSymbols = macho.symbols.filter { it.isUndefined && it.isExternal }
+        val symIndex = undefinedSymbols.indexOfFirst { it.name == symbolName || it.name == "_$symbolName" }
+        if (symIndex < 0) return null
+
+        // Each __la_symbol_ptr entry is 8 bytes (64-bit pointer)
+        val entryOffset = laSymbolPtr.address + symIndex * 8L
+        return StubEntry(symbolName, entryOffset)
+    }
+
+    /**
+     * Overwrite a Mach-O `__la_symbol_ptr` entry to point to [newTarget].
+     * Works the same as GOT hooking — overwrites an 8-byte pointer.
+     */
+    @JvmStatic
+    fun hookStub(stubAddress: Long, newTarget: Long): ActiveHook {
+        val original = NativeMemory.readBytes(stubAddress, 8)
+        NativeMemory.mprotect(stubAddress, 8, NativeMemory.PROT_READ or NativeMemory.PROT_WRITE)
+        val seg = java.lang.foreign.MemorySegment.ofAddress(stubAddress).reinterpret(8)
+        seg.set(java.lang.foreign.ValueLayout.JAVA_LONG_UNALIGNED, 0, newTarget)
+        return StubHookImpl(stubAddress, original)
+    }
+
+    /**
+     * Convenience: find and hook a Mach-O stub in one call.
+     * Requires the module's base address to compute the absolute stub address.
+     */
+    @JvmStatic
+    fun stub(binaryPath: String, symbolName: String, newTarget: Long, baseAddress: Long = 0): ActiveHook {
+        val entry = findStubEntry(binaryPath, symbolName)
+            ?: throw IllegalArgumentException("Stub entry not found for '$symbolName' in $binaryPath")
+        return hookStub(baseAddress + entry.address, newTarget)
+    }
+
     data class GotEntry(val symbolName: String, val offset: Long, val relocType: Int)
     data class IatEntry(val dllName: String, val functionName: String, val rva: Long)
+    data class StubEntry(val symbolName: String, val address: Long)
 
     private class InlineHookImpl(override val address: Long, override val originalBytes: ByteArray) : ActiveHook {
         override fun unhook() {
@@ -182,6 +236,13 @@ object Hook {
     }
 
     private class IatHookImpl(override val address: Long, override val originalBytes: ByteArray) : ActiveHook {
+        override fun unhook() {
+            NativeMemory.mprotect(address, 8, NativeMemory.PROT_READ or NativeMemory.PROT_WRITE)
+            NativeMemory.writeBytes(address, originalBytes)
+        }
+    }
+
+    private class StubHookImpl(override val address: Long, override val originalBytes: ByteArray) : ActiveHook {
         override fun unhook() {
             NativeMemory.mprotect(address, 8, NativeMemory.PROT_READ or NativeMemory.PROT_WRITE)
             NativeMemory.writeBytes(address, originalBytes)

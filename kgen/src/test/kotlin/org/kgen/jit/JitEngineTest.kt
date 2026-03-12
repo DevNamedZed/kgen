@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.condition.EnabledOnOs
 import org.junit.jupiter.api.condition.OS
-import org.kgen.backend.x86.codegen.X86CodeGenerator
+import org.kgen.target.x86.codegen.X86CodeGenerator
 import org.kgen.ir.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target

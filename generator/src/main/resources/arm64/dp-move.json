@@ -1,0 +1,34 @@
+[
+  {
+    "mnemonic": "mov",
+    "summary": "Move register (alias: ORR Rd, ZR, Rm)",
+    "forms": [
+      { "operands": ["x", "x"], "encoding": { "base": "AA0003E0", "format": "rd_rm" } },
+      { "operands": ["w", "w"], "encoding": { "base": "2A0003E0", "format": "rd_rm" } }
+    ]
+  },
+  {
+    "mnemonic": "movz",
+    "summary": "Move wide with zero",
+    "forms": [
+      { "operands": ["x", "imm16"], "encoding": { "base": "D2800000", "format": "move_wide" } },
+      { "operands": ["w", "imm16"], "encoding": { "base": "52800000", "format": "move_wide" } }
+    ]
+  },
+  {
+    "mnemonic": "movk",
+    "summary": "Move wide with keep",
+    "forms": [
+      { "operands": ["x", "imm16"], "encoding": { "base": "F2800000", "format": "move_wide" } },
+      { "operands": ["w", "imm16"], "encoding": { "base": "72800000", "format": "move_wide" } }
+    ]
+  },
+  {
+    "mnemonic": "movn",
+    "summary": "Move wide with NOT",
+    "forms": [
+      { "operands": ["x", "imm16"], "encoding": { "base": "92800000", "format": "move_wide" } },
+      { "operands": ["w", "imm16"], "encoding": { "base": "12800000", "format": "move_wide" } }
+    ]
+  }
+]

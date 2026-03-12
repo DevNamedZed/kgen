@@ -68,6 +68,13 @@ class ElfObjectWriter(private val machine: Int = ElfMachine.X86_64.code) {
                     SectionKind.DATA -> ElfSectionType.PROGBITS.code to (ElfSectionFlags.ALLOC or ElfSectionFlags.WRITE)
                     SectionKind.RODATA -> ElfSectionType.PROGBITS.code to ElfSectionFlags.ALLOC
                     SectionKind.BSS -> ElfSectionType.NOBITS.code to (ElfSectionFlags.ALLOC or ElfSectionFlags.WRITE)
+                    SectionKind.DEBUG_INFO, SectionKind.DEBUG_ABBREV, SectionKind.DEBUG_LINE,
+                    SectionKind.DEBUG_STR, SectionKind.DEBUG_RANGES, SectionKind.DEBUG_LOC,
+                    SectionKind.DEBUG_FRAME, SectionKind.DEBUG_ARANGES, SectionKind.DEBUG_PUBNAMES,
+                    SectionKind.DEBUG_PUBTYPES, SectionKind.DEBUG_MACRO, SectionKind.DEBUG_LINE_STR,
+                    SectionKind.DEBUG_STR_OFFSETS, SectionKind.DEBUG_ADDR, SectionKind.DEBUG_RNGLISTS,
+                    SectionKind.DEBUG_LOCLISTS ->
+                        ElfSectionType.PROGBITS.code to 0L
                     else -> continue
                 }
                 userSections.add(SectionEntry(sec, sec.name, shType, shFlags))
@@ -101,7 +108,12 @@ class ElfObjectWriter(private val machine: Int = ElfMachine.X86_64.code) {
                     SymbolKind.UNDEFINED -> ElfSymbolType.NOTYPE
                     else -> ElfSymbolType.NOTYPE
                 }
-                val entry = SymEntry(nameIdx, Elf.stInfo(bind, type), ElfSymbolVisibility.DEFAULT.code, shndx, sym.value, sym.size)
+                val vis = when (sym.visibility) {
+                    SymbolVisibility.HIDDEN -> ElfSymbolVisibility.HIDDEN
+                    SymbolVisibility.PROTECTED -> ElfSymbolVisibility.PROTECTED
+                    else -> ElfSymbolVisibility.DEFAULT
+                }
+                val entry = SymEntry(nameIdx, Elf.stInfo(bind, type), vis.code, shndx, sym.value, sym.size)
                 if (bind == ElfSymbolBinding.LOCAL) localSymbols.add(entry) else globalSymbols.add(entry)
             }
 
@@ -123,7 +135,9 @@ class ElfObjectWriter(private val machine: Int = ElfMachine.X86_64.code) {
                 val symIdx = symbolIndexMap[rel.symbol] ?: continue
                 val relaType = when (rel.type) {
                     is RelocationType.X86_64 -> rel.type.value
-                    else -> continue
+                    is RelocationType.AArch64 -> rel.type.value
+                    is RelocationType.RiscV -> rel.type.value
+                    else -> error("Unsupported relocation type for ELF: ${rel.type}")
                 }
                 relaSections.getOrPut(targetSection) { mutableListOf() }
                     .add(RelaEntry(rel.offset, symIdx, relaType, rel.addend))

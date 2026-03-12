@@ -44,9 +44,17 @@ data class ClrTables(
     val memberRefs: List<ClrMemberRef> = emptyList(),
     val constants: List<ClrConstant> = emptyList(),
     val customAttributes: List<ClrCustomAttribute> = emptyList(),
+    val fieldMarshals: List<ClrFieldMarshal> = emptyList(),
+    val declSecurities: List<ClrDeclSecurity> = emptyList(),
     val standAloneSigs: List<ClrStandAloneSig> = emptyList(),
     val classlayouts: List<ClrClassLayout> = emptyList(),
     val fieldLayouts: List<ClrFieldLayout> = emptyList(),
+    val eventMaps: List<ClrEventMap> = emptyList(),
+    val events: List<ClrEvent> = emptyList(),
+    val propertyMaps: List<ClrPropertyMap> = emptyList(),
+    val properties: List<ClrProperty> = emptyList(),
+    val methodSemantics: List<ClrMethodSemantics> = emptyList(),
+    val methodImpls: List<ClrMethodImpl> = emptyList(),
     val moduleRefs: List<ClrModuleRef> = emptyList(),
     val typeSpecs: List<ClrTypeSpec> = emptyList(),
     val implMaps: List<ClrImplMap> = emptyList(),
@@ -70,6 +78,8 @@ enum class ClrTableId(val id: Int) {
     MEMBER_REF(0x0A),
     CONSTANT(0x0B),
     CUSTOM_ATTRIBUTE(0x0C),
+    FIELD_MARSHAL(0x0D),
+    DECL_SECURITY(0x0E),
     STAND_ALONE_SIG(0x11),
     EVENT_MAP(0x12),
     EVENT(0x14),
@@ -91,6 +101,6 @@ enum class ClrTableId(val id: Int) {
 
     companion object {
         private val byId = entries.associateBy { it.id }
-        fun fromId(id: Int): ClrTableId? = byId[id]
+        @JvmStatic fun fromId(id: Int): ClrTableId? = byId[id]
     }
 }

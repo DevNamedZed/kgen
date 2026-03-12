@@ -3,7 +3,7 @@ package org.kgen.cli.cmd
 import org.kgen.binary.elf.ElfReader
 import org.kgen.binary.macho.MachOReader
 import org.kgen.binary.pe.PeReader
-import org.kgen.tools.HexDump
+import org.kgen.binary.HexDump
 import org.kgen.cli.*
 
 object HexDumpCommand {

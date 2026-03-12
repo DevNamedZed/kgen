@@ -8,8 +8,9 @@ import org.kgen.reflect.*
 import org.kgen.ir.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
-import org.kgen.backend.x86.codegen.X86CodeGenerator
+import org.kgen.target.x86.codegen.X86CodeGenerator
 import org.kgen.binary.elf.ElfSharedLinker
+import org.kgen.reflect.process.ProcessSymbols
 import java.io.File
 
 class ProcessSymbolsTest {

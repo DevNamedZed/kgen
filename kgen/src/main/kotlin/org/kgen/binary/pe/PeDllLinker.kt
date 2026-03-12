@@ -17,6 +17,9 @@ class PeDllLinker(
     private val dllName: String = "output.dll",
     private val imageBase: Long = 0x180000000L,
     private val subsystem: Int = 3, // CONSOLE
+    private val resources: ByteArray? = null,
+    private val tlsData: ByteArray? = null,
+    private val tlsCallbacks: List<Long> = emptyList(),
 ) {
     companion object {
         private const val FILE_ALIGNMENT = 0x200
@@ -24,13 +27,47 @@ class PeDllLinker(
         private const val THUNK_SIZE = 6
     }
 
+    private data class DebugSectionData(val name: String, val data: ByteArray)
+
     fun link(objects: List<ObjectFile>): ByteArray {
         require(objects.isNotEmpty()) { "No object files to link" }
         val merger = SectionMerger(objects)
         val imports = ImportCollector(objects).collect()
-        val layout = DllLayout(merger, imports, imageBase, dllName, subsystem)
+        val rsrcFromObj = collectResources(objects)
+        val tlsFromObj = collectTls(objects)
+        val debugSections = collectDebugSections(objects)
+        val layout = DllLayout(merger, imports, imageBase, dllName, subsystem,
+            rsrcFromObj ?: resources, tlsFromObj ?: tlsData, tlsCallbacks, debugSections)
         val text = RelocationApplier(objects, merger, layout).apply()
         return DllEmitter(layout, text, merger).emit()
+    }
+
+    private fun collectResources(objects: List<ObjectFile>): ByteArray? {
+        for (obj in objects) {
+            val rsrc = obj.sections.firstOrNull { it.kind == SectionKind.RSRC }
+            if (rsrc != null && rsrc.data.isNotEmpty()) return rsrc.data
+        }
+        return null
+    }
+
+    private fun collectTls(objects: List<ObjectFile>): ByteArray? {
+        for (obj in objects) {
+            val tls = obj.sections.firstOrNull { it.kind == SectionKind.TLS || it.kind == SectionKind.TDATA }
+            if (tls != null && tls.data.isNotEmpty()) return tls.data
+        }
+        return null
+    }
+
+    private fun collectDebugSections(objects: List<ObjectFile>): List<DebugSectionData> {
+        val bufs = mutableMapOf<String, ByteArrayOutputStream>()
+        for (obj in objects) {
+            for (sec in obj.sections) {
+                if (sec.kind.isNonLoaded && sec.data.isNotEmpty()) {
+                    bufs.getOrPut(sec.name) { ByteArrayOutputStream() }.write(sec.data)
+                }
+            }
+        }
+        return bufs.map { (name, buf) -> DebugSectionData(name, buf.toByteArray()) }
     }
 
     private data class Placement(
@@ -46,8 +83,12 @@ class PeDllLinker(
     private class SectionMerger(objects: List<ObjectFile>) {
         val textBuf = ByteArrayOutputStream()
         val rodataBuf = ByteArrayOutputStream()
+        val pdataBuf = ByteArrayOutputStream()
+        val xdataBuf = ByteArrayOutputStream()
         val textPlacements = mutableListOf<Placement>()
         val rodataPlacements = mutableListOf<Placement>()
+        val pdataPlacements = mutableListOf<Placement>()
+        val xdataPlacements = mutableListOf<Placement>()
         val symbolMap = mutableMapOf<String, ResolvedSymbol>()
 
         val exportedSymbols: List<String>
@@ -59,6 +100,8 @@ class PeDllLinker(
                     val (buf, placements) = when (sec.kind) {
                         SectionKind.TEXT -> textBuf to textPlacements
                         SectionKind.RODATA -> rodataBuf to rodataPlacements
+                        SectionKind.PDATA -> pdataBuf to pdataPlacements
+                        SectionKind.XDATA -> xdataBuf to xdataPlacements
                         else -> continue
                     }
                     val aligned = alignStream(buf, maxOf(sec.align, 1))
@@ -71,6 +114,8 @@ class PeDllLinker(
                     val placements = when (secKind) {
                         SectionKind.TEXT -> textPlacements
                         SectionKind.RODATA -> rodataPlacements
+                        SectionKind.PDATA -> pdataPlacements
+                        SectionKind.XDATA -> xdataPlacements
                         else -> continue
                     }
                     val placement = placements.firstOrNull { it.objIdx == objIdx && it.sectionName == sym.section }
@@ -110,6 +155,10 @@ class PeDllLinker(
         val imageBase: Long,
         val dllName: String,
         val subsystem: Int,
+        val rsrcBytes: ByteArray? = null,
+        val tlsData: ByteArray? = null,
+        val tlsCallbacks: List<Long> = emptyList(),
+        val debugSections: List<DebugSectionData> = emptyList(),
     ) {
         val userTextBytes = merger.textBuf.toByteArray()
         val rodataBytes = merger.rodataBuf.toByteArray()
@@ -117,6 +166,8 @@ class PeDllLinker(
         val hasImports = imports.isNotEmpty()
         val exportedSymbols = merger.exportedSymbols
         val hasExports = exportedSymbols.isNotEmpty()
+        val hasResources = rsrcBytes != null && rsrcBytes.isNotEmpty()
+        val hasTls = tlsData != null && tlsData.isNotEmpty()
 
         val allImportedFunctions = imports.flatMap { it.functions }
         val thunksSize = allImportedFunctions.size * THUNK_SIZE
@@ -125,11 +176,14 @@ class PeDllLinker(
         val thunksOffset = userTextSize
         val totalTextSize = userTextSize + thunksSize
 
-        // Section count: .text + optional .rdata + optional .edata + optional .idata
+        val hasDebug = debugSections.isNotEmpty()
         val numSections = 1 +
             (if (hasRodata) 1 else 0) +
             (if (hasExports) 1 else 0) +
-            (if (hasImports) 1 else 0)
+            (if (hasImports) 1 else 0) +
+            (if (hasResources) 1 else 0) +
+            (if (hasTls) 1 else 0) +
+            debugSections.size
         val headersSize = align(64 + 4 + 20 + 240 + 40 * numSections, FILE_ALIGNMENT)
         val textRVA = SECTION_ALIGNMENT
         val textFileOffset = headersSize
@@ -145,6 +199,12 @@ class PeDllLinker(
         val idataRVA: Int; val idataFileOffset: Int; val idataRawSize: Int
         val idataBytes: ByteArray
         val iatRVA: Int; val iatSize: Int
+        val rsrcRVA: Int; val rsrcFileOffset: Int; val rsrcRawSize: Int
+        val tlsRVA: Int; val tlsFileOffset: Int; val tlsRawSize: Int
+        val tlsDirBytes: ByteArray
+        val debugRVAs = mutableListOf<Int>()
+        val debugFileOffsets = mutableListOf<Int>()
+        val debugRawSizes = mutableListOf<Int>()
         val imageSize: Int
 
         val entryPointRVA: Int
@@ -193,6 +253,53 @@ class PeDllLinker(
                 imports.sumOf { it.functions.size + 1 } * 8
             }
 
+            // .rsrc section
+            if (hasResources) {
+                rsrcRVA = nextRVA; rsrcFileOffset = nextFileOff
+                rsrcRawSize = align(rsrcBytes!!.size, FILE_ALIGNMENT)
+                nextRVA += align(rsrcBytes.size, SECTION_ALIGNMENT)
+                nextFileOff += rsrcRawSize
+            } else {
+                rsrcRVA = 0; rsrcFileOffset = 0; rsrcRawSize = 0
+            }
+
+            // .tls section
+            if (hasTls) {
+                tlsRVA = nextRVA; tlsFileOffset = nextFileOff
+                val tlsDirSize = 40
+                val callbackArraySize = (tlsCallbacks.size + 1) * 8
+                val totalTlsSize = tlsDirSize + tlsData!!.size + callbackArraySize
+                tlsRawSize = align(totalTlsSize, FILE_ALIGNMENT)
+
+                val dir = ByteArray(totalTlsSize)
+                val dataVA = imageBase + tlsRVA + tlsDirSize
+                val callbacksVA = imageBase + tlsRVA + tlsDirSize + tlsData.size
+                putU64(dir, 0, dataVA)
+                putU64(dir, 8, dataVA + tlsData.size)
+                putU64(dir, 16, 0)
+                putU64(dir, 24, if (tlsCallbacks.isNotEmpty()) callbacksVA else 0)
+                putU32(dir, 32, 0)
+                putU32(dir, 36, 0)
+                System.arraycopy(tlsData, 0, dir, tlsDirSize, tlsData.size)
+                for ((i, cb) in tlsCallbacks.withIndex()) {
+                    putU64(dir, tlsDirSize + tlsData.size + i * 8, cb)
+                }
+                tlsDirBytes = dir
+                nextRVA += align(totalTlsSize, SECTION_ALIGNMENT)
+                nextFileOff += tlsRawSize
+            } else {
+                tlsRVA = 0; tlsFileOffset = 0; tlsRawSize = 0; tlsDirBytes = ByteArray(0)
+            }
+
+            for (dbg in debugSections) {
+                debugRVAs.add(nextRVA)
+                debugFileOffsets.add(nextFileOff)
+                val rawSize = align(dbg.data.size, FILE_ALIGNMENT)
+                debugRawSizes.add(rawSize)
+                nextRVA += align(dbg.data.size, SECTION_ALIGNMENT)
+                nextFileOff += rawSize
+            }
+
             imageSize = align(nextRVA, SECTION_ALIGNMENT)
 
             // Entry point: DllMain if present, else 0
@@ -205,6 +312,7 @@ class PeDllLinker(
             val sectionRVA = when (resolved.kind) {
                 SectionKind.TEXT -> textRVA
                 SectionKind.RODATA -> rdataRVA
+                SectionKind.PDATA, SectionKind.XDATA -> 0 // not typically resolved as symbols
                 else -> return null
             }
             return imageBase + sectionRVA + resolved.mergedOffset
@@ -389,6 +497,13 @@ class PeDllLinker(
             writeU32(buf, v.toInt()); writeU32(buf, (v shr 32).toInt())
         }
         private fun writeI32(buf: ByteArrayOutputStream, v: Int) = writeU32(buf, v)
+        private fun putU32(arr: ByteArray, off: Int, v: Int) {
+            arr[off] = (v and 0xFF).toByte(); arr[off + 1] = ((v shr 8) and 0xFF).toByte()
+            arr[off + 2] = ((v shr 16) and 0xFF).toByte(); arr[off + 3] = ((v shr 24) and 0xFF).toByte()
+        }
+        private fun putU64(arr: ByteArray, off: Int, v: Long) {
+            putU32(arr, off, v.toInt()); putU32(arr, off + 4, (v shr 32).toInt())
+        }
     }
 
     private class RelocationApplier(
@@ -500,6 +615,16 @@ class PeDllLinker(
                 putU32(opt, 120, layout.idataRVA)
                 putU32(opt, 124, layout.idataBytes.size)
             }
+            // Resource table (index 2)
+            if (layout.hasResources) {
+                putU32(opt, 112 + 16, layout.rsrcRVA)
+                putU32(opt, 112 + 20, layout.rsrcBytes!!.size)
+            }
+            // TLS table (index 9)
+            if (layout.hasTls) {
+                putU32(opt, 112 + 72, layout.tlsRVA)
+                putU32(opt, 112 + 76, layout.tlsDirBytes.size)
+            }
             // IAT (index 12)
             if (layout.hasImports) {
                 putU32(opt, 112 + 96, layout.iatRVA)
@@ -524,6 +649,19 @@ class PeDllLinker(
                 writeSectionHeader(buf, ".idata", layout.idataBytes.size, layout.idataRVA,
                     layout.idataRawSize, layout.idataFileOffset, 0xC0000040.toInt())
             }
+            if (layout.hasResources) {
+                writeSectionHeader(buf, ".rsrc", layout.rsrcBytes!!.size, layout.rsrcRVA,
+                    layout.rsrcRawSize, layout.rsrcFileOffset, 0x40000040)
+            }
+            if (layout.hasTls) {
+                writeSectionHeader(buf, ".tls", layout.tlsDirBytes.size, layout.tlsRVA,
+                    layout.tlsRawSize, layout.tlsFileOffset, 0xC0000040.toInt())
+            }
+            for ((i, dbg) in layout.debugSections.withIndex()) {
+                writeSectionHeader(buf, dbg.name, dbg.data.size, layout.debugRVAs[i],
+                    layout.debugRawSizes[i], layout.debugFileOffsets[i],
+                    0x42000040) // MEM_READ | MEM_DISCARDABLE | INITIALIZED_DATA
+            }
         }
 
         private fun emitSectionData(buf: ByteArrayOutputStream) {
@@ -543,6 +681,18 @@ class PeDllLinker(
             if (layout.hasImports) {
                 buf.write(layout.idataBytes)
                 padTo(buf, layout.idataFileOffset + layout.idataRawSize)
+            }
+            if (layout.hasResources) {
+                buf.write(layout.rsrcBytes!!)
+                padTo(buf, layout.rsrcFileOffset + layout.rsrcRawSize)
+            }
+            if (layout.hasTls) {
+                buf.write(layout.tlsDirBytes)
+                padTo(buf, layout.tlsFileOffset + layout.tlsRawSize)
+            }
+            for ((i, dbg) in layout.debugSections.withIndex()) {
+                buf.write(dbg.data)
+                padTo(buf, layout.debugFileOffsets[i] + layout.debugRawSizes[i])
             }
         }
 

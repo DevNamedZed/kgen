@@ -19,7 +19,7 @@ enum class ElfSectionType(val code: Int) {
     GNU_HASH(0x6ffffff6);
 
     companion object {
-        fun fromCode(code: Int) = entries.firstOrNull { it.code == code }
+        @JvmStatic fun fromCode(code: Int) = entries.firstOrNull { it.code == code }
     }
 }
 

@@ -152,8 +152,8 @@ class ReflectExtendedTest {
     @Test
     fun `qualified name CLR generic arity three`() {
         val name = QualifiedName.parse("System.Tuple`3")
-        assertEquals("Tuple`3", name.name())
-        assertEquals("Tuple", name.simpleName())
+        assertEquals("Tuple`3", name.rawName())
+        assertEquals("Tuple", name.name())
         assertEquals(3, name.genericArity())
         assertTrue(name.isGeneric())
     }
@@ -177,7 +177,7 @@ class ReflectExtendedTest {
     fun `qualified name matching different separators`() {
         val clr = QualifiedName.parse("System.Collections.Generic.List`1")
         val of = QualifiedName.of("System.Collections.Generic", "List`1")
-        assertTrue(clr.matches(of))
+        assertEquals(clr, of)
         assertEquals(clr, of)
     }
 

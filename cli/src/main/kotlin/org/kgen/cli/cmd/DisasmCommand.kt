@@ -5,8 +5,8 @@ import org.kgen.binary.elf.ElfSymbolType
 import org.kgen.binary.macho.MachO
 import org.kgen.binary.macho.MachOReader
 import org.kgen.binary.pe.PeReader
-import org.kgen.backend.wasm.disasm.WasmDisassembler
-import org.kgen.backend.wasm.module.WasmModuleReader
+import org.kgen.target.wasm.disasm.WasmDisassembler
+import org.kgen.target.wasm.module.WasmModuleReader
 import org.kgen.cli.*
 
 object DisasmCommand {

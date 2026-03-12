@@ -1,8 +1,6 @@
 package org.kgen.reflect
 
-import org.kgen.binary.ObjectFile
-import org.kgen.binary.SectionKind
-import org.kgen.binary.SymbolKind
+import org.kgen.binary.*
 import java.lang.foreign.*
 import java.lang.foreign.ValueLayout.*
 import java.lang.invoke.MethodHandle
@@ -74,6 +72,24 @@ class NativeCode private constructor(
         return invokeHandle(handle, args) as Int
     }
 
+    /** Call a function by name, returning float. */
+    fun callFloat(name: String, vararg args: Long): Float {
+        val addr = symbolAddress(name)
+            ?: throw IllegalArgumentException("Symbol not found: $name")
+        val desc = makeDescriptor(JAVA_FLOAT, args.size)
+        val handle = linker.downcallHandle(MemorySegment.ofAddress(addr), desc)
+        return invokeHandle(handle, args) as Float
+    }
+
+    /** Call a function by name, returning double. */
+    fun callDouble(name: String, vararg args: Long): Double {
+        val addr = symbolAddress(name)
+            ?: throw IllegalArgumentException("Symbol not found: $name")
+        val desc = makeDescriptor(JAVA_DOUBLE, args.size)
+        val handle = linker.downcallHandle(MemorySegment.ofAddress(addr), desc)
+        return invokeHandle(handle, args) as Double
+    }
+
     /** Call a function by name, returning void. */
     fun callVoid(name: String, vararg args: Long) {
         val addr = symbolAddress(name)
@@ -92,7 +108,8 @@ class NativeCode private constructor(
 
         /**
          * Load an [ObjectFile] (from X86CodeGenerator, etc.) into executable memory.
-         * Extracts the .text section and symbol table.
+         * Extracts the .text and .rodata sections, resolves internal relocations,
+         * and builds a symbol table for calling functions by name.
          */
         @JvmStatic
         fun load(obj: ObjectFile): NativeCode {
@@ -101,14 +118,105 @@ class NativeCode private constructor(
             val code = textSection.data
             if (code.isEmpty()) throw IllegalArgumentException("TEXT section is empty")
 
-            val symbolMap = mutableMapOf<String, Long>()
+            val rodataSection = obj.sections.firstOrNull { it.kind == SectionKind.RODATA }
+            val rodataSize = rodataSection?.data?.size?.toLong() ?: 0L
+            val totalSize = code.size.toLong() + rodataSize
+
+            val mem = NativeMemory.allocateExecutable(totalSize)
+            mem.write(0, code)
+
+            val rodataOffset = code.size.toLong()
+            if (rodataSection != null && rodataSection.data.isNotEmpty()) {
+                mem.write(rodataOffset, rodataSection.data)
+            }
+
+            // Build symbol address map (absolute addresses)
+            val symbolAddrs = mutableMapOf<String, Long>()
+            val symbolOffsets = mutableMapOf<String, Long>()
             for (sym in obj.symbols) {
-                if (sym.kind != SymbolKind.UNDEFINED) {
-                    symbolMap[sym.name] = sym.value
+                if (sym.kind == SymbolKind.UNDEFINED) continue
+                val offset = when (sym.section) {
+                    ".rodata" -> rodataOffset + sym.value
+                    else -> sym.value
+                }
+                symbolAddrs[sym.name] = mem.address + offset
+                symbolOffsets[sym.name] = offset
+            }
+
+            // Apply relocations
+            applyRelocations(obj.relocations, mem, symbolAddrs)
+            for (section in obj.sections) {
+                if (section.relocations.isNotEmpty()) {
+                    applyRelocations(section.relocations, mem, symbolAddrs)
                 }
             }
 
-            return loadBytes(code, symbolMap)
+            return NativeCode(mem, symbolOffsets)
+        }
+
+        private fun applyRelocations(
+            relocations: List<Relocation>,
+            mem: NativeMemory,
+            symbols: Map<String, Long>,
+        ) {
+            for (rel in relocations) {
+                val targetAddr = symbols[rel.symbol] ?: continue
+                val patchAddr = mem.address + rel.offset
+
+                when (rel.type) {
+                    RelocationType.X86_64.PC32, RelocationType.X86_64.PLT32 -> {
+                        val value = (targetAddr + rel.addend - patchAddr).toInt()
+                        mem.writeInt(rel.offset, value)
+                    }
+                    RelocationType.X86_64.R_32, RelocationType.X86_64.R_32S -> {
+                        val value = (targetAddr + rel.addend).toInt()
+                        mem.writeInt(rel.offset, value)
+                    }
+                    RelocationType.X86_64.R_64 -> {
+                        val value = targetAddr + rel.addend
+                        mem.writeLong(rel.offset, value)
+                    }
+                    RelocationType.AArch64.CALL26, RelocationType.AArch64.JUMP26 -> {
+                        val delta = targetAddr + rel.addend - patchAddr
+                        val existing = mem.readInt(rel.offset)
+                        val imm26 = ((delta shr 2) and 0x03FFFFFFL).toInt()
+                        mem.writeInt(rel.offset, (existing and 0xFC000000.toInt()) or imm26)
+                    }
+                    RelocationType.AArch64.ADR_PREL_PG_HI21 -> {
+                        val target = targetAddr + rel.addend
+                        val page = (target and 0xFFFFF000L) - (patchAddr and 0xFFFFF000L)
+                        val immHi = ((page shr 12) and 0x1FFFFFL).toInt()
+                        val immLo = (immHi and 0x3) shl 29
+                        val immHiField = ((immHi shr 2) and 0x7FFFF) shl 5
+                        val existing = mem.readInt(rel.offset)
+                        mem.writeInt(rel.offset, (existing and 0x9F00001F.toInt()) or immLo or immHiField)
+                    }
+                    RelocationType.AArch64.ADD_ABS_LO12_NC,
+                    RelocationType.AArch64.LDST8_ABS_LO12_NC -> {
+                        val imm12 = ((targetAddr + rel.addend) and 0xFFFL).toInt()
+                        val existing = mem.readInt(rel.offset)
+                        mem.writeInt(rel.offset, (existing and 0xFFC003FF.toInt()) or (imm12 shl 10))
+                    }
+                    RelocationType.AArch64.LDST32_ABS_LO12_NC -> {
+                        val imm12 = (((targetAddr + rel.addend) and 0xFFFL).toInt() shr 2) and 0xFFF
+                        val existing = mem.readInt(rel.offset)
+                        mem.writeInt(rel.offset, (existing and 0xFFC003FF.toInt()) or (imm12 shl 10))
+                    }
+                    RelocationType.AArch64.LDST64_ABS_LO12_NC -> {
+                        val imm12 = (((targetAddr + rel.addend) and 0xFFFL).toInt() shr 3) and 0xFFF
+                        val existing = mem.readInt(rel.offset)
+                        mem.writeInt(rel.offset, (existing and 0xFFC003FF.toInt()) or (imm12 shl 10))
+                    }
+                    RelocationType.AArch64.ABS64 -> {
+                        mem.writeLong(rel.offset, targetAddr + rel.addend)
+                    }
+                    RelocationType.AArch64.PREL32 -> {
+                        val value = (targetAddr + rel.addend - patchAddr).toInt()
+                        mem.writeInt(rel.offset, value)
+                    }
+                    else -> {} // Skip unsupported relocation types
+                }
+            }
         }
 
         /**

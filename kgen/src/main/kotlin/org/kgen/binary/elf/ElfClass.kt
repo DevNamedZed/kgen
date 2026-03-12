@@ -5,6 +5,6 @@ enum class ElfClass(val code: Int) {
     ELF64(2);
 
     companion object {
-        fun fromCode(code: Int) = entries.firstOrNull { it.code == code }
+        @JvmStatic fun fromCode(code: Int) = entries.firstOrNull { it.code == code }
     }
 }

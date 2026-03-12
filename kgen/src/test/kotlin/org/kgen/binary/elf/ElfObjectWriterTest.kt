@@ -278,4 +278,91 @@ class ElfObjectWriterTest {
         val shstrtabIdx = readU16(buf, 62)
         assertTrue(shstrtabIdx in 0 until shnum)
     }
+
+    @Test
+    fun `writes symbol visibility`() {
+        val obj = ObjectFile(
+            format = ObjectFormat.ELF,
+            arch = Architecture(ArchType.X86_64),
+            sections = listOf(
+                Section(".text", SectionKind.TEXT, ByteArray(32), align = 16),
+            ),
+            symbols = listOf(
+                Symbol("hiddenFunc", value = 0, size = 16, section = ".text",
+                    binding = SymbolBinding.GLOBAL, kind = SymbolKind.FUNCTION,
+                    visibility = SymbolVisibility.HIDDEN),
+                Symbol("protectedFunc", value = 16, size = 16, section = ".text",
+                    binding = SymbolBinding.GLOBAL, kind = SymbolKind.FUNCTION,
+                    visibility = SymbolVisibility.PROTECTED),
+                Symbol("defaultFunc", value = 0, size = 16, section = ".text",
+                    binding = SymbolBinding.GLOBAL, kind = SymbolKind.FUNCTION,
+                    visibility = SymbolVisibility.DEFAULT),
+            ),
+            relocations = emptyList(),
+        )
+
+        val bytes = ElfObjectWriter().write(obj)
+        val buf = le(bytes)
+
+        val shoff = readU64(buf, 40).toInt()
+        val shnum = readU16(buf, 60)
+
+        var symtabOff = -1
+        var symtabSize = 0L
+
+        for (i in 0 until shnum) {
+            val sh = shoff + i * Elf.SHDR64_SIZE
+            if (readU32(buf, sh + 4) == ElfSectionType.SYMTAB.code) {
+                symtabOff = readU64(buf, sh + 24).toInt()
+                symtabSize = readU64(buf, sh + 32)
+                break
+            }
+        }
+
+        assertTrue(symtabOff > 0, "Should have a .symtab section")
+        val numSyms = (symtabSize / Elf.SYM64_SIZE).toInt()
+
+        // Read the strtab to find symbol names and match visibility
+        var strtabOff = -1
+        for (i in 0 until shnum) {
+            val sh = shoff + i * Elf.SHDR64_SIZE
+            if (readU32(buf, sh + 4) == ElfSectionType.STRTAB.code) {
+                // Find the strtab that is linked from symtab (not shstrtab)
+                val candidate = readU64(buf, sh + 24).toInt()
+                // The first STRTAB we find that isn't the shstrtab is the symbol strtab
+                if (i != readU16(buf, 62)) {
+                    strtabOff = candidate
+                    break
+                }
+            }
+        }
+        assertTrue(strtabOff > 0, "Should have a .strtab section")
+
+        // Collect symbol name -> st_other mapping
+        val visMap = mutableMapOf<String, Int>()
+        for (s in 0 until numSyms) {
+            val symOff = symtabOff + s * Elf.SYM64_SIZE
+            val nameIdx = readU32(buf, symOff)  // st_name
+            val stOther = bytes[symOff + 5].toInt() and 0xFF  // st_other
+
+            // Read name from strtab
+            if (nameIdx > 0) {
+                val nameStart = strtabOff + nameIdx
+                val sb = StringBuilder()
+                var pos = nameStart
+                while (pos < bytes.size && bytes[pos] != 0.toByte()) {
+                    sb.append(bytes[pos].toInt().toChar())
+                    pos++
+                }
+                visMap[sb.toString()] = stOther and 0x3
+            }
+        }
+
+        assertEquals(ElfSymbolVisibility.HIDDEN.code, visMap["hiddenFunc"],
+            "hiddenFunc should have HIDDEN visibility")
+        assertEquals(ElfSymbolVisibility.PROTECTED.code, visMap["protectedFunc"],
+            "protectedFunc should have PROTECTED visibility")
+        assertEquals(ElfSymbolVisibility.DEFAULT.code, visMap["defaultFunc"],
+            "defaultFunc should have DEFAULT visibility")
+    }
 }

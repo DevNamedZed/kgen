@@ -1,0 +1,76 @@
+[
+  {
+    "mnemonic": "b",
+    "summary": "Branch (unconditional, 26-bit offset)",
+    "forms": [
+      { "operands": ["label"], "encoding": { "base": "14000000", "format": "branch26" } }
+    ]
+  },
+  {
+    "mnemonic": "bl",
+    "summary": "Branch with link (call, 26-bit offset)",
+    "forms": [
+      { "operands": ["label"], "encoding": { "base": "94000000", "format": "branch26" } }
+    ]
+  },
+  {
+    "mnemonic": "bCond",
+    "summary": "Branch conditional (19-bit offset)",
+    "forms": [
+      { "operands": ["cond", "label"], "encoding": { "base": "54000000", "format": "branch_cond" } }
+    ]
+  },
+  {
+    "mnemonic": "cbz",
+    "summary": "Compare and branch if zero",
+    "forms": [
+      { "operands": ["x", "label"], "encoding": { "base": "B4000000", "format": "cbranch" } },
+      { "operands": ["w", "label"], "encoding": { "base": "34000000", "format": "cbranch" } }
+    ]
+  },
+  {
+    "mnemonic": "cbnz",
+    "summary": "Compare and branch if not zero",
+    "forms": [
+      { "operands": ["x", "label"], "encoding": { "base": "B5000000", "format": "cbranch" } },
+      { "operands": ["w", "label"], "encoding": { "base": "35000000", "format": "cbranch" } }
+    ]
+  },
+  {
+    "mnemonic": "tbz",
+    "summary": "Test bit and branch if zero",
+    "forms": [
+      { "operands": ["x", "imm", "label"], "encoding": { "base": "36000000", "format": "tbranch" } },
+      { "operands": ["w", "imm", "label"], "encoding": { "base": "36000000", "format": "tbranch" } }
+    ]
+  },
+  {
+    "mnemonic": "tbnz",
+    "summary": "Test bit and branch if not zero",
+    "forms": [
+      { "operands": ["x", "imm", "label"], "encoding": { "base": "37000000", "format": "tbranch" } },
+      { "operands": ["w", "imm", "label"], "encoding": { "base": "37000000", "format": "tbranch" } }
+    ]
+  },
+  {
+    "mnemonic": "br",
+    "summary": "Branch to register",
+    "forms": [
+      { "operands": ["x"], "encoding": { "base": "D61F0000", "format": "reg1" } }
+    ]
+  },
+  {
+    "mnemonic": "blr",
+    "summary": "Branch with link to register (indirect call)",
+    "forms": [
+      { "operands": ["x"], "encoding": { "base": "D63F0000", "format": "reg1" } }
+    ]
+  },
+  {
+    "mnemonic": "ret",
+    "summary": "Return from subroutine",
+    "forms": [
+      { "operands": ["x"], "encoding": { "base": "D65F0000", "format": "reg1" } }
+    ]
+  }
+]

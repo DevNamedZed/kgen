@@ -6,7 +6,7 @@ enum class ElfSymbolBinding(val code: Int) {
     WEAK(2);
 
     companion object {
-        fun fromCode(code: Int) = entries.firstOrNull { it.code == code }
+        @JvmStatic fun fromCode(code: Int) = entries.firstOrNull { it.code == code }
     }
 }
 
@@ -21,7 +21,7 @@ enum class ElfSymbolType(val code: Int) {
     GNU_IFUNC(10);
 
     companion object {
-        fun fromCode(code: Int) = entries.firstOrNull { it.code == code }
+        @JvmStatic fun fromCode(code: Int) = entries.firstOrNull { it.code == code }
     }
 }
 
@@ -31,6 +31,6 @@ enum class ElfSymbolVisibility(val code: Int) {
     PROTECTED(3);
 
     companion object {
-        fun fromCode(code: Int) = entries.firstOrNull { it.code == code }
+        @JvmStatic fun fromCode(code: Int) = entries.firstOrNull { it.code == code }
     }
 }

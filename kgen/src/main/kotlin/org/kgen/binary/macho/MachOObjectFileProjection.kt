@@ -89,7 +89,7 @@ internal object MachOObjectFileProjection {
 
     private fun projectSymbols(macho: MachOFile): List<Symbol> {
         val sections = macho.allSections
-        return macho.symbols.map { sym ->
+        val symbols = macho.symbols.map { sym ->
             val binding = when {
                 !sym.isExternal -> SymbolBinding.LOCAL
                 else -> SymbolBinding.GLOBAL
@@ -114,6 +114,26 @@ internal object MachOObjectFileProjection {
                 flags = flags,
             )
         }
+        val chainedImportSymbols = projectChainedFixupImports(macho)
+        return symbols + chainedImportSymbols
+    }
+
+    private fun projectChainedFixupImports(macho: MachOFile): List<Symbol> {
+        val fixups = macho.chainedFixups ?: return emptyList()
+        val existingNames = macho.symbols.map { it.name }.toSet()
+        return fixups.imports
+            .filter { it.name !in existingNames }
+            .map { imp ->
+                val flags = mutableSetOf(SymbolFlag.UNDEFINED)
+                if (imp.weakImport) flags.add(SymbolFlag.WEAK_REF)
+                Symbol(
+                    name = imp.name, value = 0, section = null,
+                    binding = SymbolBinding.GLOBAL,
+                    kind = SymbolKind.UNDEFINED,
+                    visibility = SymbolVisibility.DEFAULT,
+                    flags = flags,
+                )
+            }
     }
 
     private fun projectRelocations(macho: MachOFile): List<Relocation> {

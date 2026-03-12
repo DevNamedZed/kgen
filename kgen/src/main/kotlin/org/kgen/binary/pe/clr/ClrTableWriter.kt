@@ -115,9 +115,17 @@ class ClrTableWriter {
         rowCounts[0x0A] = tables.memberRefs.size
         rowCounts[0x0B] = tables.constants.size
         rowCounts[0x0C] = tables.customAttributes.size
+        rowCounts[0x0D] = tables.fieldMarshals.size
+        rowCounts[0x0E] = tables.declSecurities.size
         rowCounts[0x0F] = tables.classlayouts.size
         rowCounts[0x10] = tables.fieldLayouts.size
         rowCounts[0x11] = tables.standAloneSigs.size
+        rowCounts[0x12] = tables.eventMaps.size
+        rowCounts[0x14] = tables.events.size
+        rowCounts[0x15] = tables.propertyMaps.size
+        rowCounts[0x17] = tables.properties.size
+        rowCounts[0x18] = tables.methodSemantics.size
+        rowCounts[0x19] = tables.methodImpls.size
         rowCounts[0x1A] = tables.moduleRefs.size
         rowCounts[0x1B] = tables.typeSpecs.size
         rowCounts[0x1C] = tables.implMaps.size
@@ -173,9 +181,17 @@ class ClrTableWriter {
         for (r in tables.memberRefs) ctx.writeMemberRef(r)
         for (c in tables.constants) ctx.writeConstant(c)
         for (a in tables.customAttributes) ctx.writeCustomAttribute(a)
+        for (f in tables.fieldMarshals) ctx.writeFieldMarshal(f)
+        for (d in tables.declSecurities) ctx.writeDeclSecurity(d)
         for (c in tables.classlayouts) ctx.writeClassLayout(c)
         for (f in tables.fieldLayouts) ctx.writeFieldLayout(f)
         for (s in tables.standAloneSigs) ctx.writeStandAloneSig(s)
+        for (e in tables.eventMaps) ctx.writeEventMap(e)
+        for (e in tables.events) ctx.writeEvent(e)
+        for (p in tables.propertyMaps) ctx.writePropertyMap(p)
+        for (p in tables.properties) ctx.writeProperty(p)
+        for (s in tables.methodSemantics) ctx.writeMethodSemantics(s)
+        for (i in tables.methodImpls) ctx.writeMethodImpl(i)
         for (r in tables.moduleRefs) ctx.writeModuleRef(r)
         for (t in tables.typeSpecs) ctx.writeTypeSpec(t)
         for (i in tables.implMaps) ctx.writeImplMap(i)
@@ -271,7 +287,47 @@ private class TableWriteContext(
         writeU32(f.offset); writeTableIdx(0x04, f.field)
     }
 
+    fun writeFieldMarshal(f: ClrFieldMarshal) {
+        writeCodedIdx(1, ClrCodedIndex.HAS_FIELD_MARSHAL, f.parent)
+        writeBlobIdx(f.nativeType)
+    }
+
+    fun writeDeclSecurity(d: ClrDeclSecurity) {
+        writeU16(d.action)
+        writeCodedIdx(2, ClrCodedIndex.HAS_DECL_SECURITY, d.parent)
+        writeBlobIdx(d.permissionSet)
+    }
+
     fun writeStandAloneSig(s: ClrStandAloneSig) { writeBlobIdx(s.signature) }
+
+    fun writeEventMap(e: ClrEventMap) {
+        writeTableIdx(0x02, e.parent); writeTableIdx(0x14, e.eventList)
+    }
+
+    fun writeEvent(e: ClrEvent) {
+        writeU16(e.flags); writeStringIdx(e.name)
+        writeCodedIdx(2, ClrCodedIndex.TYPE_DEF_OR_REF, e.eventType)
+    }
+
+    fun writePropertyMap(p: ClrPropertyMap) {
+        writeTableIdx(0x02, p.parent); writeTableIdx(0x17, p.propertyList)
+    }
+
+    fun writeProperty(p: ClrProperty) {
+        writeU16(p.flags); writeStringIdx(p.name); writeBlobIdx(p.type)
+    }
+
+    fun writeMethodSemantics(s: ClrMethodSemantics) {
+        writeU16(s.semantics); writeTableIdx(0x06, s.method)
+        writeCodedIdx(1, ClrCodedIndex.HAS_SEMANTICS, s.association)
+    }
+
+    fun writeMethodImpl(i: ClrMethodImpl) {
+        writeTableIdx(0x02, i.classIndex)
+        writeCodedIdx(1, ClrCodedIndex.METHOD_DEF_OR_REF, i.methodBody)
+        writeCodedIdx(1, ClrCodedIndex.METHOD_DEF_OR_REF, i.methodDeclaration)
+    }
+
     fun writeModuleRef(r: ClrModuleRef) { writeStringIdx(r.name) }
     fun writeTypeSpec(t: ClrTypeSpec) { writeBlobIdx(t.signature) }
 

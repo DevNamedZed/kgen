@@ -733,7 +733,9 @@ class LoopInvariantCodeMotionExtendedTest {
     }
 
     @Test
-    fun `does not hoist load from loop`() {
+    fun `hoists load from param when loop has no aliasing stores`() {
+        // After mem2reg, iSlot becomes a phi — no stores remain in the loop.
+        // Alias analysis: param vs alloca = NoAlias, so load is hoistable.
         val module = buildWithMem2Reg {
             val params = createFunction("f", listOf(
                 Param("ptr", Type.OpaquePointer), Param("n", Type.I32)), Type.I32)
@@ -758,10 +760,10 @@ class LoopInvariantCodeMotionExtendedTest {
 
         val hoisted = licm.run(module)
         val fn = hoisted.functions[0]
-        val loopBlock = fn.blocks.find { it.label == "loop" }
-        assertNotNull(loopBlock)
-        assertTrue(loopBlock!!.instructions.any { it is Instruction.Load },
-            "Load should remain in loop (may alias)")
+        val preheader = fn.blocks.find { it.label.contains("preheader") }
+        assertNotNull(preheader, "Preheader should exist: ${fn.blocks.map { it.label }}")
+        assertTrue(preheader!!.instructions.any { it is Instruction.Load },
+            "Load from param should be hoisted (no aliasing stores in loop)")
     }
 
     @Test

@@ -99,19 +99,19 @@ class ClrTableParser(private val buf: ByteBuffer, private val raw: ByteArray) {
         val memberRefs = ctx.parseTable(0x0A) { it.readMemberRef() }
         val constants = ctx.parseTable(0x0B) { it.readConstant() }
         val customAttributes = ctx.parseTable(0x0C) { it.readCustomAttribute() }
-        ctx.skipTable(0x0D) // FieldMarshal
-        ctx.skipTable(0x0E) // DeclSecurity
+        val fieldMarshals = ctx.parseTable(0x0D) { it.readFieldMarshal() }
+        val declSecurities = ctx.parseTable(0x0E) { it.readDeclSecurity() }
         val classLayouts = ctx.parseTable(0x0F) { it.readClassLayout() }
         val fieldLayouts = ctx.parseTable(0x10) { it.readFieldLayout() }
         val standAloneSigs = ctx.parseTable(0x11) { it.readStandAloneSig() }
-        ctx.skipTable(0x12) // EventMap
+        val eventMaps = ctx.parseTable(0x12) { it.readEventMap() }
         ctx.skipTable(0x13) // EventPtr
-        ctx.skipTable(0x14) // Event
-        ctx.skipTable(0x15) // PropertyMap
+        val events = ctx.parseTable(0x14) { it.readEvent() }
+        val propertyMaps = ctx.parseTable(0x15) { it.readPropertyMap() }
         ctx.skipTable(0x16) // PropertyPtr
-        ctx.skipTable(0x17) // Property
-        ctx.skipTable(0x18) // MethodSemantics
-        ctx.skipTable(0x19) // MethodImpl
+        val properties = ctx.parseTable(0x17) { it.readProperty() }
+        val methodSemantics = ctx.parseTable(0x18) { it.readMethodSemantics() }
+        val methodImpls = ctx.parseTable(0x19) { it.readMethodImpl() }
         val moduleRefs = ctx.parseTable(0x1A) { it.readModuleRef() }
         val typeSpecs = ctx.parseTable(0x1B) { it.readTypeSpec() }
         val implMaps = ctx.parseTable(0x1C) { it.readImplMap() }
@@ -143,9 +143,17 @@ class ClrTableParser(private val buf: ByteBuffer, private val raw: ByteArray) {
             memberRefs = memberRefs,
             constants = constants,
             customAttributes = customAttributes,
+            fieldMarshals = fieldMarshals,
+            declSecurities = declSecurities,
             standAloneSigs = standAloneSigs,
             classlayouts = classLayouts,
             fieldLayouts = fieldLayouts,
+            eventMaps = eventMaps,
+            events = events,
+            propertyMaps = propertyMaps,
+            properties = properties,
+            methodSemantics = methodSemantics,
+            methodImpls = methodImpls,
             moduleRefs = moduleRefs,
             typeSpecs = typeSpecs,
             implMaps = implMaps,
@@ -334,7 +342,45 @@ class TableReadContext(
         value = readBlobIdx(),
     )
 
+    fun readFieldMarshal() = ClrFieldMarshal(
+        parent = readCodedIdx(1, HAS_FIELD_MARSHAL), nativeType = readBlobIdx(),
+    )
+
+    fun readDeclSecurity() = ClrDeclSecurity(
+        action = readU16(), parent = readCodedIdx(2, HAS_DECL_SECURITY),
+        permissionSet = readBlobIdx(),
+    )
+
     fun readStandAloneSig() = ClrStandAloneSig(signature = readBlobIdx())
+
+    fun readEventMap() = ClrEventMap(
+        parent = readTableIdx(0x02), eventList = readTableIdx(0x14),
+    )
+
+    fun readEvent() = ClrEvent(
+        flags = readU16(), name = readStringIdx(),
+        eventType = readCodedIdx(2, TYPE_DEF_OR_REF),
+    )
+
+    fun readPropertyMap() = ClrPropertyMap(
+        parent = readTableIdx(0x02), propertyList = readTableIdx(0x17),
+    )
+
+    fun readProperty() = ClrProperty(
+        flags = readU16(), name = readStringIdx(), type = readBlobIdx(),
+    )
+
+    fun readMethodSemantics() = ClrMethodSemantics(
+        semantics = readU16(),
+        method = readTableIdx(0x06),
+        association = readCodedIdx(1, HAS_SEMANTICS),
+    )
+
+    fun readMethodImpl() = ClrMethodImpl(
+        classIndex = readTableIdx(0x02),
+        methodBody = readCodedIdx(1, METHOD_DEF_OR_REF),
+        methodDeclaration = readCodedIdx(1, METHOD_DEF_OR_REF),
+    )
 
     fun readClassLayout() = ClrClassLayout(
         packingSize = readU16(), classSize = readU32(), parent = readTableIdx(0x02),

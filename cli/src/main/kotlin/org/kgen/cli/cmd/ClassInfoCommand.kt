@@ -1,6 +1,6 @@
 package org.kgen.cli.cmd
 
-import org.kgen.binary.jvm.*
+import org.kgen.target.jvm.*
 import org.kgen.cli.*
 
 object ClassInfoCommand {

@@ -41,12 +41,14 @@ private class MachOFileParser(private val buf: ByteBuffer, private val raw: Byte
         var mainEntryOffset: Long? = null
         var sourceVersion: Long? = null
         var symtabOff = 0; var symtabCount = 0; var strtabOff = 0; var strtabSize = 0
+        var chainedFixupsOff = -1; var chainedFixupsSize = 0
 
         for (i in 0 until header.numberOfCommands) {
             val cmd = buf.getInt(offset)
             val cmdSize = buf.getInt(offset + 4)
 
             when (cmd) {
+                MachO.LC_SEGMENT -> segments.add(parseSegment32(offset))
                 MachO.LC_SEGMENT_64 -> segments.add(parseSegment64(offset))
                 MachO.LC_SYMTAB -> {
                     symtabOff = buf.getInt(offset + 8)
@@ -68,11 +70,21 @@ private class MachOFileParser(private val buf: ByteBuffer, private val raw: Byte
                 MachO.LC_SOURCE_VERSION -> {
                     sourceVersion = buf.getLong(offset + 8)
                 }
+                MachO.LC_DYLD_CHAINED_FIXUPS -> {
+                    chainedFixupsOff = buf.getInt(offset + 8)
+                    chainedFixupsSize = buf.getInt(offset + 12)
+                }
             }
             offset += cmdSize
         }
 
-        val symbols = if (symtabCount > 0) parseSymbols(symtabOff, symtabCount, strtabOff) else emptyList()
+        val symbols = if (symtabCount > 0) {
+            if (header.is64Bit) parseSymbols64(symtabOff, symtabCount, strtabOff)
+            else parseSymbols32(symtabOff, symtabCount, strtabOff)
+        } else emptyList()
+        val chainedFixups = if (chainedFixupsOff >= 0) {
+            parseChainedFixups(chainedFixupsOff, chainedFixupsSize, segments.size)
+        } else null
 
         return MachOFile(
             header = header,
@@ -82,6 +94,7 @@ private class MachOFileParser(private val buf: ByteBuffer, private val raw: Byte
             uuid = uuid,
             mainEntryOffset = mainEntryOffset,
             sourceVersion = sourceVersion,
+            chainedFixups = chainedFixups,
         )
     }
 
@@ -155,6 +168,62 @@ private class MachOFileParser(private val buf: ByteBuffer, private val raw: Byte
         )
     }
 
+    private fun parseSegment32(offset: Int): MachOSegment {
+        val name = readFixedString(offset + 8, 16)
+        val vmAddr = buf.getInt(offset + 24).toLong() and 0xFFFFFFFFL
+        val vmSize = buf.getInt(offset + 28).toLong() and 0xFFFFFFFFL
+        val fileOff = buf.getInt(offset + 32).toLong() and 0xFFFFFFFFL
+        val fileSize = buf.getInt(offset + 36).toLong() and 0xFFFFFFFFL
+        val maxProt = buf.getInt(offset + 40)
+        val initProt = buf.getInt(offset + 44)
+        val nsects = buf.getInt(offset + 48)
+        val flags = buf.getInt(offset + 52)
+
+        val sections = mutableListOf<MachOSection>()
+        var sectOff = offset + 56
+        for (i in 0 until nsects) {
+            sections.add(parseSection32(sectOff))
+            sectOff += 68
+        }
+
+        return MachOSegment(
+            name = name, vmAddress = vmAddr, vmSize = vmSize,
+            fileOffset = fileOff, fileSize = fileSize,
+            maxProtection = maxProt, initProtection = initProt,
+            flags = flags, sections = sections,
+        )
+    }
+
+    private fun parseSection32(offset: Int): MachOSection {
+        val sectName = readFixedString(offset, 16)
+        val segName = readFixedString(offset + 16, 16)
+        val addr = buf.getInt(offset + 32).toLong() and 0xFFFFFFFFL
+        val size = buf.getInt(offset + 36).toLong() and 0xFFFFFFFFL
+        val fileOff = buf.getInt(offset + 40)
+        val align = buf.getInt(offset + 44)
+        val relocOff = buf.getInt(offset + 48)
+        val nreloc = buf.getInt(offset + 52)
+        val flags = buf.getInt(offset + 56)
+
+        val data = if (flags and 0xFF == MachO.S_ZEROFILL) {
+            ByteArray(size.toInt())
+        } else if (fileOff > 0 && size > 0 && fileOff + size.toInt() <= raw.size) {
+            raw.copyOfRange(fileOff, fileOff + size.toInt())
+        } else {
+            ByteArray(0)
+        }
+
+        val relocs = if (nreloc > 0 && relocOff > 0) parseRelocations(relocOff, nreloc) else emptyList()
+
+        return MachOSection(
+            sectionName = sectName, segmentName = segName,
+            address = addr, size = size, offset = fileOff,
+            align = align, relocationOffset = relocOff,
+            numberOfRelocations = nreloc, flags = flags,
+            data = data, relocations = relocs,
+        )
+    }
+
     private fun parseRelocations(offset: Int, count: Int): List<MachORelocation> {
         val result = mutableListOf<MachORelocation>()
         for (i in 0 until count) {
@@ -174,7 +243,7 @@ private class MachOFileParser(private val buf: ByteBuffer, private val raw: Byte
         return result
     }
 
-    private fun parseSymbols(symtabOff: Int, count: Int, strtabOff: Int): List<MachOSymbol> {
+    private fun parseSymbols64(symtabOff: Int, count: Int, strtabOff: Int): List<MachOSymbol> {
         val result = mutableListOf<MachOSymbol>()
         for (i in 0 until count) {
             val off = symtabOff + i * 16 // nlist_64 is 16 bytes
@@ -184,6 +253,23 @@ private class MachOFileParser(private val buf: ByteBuffer, private val raw: Byte
             val sect = raw[off + 5].toInt() and 0xFF
             val desc = buf.getShort(off + 6).toInt() and 0xFFFF
             val value = buf.getLong(off + 8)
+            val name = readString(strtabOff + nameIdx)
+            result.add(MachOSymbol(name = name, type = type, sectionIndex = sect,
+                description = desc, value = value))
+        }
+        return result
+    }
+
+    private fun parseSymbols32(symtabOff: Int, count: Int, strtabOff: Int): List<MachOSymbol> {
+        val result = mutableListOf<MachOSymbol>()
+        for (i in 0 until count) {
+            val off = symtabOff + i * 12 // nlist is 12 bytes
+            if (off + 12 > raw.size) break
+            val nameIdx = buf.getInt(off)
+            val type = raw[off + 4].toInt() and 0xFF
+            val sect = raw[off + 5].toInt() and 0xFF
+            val desc = buf.getShort(off + 6).toInt() and 0xFFFF
+            val value = buf.getInt(off + 8).toLong() and 0xFFFFFFFFL
             val name = readString(strtabOff + nameIdx)
             result.add(MachOSymbol(name = name, type = type, sectionIndex = sect,
                 description = desc, value = value))
@@ -206,5 +292,142 @@ private class MachOFileParser(private val buf: ByteBuffer, private val raw: Byte
             len++
         }
         return String(raw, offset, len, Charsets.US_ASCII)
+    }
+
+    private fun parseChainedFixups(dataOff: Int, dataSize: Int, segCount: Int): ChainedFixups {
+        val header = parseChainedFixupsHeader(dataOff)
+        val segments = parseChainedStarts(dataOff + header.startsOffset, segCount)
+        val imports = parseChainedImports(
+            dataOff + header.importsOffset,
+            header.importsCount,
+            ChainedImportFormat.fromCode(header.importsFormat),
+            dataOff + header.symbolsOffset,
+        )
+        return ChainedFixups(
+            fixupsVersion = header.fixupsVersion,
+            importsFormat = ChainedImportFormat.fromCode(header.importsFormat),
+            symbolsFormat = header.symbolsFormat,
+            imports = imports,
+            segments = segments,
+        )
+    }
+
+    private class FixupsHeader(
+        val fixupsVersion: Int,
+        val startsOffset: Int,
+        val importsOffset: Int,
+        val symbolsOffset: Int,
+        val importsCount: Int,
+        val importsFormat: Int,
+        val symbolsFormat: Int,
+    )
+
+    private fun parseChainedFixupsHeader(dataOff: Int): FixupsHeader {
+        return FixupsHeader(
+            fixupsVersion = buf.getInt(dataOff),
+            startsOffset = buf.getInt(dataOff + 4),
+            importsOffset = buf.getInt(dataOff + 8),
+            symbolsOffset = buf.getInt(dataOff + 12),
+            importsCount = buf.getInt(dataOff + 16),
+            importsFormat = buf.getInt(dataOff + 20),
+            symbolsFormat = buf.getInt(dataOff + 24),
+        )
+    }
+
+    private fun parseChainedStarts(startsOff: Int, segCountFromSegments: Int): List<ChainedFixupSegment> {
+        val segCount = buf.getInt(startsOff)
+        val segments = mutableListOf<ChainedFixupSegment>()
+        for (i in 0 until segCount) {
+            val segInfoOffset = buf.getInt(startsOff + 4 + i * 4)
+            if (segInfoOffset == 0) continue
+            segments.add(parseChainedStartsInSegment(startsOff + segInfoOffset, i))
+        }
+        return segments
+    }
+
+    private fun parseChainedStartsInSegment(off: Int, segIndex: Int): ChainedFixupSegment {
+        val pageSize = buf.getShort(off + 4).toInt() and 0xFFFF
+        val pointerFormat = buf.getShort(off + 6).toInt() and 0xFFFF
+        val segmentOffset = buf.getLong(off + 8)
+        val maxValidPointer = buf.getInt(off + 16).toLong() and 0xFFFFFFFFL
+        val pageCount = buf.getShort(off + 20).toInt() and 0xFFFF
+
+        val pageStarts = mutableListOf<Int>()
+        for (p in 0 until pageCount) {
+            pageStarts.add(buf.getShort(off + 22 + p * 2).toInt() and 0xFFFF)
+        }
+
+        return ChainedFixupSegment(
+            segmentIndex = segIndex,
+            pointerFormat = ChainedPointerFormat.fromCode(pointerFormat),
+            pageSize = pageSize,
+            segmentOffset = segmentOffset,
+            maxValidPointer = maxValidPointer,
+            pageStarts = pageStarts,
+        )
+    }
+
+    private fun parseChainedImports(
+        importsOff: Int,
+        count: Int,
+        format: ChainedImportFormat,
+        symbolsOff: Int,
+    ): List<ChainedFixupImport> {
+        val imports = mutableListOf<ChainedFixupImport>()
+        for (i in 0 until count) {
+            imports.add(parseOneImport(importsOff, i, format, symbolsOff))
+        }
+        return imports
+    }
+
+    private fun parseOneImport(
+        importsOff: Int,
+        index: Int,
+        format: ChainedImportFormat,
+        symbolsOff: Int,
+    ): ChainedFixupImport {
+        return when (format) {
+            ChainedImportFormat.DYLD_CHAINED_IMPORT -> {
+                val off = importsOff + index * 4
+                val packed = buf.getInt(off)
+                val libOrdinal = (packed and 0xFF).toByte().toInt()
+                val weakImport = (packed ushr 8) and 1 != 0
+                val nameOffset = (packed ushr 9) and 0x7FFFFF
+                ChainedFixupImport(
+                    name = readString(symbolsOff + nameOffset),
+                    libOrdinal = libOrdinal,
+                    weakImport = weakImport,
+                    addend = 0,
+                )
+            }
+            ChainedImportFormat.DYLD_CHAINED_IMPORT_ADDEND -> {
+                val off = importsOff + index * 8
+                val packed = buf.getInt(off)
+                val libOrdinal = (packed and 0xFF).toByte().toInt()
+                val weakImport = (packed ushr 8) and 1 != 0
+                val nameOffset = (packed ushr 9) and 0x7FFFFF
+                val addend = buf.getInt(off + 4).toLong()
+                ChainedFixupImport(
+                    name = readString(symbolsOff + nameOffset),
+                    libOrdinal = libOrdinal,
+                    weakImport = weakImport,
+                    addend = addend,
+                )
+            }
+            ChainedImportFormat.DYLD_CHAINED_IMPORT_ADDEND64 -> {
+                val off = importsOff + index * 16
+                val packed = buf.getLong(off)
+                val libOrdinal = (packed and 0xFFFF).toShort().toInt()
+                val weakImport = (packed ushr 16) and 1L != 0L
+                val nameOffset = ((packed ushr 17) and 0x7FFF).toInt()
+                val addend = buf.getLong(off + 8)
+                ChainedFixupImport(
+                    name = readString(symbolsOff + nameOffset),
+                    libOrdinal = libOrdinal,
+                    weakImport = weakImport,
+                    addend = addend,
+                )
+            }
+        }
     }
 }

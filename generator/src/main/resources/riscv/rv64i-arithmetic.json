@@ -1,0 +1,107 @@
+[
+  {
+    "mnemonic": "add",
+    "summary": "Add",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 51, "funct3": 0, "funct7": 0, "format": "R" } }
+    ]
+  },
+  {
+    "mnemonic": "sub",
+    "summary": "Subtract",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 51, "funct3": 0, "funct7": 32, "format": "R" } }
+    ]
+  },
+  {
+    "mnemonic": "sll",
+    "summary": "Shift left logical",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 51, "funct3": 1, "funct7": 0, "format": "R" } }
+    ]
+  },
+  {
+    "mnemonic": "slt",
+    "summary": "Set less than (signed)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 51, "funct3": 2, "funct7": 0, "format": "R" } }
+    ]
+  },
+  {
+    "mnemonic": "sltu",
+    "summary": "Set less than (unsigned)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 51, "funct3": 3, "funct7": 0, "format": "R" } }
+    ]
+  },
+  {
+    "mnemonic": "xor",
+    "summary": "Bitwise XOR",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 51, "funct3": 4, "funct7": 0, "format": "R" } }
+    ]
+  },
+  {
+    "mnemonic": "srl",
+    "summary": "Shift right logical",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 51, "funct3": 5, "funct7": 0, "format": "R" } }
+    ]
+  },
+  {
+    "mnemonic": "sra",
+    "summary": "Shift right arithmetic",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 51, "funct3": 5, "funct7": 32, "format": "R" } }
+    ]
+  },
+  {
+    "mnemonic": "or",
+    "summary": "Bitwise OR",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 51, "funct3": 6, "funct7": 0, "format": "R" } }
+    ]
+  },
+  {
+    "mnemonic": "and",
+    "summary": "Bitwise AND",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 51, "funct3": 7, "funct7": 0, "format": "R" } }
+    ]
+  },
+  {
+    "mnemonic": "addw",
+    "summary": "Add word (32-bit)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 59, "funct3": 0, "funct7": 0, "format": "R" } }
+    ]
+  },
+  {
+    "mnemonic": "subw",
+    "summary": "Subtract word (32-bit)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 59, "funct3": 0, "funct7": 32, "format": "R" } }
+    ]
+  },
+  {
+    "mnemonic": "sllw",
+    "summary": "Shift left logical word (32-bit)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 59, "funct3": 1, "funct7": 0, "format": "R" } }
+    ]
+  },
+  {
+    "mnemonic": "srlw",
+    "summary": "Shift right logical word (32-bit)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 59, "funct3": 5, "funct7": 0, "format": "R" } }
+    ]
+  },
+  {
+    "mnemonic": "sraw",
+    "summary": "Shift right arithmetic word (32-bit)",
+    "forms": [
+      { "operands": ["gp", "gp", "gp"], "encoding": { "opcode": 59, "funct3": 5, "funct7": 32, "format": "R" } }
+    ]
+  }
+]

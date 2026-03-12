@@ -5,8 +5,8 @@ import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
-import org.kgen.backend.x86.codegen.X86CodeGenerator
-import org.kgen.tools.FfmNativeLoader
+import org.kgen.target.x86.codegen.X86CodeGenerator
+import org.kgen.jit.FfmNativeLoader
 
 class NativeLoaderTest {
 

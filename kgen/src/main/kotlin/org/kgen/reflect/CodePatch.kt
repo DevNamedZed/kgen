@@ -1,8 +1,8 @@
 package org.kgen.reflect
 
-import org.kgen.backend.x86.asm.X86Assembler
-import org.kgen.backend.x86.disasm.X86Disassembler
-import org.kgen.backend.x86.disasm.X86Instruction
+import org.kgen.target.x86.asm.X86Assembler
+import org.kgen.target.x86.disasm.X86Disassembler
+import org.kgen.target.x86.disasm.X86Instruction
 
 /**
  * Patch live native code in the current process.

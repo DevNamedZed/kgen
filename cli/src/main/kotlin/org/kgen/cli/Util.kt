@@ -4,9 +4,9 @@ import org.kgen.binary.elf.ElfReader
 import org.kgen.binary.macho.MachO
 import org.kgen.binary.macho.MachOReader
 import org.kgen.binary.pe.PeReader
-import org.kgen.backend.arm64.disasm.Arm64Disassembler
-import org.kgen.backend.riscv.disasm.RiscVDisassembler
-import org.kgen.backend.x86.disasm.X86Disassembler
+import org.kgen.target.arm64.disasm.Arm64Disassembler
+import org.kgen.target.riscv.disasm.RiscVDisassembler
+import org.kgen.target.x86.disasm.X86Disassembler
 import java.io.File
 import kotlin.system.exitProcess
 
@@ -126,7 +126,7 @@ fun disassemble(arch: String, code: ByteArray, baseAddr: Long, att: Boolean = fa
         }
         "arm64", "aarch64" -> {
             for (inst in Arm64Disassembler().disassemble(code, baseAddr)) {
-                val addr = "0x${(baseAddr + inst.offset).toString(16).padStart(8, '0')}"
+                val addr = "0x${inst.address.toString(16).padStart(8, '0')}"
                 if (showBytes) {
                     val b = inst.rawBytes
                     val hex = "%02x %02x %02x %02x".format(b and 0xFF, (b shr 8) and 0xFF, (b shr 16) and 0xFF, (b shr 24) and 0xFF)
@@ -136,9 +136,9 @@ fun disassemble(arch: String, code: ByteArray, baseAddr: Long, att: Boolean = fa
         }
         "riscv", "riscv64" -> {
             for (inst in RiscVDisassembler().disassemble(code, baseAddr)) {
-                val addr = "0x${(baseAddr + inst.offset).toString(16).padStart(8, '0')}"
+                val addr = "0x${inst.address.toString(16).padStart(8, '0')}"
                 if (showBytes) {
-                    val b = inst.bytes
+                    val b = inst.rawWord
                     val isCompressed = (b and 0x3) != 0x3
                     val hex = if (isCompressed)
                         "%02x %02x".format(b and 0xFF, (b shr 8) and 0xFF)

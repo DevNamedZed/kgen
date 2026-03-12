@@ -36,30 +36,55 @@ class ElfLinker(
         val symbols = SymbolResolver(objects, merger).resolve()
         val layout = SegmentLayout(merger, symbols, interpreter, sharedLibs)
         val relocated = RelocationApplier(objects, merger, symbols, layout).apply()
-        return ElfEmitter(layout, relocated, merger, symbols).emit()
+        return ElfEmitter(layout, relocated, merger, symbols, machine).emit()
     }
 
     private data class SectionPlacement(val objIdx: Int, val sectionName: String, val mergedOffset: Int, val size: Int)
 
     private data class ResolvedSymbol(val name: String, val value: Long, val sectionKind: SectionKind, val objIdx: Int)
 
+    private data class DebugSection(val name: String, val data: ByteArray)
+
     private class SectionMerger(private val objects: List<ObjectFile>) {
         val text = ByteArrayOutputStream()
         val data = ByteArrayOutputStream()
         val rodata = ByteArrayOutputStream()
+        val ehFrame = ByteArrayOutputStream()
+        val ehFrameHdr = ByteArrayOutputStream()
+        val gccExceptTable = ByteArrayOutputStream()
+        val tdata = ByteArrayOutputStream()
+        var tdataAlign = 1
 
         val textPlacements = mutableListOf<SectionPlacement>()
         val dataPlacements = mutableListOf<SectionPlacement>()
         val rodataPlacements = mutableListOf<SectionPlacement>()
+        val ehFramePlacements = mutableListOf<SectionPlacement>()
+        val ehFrameHdrPlacements = mutableListOf<SectionPlacement>()
+        val gccExceptTablePlacements = mutableListOf<SectionPlacement>()
+        val tdataPlacements = mutableListOf<SectionPlacement>()
         val sectionKindMap = mutableMapOf<Pair<Int, String>, SectionKind>()
+        val debugSections = mutableListOf<DebugSection>()
 
         init {
+            val debugBufs = mutableMapOf<String, ByteArrayOutputStream>()
+
             for ((objIdx, obj) in objects.withIndex()) {
                 for (sec in obj.sections) {
+                    if (sec.kind.isNonLoaded) {
+                        debugBufs.getOrPut(sec.name) { ByteArrayOutputStream() }.write(sec.data)
+                        continue
+                    }
                     val (stream, placements) = when (sec.kind) {
                         SectionKind.TEXT -> text to textPlacements
                         SectionKind.DATA -> data to dataPlacements
                         SectionKind.RODATA -> rodata to rodataPlacements
+                        SectionKind.EH_FRAME -> ehFrame to ehFramePlacements
+                        SectionKind.EH_FRAME_HDR -> ehFrameHdr to ehFrameHdrPlacements
+                        SectionKind.GCC_EXCEPT_TABLE -> gccExceptTable to gccExceptTablePlacements
+                        SectionKind.TDATA -> {
+                            if (sec.align > tdataAlign) tdataAlign = sec.align
+                            tdata to tdataPlacements
+                        }
                         else -> continue
                     }
                     val aligned = alignStream(stream, maxOf(sec.align, 1))
@@ -68,12 +93,20 @@ class ElfLinker(
                     stream.write(sec.data)
                 }
             }
+
+            for ((name, buf) in debugBufs) {
+                debugSections.add(DebugSection(name, buf.toByteArray()))
+            }
         }
 
         fun placementsFor(kind: SectionKind): List<SectionPlacement> = when (kind) {
             SectionKind.TEXT -> textPlacements
             SectionKind.DATA -> dataPlacements
             SectionKind.RODATA -> rodataPlacements
+            SectionKind.EH_FRAME -> ehFramePlacements
+            SectionKind.EH_FRAME_HDR -> ehFrameHdrPlacements
+            SectionKind.GCC_EXCEPT_TABLE -> gccExceptTablePlacements
+            SectionKind.TDATA -> tdataPlacements
             else -> emptyList()
         }
 
@@ -94,6 +127,9 @@ class ElfLinker(
         var needsStartStub = false
 
         fun resolve(): SymbolResolver {
+            // Track binding strength so GLOBAL overrides WEAK
+            val symbolBindings = mutableMapOf<String, SymbolBinding>()
+
             for ((objIdx, obj) in objects.withIndex()) {
                 for (sym in obj.symbols) {
                     if (sym.section == null || sym.kind == SymbolKind.UNDEFINED) {
@@ -102,7 +138,11 @@ class ElfLinker(
                         val kind = merger.sectionKindMap[objIdx to sym.section] ?: continue
                         val placement = merger.placementsFor(kind)
                             .firstOrNull { it.objIdx == objIdx && it.sectionName == sym.section } ?: continue
+                        val existing = symbolBindings[sym.name]
+                        // GLOBAL always wins over WEAK; skip if existing is GLOBAL
+                        if (existing == SymbolBinding.GLOBAL && sym.binding == SymbolBinding.WEAK) continue
                         globalSymbols[sym.name] = ResolvedSymbol(sym.name, sym.value + placement.mergedOffset, kind, objIdx)
+                        symbolBindings[sym.name] = sym.binding
                     }
                 }
             }
@@ -146,7 +186,8 @@ class ElfLinker(
         val hashBytes: ByteArray
         val dynstrBytes: ByteArray
 
-        val numPhdrs = 6
+        val hasTdata = merger.tdata.size() > 0
+        val numPhdrs = 6 + (if (hasTdata) 1 else 0)
         val headerSize = Elf.EHDR64_SIZE + Elf.PHDR64_SIZE * numPhdrs
 
         // RX segment offsets and virtual addresses
@@ -168,6 +209,12 @@ class ElfLinker(
         val textVaddr: Long
         val rodataOffset: Long
         val rodataVaddr: Long
+        val ehFrameOffset: Long
+        val ehFrameVaddr: Long
+        val ehFrameHdrOffset: Long
+        val ehFrameHdrVaddr: Long
+        val gccExceptTableOffset: Long
+        val gccExceptTableVaddr: Long
         val rxSegmentEnd: Long
 
         // RW segment
@@ -180,7 +227,19 @@ class ElfLinker(
         val dataOffset: Long
         val dataVaddr: Long
         val rwVaddrBase: Long
+        val tdataOffset: Long
+        val tdataVaddr: Long
+        val tdataFileSize: Long
+        val tdataAlign: Int
         val rwSegmentFileSize: Long
+
+        // Debug sections (non-loaded, after all segments)
+        val hasDebugSections = merger.debugSections.isNotEmpty()
+        val debugOffsets = mutableListOf<Long>()
+        val shstrtabOffset: Long
+        val shstrtabData: ByteArray
+        val shoff: Long
+        val numSections: Int
 
         init {
             for (lib in sharedLibs) dynstrNameOffsets[lib] = dynstr.add(lib)
@@ -214,6 +273,15 @@ class ElfLinker(
             off = align(off, 16); textOffset = off; textVaddr = BASE_ADDR + off; off += startStubSize + textBytes.size
             if (rodataBytes.isNotEmpty()) off = align(off, 16)
             rodataOffset = off; rodataVaddr = BASE_ADDR + off; off += rodataBytes.size
+            val ehFrameBytes = merger.ehFrame.toByteArray()
+            if (ehFrameBytes.isNotEmpty()) off = align(off, 8)
+            ehFrameOffset = off; ehFrameVaddr = BASE_ADDR + off; off += ehFrameBytes.size
+            val ehFrameHdrBytes = merger.ehFrameHdr.toByteArray()
+            if (ehFrameHdrBytes.isNotEmpty()) off = align(off, 4)
+            ehFrameHdrOffset = off; ehFrameHdrVaddr = BASE_ADDR + off; off += ehFrameHdrBytes.size
+            val gccExceptTableBytes = merger.gccExceptTable.toByteArray()
+            if (gccExceptTableBytes.isNotEmpty()) off = align(off, 4)
+            gccExceptTableOffset = off; gccExceptTableVaddr = BASE_ADDR + off; off += gccExceptTableBytes.size
             rxSegmentEnd = off
 
             // Compute RW segment layout
@@ -245,7 +313,42 @@ class ElfLinker(
             if (dataBytes.isNotEmpty()) rwOff = align(rwOff, 8)
             dataOffset = rwOff; dataVaddr = rwVaddrBase + (rwOff - gotOffset)
             rwOff += dataBytes.size
+
+            val tdataBytes = merger.tdata.toByteArray()
+            tdataAlign = if (tdataBytes.isNotEmpty()) maxOf(merger.tdataAlign, 1) else 1
+            if (tdataBytes.isNotEmpty()) rwOff = align(rwOff, maxOf(tdataAlign, 8).toLong())
+            tdataOffset = rwOff; tdataVaddr = rwVaddrBase + (rwOff - gotOffset)
+            tdataFileSize = tdataBytes.size.toLong()
+            rwOff += tdataBytes.size
             rwSegmentFileSize = rwOff - gotOffset
+
+            // Debug sections after loaded segments
+            var dbgOff = rwOff
+            if (hasDebugSections) {
+                for (dbg in merger.debugSections) {
+                    debugOffsets.add(dbgOff)
+                    dbgOff += dbg.data.size
+                }
+                val shstrtabBuf = ByteArrayOutputStream()
+                shstrtabBuf.write(0)
+                for (dbg in merger.debugSections) {
+                    shstrtabBuf.write(dbg.name.toByteArray(Charsets.US_ASCII))
+                    shstrtabBuf.write(0)
+                }
+                shstrtabBuf.write(".shstrtab".toByteArray(Charsets.US_ASCII))
+                shstrtabBuf.write(0)
+                shstrtabData = shstrtabBuf.toByteArray()
+                shstrtabOffset = dbgOff
+                dbgOff += shstrtabData.size
+                numSections = 1 + merger.debugSections.size + 1
+                dbgOff = align(dbgOff, 8)
+                shoff = dbgOff
+            } else {
+                shstrtabData = ByteArray(0)
+                shstrtabOffset = 0
+                shoff = 0
+                numSections = 0
+            }
         }
 
         val sectionKindVaddr: Map<SectionKind, Long>
@@ -253,6 +356,10 @@ class ElfLinker(
                 SectionKind.TEXT to textVaddr + startStubSize,
                 SectionKind.RODATA to rodataVaddr,
                 SectionKind.DATA to dataVaddr,
+                SectionKind.TDATA to tdataVaddr,
+                SectionKind.EH_FRAME to ehFrameVaddr,
+                SectionKind.EH_FRAME_HDR to ehFrameHdrVaddr,
+                SectionKind.GCC_EXCEPT_TABLE to gccExceptTableVaddr,
             )
 
         fun symbolVaddrs(): Map<String, Long> {
@@ -350,9 +457,76 @@ class ElfLinker(
                 RelocationType.X86_64.R_32, RelocationType.X86_64.R_32S -> {
                     putI32(text, offset, (targetVaddr + rel.addend).toInt())
                 }
+                RelocationType.AArch64.CALL26, RelocationType.AArch64.JUMP26 -> {
+                    val disp = ((targetVaddr + rel.addend - patchVaddr) shr 2).toInt() and 0x03FFFFFF
+                    val insn = readI32(text, offset)
+                    putI32(text, offset, (insn and 0xFC000000.toInt()) or disp)
+                }
+                RelocationType.AArch64.ADR_PREL_PG_HI21 -> {
+                    val target = targetVaddr + rel.addend
+                    val page = ((target and -4096) - (patchVaddr and -4096)) shr 12
+                    val immlo = (page.toInt() and 0x3) shl 29
+                    val immhi = ((page.toInt() shr 2) and 0x7FFFF) shl 5
+                    val insn = readI32(text, offset)
+                    putI32(text, offset, (insn and 0x9F00001F.toInt()) or immlo or immhi)
+                }
+                RelocationType.AArch64.ADD_ABS_LO12_NC -> {
+                    val target = targetVaddr + rel.addend
+                    val imm12 = (target.toInt() and 0xFFF) shl 10
+                    val insn = readI32(text, offset)
+                    putI32(text, offset, (insn and 0xFFC003FF.toInt()) or imm12)
+                }
+                RelocationType.RiscV.CALL, RelocationType.RiscV.CALL_PLT -> {
+                    val delta = targetVaddr + rel.addend - patchVaddr
+                    val hi = ((delta + 0x800) shr 12).toInt()
+                    val lo = (delta.toInt()) and 0xFFF
+                    val auipc = readI32(text, offset)
+                    putI32(text, offset, (auipc and 0xFFF) or (hi shl 12))
+                    val jalr = readI32(text, offset + 4)
+                    putI32(text, offset + 4, (jalr and 0x000FFFFF) or (lo shl 20))
+                }
+                RelocationType.RiscV.PCREL_HI20 -> {
+                    val delta = targetVaddr + rel.addend - patchVaddr
+                    val hi = ((delta + 0x800) shr 12).toInt()
+                    val existing = readI32(text, offset)
+                    putI32(text, offset, (existing and 0xFFF) or (hi shl 12))
+                }
+                RelocationType.RiscV.LO12_I -> {
+                    val value = (targetVaddr + rel.addend).toInt() and 0xFFF
+                    val existing = readI32(text, offset)
+                    putI32(text, offset, (existing and 0x000FFFFF) or (value shl 20))
+                }
+                RelocationType.RiscV.JAL -> {
+                    val delta = (targetVaddr + rel.addend - patchVaddr).toInt()
+                    val existing = readI32(text, offset)
+                    val imm20 = (delta shr 20) and 0x1
+                    val imm10_1 = (delta shr 1) and 0x3FF
+                    val imm11 = (delta shr 11) and 0x1
+                    val imm19_12 = (delta shr 12) and 0xFF
+                    val encoded = (imm20 shl 31) or (imm10_1 shl 21) or (imm11 shl 20) or (imm19_12 shl 12)
+                    putI32(text, offset, (existing and 0xFFF) or encoded)
+                }
+                RelocationType.RiscV.BRANCH -> {
+                    val delta = (targetVaddr + rel.addend - patchVaddr).toInt()
+                    val existing = readI32(text, offset)
+                    val imm12 = (delta shr 12) and 0x1
+                    val imm10_5 = (delta shr 5) and 0x3F
+                    val imm4_1 = (delta shr 1) and 0xF
+                    val imm11 = (delta shr 11) and 0x1
+                    val encoded = (imm12 shl 31) or (imm10_5 shl 25) or (imm4_1 shl 8) or (imm11 shl 7)
+                    val mask = (0x1 shl 31) or (0x3F shl 25) or (0xF shl 8) or (0x1 shl 7)
+                    putI32(text, offset, (existing and mask.inv()) or encoded)
+                }
+                RelocationType.RiscV.RELAX -> { /* no-op */ }
                 else -> throw IllegalStateException("Unsupported relocation type: ${rel.type}")
             }
         }
+
+        private fun readI32(data: ByteArray, offset: Int): Int =
+            (data[offset].toInt() and 0xFF) or
+            ((data[offset + 1].toInt() and 0xFF) shl 8) or
+            ((data[offset + 2].toInt() and 0xFF) shl 16) or
+            ((data[offset + 3].toInt() and 0xFF) shl 24)
 
         private fun putI32(data: ByteArray, offset: Int, value: Int) {
             data[offset] = (value and 0xFF).toByte()
@@ -367,6 +541,7 @@ class ElfLinker(
         private val relocatedText: ByteArray,
         private val merger: SectionMerger,
         private val symbols: SymbolResolver,
+        private val machine: Int,
     ) {
         fun emit(): ByteArray {
             val buf = ByteArrayOutputStream()
@@ -374,6 +549,10 @@ class ElfLinker(
             emitProgramHeaders(buf)
             emitRxSegmentData(buf)
             emitRwSegmentData(buf)
+            if (layout.hasDebugSections) {
+                emitDebugSections(buf)
+                emitSectionHeaders(buf)
+            }
             return buf.toByteArray()
         }
 
@@ -386,18 +565,18 @@ class ElfLinker(
             buf.write(0)
             buf.write(ByteArray(8))
             writeU16(buf, ElfObjectType.EXEC.code)
-            writeU16(buf, ElfMachine.X86_64.code)
+            writeU16(buf, machine)
             writeU32(buf, Elf.VERSION)
             writeU64(buf, entryVaddr)
             writeU64(buf, Elf.EHDR64_SIZE.toLong())
-            writeU64(buf, 0)
+            writeU64(buf, layout.shoff)
             writeU32(buf, 0)
             writeU16(buf, Elf.EHDR64_SIZE)
             writeU16(buf, Elf.PHDR64_SIZE)
             writeU16(buf, layout.numPhdrs)
-            writeU16(buf, 0)
-            writeU16(buf, 0)
-            writeU16(buf, 0)
+            writeU16(buf, if (layout.hasDebugSections) Elf.SHDR64_SIZE else 0)
+            writeU16(buf, layout.numSections)
+            writeU16(buf, if (layout.hasDebugSections) layout.numSections - 1 else 0)
         }
 
         private fun emitProgramHeaders(buf: ByteArrayOutputStream) {
@@ -422,6 +601,12 @@ class ElfLinker(
 
             writePhdr(buf, ElfSegmentType.GNU_STACK.code, ElfSegmentFlags.R or ElfSegmentFlags.W,
                 0, 0, 0, 0, 0, 16)
+
+            if (layout.hasTdata) {
+                writePhdr(buf, ElfSegmentType.TLS.code, ElfSegmentFlags.R,
+                    layout.tdataOffset, layout.tdataVaddr, layout.tdataVaddr,
+                    layout.tdataFileSize, layout.tdataFileSize, layout.tdataAlign.toLong())
+            }
         }
 
         private fun emitRxSegmentData(buf: ByteArrayOutputStream) {
@@ -440,6 +625,18 @@ class ElfLinker(
             if (rodataBytes.isNotEmpty()) {
                 padTo(buf, layout.rodataOffset.toInt()); buf.write(rodataBytes)
             }
+            val ehFrameBytes = merger.ehFrame.toByteArray()
+            if (ehFrameBytes.isNotEmpty()) {
+                padTo(buf, layout.ehFrameOffset.toInt()); buf.write(ehFrameBytes)
+            }
+            val ehFrameHdrBytes = merger.ehFrameHdr.toByteArray()
+            if (ehFrameHdrBytes.isNotEmpty()) {
+                padTo(buf, layout.ehFrameHdrOffset.toInt()); buf.write(ehFrameHdrBytes)
+            }
+            val gccExceptTableBytes = merger.gccExceptTable.toByteArray()
+            if (gccExceptTableBytes.isNotEmpty()) {
+                padTo(buf, layout.gccExceptTableOffset.toInt()); buf.write(gccExceptTableBytes)
+            }
         }
 
         private fun buildStartStub(): ByteArray {
@@ -448,28 +645,90 @@ class ElfLinker(
             val mainVaddr = layout.symbolVaddrs()[symbols.entrySymbol.name]!!
             val exitVaddr = layout.pltSymbolVaddrs()["exit"]!!
 
-            // _start:
-            //   xor ebp, ebp               ; clear frame pointer
-            stub.write(byteArrayOf(0x31, 0xED.toByte()))
-            //   and rsp, -16               ; align stack to 16 bytes
-            stub.write(byteArrayOf(0x48, 0x83.toByte(), 0xE4.toByte(), 0xF0.toByte()))
-            //   call main
-            val callMainPC = stubVaddr + stub.size() + 5
-            stub.write(0xE8.toByte().toInt())
-            writeU32(stub, (mainVaddr - callMainPC).toInt())
-            //   mov edi, eax               ; exit code = main's return value
-            stub.write(byteArrayOf(0x89.toByte(), 0xC7.toByte()))
-            //   call exit@plt
-            val callExitPC = stubVaddr + stub.size() + 5
-            stub.write(0xE8.toByte().toInt())
-            writeU32(stub, (exitVaddr - callExitPC).toInt())
-            //   hlt                        ; should never reach here
-            stub.write(0xF4.toByte().toInt())
+            when (machine) {
+                ElfMachine.AARCH64.code -> {
+                    // _start (ARM64):
+                    // At process entry: sp points to argc, argv starts at sp+8
+                    //   ldr w0, [sp]       ; argc → x0 (first arg)
+                    writeArm64Insn(stub, 0xB94003E0.toInt())
+                    //   add x1, sp, #8     ; argv → x1 (second arg)
+                    writeArm64Insn(stub, 0x910023E1.toInt())
+                    //   bl main
+                    val mainOff = ((mainVaddr - (stubVaddr + 8)) shr 2).toInt()
+                    writeArm64Insn(stub, 0x94000000.toInt() or (mainOff and 0x03FFFFFF))
+                    //   bl exit            ; w0 already has return value
+                    val exitOff = ((exitVaddr - (stubVaddr + 12)) shr 2).toInt()
+                    writeArm64Insn(stub, 0x94000000.toInt() or (exitOff and 0x03FFFFFF))
+                    //   brk #0
+                    writeArm64Insn(stub, 0xD4200000.toInt())
+                }
+                else -> {
+                    // _start (x86-64):
+                    // At process entry, the kernel puts on the stack:
+                    //   (%rsp) = argc, 8(%rsp) = argv[0], 16(%rsp) = argv[1], ...
+                    //   xor ebp, ebp               ; clear frame pointer
+                    stub.write(byteArrayOf(0x31, 0xED.toByte()))
+                    //   mov edi, [rsp]             ; argc → first arg (RDI)
+                    stub.write(byteArrayOf(0x8B.toByte(), 0x3C, 0x24))
+                    //   lea rsi, [rsp+8]           ; argv → second arg (RSI)
+                    stub.write(byteArrayOf(0x48, 0x8D.toByte(), 0x74, 0x24, 0x08))
+                    //   and rsp, -16               ; align stack to 16 bytes
+                    stub.write(byteArrayOf(0x48, 0x83.toByte(), 0xE4.toByte(), 0xF0.toByte()))
+                    //   call main
+                    val callMainPC = stubVaddr + stub.size() + 5
+                    stub.write(0xE8.toByte().toInt())
+                    writeU32(stub, (mainVaddr - callMainPC).toInt())
+                    //   mov edi, eax               ; exit code = main's return value
+                    stub.write(byteArrayOf(0x89.toByte(), 0xC7.toByte()))
+                    //   call exit@plt
+                    val callExitPC = stubVaddr + stub.size() + 5
+                    stub.write(0xE8.toByte().toInt())
+                    writeU32(stub, (exitVaddr - callExitPC).toInt())
+                    //   hlt                        ; should never reach here
+                    stub.write(0xF4.toByte().toInt())
+                }
+            }
 
             // Pad to startStubSize
             val pad = layout.startStubSize - stub.size()
             if (pad > 0) stub.write(ByteArray(pad))
             return stub.toByteArray()
+        }
+
+        private fun emitDebugSections(buf: ByteArrayOutputStream) {
+            for ((i, dbg) in merger.debugSections.withIndex()) {
+                padTo(buf, layout.debugOffsets[i].toInt())
+                buf.write(dbg.data)
+            }
+            padTo(buf, layout.shstrtabOffset.toInt())
+            buf.write(layout.shstrtabData)
+        }
+
+        private fun emitSectionHeaders(buf: ByteArrayOutputStream) {
+            padTo(buf, layout.shoff.toInt())
+            writeSectionHeader(buf, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+            var nameOff = 1
+            for ((i, dbg) in merger.debugSections.withIndex()) {
+                writeSectionHeader(buf, nameOff, ElfSectionType.PROGBITS.code,
+                    0, 0, layout.debugOffsets[i], dbg.data.size.toLong(),
+                    0, 0, 1, 0)
+                nameOff += dbg.name.length + 1
+            }
+            writeSectionHeader(buf, nameOff, ElfSectionType.STRTAB.code,
+                0, 0, layout.shstrtabOffset, layout.shstrtabData.size.toLong(),
+                0, 0, 1, 0)
+        }
+
+        private fun writeSectionHeader(
+            buf: ByteArrayOutputStream,
+            name: Int, type: Int, flags: Long, addr: Long, offset: Long, size: Long,
+            link: Int, info: Int, addralign: Long, entsize: Long,
+        ) {
+            writeU32(buf, name); writeU32(buf, type)
+            writeU64(buf, flags); writeU64(buf, addr)
+            writeU64(buf, offset); writeU64(buf, size)
+            writeU32(buf, link); writeU32(buf, info)
+            writeU64(buf, addralign); writeU64(buf, entsize)
         }
 
         private fun emitRwSegmentData(buf: ByteArrayOutputStream) {
@@ -481,6 +740,10 @@ class ElfLinker(
             val dataBytes = merger.data.toByteArray()
             if (dataBytes.isNotEmpty()) {
                 padTo(buf, layout.dataOffset.toInt()); buf.write(dataBytes)
+            }
+            val tdataBytes = merger.tdata.toByteArray()
+            if (tdataBytes.isNotEmpty()) {
+                padTo(buf, layout.tdataOffset.toInt()); buf.write(tdataBytes)
             }
         }
 
@@ -497,10 +760,15 @@ class ElfLinker(
 
         private fun buildRelaPlt(): ByteArray {
             val buf = ByteArrayOutputStream()
+            val jumpSlotType = when (machine) {
+                ElfMachine.AARCH64.code -> RelocationType.AArch64.JUMP_SLOT.value.toLong()
+                ElfMachine.RISCV.code -> RelocationType.RiscV.JUMP_SLOT.value.toLong()
+                else -> RelocationType.X86_64.JUMP_SLOT.value.toLong()
+            }
             for (i in layout.dynamicSymbols.indices) {
                 val gotEntryVaddr = layout.gotVaddr + (3 + i) * GOT_ENTRY_SIZE
                 writeU64(buf, gotEntryVaddr)
-                writeU64(buf, ((i + 1).toLong() shl 32) or RelocationType.X86_64.JUMP_SLOT.value.toLong())
+                writeU64(buf, ((i + 1).toLong() shl 32) or jumpSlotType)
                 writeS64(buf, 0)
             }
             return buf.toByteArray()
@@ -508,6 +776,14 @@ class ElfLinker(
 
         private fun buildPlt(): ByteArray {
             if (layout.numPltEntries == 0) return ByteArray(0)
+            return when (machine) {
+                ElfMachine.AARCH64.code -> buildPltArm64()
+                ElfMachine.RISCV.code -> buildPltRiscV()
+                else -> buildPltX86()
+            }
+        }
+
+        private fun buildPltX86(): ByteArray {
             val buf = ByteArrayOutputStream()
             val got1Rip = layout.gotVaddr + 8 - (layout.pltVaddr + 6)
             val got2Rip = layout.gotVaddr + 16 - (layout.pltVaddr + 12)
@@ -527,6 +803,86 @@ class ElfLinker(
                 writeU32(buf, (layout.pltVaddr - (entryVaddr + 16)).toInt())
             }
             return buf.toByteArray()
+        }
+
+        private fun buildPltArm64(): ByteArray {
+            val buf = ByteArrayOutputStream()
+            val got0Page = (layout.gotVaddr and -4096L) - (layout.pltVaddr and -4096L)
+            val got0Lo = (layout.gotVaddr and 0xFFF).toInt()
+            writeArm64Insn(buf, 0xA9BF7BF0.toInt()) // stp x16, x30, [sp, #-16]!
+            writeArm64Insn(buf, adrp(16, got0Page))
+            writeArm64Insn(buf, ldrImm64(17, 16, got0Lo + 16))
+            writeArm64Insn(buf, 0xD61F0220.toInt()) // br x17
+            for (i in 0 until layout.numPltEntries) {
+                val entryVaddr = layout.pltVaddr + PLT0_SIZE + i.toLong() * PLT_ENTRY_SIZE
+                val gotEntryVaddr = layout.gotVaddr + (3 + i).toLong() * GOT_ENTRY_SIZE
+                val page = (gotEntryVaddr and -4096L) - (entryVaddr and -4096L)
+                val lo = (gotEntryVaddr and 0xFFF).toInt()
+                writeArm64Insn(buf, adrp(16, page))
+                writeArm64Insn(buf, ldrImm64(17, 16, lo))
+                writeArm64Insn(buf, 0xD61F0220.toInt()) // br x17
+                writeArm64Insn(buf, 0xD503201F.toInt()) // nop
+            }
+            return buf.toByteArray()
+        }
+
+        private fun buildPltRiscV(): ByteArray {
+            val buf = ByteArrayOutputStream()
+            // PLT0: auipc t2, %pcrel_hi(.got.plt) / ld t3, %pcrel_lo(1b)(t2) / addi t1, t2, lo / jalr t3
+            val got0Delta = layout.gotVaddr - layout.pltVaddr
+            val got0Hi = ((got0Delta + 0x800) shr 12).toInt()
+            val got0Lo = got0Delta.toInt() and 0xFFF
+            writeRiscVInsn(buf, riscvAuipc(7, got0Hi))       // auipc t2(x7), hi
+            writeRiscVInsn(buf, riscvLd(28, 7, got0Lo + 16)) // ld t3(x28), [t2+lo+16]
+            writeRiscVInsn(buf, riscvAddi(6, 7, got0Lo))     // addi t1(x6), t2, lo
+            writeRiscVInsn(buf, riscvJalr(0, 28, 0))         // jalr zero, t3
+            for (i in 0 until layout.numPltEntries) {
+                val entryVaddr = layout.pltVaddr + PLT0_SIZE + i.toLong() * PLT_ENTRY_SIZE
+                val gotEntryVaddr = layout.gotVaddr + (3 + i).toLong() * GOT_ENTRY_SIZE
+                val delta = gotEntryVaddr - entryVaddr
+                val hi = ((delta + 0x800) shr 12).toInt()
+                val lo = delta.toInt() and 0xFFF
+                writeRiscVInsn(buf, riscvAuipc(28, hi))  // auipc t3, hi
+                writeRiscVInsn(buf, riscvLd(28, 28, lo)) // ld t3, lo(t3)
+                writeRiscVInsn(buf, riscvJalr(6, 28, 0)) // jalr t1, t3 (t1 holds return addr for lazy resolver)
+                writeRiscVInsn(buf, 0x00000013)           // nop (addi x0, x0, 0)
+            }
+            return buf.toByteArray()
+        }
+
+        private fun riscvAuipc(rd: Int, imm20: Int): Int =
+            0x17 or (rd shl 7) or (imm20 shl 12)
+
+        private fun riscvLd(rd: Int, rs1: Int, imm12: Int): Int =
+            0x03 or (0x3 shl 12) or (rd shl 7) or (rs1 shl 15) or ((imm12 and 0xFFF) shl 20)
+
+        private fun riscvAddi(rd: Int, rs1: Int, imm12: Int): Int =
+            0x13 or (rd shl 7) or (rs1 shl 15) or ((imm12 and 0xFFF) shl 20)
+
+        private fun riscvJalr(rd: Int, rs1: Int, imm12: Int): Int =
+            0x67 or (rd shl 7) or (rs1 shl 15) or ((imm12 and 0xFFF) shl 20)
+
+        private fun writeRiscVInsn(buf: ByteArrayOutputStream, insn: Int) {
+            buf.write(insn and 0xFF)
+            buf.write((insn shr 8) and 0xFF)
+            buf.write((insn shr 16) and 0xFF)
+            buf.write((insn shr 24) and 0xFF)
+        }
+
+        private fun adrp(rd: Int, pageOffset: Long): Int {
+            val immHi = ((pageOffset shr 12) and 0x7FFFF).toInt()
+            val immLo = ((pageOffset shr 12) shr 19 and 0x3).toInt()
+            return 0x90000000.toInt() or rd or (immHi shl 5) or (immLo shl 29)
+        }
+
+        private fun ldrImm64(rt: Int, rn: Int, offset: Int): Int =
+            0xF9400000.toInt() or rt or (rn shl 5) or ((offset / 8) shl 10)
+
+        private fun writeArm64Insn(buf: ByteArrayOutputStream, insn: Int) {
+            buf.write(insn and 0xFF)
+            buf.write((insn shr 8) and 0xFF)
+            buf.write((insn shr 16) and 0xFF)
+            buf.write((insn shr 24) and 0xFF)
         }
 
         private fun writePhdr(buf: ByteArrayOutputStream, type: Int, flags: Int,
