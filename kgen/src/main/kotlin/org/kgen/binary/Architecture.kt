@@ -1,5 +1,24 @@
 package org.kgen.binary
 
+/**
+ * Describes the target CPU architecture and platform for a binary.
+ *
+ * Pre-built constants cover common configurations:
+ * ```kotlin
+ * val linux = Architecture.X86_64_LINUX     // x86-64, Linux, GNU
+ * val mac   = Architecture.AARCH64_MACOS    // ARM64, macOS, Apple
+ * val wasm  = Architecture.WASM32           // WebAssembly 32-bit
+ * ```
+ *
+ * @property arch CPU architecture type.
+ * @property subArch Sub-architecture variant (e.g., "v7" for ARMv7).
+ * @property vendor Vendor string (e.g., "apple", "unknown").
+ * @property os Operating system (e.g., "linux", "windows", "macos").
+ * @property environment Environment/ABI (e.g., "gnu", "msvc", "musl").
+ * @property endianness Byte order — almost always [Endianness.LITTLE] for modern targets.
+ * @property pointerSize Pointer width in bytes (4 for 32-bit, 8 for 64-bit).
+ * @property features CPU feature flags (e.g., "avx2", "neon").
+ */
 data class Architecture(
     val arch: ArchType,
     val subArch: String? = null,

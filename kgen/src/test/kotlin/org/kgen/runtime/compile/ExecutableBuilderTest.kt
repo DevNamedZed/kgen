@@ -182,6 +182,44 @@ class ExecutableReaderTest {
         assertTrue(reader.types.isEmpty())
     }
 
+    @Test
+    fun `round-trip debug section`() {
+        val meta = buildMeta("app", "1.0", "x86_64", emptyList(), emptyMap())
+        val debug = KgenDebugSection.write(KgenDebugSection(
+            sourceFiles = listOf("Main.java"),
+            methods = listOf(
+                KgenDebugMethod(
+                    name = "main",
+                    linkageName = "Main_main",
+                    sourceFileIndex = 0,
+                    startLine = 5,
+                    endLine = 12,
+                    nativeOffset = 0,
+                    nativeSize = 48,
+                    lineMappings = listOf(
+                        KgenLineMapping(0, 5, 0),
+                        KgenLineMapping(16, 8, 0),
+                        KgenLineMapping(32, 12, 0),
+                    ),
+                ),
+            ),
+        ))
+        val reader = ExecutableReader.read(meta, null, null, debug)
+        assertNotNull(reader.debugInfo)
+        assertEquals(1, reader.debugInfo!!.sourceFiles.size)
+        assertEquals("Main.java", reader.debugInfo!!.sourceFiles[0])
+        assertEquals(1, reader.debugInfo!!.methods.size)
+        assertEquals("Main_main", reader.debugInfo!!.methods[0].linkageName)
+        assertEquals(3, reader.debugInfo!!.methods[0].lineMappings.size)
+    }
+
+    @Test
+    fun `null debug section`() {
+        val meta = buildMeta("app", "1.0", "x86_64", emptyList(), emptyMap())
+        val reader = ExecutableReader.read(meta)
+        assertNull(reader.debugInfo)
+    }
+
     // Helpers to build section bytes for testing the reader
 
     private fun buildMeta(

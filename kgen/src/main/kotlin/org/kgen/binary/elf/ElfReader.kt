@@ -7,13 +7,21 @@ import java.nio.ByteOrder
 /**
  * Reads ELF binaries (both ELF32 and ELF64) into a structured [ElfFile] model.
  *
- * ```kotlin
- * val elf = ElfReader.read(bytes)
- * println("Type: ${elf.header.type}")
- * for (s in elf.sections) println("${s.name}: ${s.size} bytes")
+ * Parses all major ELF structures: file header, section headers, program headers (segments),
+ * symbol tables (SYMTAB + DYNSYM), relocations (REL + RELA), and the DYNAMIC segment.
+ * Both little-endian and big-endian byte orders are detected automatically.
+ *
+ * ```java
+ * ElfFile elf = ElfReader.read(bytes);
+ * System.out.println("Type: " + elf.getHeader().getType());
+ * for (ElfSectionEntry s : elf.getSections()) {
+ *     System.out.println(s.getName() + ": " + s.getSize() + " bytes");
+ * }
  * ```
  *
  * For the universal [ObjectFile] model, use [toObjectFile].
+ *
+ * See `spec/object-formats.md` for the object format model specification.
  */
 object ElfReader {
 
@@ -48,6 +56,10 @@ class ElfObjectFileReader : ObjectFileReader {
     override fun read(bytes: ByteArray): ObjectFile = ElfReader.toObjectFile(ElfReader.read(bytes))
 }
 
+/**
+ * Internal parser that walks the raw ELF byte buffer in multiple passes:
+ * header, section headers, section names, sections, segments, symbols, relocations, dynamic info.
+ */
 private class ElfFileParser(private val buf: ByteBuffer, private val raw: ByteArray) {
 
     private lateinit var header: ElfHeader

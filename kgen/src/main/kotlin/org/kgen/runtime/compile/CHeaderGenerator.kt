@@ -1,6 +1,7 @@
 package org.kgen.runtime.compile
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 
 /**
  * Generates C header files from kgen IR modules.

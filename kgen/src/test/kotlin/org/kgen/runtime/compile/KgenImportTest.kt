@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
 import org.kgen.ir.target.Target
 import org.kgen.target.jvm.*
+import org.kgen.ir.instructions.*
 
 /**
  * Tests for @KgenImport: declaring external C functions callable from @KgenNative code.
@@ -307,7 +308,7 @@ class KgenImportTest {
         assertTrue(println.blocks.isNotEmpty())
         assertEquals(Linkage.EXTERNAL, println.linkage)
 
-        val calls = println.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Call>()
+        val calls = println.blocks.flatMap { it.instructions }.filterIsInstance<Call>()
         assertTrue(calls.any { (it.function as? GlobalRef)?.name == "puts" },
             "Should call puts: ${calls.map { (it.function as? GlobalRef)?.name }}")
     }
@@ -331,7 +332,7 @@ class KgenImportTest {
         assertNotNull(module.functions.find { it.name == "__libc_puts" })
 
         val hello = module.functions.find { it.name == "hello" }!!
-        val calls = hello.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Call>()
+        val calls = hello.blocks.flatMap { it.instructions }.filterIsInstance<Call>()
         assertTrue(calls.any { (it.function as? GlobalRef)?.name == "__libc_puts" },
             "Should call __libc_puts: ${calls.map { (it.function as? GlobalRef)?.name }}")
     }
@@ -413,9 +414,9 @@ class KgenImportTest {
 
         // Should have both a call to malloc and a store instruction (from Kgen.storeInt)
         val instrs = fn.blocks.flatMap { it.instructions }
-        val calls = instrs.filterIsInstance<Instruction.Call>()
+        val calls = instrs.filterIsInstance<Call>()
         assertTrue(calls.any { (it.function as? GlobalRef)?.name == "malloc" })
-        val stores = instrs.filterIsInstance<Instruction.Store>()
+        val stores = instrs.filterIsInstance<Store>()
         assertTrue(stores.isNotEmpty(), "Should have store from Kgen.storeInt")
     }
 

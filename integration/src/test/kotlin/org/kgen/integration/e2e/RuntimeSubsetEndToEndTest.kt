@@ -16,6 +16,7 @@ import org.kgen.target.jvm.*
 import org.kgen.target.x86.codegen.X86CodeGenerator
 import java.lang.foreign.FunctionDescriptor
 import java.lang.foreign.ValueLayout.*
+import org.kgen.ir.instructions.*
 
 /**
  * Runtime Subset end-to-end: user-written low-level code in Java/Kotlin
@@ -101,7 +102,7 @@ class RuntimeSubsetEndToEndTest {
         val mod = modules[0]
         val readFn = mod.functions.first { it.name == "readInt" }
         val insts = readFn.blocks.flatMap { it.instructions }
-        assertTrue(insts.any { it is Instruction.Load },
+        assertTrue(insts.any { it is Load },
             "loadInt intrinsic should lower to Load: $insts")
     }
 
@@ -120,7 +121,7 @@ class RuntimeSubsetEndToEndTest {
         val modules = NativeCompiler(Target.x86_64()).compileToModules(listOf(classBytes))
         val fn = modules[0].functions.first { it.name == "addOffset" }
         val insts = fn.blocks.flatMap { it.instructions }
-        assertTrue(insts.any { it is Instruction.Add },
+        assertTrue(insts.any { it is Add },
             "offset intrinsic should lower to Add: $insts")
     }
 
@@ -176,10 +177,10 @@ class RuntimeSubsetEndToEndTest {
         val modules = compiler.compileToModules(listOf(classBytes))
         val fn = modules[0].functions.first { it.name == "alloc" }
         val insts = fn.blocks.flatMap { it.instructions }
-        assertTrue(insts.any { it is Instruction.Load }, "Should have Load from loadLong")
-        assertTrue(insts.any { it is Instruction.Store }, "Should have Store from storeLong")
+        assertTrue(insts.any { it is Load }, "Should have Load from loadLong")
+        assertTrue(insts.any { it is Store }, "Should have Store from storeLong")
         // Should NOT have a call to "loadLong" or "storeLong" — intrinsics are inlined
-        val calls = insts.filterIsInstance<Instruction.Call>()
+        val calls = insts.filterIsInstance<Call>()
         assertFalse(calls.any { it.function.name.contains("loadLong") || it.function.name.contains("storeLong") },
             "Intrinsics should be lowered, not left as calls: $calls")
     }
@@ -294,8 +295,8 @@ class RuntimeSubsetEndToEndTest {
         val modules = compiler.compileToModules(listOf(classBytes))
         val fn = modules[0].functions.first { it.name == "mark" }
         val insts = fn.blocks.flatMap { it.instructions }
-        assertTrue(insts.any { it is Instruction.Load }, "Should load GC flags")
-        assertTrue(insts.any { it is Instruction.Store }, "Should store updated GC flags")
+        assertTrue(insts.any { it is Load }, "Should load GC flags")
+        assertTrue(insts.any { it is Store }, "Should store updated GC flags")
     }
 
     // -- Stdlib provider generates native implementations --

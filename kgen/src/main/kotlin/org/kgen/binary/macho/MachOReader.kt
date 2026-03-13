@@ -4,11 +4,32 @@ import org.kgen.binary.*
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
+/**
+ * Reads Mach-O binaries (macOS, iOS executables, .dylib, .o files) into a structured [MachOFile] model.
+ *
+ * Handles both 32-bit and 64-bit Mach-O, little-endian and big-endian (via magic detection).
+ * Parses load commands, segments, sections, symbols, relocations, chained fixups, and dylib references.
+ *
+ * ```kotlin
+ * val bytes = File("libfoo.dylib").readBytes()
+ * if (MachOReader.canRead(bytes)) {
+ *     val macho = MachOReader.read(bytes)
+ *     println("CPU: ${macho.header.cpuType}")
+ *     macho.segments.forEach { seg -> println("Segment: ${seg.name} (${seg.sections.size} sections)") }
+ *
+ *     // Convert to universal ObjectFile model for format-agnostic analysis
+ *     val obj = MachOReader.toObjectFile(macho)
+ *     obj.symbols.forEach { println(it.name) }
+ * }
+ * ```
+ */
 object MachOReader {
 
+    /** Returns true if [bytes] starts with a Mach-O magic number (32-bit, 64-bit, or byte-swapped). */
     @JvmStatic
     fun canRead(bytes: ByteArray): Boolean = MachO.isMachO(bytes)
 
+    /** Parse a Mach-O binary into a structured [MachOFile] with segments, symbols, and load commands. */
     @JvmStatic
     fun read(bytes: ByteArray): MachOFile {
         val buf = ByteBuffer.wrap(bytes)

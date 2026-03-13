@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.condition.EnabledOnOs
 import org.junit.jupiter.api.condition.OS
+import org.kgen.ir.target.Arch
 import java.io.File
 
 class HookTest {
@@ -217,6 +218,61 @@ class HookTest {
             assertTrue(code.symbols().contains("trampoline"))
             assertEquals(code.baseAddress, code.symbolAddress("trampoline"))
         }
+    }
+
+    // --- ARM64 trampoline tests ---
+
+    @Test
+    @EnabledOnOs(OS.LINUX, OS.WINDOWS)
+    fun `createTrampoline arm64 encodes movz movk br sequence`() {
+        val original = byteArrayOf(0x1F, 0x20, 0x03, 0xD5.toByte()) // NOP
+        val continueAddr = 0x0000DEADBEEFCAFEL
+
+        Hook.createTrampoline(original, continueAddr, Arch.ARM64).use { code ->
+            val bytes = code.codeBytes()
+            // original (4 bytes) + MOVZ+3xMOVK+BR (20 bytes) = 24 bytes
+            assertEquals(24, bytes.size)
+            // First 4 bytes = original NOP
+            assertEquals(0x1F.toByte(), bytes[0])
+            // Last 4 bytes should be BR X16 = 0xD61F0200
+            val lastInst = readLe32(bytes, 20)
+            assertEquals(0xD61F0200.toInt(), lastInst)
+        }
+    }
+
+    @Test
+    @EnabledOnOs(OS.LINUX, OS.WINDOWS)
+    fun `createTrampoline riscv encodes li jalr sequence`() {
+        val original = byteArrayOf(0x13, 0x00, 0x00, 0x00) // NOP
+        val continueAddr = 0x1000L
+
+        Hook.createTrampoline(original, continueAddr, Arch.RISCV64).use { code ->
+            val bytes = code.codeBytes()
+            assertTrue(bytes.size > 4, "Should have original + jump-back")
+            // First 4 bytes = original NOP
+            assertEquals(0x13.toByte(), bytes[0])
+            // Last 4 bytes should be JALR x0, x6, 0 = 0x00030067
+            val lastInst = readLe32(bytes, bytes.size - 4)
+            assertEquals(0x67, lastInst and 0x7F, "Last instruction should be JALR opcode")
+        }
+    }
+
+    @Test
+    @EnabledOnOs(OS.LINUX, OS.WINDOWS)
+    fun `createTrampoline x86 via arch parameter matches default`() {
+        val original = byteArrayOf(0x55, 0x48)
+        val continueAddr = 0x12345678L
+
+        val defaultBytes = Hook.createTrampoline(original, continueAddr, Arch.X86_64).use { it.codeBytes() }
+        assertEquals(original.size + 14, defaultBytes.size)
+        assertEquals(0xFF.toByte(), defaultBytes[original.size])
+    }
+
+    private fun readLe32(bytes: ByteArray, offset: Int): Int {
+        return (bytes[offset].toInt() and 0xFF) or
+                ((bytes[offset + 1].toInt() and 0xFF) shl 8) or
+                ((bytes[offset + 2].toInt() and 0xFF) shl 16) or
+                ((bytes[offset + 3].toInt() and 0xFF) shl 24)
     }
 
     // --- findGotEntry tests (ELF) ---

@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -94,7 +95,7 @@ class ProfileGuidedOptimizationTest {
 
         val fn = optimized.functions.first { it.name == "branchFunc" }
         val condBr = fn.blocks.first { it.label == "entry" }.instructions
-            .filterIsInstance<Instruction.CondBr>().first()
+            .filterIsInstance<CondBr>().first()
 
         assertEquals(900, condBr.trueWeight)
         assertEquals(100, condBr.falseWeight)
@@ -109,8 +110,8 @@ class ProfileGuidedOptimizationTest {
         val entryBlock = fn.blocks.first()
         val firstInst = entryBlock.instructions.first()
 
-        assertTrue(firstInst is Instruction.Call, "First instruction should be a counter call")
-        val call = firstInst as Instruction.Call
+        assertTrue(firstInst is Call, "First instruction should be a counter call")
+        val call = firstInst as Call
         assertEquals("__pgo_increment_counter", call.function.name)
     }
 

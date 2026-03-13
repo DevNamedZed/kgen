@@ -1,6 +1,8 @@
 package org.kgen.ir
 
-/** Maps an exception type to a handler block label (for [Instruction.TryCatchRegion]). */
+import org.kgen.ir.instructions.*
+
+/** Maps an exception type to a handler block label (for [TryCatchRegion]). */
 data class CatchHandler(
     val exceptionType: Type,
     val handlerBlock: String,

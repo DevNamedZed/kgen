@@ -1,5 +1,7 @@
 package org.kgen.ir
 
+import org.kgen.ir.instructions.*
+
 /**
  * The kgen type system.
  *
@@ -129,8 +131,8 @@ sealed interface Type {
 
     /**
      * Tagged union (algebraic data type / sum type). A discriminant of type [tagType]
-     * selects the active [variant][TaggedVariant]. Used with [Instruction.ConstructVariant],
-     * [Instruction.GetTag], [Instruction.GetVariantField], and [Instruction.TagSwitch].
+     * selects the active [variant][TaggedVariant]. Used with [ConstructVariant],
+     * [GetTag], [GetVariantField], and [TagSwitch].
      */
     data class TaggedUnion(
         val name: String,

@@ -67,11 +67,18 @@ annotation class KgenRuntime
  * Implies native compilation — the containing class must be `@KgenNative`
  * or `@KgenRuntime`.
  *
+ * ```java
+ * @KgenExport(value = "my_func", convention = "win64")
+ * static int myFunc(int x) { return x * 2; }
+ * ```
+ *
  * @param value Custom export symbol name. If empty (default), the method name is used.
+ * @param convention Calling convention: "c" (default), "fast", "cold", "tail",
+ *   "win64", "sysv64", "aapcs", "swift". Maps to [org.kgen.ir.CallingConvention].
  */
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class KgenExport(val value: String = "")
+annotation class KgenExport(val value: String = "", val convention: String = "")
 
 /**
  * Marks a method whose body is replaced by kgen with special IR.

@@ -1,6 +1,7 @@
 package org.kgen.ir.text
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.*
 import org.kgen.ir.types.*
 import org.junit.jupiter.api.Test
@@ -438,7 +439,7 @@ class IrTextExtendedTest {
         }
         val restored = binaryRoundTrip(mod)
         val phi = restored.functions[0].blocks[3].instructions[0]
-        assertTrue(phi is Instruction.Phi)
+        assertTrue(phi is Phi)
     }
 
     @Test

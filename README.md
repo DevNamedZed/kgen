@@ -71,11 +71,12 @@ Files.write(Path.of("app"), exe);
 
 ```java
 var square = DynamicMethod.native_("square",
-    new Signature(Type.I32, List.of(new Param("x", Type.I32))));
+    Signature.returning(TypeRef.I32).param("x", TypeRef.I32).build());
 square.body((ir, params) -> {
     ir.ret(ir.mul(params.get(0), params.get(0)));
 });
 int result = (int) square.invoke(7); // 49
+square.close();
 ```
 
 ### Binary inspection
@@ -102,7 +103,7 @@ asm.push(rbp)
 asm.mov(rbp, rsp)
 asm.mov(eax, 42)
 asm.pop(rbp)
-asm.ret_()
+asm.ret()
 val machineCode: ByteArray = asm.assemble()
 ```
 
@@ -135,11 +136,11 @@ The CLI builds as a native binary via GraalVM native-image (~18 MB, no JVM start
 
 ### IR
 
-SSA-based, LLVM-style. ~120 instruction types covering arithmetic, control flow, memory, aggregates, exceptions, atomics, SIMD, GC intrinsics, and debug info. Text and binary serialization. Full verifier. Tiered: high-level IR for managed targets (JVM, WASM), low-level for native, with lowering passes to convert between them.
+SSA-based, LLVM-style. 177 instruction types covering arithmetic, control flow, memory, aggregates, exceptions, atomics, SIMD, GC intrinsics, and debug info. Text and binary serialization. Full verifier. Tiered: high-level IR for managed targets (JVM, WASM), low-level for native, with lowering passes to convert between them.
 
 ### Optimization
 
-Mem2Reg, constant folding, DCE, GVN, inlining, jump threading, LICM, SROA. Preset pipelines O0–O3. Pass infrastructure supports custom passes.
+Mem2Reg, constant folding, DCE, GVN, inlining, jump threading, LICM, SROA. Preset pipelines O0, O1, O2, Os. Pass infrastructure supports custom passes.
 
 ### Code generators
 
@@ -156,7 +157,7 @@ Mem2Reg, constant folding, DCE, GVN, inlining, jump threading, LICM, SROA. Prese
 
 Read, write, and link ELF (32/64-bit). Read, write PE/COFF. Read, write Mach-O (including chained fixups). Read/write WASM modules, JVM class files, .NET CLR metadata, ar archives (.a/.lib, GNU + BSD).
 
-Static and dynamic linkers for ELF. Shared library linker for Mach-O (.dylib).
+Static and dynamic linkers for ELF. PE/COFF linker. Shared library linker for Mach-O (.dylib).
 
 ### JIT engine
 
@@ -175,7 +176,7 @@ Compiles JVM bytecode to native code. Supports arithmetic, branches, loops, recu
 Requires JDK 21+.
 
 ```bash
-./gradlew test                    # run tests (~14,500)
+./gradlew test                    # run tests (~17,200)
 ./gradlew :cli:shadowJar          # fat JAR
 JAVA_HOME=/path/to/graalvm ./gradlew :cli:nativeCompile  # native binary
 ```

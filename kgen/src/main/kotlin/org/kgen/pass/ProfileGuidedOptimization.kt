@@ -1,6 +1,7 @@
 package org.kgen.pass
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 
 /**
  * Profile-guided optimization (PGO) — uses runtime profiling data to
@@ -63,7 +64,7 @@ class ProfileGuidedOptimization(
             val branchData = profile.branchData("${fn.name}:${block.label}")
             if (branchData != null && block.instructions.isNotEmpty()) {
                 val lastInst = block.instructions.last()
-                if (lastInst is Instruction.CondBr) {
+                if (lastInst is CondBr) {
                     anyChanged = true
                     val newLast = lastInst.copy(
                         trueWeight = branchData.trueCount,
@@ -140,7 +141,7 @@ class ProfileGuidedOptimization(
             // Insert a profiling counter call at the entry of each basic block
             val newBlocks = fn.blocks.map { block ->
                 val counterName = "${fn.name}:${block.label}"
-                val counterCall = Instruction.Call(
+                val counterCall = Call(
                     dest = null,
                     function = FunctionRef("__pgo_increment_counter", Type.Function(listOf(Type.I64), Type.Void)),
                     args = listOf(Constant.I64(counterName.hashCode().toLong())),

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
+import org.kgen.ir.instructions.*
 
 class ConstantFoldingExtendedTest {
 
@@ -27,7 +28,7 @@ class ConstantFoldingExtendedTest {
             ret(sum)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(4.0f, (ret.value as Constant.F32).value)
     }
 
@@ -40,7 +41,7 @@ class ConstantFoldingExtendedTest {
             ret(diff)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(6.5f, (ret.value as Constant.F32).value)
     }
 
@@ -53,7 +54,7 @@ class ConstantFoldingExtendedTest {
             ret(prod)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(12.0f, (ret.value as Constant.F32).value)
     }
 
@@ -66,7 +67,7 @@ class ConstantFoldingExtendedTest {
             ret(quot)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(2.5f, (ret.value as Constant.F32).value)
     }
 
@@ -79,7 +80,7 @@ class ConstantFoldingExtendedTest {
             ret(neg)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(-3.14f, (ret.value as Constant.F32).value)
     }
 
@@ -94,7 +95,7 @@ class ConstantFoldingExtendedTest {
             ret(diff)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(6.5, (ret.value as Constant.F64).value)
     }
 
@@ -107,7 +108,7 @@ class ConstantFoldingExtendedTest {
             ret(prod)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(10.0, (ret.value as Constant.F64).value)
     }
 
@@ -120,7 +121,7 @@ class ConstantFoldingExtendedTest {
             ret(quot)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(3.5, (ret.value as Constant.F64).value)
     }
 
@@ -133,7 +134,7 @@ class ConstantFoldingExtendedTest {
             ret(neg)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(-2.718, (ret.value as Constant.F64).value)
     }
 
@@ -149,7 +150,7 @@ class ConstantFoldingExtendedTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(1, (ret.value as Constant.I32).value)
     }
 
@@ -163,7 +164,7 @@ class ConstantFoldingExtendedTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(0, (ret.value as Constant.I32).value)
     }
 
@@ -177,7 +178,7 @@ class ConstantFoldingExtendedTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(1, (ret.value as Constant.I32).value)
     }
 
@@ -191,7 +192,7 @@ class ConstantFoldingExtendedTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(1, (ret.value as Constant.I32).value)
     }
 
@@ -205,7 +206,7 @@ class ConstantFoldingExtendedTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(1, (ret.value as Constant.I32).value)
     }
 
@@ -219,7 +220,7 @@ class ConstantFoldingExtendedTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(1, (ret.value as Constant.I32).value)
     }
 
@@ -233,7 +234,7 @@ class ConstantFoldingExtendedTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(1L, (ret.value as Constant.I64).value)
     }
 
@@ -248,7 +249,7 @@ class ConstantFoldingExtendedTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(0, (ret.value as Constant.I32).value)
     }
 
@@ -263,7 +264,7 @@ class ConstantFoldingExtendedTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(1, (ret.value as Constant.I32).value)
     }
 
@@ -282,7 +283,7 @@ class ConstantFoldingExtendedTest {
             ret(e)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(5, (ret.value as Constant.I32).value)
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "All intermediates should be eliminated: $insts")
@@ -299,7 +300,7 @@ class ConstantFoldingExtendedTest {
             ret(c)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(500L, (ret.value as Constant.I64).value)
     }
 
@@ -314,7 +315,7 @@ class ConstantFoldingExtendedTest {
             ret(c)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(5.0, (ret.value as Constant.F64).value)
     }
 
@@ -330,7 +331,7 @@ class ConstantFoldingExtendedTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(2, insts.size, "One fold, one remains: $insts")
-        val addInst = insts[0] as Instruction.Add
+        val addInst = insts[0] as Add
         assertTrue(addInst.lhs is Constant.I32, "Folded constant should be propagated")
         assertEquals(10, (addInst.lhs as Constant.I32).value)
     }
@@ -346,7 +347,7 @@ class ConstantFoldingExtendedTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(0xFF, (ret.value as Constant.I32).value)
     }
 
@@ -359,7 +360,7 @@ class ConstantFoldingExtendedTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(0xFFFF, (ret.value as Constant.I32).value)
     }
 
@@ -372,7 +373,7 @@ class ConstantFoldingExtendedTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(48, (ret.value as Constant.I32).value)
     }
 
@@ -385,7 +386,7 @@ class ConstantFoldingExtendedTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(16, (ret.value as Constant.I32).value)
     }
 
@@ -398,7 +399,7 @@ class ConstantFoldingExtendedTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(-32, (ret.value as Constant.I32).value)
     }
 
@@ -411,7 +412,7 @@ class ConstantFoldingExtendedTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(0L, (ret.value as Constant.I64).value)
     }
 
@@ -424,7 +425,7 @@ class ConstantFoldingExtendedTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(0xFFFFL, (ret.value as Constant.I64).value)
     }
 
@@ -439,7 +440,7 @@ class ConstantFoldingExtendedTest {
             ret(c)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(0xC3, (ret.value as Constant.I32).value)
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "All intermediates should be eliminated: $insts")
@@ -456,7 +457,7 @@ class ConstantFoldingExtendedTest {
             ret(ext)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(-42L, (ret.value as Constant.I64).value)
     }
 
@@ -469,7 +470,7 @@ class ConstantFoldingExtendedTest {
             ret(trunc)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(42, (ret.value as Constant.I32).value)
     }
 
@@ -482,7 +483,7 @@ class ConstantFoldingExtendedTest {
             ret(ext)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(1, (ret.value as Constant.I32).value)
     }
 
@@ -495,7 +496,7 @@ class ConstantFoldingExtendedTest {
             ret(ext)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(0, (ret.value as Constant.I32).value)
     }
 
@@ -510,7 +511,7 @@ class ConstantFoldingExtendedTest {
             ret(rem)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(2, (ret.value as Constant.I32).value)
     }
 
@@ -523,7 +524,7 @@ class ConstantFoldingExtendedTest {
             ret(rem)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(2, (ret.value as Constant.I32).value)
     }
 
@@ -536,7 +537,7 @@ class ConstantFoldingExtendedTest {
             ret(quot)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(14, (ret.value as Constant.I32).value)
     }
 
@@ -553,7 +554,7 @@ class ConstantFoldingExtendedTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(2, insts.size)
-        assertTrue(insts[0] is Instruction.FAdd)
+        assertTrue(insts[0] is FAdd)
     }
 
     @Test
@@ -565,7 +566,7 @@ class ConstantFoldingExtendedTest {
             ret(n)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(0, (ret.value as Constant.I32).value)
     }
 
@@ -587,7 +588,7 @@ class ConstantFoldingExtendedTest {
         }
         // After folding, the condBr should have a constant true condition
         val entry = module.functions[0].blocks[0]
-        val last = entry.instructions.last() as Instruction.CondBr
+        val last = entry.instructions.last() as CondBr
         assertTrue(last.condition is Constant.I1, "Condition should be folded to constant: ${last.condition}")
         assertEquals(true, (last.condition as Constant.I1).value)
     }

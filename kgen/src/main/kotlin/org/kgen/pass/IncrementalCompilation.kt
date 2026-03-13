@@ -1,6 +1,7 @@
 package org.kgen.pass
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 
 /**
  * Incremental compilation support — tracks which functions have changed
@@ -168,10 +169,10 @@ class IncrementalCompilation {
             for (block in fn.blocks) {
                 for (inst in block.instructions) {
                     when (inst) {
-                        is Instruction.Call -> deps.add(inst.function.name)
-                        is Instruction.VirtualCall -> deps.add("${inst.className}.${inst.methodName}")
-                        is Instruction.InterfaceCall -> deps.add("${inst.interfaceName}.${inst.methodName}")
-                        is Instruction.SpecialCall -> deps.add("${inst.className}.${inst.methodName}")
+                        is Call -> deps.add(inst.function.name)
+                        is VirtualCall -> deps.add("${inst.className}.${inst.methodName}")
+                        is InterfaceCall -> deps.add("${inst.interfaceName}.${inst.methodName}")
+                        is SpecialCall -> deps.add("${inst.className}.${inst.methodName}")
                         else -> {}
                     }
                 }

@@ -1,6 +1,7 @@
 package org.kgen.pass
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.types.*
 
 /**
@@ -60,7 +61,7 @@ class VTableLowering : ModulePass {
             val newInstructions = mutableListOf<Instruction>()
             for (inst in block.instructions) {
                 when (inst) {
-                    is Instruction.VirtualCall -> {
+                    is VirtualCall -> {
                         val key = "${inst.className}.${inst.methodName}"
                         val slot = slotMap[key]
                         if (slot != null) {
@@ -70,7 +71,7 @@ class VTableLowering : ModulePass {
                         } else {
                             // Fallback: use mangled direct call
                             val mangledName = "${inst.className.replace('/', '_')}_${inst.methodName}"
-                            newInstructions.add(Instruction.Call(
+                            newInstructions.add(Call(
                                 dest = inst.dest,
                                 function = FunctionRef(mangledName, inst.methodType),
                                 args = listOf(inst.obj) + inst.args,
@@ -79,7 +80,7 @@ class VTableLowering : ModulePass {
                         }
                         anyChanged = true
                     }
-                    is Instruction.InterfaceCall -> {
+                    is InterfaceCall -> {
                         val key = "${inst.interfaceName}.${inst.methodName}"
                         val slot = slotMap[key]
                         if (slot != null) {
@@ -88,7 +89,7 @@ class VTableLowering : ModulePass {
                             )
                         } else {
                             val mangledName = "${inst.interfaceName.replace('/', '_')}_${inst.methodName}"
-                            newInstructions.add(Instruction.Call(
+                            newInstructions.add(Call(
                                 dest = inst.dest,
                                 function = FunctionRef(mangledName, inst.methodType),
                                 args = listOf(inst.obj) + inst.args,
@@ -113,22 +114,22 @@ class VTableLowering : ModulePass {
      *   %fptr   = load ptr, %slot         ; load function pointer
      *   %result = call %fptr(obj, args)   ; indirect call
      */
-    private fun lowerVirtualCall(inst: Instruction.VirtualCall, slot: Int, id: Int): List<Instruction> {
+    private fun lowerVirtualCall(inst: VirtualCall, slot: Int, id: Int): List<Instruction> {
         val instructions = mutableListOf<Instruction>()
 
         val vtableRef = InstructionRef(".vtable.$id", Type.OpaquePointer)
-        instructions.add(Instruction.Load(vtableRef, inst.obj, Type.OpaquePointer))
+        instructions.add(Load(vtableRef, inst.obj, Type.OpaquePointer))
 
         val slotRef = InstructionRef(".vslot.$id", Type.OpaquePointer)
-        instructions.add(Instruction.GetElementPtr(
+        instructions.add(GetElementPtr(
             slotRef, Type.I8, vtableRef,
             listOf(Constant.I64(slot.toLong() * 8))
         ))
 
         val fptrRef = InstructionRef(".vfptr.$id", Type.OpaquePointer)
-        instructions.add(Instruction.Load(fptrRef, slotRef, Type.OpaquePointer))
+        instructions.add(Load(fptrRef, slotRef, Type.OpaquePointer))
 
-        instructions.add(Instruction.Call(
+        instructions.add(Call(
             dest = inst.dest,
             function = fptrRef,
             args = listOf(inst.obj) + inst.args,
@@ -138,23 +139,23 @@ class VTableLowering : ModulePass {
         return instructions
     }
 
-    private fun lowerInterfaceCall(inst: Instruction.InterfaceCall, slot: Int, id: Int): List<Instruction> {
+    private fun lowerInterfaceCall(inst: InterfaceCall, slot: Int, id: Int): List<Instruction> {
         // Same strategy as virtual call — interface methods are in the same vtable
         val instructions = mutableListOf<Instruction>()
 
         val vtableRef = InstructionRef(".itable.$id", Type.OpaquePointer)
-        instructions.add(Instruction.Load(vtableRef, inst.obj, Type.OpaquePointer))
+        instructions.add(Load(vtableRef, inst.obj, Type.OpaquePointer))
 
         val slotRef = InstructionRef(".islot.$id", Type.OpaquePointer)
-        instructions.add(Instruction.GetElementPtr(
+        instructions.add(GetElementPtr(
             slotRef, Type.I8, vtableRef,
             listOf(Constant.I64(slot.toLong() * 8))
         ))
 
         val fptrRef = InstructionRef(".ifptr.$id", Type.OpaquePointer)
-        instructions.add(Instruction.Load(fptrRef, slotRef, Type.OpaquePointer))
+        instructions.add(Load(fptrRef, slotRef, Type.OpaquePointer))
 
-        instructions.add(Instruction.Call(
+        instructions.add(Call(
             dest = inst.dest,
             function = fptrRef,
             args = listOf(inst.obj) + inst.args,

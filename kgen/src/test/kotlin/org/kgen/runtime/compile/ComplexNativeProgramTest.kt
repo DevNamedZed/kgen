@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.kgen.ir.*
 import org.kgen.ir.target.Target
 import org.kgen.target.jvm.*
+import org.kgen.ir.instructions.*
 
 /**
  * Tests for complex native programs: globals, string constants, multi-function,
@@ -231,7 +232,7 @@ class ComplexNativeProgramTest {
         val module = RuntimeCompiler(Target.x86_64()).compile(classBytes)
         val fn = module.functions.first { it.name == "factorial" }
         val instructions = fn.blocks.flatMap { it.instructions }
-        assertTrue(instructions.any { it is Instruction.Mul }, "Expected multiplication")
+        assertTrue(instructions.any { it is Mul }, "Expected multiplication")
     }
 
     @Test

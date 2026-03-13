@@ -1,6 +1,7 @@
 package org.kgen.pass
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 
 /**
  * Auto-vectorization pass — transforms scalar loops and straight-line code
@@ -77,14 +78,14 @@ class AutoVectorization(
     private data class ArrayAccess(
         val ptr: Value,
         val index: Value,
-        val gepInst: Instruction.GetElementPtr,
+        val gepInst: GetElementPtr,
         val loadOrStore: Instruction,
         val isLoad: Boolean,
         val elementType: Type,
     )
 
     private data class Reduction(
-        val phiInst: Instruction.Phi,
+        val phiInst: Phi,
         val op: ReductionOp,
         val accumulator: String,
         val bodyValue: String,
@@ -105,12 +106,12 @@ class AutoVectorization(
         val bodyBlocks = loop.body - loop.header
 
         // Find the induction variable (phi in header)
-        val phis = headerBlock.instructions.filterIsInstance<Instruction.Phi>()
+        val phis = headerBlock.instructions.filterIsInstance<Phi>()
         val inductionPhi = findInductionVariable(phis, bodyBlocks, blocks) ?: return null
 
         // Find the loop bound from the header's conditional branch
-        val condBr = headerBlock.instructions.filterIsInstance<Instruction.CondBr>().firstOrNull() ?: return null
-        val icmp = headerBlock.instructions.filterIsInstance<Instruction.ICmp>()
+        val condBr = headerBlock.instructions.filterIsInstance<CondBr>().firstOrNull() ?: return null
+        val icmp = headerBlock.instructions.filterIsInstance<ICmp>()
             .firstOrNull { it.result?.name == (condBr.condition as? InstructionRef)?.name } ?: return null
 
         // Determine exit and body targets
@@ -154,12 +155,12 @@ class AutoVectorization(
             for (inst in block.instructions) {
                 bodyInstructions.add(inst)
                 // Detect array accesses: GEP + Load/Store
-                if (inst is Instruction.GetElementPtr) {
+                if (inst is GetElementPtr) {
                     val nextInst = findUserOfGep(inst, blocks, loop.body)
                     if (nextInst != null) {
-                        val isLoad = nextInst is Instruction.Load
-                        val elemType = if (isLoad) (nextInst as Instruction.Load).loadType else {
-                            (nextInst as Instruction.Store).value.type
+                        val isLoad = nextInst is Load
+                        val elemType = if (isLoad) (nextInst as Load).loadType else {
+                            (nextInst as Store).value.type
                         }
                         if (isStrideOneAccess(inst, inductionVarName)) {
                             arrayAccesses.add(ArrayAccess(inst.ptr, inst.indices.last(), inst, nextInst, isLoad, elemType))
@@ -196,10 +197,10 @@ class AutoVectorization(
     }
 
     private fun findInductionVariable(
-        phis: List<Instruction.Phi>,
+        phis: List<Phi>,
         bodyBlocks: Set<String>,
         blocks: List<BasicBlock>,
-    ): Instruction.Phi? {
+    ): Phi? {
         for (phi in phis) {
             val loopUpdate = phi.incoming.firstOrNull { it.second in bodyBlocks } ?: continue
             val updateValue = loopUpdate.first
@@ -209,7 +210,7 @@ class AutoVectorization(
                 val block = blocks.find { it.label == bodyLabel } ?: continue
                 for (inst in block.instructions) {
                     if (inst.result?.name != updateValue.name) continue
-                    if (inst is Instruction.Add || inst is Instruction.Sub) {
+                    if (inst is Add || inst is Sub) {
                         return phi
                     }
                 }
@@ -230,11 +231,11 @@ class AutoVectorization(
             for (inst in block.instructions) {
                 if (inst.result?.name != updateRef.name) continue
                 when (inst) {
-                    is Instruction.Add -> {
+                    is Add -> {
                         if (inst.lhs is InstructionRef && (inst.lhs as InstructionRef).name == inductionVar) return inst.rhs
                         if (inst.rhs is InstructionRef && (inst.rhs as InstructionRef).name == inductionVar) return inst.lhs
                     }
-                    is Instruction.Sub -> {
+                    is Sub -> {
                         if (inst.lhs is InstructionRef && (inst.lhs as InstructionRef).name == inductionVar) return inst.rhs
                     }
                     else -> {}
@@ -244,14 +245,14 @@ class AutoVectorization(
         return null
     }
 
-    private fun findUserOfGep(gep: Instruction.GetElementPtr, blocks: List<BasicBlock>, loopBlocks: Set<String>): Instruction? {
+    private fun findUserOfGep(gep: GetElementPtr, blocks: List<BasicBlock>, loopBlocks: Set<String>): Instruction? {
         val gepName = gep.dest.name
         for (label in loopBlocks) {
             val block = blocks.find { it.label == label } ?: continue
             for (inst in block.instructions) {
                 when (inst) {
-                    is Instruction.Load -> if (inst.ptr is InstructionRef && (inst.ptr as InstructionRef).name == gepName) return inst
-                    is Instruction.Store -> if (inst.ptr is InstructionRef && (inst.ptr as InstructionRef).name == gepName) return inst
+                    is Load -> if (inst.ptr is InstructionRef && (inst.ptr as InstructionRef).name == gepName) return inst
+                    is Store -> if (inst.ptr is InstructionRef && (inst.ptr as InstructionRef).name == gepName) return inst
                     else -> {}
                 }
             }
@@ -259,12 +260,12 @@ class AutoVectorization(
         return null
     }
 
-    private fun isStrideOneAccess(gep: Instruction.GetElementPtr, inductionVar: String): Boolean {
+    private fun isStrideOneAccess(gep: GetElementPtr, inductionVar: String): Boolean {
         val lastIndex = gep.indices.lastOrNull() ?: return false
         return lastIndex is InstructionRef && lastIndex.name == inductionVar
     }
 
-    private fun detectReduction(phi: Instruction.Phi, blocks: List<BasicBlock>, loop: NaturalLoop): Reduction? {
+    private fun detectReduction(phi: Phi, blocks: List<BasicBlock>, loop: NaturalLoop): Reduction? {
         val loopIncoming = phi.incoming.firstOrNull { it.second in loop.body } ?: return null
         val updateRef = loopIncoming.first as? InstructionRef ?: return null
 
@@ -273,13 +274,13 @@ class AutoVectorization(
             for (inst in block.instructions) {
                 if (inst.result?.name != updateRef.name) continue
                 val op = when (inst) {
-                    is Instruction.Add -> ReductionOp.ADD
-                    is Instruction.Mul -> ReductionOp.MUL
-                    is Instruction.And -> ReductionOp.AND
-                    is Instruction.Or -> ReductionOp.OR
-                    is Instruction.Xor -> ReductionOp.XOR
-                    is Instruction.FAdd -> ReductionOp.FADD
-                    is Instruction.FMul -> ReductionOp.FMUL
+                    is Add -> ReductionOp.ADD
+                    is Mul -> ReductionOp.MUL
+                    is And -> ReductionOp.AND
+                    is Or -> ReductionOp.OR
+                    is Xor -> ReductionOp.XOR
+                    is FAdd -> ReductionOp.FADD
+                    is FMul -> ReductionOp.FMUL
                     else -> return null
                 }
                 return Reduction(phi, op, phi.dest.name, updateRef.name)
@@ -317,21 +318,21 @@ class AutoVectorization(
 
         // Compute vector trip count: (bound - start) / vf * vf + start
         val tripCountRef = nextRef(Type.I32)
-        vecPreheaderInsts.add(Instruction.Sub(tripCountRef, analysis.bound, analysis.start))
+        vecPreheaderInsts.add(Sub(tripCountRef, analysis.bound, analysis.start))
 
         val vfConst = Constant.I32(vf)
         val vfMask = Constant.I32(vf - 1)
         val vecTripRef = nextRef(Type.I32)
-        vecPreheaderInsts.add(Instruction.And(vecTripRef, tripCountRef, Constant.I32(vf.inv().and(0x7FFFFFFF) + 1))) // round down
+        vecPreheaderInsts.add(And(vecTripRef, tripCountRef, Constant.I32(vf.inv().and(0x7FFFFFFF) + 1))) // round down
 
         // Actually, simpler: vecLimit = start + vecTrip
         // vecTrip = tripCount & ~(vf - 1) = tripCount - (tripCount % vf)
         val remRef = nextRef(Type.I32)
-        vecPreheaderInsts.add(Instruction.And(remRef, tripCountRef, vfConst.let { Constant.I32(vf - 1) }))
+        vecPreheaderInsts.add(And(remRef, tripCountRef, vfConst.let { Constant.I32(vf - 1) }))
         val cleanTripRef = nextRef(Type.I32)
-        vecPreheaderInsts.add(Instruction.Sub(cleanTripRef, tripCountRef, remRef))
+        vecPreheaderInsts.add(Sub(cleanTripRef, tripCountRef, remRef))
         val vecLimitRef = nextRef(Type.I32)
-        vecPreheaderInsts.add(Instruction.Add(vecLimitRef, analysis.start, cleanTripRef))
+        vecPreheaderInsts.add(Add(vecLimitRef, analysis.start, cleanTripRef))
 
         // Vector header: induction phi
         val vecIndRef = nextRef(Type.I32)
@@ -340,10 +341,10 @@ class AutoVectorization(
         // Initialize reduction accumulators as vector splats
         val reductionVecPhis = mutableListOf<Pair<Reduction, InstructionRef>>()
 
-        vecPreheaderInsts.add(Instruction.Br(vecHeaderLabel))
+        vecPreheaderInsts.add(Br(vecHeaderLabel))
 
         // Vec header: phi for induction + check
-        val vecIndPhi = Instruction.Phi(vecIndRef, listOf(
+        val vecIndPhi = Phi(vecIndRef, listOf(
             analysis.start to vecPreheaderLabel,
         ))
         vecHeaderInsts.add(vecIndPhi)
@@ -356,15 +357,15 @@ class AutoVectorization(
                 ?: continue
             reductionVecPhis.add(red to vecAccRef)
             // We'll create phis with placeholders — to be updated
-            vecHeaderInsts.add(Instruction.Phi(vecAccRef, listOf(
+            vecHeaderInsts.add(Phi(vecAccRef, listOf(
                 // initial splat will be in preheader
             )))
         }
 
         // Compare: vecInd < vecLimit
         val vecCmpRef = nextRef(Type.I1)
-        vecHeaderInsts.add(Instruction.ICmp(vecCmpRef, analysis.predicate, vecIndRef, vecLimitRef))
-        vecHeaderInsts.add(Instruction.CondBr(vecCmpRef, vecBodyLabel, scalarPreheaderLabel))
+        vecHeaderInsts.add(ICmp(vecCmpRef, analysis.predicate, vecIndRef, vecLimitRef))
+        vecHeaderInsts.add(CondBr(vecCmpRef, vecBodyLabel, scalarPreheaderLabel))
 
         // Vec body: widen loads, compute arithmetic, widen stores
         // Map from scalar instruction result name → widened vector value
@@ -382,7 +383,7 @@ class AutoVectorization(
         for (access in analysis.arrayAccesses) {
             if (access.isLoad) {
                 val gepRef = nextRef(access.gepInst.ptr.type)
-                vecBodyInsts.add(Instruction.GetElementPtr(
+                vecBodyInsts.add(GetElementPtr(
                     gepRef, access.gepInst.baseType, access.gepInst.ptr,
                     access.gepInst.indices.map { idx ->
                         if (idx is InstructionRef && idx.name == analysis.inductionVar) vecIndRef
@@ -392,7 +393,7 @@ class AutoVectorization(
                 ))
                 val vecType = Type.Vector(access.elementType, vf)
                 val vecLoadRef = nextRef(vecType)
-                vecBodyInsts.add(Instruction.Load(vecLoadRef, gepRef, vecType))
+                vecBodyInsts.add(Load(vecLoadRef, gepRef, vecType))
                 // Map the original load's result to the vector load
                 val loadResult = access.loadOrStore.result
                 if (loadResult != null) {
@@ -414,7 +415,7 @@ class AutoVectorization(
             // Skip already-handled instructions
             if (resultName in handledGeps || resultName in handledLoadsStores) continue
             if (resultName in inductionUpdateNames) continue
-            if (inst is Instruction.Phi || inst is Instruction.Br || inst is Instruction.CondBr) continue
+            if (inst is Phi || inst is Br || inst is CondBr) continue
 
             // Try to widen this arithmetic instruction
             val widened = widenInstruction(inst, scalarToVector, vf, ::nextRef)
@@ -428,7 +429,7 @@ class AutoVectorization(
         for (access in analysis.arrayAccesses) {
             if (!access.isLoad) {
                 val gepRef = nextRef(access.gepInst.ptr.type)
-                vecBodyInsts.add(Instruction.GetElementPtr(
+                vecBodyInsts.add(GetElementPtr(
                     gepRef, access.gepInst.baseType, access.gepInst.ptr,
                     access.gepInst.indices.map { idx ->
                         if (idx is InstructionRef && idx.name == analysis.inductionVar) vecIndRef
@@ -437,13 +438,13 @@ class AutoVectorization(
                     access.gepInst.inBounds,
                 ))
                 // Find the vector value to store
-                val storeInst = access.loadOrStore as Instruction.Store
+                val storeInst = access.loadOrStore as Store
                 val storeVal = storeInst.value
                 val vecStoreVal = if (storeVal is InstructionRef) {
                     scalarToVector[storeVal.name] ?: storeVal
                 } else storeVal
                 val vecType = Type.Vector(access.elementType, vf)
-                vecBodyInsts.add(Instruction.Store(vecStoreVal, gepRef))
+                vecBodyInsts.add(Store(vecStoreVal, gepRef))
             }
         }
 
@@ -457,8 +458,8 @@ class AutoVectorization(
 
         // Vec latch: increment induction by VF
         val vecNextIndRef = nextRef(Type.I32)
-        vecLatchInsts.add(Instruction.Add(vecNextIndRef, vecIndRef, vecStepConst))
-        vecLatchInsts.add(Instruction.Br(vecHeaderLabel))
+        vecLatchInsts.add(Add(vecNextIndRef, vecIndRef, vecStepConst))
+        vecLatchInsts.add(Br(vecHeaderLabel))
 
         // Build new blocks
         val newBlocks = mutableListOf<BasicBlock>()
@@ -467,16 +468,16 @@ class AutoVectorization(
                 // Insert vector preheader and vector loop before scalar loop
                 newBlocks.add(BasicBlock(vecPreheaderLabel, vecPreheaderInsts))
                 newBlocks.add(BasicBlock(vecHeaderLabel, vecHeaderInsts))
-                newBlocks.add(BasicBlock(vecBodyLabel, vecBodyInsts + Instruction.Br(vecLatchLabel)))
+                newBlocks.add(BasicBlock(vecBodyLabel, vecBodyInsts + Br(vecLatchLabel)))
                 newBlocks.add(BasicBlock(vecLatchLabel, vecLatchInsts))
 
                 // Scalar preheader: branch to original header
-                newBlocks.add(BasicBlock(scalarPreheaderLabel, listOf(Instruction.Br(analysis.headerLabel))))
+                newBlocks.add(BasicBlock(scalarPreheaderLabel, listOf(Br(analysis.headerLabel))))
 
                 // Update original header's phi: start from vecLimit instead of original start
                 val updatedInsts = block.instructions.map { inst ->
-                    if (inst is Instruction.Phi && inst.dest.name == analysis.inductionVar) {
-                        Instruction.Phi(inst.dest, inst.incoming.map { (v, label) ->
+                    if (inst is Phi && inst.dest.name == analysis.inductionVar) {
+                        Phi(inst.dest, inst.incoming.map { (v, label) ->
                             if (label !in loop.body) vecLimitRef to scalarPreheaderLabel
                             else v to label
                         })
@@ -547,7 +548,7 @@ class AutoVectorization(
             for ((i, idx) in group.withIndex()) {
                 val origResult = instructions[idx].result ?: continue
                 val extractRef = InstructionRef(origResult.name, elementType)
-                newInstructions.add(Instruction.ExtractElement(extractRef, vecResult, Constant.I32(i)))
+                newInstructions.add(ExtractElement(extractRef, vecResult, Constant.I32(i)))
                 consumed.add(idx)
             }
         }
@@ -593,10 +594,10 @@ class AutoVectorization(
             // Create a vector by inserting each scalar
             var vec: Value = nextRef(vecType)
             val splatRef = vec as InstructionRef
-            packInsts.add(Instruction.Splat(splatRef, scalars[0], vecType))
+            packInsts.add(Splat(splatRef, scalars[0], vecType))
             for (i in 1 until scalars.size) {
                 val insertRef = nextRef(vecType)
-                packInsts.add(Instruction.InsertElement(insertRef, vec, scalars[i], Constant.I32(i)))
+                packInsts.add(InsertElement(insertRef, vec, scalars[i], Constant.I32(i)))
                 vec = insertRef
             }
             operandVecs.add(vec)
@@ -608,21 +609,21 @@ class AutoVectorization(
     private fun createVectorOp(template: Instruction, dest: InstructionRef, packed: PackedOperands): Instruction? {
         val ops = packed.operandVectors
         return when (template) {
-            is Instruction.Add -> Instruction.Add(dest, ops[0], ops[1])
-            is Instruction.Sub -> Instruction.Sub(dest, ops[0], ops[1])
-            is Instruction.Mul -> Instruction.Mul(dest, ops[0], ops[1])
-            is Instruction.FAdd -> Instruction.FAdd(dest, ops[0], ops[1])
-            is Instruction.FSub -> Instruction.FSub(dest, ops[0], ops[1])
-            is Instruction.FMul -> Instruction.FMul(dest, ops[0], ops[1])
-            is Instruction.FDiv -> Instruction.FDiv(dest, ops[0], ops[1])
-            is Instruction.And -> Instruction.And(dest, ops[0], ops[1])
-            is Instruction.Or -> Instruction.Or(dest, ops[0], ops[1])
-            is Instruction.Xor -> Instruction.Xor(dest, ops[0], ops[1])
-            is Instruction.Shl -> Instruction.Shl(dest, ops[0], ops[1])
-            is Instruction.LShr -> Instruction.LShr(dest, ops[0], ops[1])
-            is Instruction.AShr -> Instruction.AShr(dest, ops[0], ops[1])
-            is Instruction.Neg -> Instruction.Neg(dest, ops[0])
-            is Instruction.FNeg -> Instruction.FNeg(dest, ops[0])
+            is Add -> Add(dest, ops[0], ops[1])
+            is Sub -> Sub(dest, ops[0], ops[1])
+            is Mul -> Mul(dest, ops[0], ops[1])
+            is FAdd -> FAdd(dest, ops[0], ops[1])
+            is FSub -> FSub(dest, ops[0], ops[1])
+            is FMul -> FMul(dest, ops[0], ops[1])
+            is FDiv -> FDiv(dest, ops[0], ops[1])
+            is And -> And(dest, ops[0], ops[1])
+            is Or -> Or(dest, ops[0], ops[1])
+            is Xor -> Xor(dest, ops[0], ops[1])
+            is Shl -> Shl(dest, ops[0], ops[1])
+            is LShr -> LShr(dest, ops[0], ops[1])
+            is AShr -> AShr(dest, ops[0], ops[1])
+            is Neg -> Neg(dest, ops[0])
+            is FNeg -> FNeg(dest, ops[0])
             else -> null
         }
     }
@@ -656,11 +657,11 @@ class AutoVectorization(
     }
 
     private fun isSLPCandidate(inst: Instruction): Boolean = when (inst) {
-        is Instruction.Add, is Instruction.Sub, is Instruction.Mul,
-        is Instruction.FAdd, is Instruction.FSub, is Instruction.FMul, is Instruction.FDiv,
-        is Instruction.And, is Instruction.Or, is Instruction.Xor,
-        is Instruction.Shl, is Instruction.LShr, is Instruction.AShr,
-        is Instruction.Neg, is Instruction.FNeg -> true
+        is Add, is Sub, is Mul,
+        is FAdd, is FSub, is FMul, is FDiv,
+        is And, is Or, is Xor,
+        is Shl, is LShr, is AShr,
+        is Neg, is FNeg -> true
         else -> false
     }
 
@@ -672,30 +673,30 @@ class AutoVectorization(
     }
 
     private fun operandCountOf(inst: Instruction): Int = when (inst) {
-        is Instruction.Neg, is Instruction.FNeg -> 1
-        is Instruction.Add, is Instruction.Sub, is Instruction.Mul,
-        is Instruction.FAdd, is Instruction.FSub, is Instruction.FMul, is Instruction.FDiv,
-        is Instruction.And, is Instruction.Or, is Instruction.Xor,
-        is Instruction.Shl, is Instruction.LShr, is Instruction.AShr -> 2
+        is Neg, is FNeg -> 1
+        is Add, is Sub, is Mul,
+        is FAdd, is FSub, is FMul, is FDiv,
+        is And, is Or, is Xor,
+        is Shl, is LShr, is AShr -> 2
         else -> 0
     }
 
     private fun getOperand(inst: Instruction, index: Int): Value? = when (inst) {
-        is Instruction.Add -> if (index == 0) inst.lhs else inst.rhs
-        is Instruction.Sub -> if (index == 0) inst.lhs else inst.rhs
-        is Instruction.Mul -> if (index == 0) inst.lhs else inst.rhs
-        is Instruction.FAdd -> if (index == 0) inst.lhs else inst.rhs
-        is Instruction.FSub -> if (index == 0) inst.lhs else inst.rhs
-        is Instruction.FMul -> if (index == 0) inst.lhs else inst.rhs
-        is Instruction.FDiv -> if (index == 0) inst.lhs else inst.rhs
-        is Instruction.And -> if (index == 0) inst.lhs else inst.rhs
-        is Instruction.Or -> if (index == 0) inst.lhs else inst.rhs
-        is Instruction.Xor -> if (index == 0) inst.lhs else inst.rhs
-        is Instruction.Shl -> if (index == 0) inst.lhs else inst.rhs
-        is Instruction.LShr -> if (index == 0) inst.lhs else inst.rhs
-        is Instruction.AShr -> if (index == 0) inst.lhs else inst.rhs
-        is Instruction.Neg -> if (index == 0) inst.operand else null
-        is Instruction.FNeg -> if (index == 0) inst.operand else null
+        is Add -> if (index == 0) inst.lhs else inst.rhs
+        is Sub -> if (index == 0) inst.lhs else inst.rhs
+        is Mul -> if (index == 0) inst.lhs else inst.rhs
+        is FAdd -> if (index == 0) inst.lhs else inst.rhs
+        is FSub -> if (index == 0) inst.lhs else inst.rhs
+        is FMul -> if (index == 0) inst.lhs else inst.rhs
+        is FDiv -> if (index == 0) inst.lhs else inst.rhs
+        is And -> if (index == 0) inst.lhs else inst.rhs
+        is Or -> if (index == 0) inst.lhs else inst.rhs
+        is Xor -> if (index == 0) inst.lhs else inst.rhs
+        is Shl -> if (index == 0) inst.lhs else inst.rhs
+        is LShr -> if (index == 0) inst.lhs else inst.rhs
+        is AShr -> if (index == 0) inst.lhs else inst.rhs
+        is Neg -> if (index == 0) inst.operand else null
+        is FNeg -> if (index == 0) inst.operand else null
         else -> null
     }
 
@@ -749,25 +750,25 @@ class AutoVectorization(
         }
 
         return when (inst) {
-            is Instruction.Add -> Instruction.Add(dest, widen(inst.lhs), widen(inst.rhs))
-            is Instruction.Sub -> Instruction.Sub(dest, widen(inst.lhs), widen(inst.rhs))
-            is Instruction.Mul -> Instruction.Mul(dest, widen(inst.lhs), widen(inst.rhs))
-            is Instruction.SDiv -> Instruction.SDiv(dest, widen(inst.lhs), widen(inst.rhs))
-            is Instruction.UDiv -> Instruction.UDiv(dest, widen(inst.lhs), widen(inst.rhs))
-            is Instruction.SRem -> Instruction.SRem(dest, widen(inst.lhs), widen(inst.rhs))
-            is Instruction.URem -> Instruction.URem(dest, widen(inst.lhs), widen(inst.rhs))
-            is Instruction.FAdd -> Instruction.FAdd(dest, widen(inst.lhs), widen(inst.rhs))
-            is Instruction.FSub -> Instruction.FSub(dest, widen(inst.lhs), widen(inst.rhs))
-            is Instruction.FMul -> Instruction.FMul(dest, widen(inst.lhs), widen(inst.rhs))
-            is Instruction.FDiv -> Instruction.FDiv(dest, widen(inst.lhs), widen(inst.rhs))
-            is Instruction.And -> Instruction.And(dest, widen(inst.lhs), widen(inst.rhs))
-            is Instruction.Or -> Instruction.Or(dest, widen(inst.lhs), widen(inst.rhs))
-            is Instruction.Xor -> Instruction.Xor(dest, widen(inst.lhs), widen(inst.rhs))
-            is Instruction.Shl -> Instruction.Shl(dest, widen(inst.lhs), widen(inst.rhs))
-            is Instruction.LShr -> Instruction.LShr(dest, widen(inst.lhs), widen(inst.rhs))
-            is Instruction.AShr -> Instruction.AShr(dest, widen(inst.lhs), widen(inst.rhs))
-            is Instruction.Neg -> Instruction.Neg(dest, widen(inst.operand))
-            is Instruction.FNeg -> Instruction.FNeg(dest, widen(inst.operand))
+            is Add -> Add(dest, widen(inst.lhs), widen(inst.rhs))
+            is Sub -> Sub(dest, widen(inst.lhs), widen(inst.rhs))
+            is Mul -> Mul(dest, widen(inst.lhs), widen(inst.rhs))
+            is SDiv -> SDiv(dest, widen(inst.lhs), widen(inst.rhs))
+            is UDiv -> UDiv(dest, widen(inst.lhs), widen(inst.rhs))
+            is SRem -> SRem(dest, widen(inst.lhs), widen(inst.rhs))
+            is URem -> URem(dest, widen(inst.lhs), widen(inst.rhs))
+            is FAdd -> FAdd(dest, widen(inst.lhs), widen(inst.rhs))
+            is FSub -> FSub(dest, widen(inst.lhs), widen(inst.rhs))
+            is FMul -> FMul(dest, widen(inst.lhs), widen(inst.rhs))
+            is FDiv -> FDiv(dest, widen(inst.lhs), widen(inst.rhs))
+            is And -> And(dest, widen(inst.lhs), widen(inst.rhs))
+            is Or -> Or(dest, widen(inst.lhs), widen(inst.rhs))
+            is Xor -> Xor(dest, widen(inst.lhs), widen(inst.rhs))
+            is Shl -> Shl(dest, widen(inst.lhs), widen(inst.rhs))
+            is LShr -> LShr(dest, widen(inst.lhs), widen(inst.rhs))
+            is AShr -> AShr(dest, widen(inst.lhs), widen(inst.rhs))
+            is Neg -> Neg(dest, widen(inst.operand))
+            is FNeg -> FNeg(dest, widen(inst.operand))
             else -> null
         }
     }
@@ -787,14 +788,14 @@ class AutoVectorization(
             for (inst in block.instructions) {
                 val resultName = inst.result?.name ?: continue
                 when (inst) {
-                    is Instruction.Add -> {
+                    is Add -> {
                         val lhsName = (inst.lhs as? InstructionRef)?.name
                         val rhsName = (inst.rhs as? InstructionRef)?.name
                         if (lhsName == analysis.inductionVar || rhsName == analysis.inductionVar) {
                             names.add(resultName)
                         }
                     }
-                    is Instruction.Sub -> {
+                    is Sub -> {
                         val lhsName = (inst.lhs as? InstructionRef)?.name
                         if (lhsName == analysis.inductionVar) {
                             names.add(resultName)
@@ -837,10 +838,10 @@ class AutoVectorization(
     }
 
     private fun terminatorTargets(inst: Instruction): List<String> = when (inst) {
-        is Instruction.Br -> listOf(inst.target)
-        is Instruction.CondBr -> listOf(inst.trueTarget, inst.falseTarget)
-        is Instruction.Switch -> listOf(inst.defaultTarget) + inst.cases.map { it.second }
-        is Instruction.IndirectBr -> inst.targets
+        is Br -> listOf(inst.target)
+        is CondBr -> listOf(inst.trueTarget, inst.falseTarget)
+        is Switch -> listOf(inst.defaultTarget) + inst.cases.map { it.second }
+        is IndirectBr -> inst.targets
         else -> emptyList()
     }
 

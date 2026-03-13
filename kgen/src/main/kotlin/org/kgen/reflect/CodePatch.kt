@@ -1,40 +1,31 @@
 package org.kgen.reflect
 
+import org.kgen.target.arm64.Arm64Register
+import org.kgen.target.arm64.asm.Arm64Assembler
+import org.kgen.target.riscv.X0
+import org.kgen.target.riscv.X6
+import org.kgen.target.riscv.X10
+import org.kgen.target.riscv.asm.RiscVAssembler
+import org.kgen.target.x86.X86Register
 import org.kgen.target.x86.asm.X86Assembler
-import org.kgen.target.x86.disasm.X86Disassembler
-import org.kgen.target.x86.disasm.X86Instruction
 
 /**
  * Patch live native code in the current process.
  *
  * ```java
- * // Read, patch, write back
  * byte[] original = CodePatch.read(address, 16);
- * CodePatch.writeNop(address, 5);           // NOP out 5 bytes
- * CodePatch.writeJump(address, newTarget);   // redirect to new function
- * CodePatch.restore(address, original);      // restore original code
- *
- * // Assemble and patch
- * var asm = new X86Assembler();
- * asm.mov(eax, 42);
- * asm.ret_();
- * CodePatch.write(address, asm.assemble());
+ * CodePatch.writeNop(address, 5);
+ * CodePatch.writeJump(address, newTarget);
+ * CodePatch.restore(address, original);
  * ```
  */
 object CodePatch {
 
-    /**
-     * Read [length] bytes of code at [address].
-     */
     @JvmStatic
     fun read(address: Long, length: Int): ByteArray {
         return NativeMemory.readBytes(address, length)
     }
 
-    /**
-     * Write [code] bytes at [address].
-     * Makes the memory writable first, then restores the original protection.
-     */
     @JvmStatic
     fun write(address: Long, code: ByteArray) {
         val size = code.size.toLong()
@@ -42,77 +33,181 @@ object CodePatch {
         NativeMemory.writeBytes(address, code)
     }
 
-    /**
-     * Restore original code at [address].
-     */
     @JvmStatic
     fun restore(address: Long, originalCode: ByteArray) {
         write(address, originalCode)
     }
 
-    /**
-     * Write [count] NOP instructions (0x90) at [address]. x86-64 only.
-     */
+    // ── x86-64 ───────────────────────────────────────────────────────
+
+    /** Write [count] x86 NOP instructions at [address]. Overwrites [count] bytes. */
     @JvmStatic
     fun writeNop(address: Long, count: Int) {
-        write(address, ByteArray(count) { 0x90.toByte() })
+        val asm = X86Assembler()
+        repeat(count) { asm.nop() }
+        write(address, asm.toByteArray())
     }
 
-    /**
-     * Write a 5-byte relative JMP at [address] to [target]. x86-64 only.
-     * Overwrites 5 bytes: `E9 <rel32>`.
-     */
+    /** Write a 5-byte relative JMP at [address] to [target]. x86-64. */
     @JvmStatic
     fun writeJump(address: Long, target: Long) {
+        // x86 assembler uses labels; for patching at runtime we need a raw rel32
         val rel = (target - address - 5).toInt()
-        val code = ByteArray(5)
-        code[0] = 0xE9.toByte()
-        code[1] = (rel and 0xFF).toByte()
-        code[2] = ((rel shr 8) and 0xFF).toByte()
-        code[3] = ((rel shr 16) and 0xFF).toByte()
-        code[4] = ((rel shr 24) and 0xFF).toByte()
-        write(address, code)
+        val asm = X86Assembler()
+        asm.emitByte(0xE9)
+        asm.emitInt32(rel)
+        write(address, asm.toByteArray())
     }
 
-    /**
-     * Write a 14-byte absolute JMP at [address] to [target]. x86-64 only.
-     * Uses `jmp [rip+0]; .quad target` — works for any 64-bit address.
-     * Overwrites 14 bytes.
-     */
+    /** Write a 14-byte absolute JMP at [address] to [target]. x86-64. */
     @JvmStatic
     fun writeAbsoluteJump(address: Long, target: Long) {
-        val code = ByteArray(14)
-        // FF 25 00 00 00 00  = jmp qword ptr [rip+0]
-        code[0] = 0xFF.toByte()
-        code[1] = 0x25
-        code[2] = 0; code[3] = 0; code[4] = 0; code[5] = 0
-        // followed by the 8-byte absolute address
-        for (i in 0..7) code[6 + i] = ((target shr (i * 8)) and 0xFF).toByte()
-        write(address, code)
+        val asm = X86Assembler()
+        // jmp qword ptr [rip+0]
+        asm.emitByte(0xFF)
+        asm.emitByte(0x25)
+        asm.emitInt32(0)
+        asm.emitInt64(target)
+        write(address, asm.toByteArray())
     }
 
-    /**
-     * Write a `ret` instruction at [address]. x86-64 only.
-     * Overwrites 1 byte.
-     */
+    /** Write a `ret` at [address]. x86-64. Overwrites 1 byte. */
     @JvmStatic
     fun writeRet(address: Long) {
-        write(address, byteArrayOf(0xC3.toByte()))
+        val asm = X86Assembler()
+        asm.ret()
+        write(address, asm.toByteArray())
+    }
+
+    /** Write `mov eax, value; ret` at [address]. x86-64. Overwrites 6 bytes. */
+    @JvmStatic
+    fun writeReturnInt(address: Long, value: Int) {
+        val asm = X86Assembler()
+        asm.mov(X86Register.EAX, value)
+        asm.ret()
+        write(address, asm.toByteArray())
+    }
+
+    // ── ARM64 ────────────────────────────────────────────────────────
+
+    /** Write [count] ARM64 NOP instructions at [address]. Overwrites `count * 4` bytes. */
+    @JvmStatic
+    fun writeArm64Nop(address: Long, count: Int) {
+        val asm = Arm64Assembler()
+        repeat(count) { asm.nop() }
+        write(address, asm.bytes())
     }
 
     /**
-     * Write `mov eax, [value]; ret` at [address]. x86-64 only.
-     * Makes the function always return [value]. Overwrites 6 bytes.
+     * Write a PC-relative B (branch) at [address] to [target]. ARM64.
+     * Range: +/-128 MB. Overwrites 4 bytes.
      */
     @JvmStatic
-    fun writeReturnInt(address: Long, value: Int) {
-        val code = ByteArray(6)
-        code[0] = 0xB8.toByte() // mov eax, imm32
-        code[1] = (value and 0xFF).toByte()
-        code[2] = ((value shr 8) and 0xFF).toByte()
-        code[3] = ((value shr 16) and 0xFF).toByte()
-        code[4] = ((value shr 24) and 0xFF).toByte()
-        code[5] = 0xC3.toByte() // ret
-        write(address, code)
+    fun writeArm64Jump(address: Long, target: Long) {
+        val offset = target - address
+        require(offset in -0x8000000L..0x7FFFFFFL) {
+            "ARM64 B offset out of range (+/-128MB): $offset"
+        }
+        val asm = Arm64Assembler()
+        asm.b(offset.toInt())
+        write(address, asm.bytes())
+    }
+
+    /**
+     * Write an absolute jump to [target] using X16 (IP0). ARM64.
+     * MOVZ+3xMOVK+BR X16. Overwrites 20 bytes.
+     */
+    @JvmStatic
+    fun writeArm64AbsoluteJump(address: Long, target: Long) {
+        val asm = Arm64Assembler()
+        asm.movz(Arm64Register.X16, (target and 0xFFFF).toInt(), 0)
+        asm.movk(Arm64Register.X16, ((target shr 16) and 0xFFFF).toInt(), 16)
+        asm.movk(Arm64Register.X16, ((target shr 32) and 0xFFFF).toInt(), 32)
+        asm.movk(Arm64Register.X16, ((target shr 48) and 0xFFFF).toInt(), 48)
+        asm.br(Arm64Register.X16)
+        write(address, asm.bytes())
+    }
+
+    /** Write a RET instruction at [address]. ARM64. Overwrites 4 bytes. */
+    @JvmStatic
+    fun writeArm64Ret(address: Long) {
+        val asm = Arm64Assembler()
+        asm.ret()
+        write(address, asm.bytes())
+    }
+
+    /**
+     * Write `MOVZ W0, #value; RET` at [address]. ARM64.
+     * 8 bytes for values 0..65535, 12 bytes for larger 32-bit values.
+     */
+    @JvmStatic
+    fun writeArm64ReturnInt(address: Long, value: Int) {
+        val asm = Arm64Assembler()
+        val lo = value and 0xFFFF
+        val hi = (value ushr 16) and 0xFFFF
+        asm.movz(Arm64Register.W0, lo, 0)
+        if (hi != 0) {
+            // Use X0 for MOVK with shift (W0 aliases lower 32 bits of X0)
+            asm.movk(Arm64Register.X0, hi, 16)
+        }
+        asm.ret()
+        write(address, asm.bytes())
+    }
+
+    // ── RISC-V ───────────────────────────────────────────────────────
+
+    /** Write [count] RISC-V NOP instructions at [address]. Overwrites `count * 4` bytes. */
+    @JvmStatic
+    fun writeRiscVNop(address: Long, count: Int) {
+        val asm = RiscVAssembler()
+        repeat(count) { asm.nop() }
+        write(address, asm.toByteArray())
+    }
+
+    /**
+     * Write a JAL x0 (unconditional jump) at [address] to [target]. RISC-V.
+     * Range: +/-1 MB. Overwrites 4 bytes.
+     */
+    @JvmStatic
+    fun writeRiscVJump(address: Long, target: Long) {
+        val offset = (target - address).toInt()
+        require(offset.toLong() in -0x100000L..0xFFFFFL) {
+            "RISC-V JAL offset out of range (+/-1MB): $offset"
+        }
+        val asm = RiscVAssembler()
+        asm.jal(X0, offset)
+        write(address, asm.toByteArray())
+    }
+
+    /**
+     * Write an absolute jump to [target] using t1 (x6). RISC-V.
+     * Uses li+jalr sequence. Overwrites variable bytes depending on target value.
+     */
+    @JvmStatic
+    fun writeRiscVAbsoluteJump(address: Long, target: Long) {
+        val asm = RiscVAssembler()
+        asm.li(X6, target)
+        asm.jalr(X0, X6, 0)
+        write(address, asm.toByteArray())
+    }
+
+    /** Write a RET instruction at [address]. RISC-V. Overwrites 4 bytes. */
+    @JvmStatic
+    fun writeRiscVRet(address: Long) {
+        val asm = RiscVAssembler()
+        asm.ret()
+        write(address, asm.toByteArray())
+    }
+
+    /**
+     * Write `li a0, value; ret` at [address]. RISC-V.
+     * 8 bytes for small immediates, 12 bytes for larger 32-bit values.
+     */
+    @JvmStatic
+    fun writeRiscVReturnInt(address: Long, value: Int) {
+        val asm = RiscVAssembler()
+        asm.li(X10, value)
+        asm.ret()
+        write(address, asm.toByteArray())
     }
 }

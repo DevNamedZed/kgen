@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.kgen.ir.*
 import org.kgen.ir.target.Target
 import org.kgen.target.jvm.*
+import org.kgen.ir.instructions.*
 
 class BytecodeToIrLoweringExtendedTest {
 
@@ -100,7 +101,7 @@ class BytecodeToIrLoweringExtendedTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "makeArray" }
         val instructions = allInstructions(fn)
-        val calls = instructions.filterIsInstance<Instruction.Call>()
+        val calls = instructions.filterIsInstance<Call>()
         val callNames = calls.mapNotNull {
             when (val f = it.function) {
                 is FunctionRef -> f.name
@@ -152,7 +153,7 @@ class BytecodeToIrLoweringExtendedTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "make2d" }
         val instructions = allInstructions(fn)
-        val calls = instructions.filterIsInstance<Instruction.Call>()
+        val calls = instructions.filterIsInstance<Call>()
         val callNames = calls.mapNotNull {
             when (val f = it.function) {
                 is FunctionRef -> f.name
@@ -176,7 +177,7 @@ class BytecodeToIrLoweringExtendedTest {
         val fn = module.functions.first { it.name == "enter" }
         val instructions = allInstructions(fn)
         // Should have a Ret but no special instruction for monitorenter
-        assertTrue(instructions.any { it is Instruction.Ret })
+        assertTrue(instructions.any { it is Ret })
         // Should not crash
     }
 
@@ -191,7 +192,7 @@ class BytecodeToIrLoweringExtendedTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "exit" }
         val instructions = allInstructions(fn)
-        assertTrue(instructions.any { it is Instruction.Ret })
+        assertTrue(instructions.any { it is Ret })
     }
 
     @Test
@@ -232,7 +233,7 @@ class BytecodeToIrLoweringExtendedTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "cast" }
         val instructions = allInstructions(fn)
-        val ret = instructions.filterIsInstance<Instruction.Ret>().first()
+        val ret = instructions.filterIsInstance<Ret>().first()
         // Return value should be the same parameter (pass-through)
         assertNotNull(ret.value, "checkcast should pass the value through")
     }
@@ -275,7 +276,7 @@ class BytecodeToIrLoweringExtendedTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "check" }
         val instructions = allInstructions(fn)
-        val ret = instructions.filterIsInstance<Instruction.Ret>().first()
+        val ret = instructions.filterIsInstance<Ret>().first()
         assertTrue(ret.value is Constant.I32 && (ret.value as Constant.I32).value == 1,
             "instanceof should return constant 1 in subset, got ${ret.value}")
     }
@@ -316,7 +317,7 @@ class BytecodeToIrLoweringExtendedTest {
 
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "test" }
-        val calls = allInstructions(fn).filterIsInstance<Instruction.Call>()
+        val calls = allInstructions(fn).filterIsInstance<Call>()
         assertTrue(calls.any { (it.function as? GlobalRef)?.name == "kgen_println_void" },
             "System.out.println() should redirect to kgen_println_void")
     }
@@ -359,7 +360,7 @@ class BytecodeToIrLoweringExtendedTest {
 
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "printHello" }
-        val calls = allInstructions(fn).filterIsInstance<Instruction.Call>()
+        val calls = allInstructions(fn).filterIsInstance<Call>()
         assertTrue(calls.any { (it.function as? GlobalRef)?.name == "kgen_println_str" },
             "Should redirect to kgen_println_str")
     }
@@ -399,7 +400,7 @@ class BytecodeToIrLoweringExtendedTest {
 
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "absVal" }
-        val calls = allInstructions(fn).filterIsInstance<Instruction.Call>()
+        val calls = allInstructions(fn).filterIsInstance<Call>()
         assertTrue(calls.any { (it.function as? GlobalRef)?.name == "kgen_math_abs_int" })
     }
 
@@ -438,7 +439,7 @@ class BytecodeToIrLoweringExtendedTest {
 
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "len" }
-        val calls = allInstructions(fn).filterIsInstance<Instruction.Call>()
+        val calls = allInstructions(fn).filterIsInstance<Call>()
         assertTrue(calls.any { (it.function as? GlobalRef)?.name == "kgen_string_length" })
     }
 
@@ -538,9 +539,9 @@ class BytecodeToIrLoweringExtendedTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "getValue" }
         val instructions = allInstructions(fn)
-        assertTrue(instructions.any { it is Instruction.GetElementPtr },
+        assertTrue(instructions.any { it is GetElementPtr },
             "getfield should produce a GEP instruction")
-        assertTrue(instructions.any { it is Instruction.Load },
+        assertTrue(instructions.any { it is Load },
             "getfield should produce a Load instruction")
     }
 
@@ -588,7 +589,7 @@ class BytecodeToIrLoweringExtendedTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "div" }
         val instructions = allInstructions(fn)
-        assertTrue(instructions.any { it is Instruction.SDiv }, "Expected SDiv instruction")
+        assertTrue(instructions.any { it is SDiv }, "Expected SDiv instruction")
     }
 
     @Test
@@ -601,7 +602,7 @@ class BytecodeToIrLoweringExtendedTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "bitand" }
         val instructions = allInstructions(fn)
-        assertTrue(instructions.any { it is Instruction.And }, "Expected And instruction")
+        assertTrue(instructions.any { it is And }, "Expected And instruction")
     }
 
     @Test
@@ -614,7 +615,7 @@ class BytecodeToIrLoweringExtendedTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "bitor" }
         val instructions = allInstructions(fn)
-        assertTrue(instructions.any { it is Instruction.Or }, "Expected Or instruction")
+        assertTrue(instructions.any { it is Or }, "Expected Or instruction")
     }
 
     @Test

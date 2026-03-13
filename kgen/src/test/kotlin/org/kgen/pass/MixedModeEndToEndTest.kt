@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 import java.io.ByteArrayInputStream

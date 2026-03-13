@@ -388,4 +388,32 @@ class JitEngineTest {
             "Host triple should contain OS: $triple"
         )
     }
+
+    @Test
+    fun tlsGlobalLoadsIntoJit() {
+        // Build module with a thread-local global
+        val ir = IrBuilder("tls_module", Target.x86_64())
+        ir.addGlobal("tls_counter", Type.I64, Constant.I64(42),
+            threadLocal = ThreadLocalMode.LOCAL_EXEC)
+
+        // Function that returns a constant (doesn't actually use TLS at runtime,
+        // but exercises the JIT tdata allocation path)
+        ir.createFunction("get_value", emptyList(), Type.I64)
+        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.ret(Constant.I64(99))
+        ir.finalizeFunction()
+
+        val module = ir.build()
+        val jit = JitEngine(X86CodeGenerator())
+        val jitModule = jit.addModule(module)
+
+        // Verify the TLS symbol was registered
+        val sym = jit.lookup("tls_counter")
+        assertNotNull(sym, "TLS global should be resolvable as a JIT symbol")
+        assertTrue(sym!!.address != 0L, "TLS symbol should have a non-zero address")
+
+        // The function should still work
+        val result = jit.call("get_value")
+        assertEquals(99L, result)
+    }
 }

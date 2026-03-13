@@ -66,6 +66,8 @@ data class CompiledCode(
         val isGlobal: Boolean = true,
         /** Byte offset within rodata section (for data symbols). -1 if in text. */
         val rodataOffset: Long = -1,
+        /** Byte offset within tdata section (for TLS symbols). -1 if not TLS. */
+        val tdataOffset: Long = -1,
     )
 
     /**

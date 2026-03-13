@@ -1,7 +1,15 @@
 package org.kgen.binary
 
-// Dynamic linking — imports, exports, PLT/GOT, version info
-
+/**
+ * An imported symbol — a function or data reference resolved at link/load time
+ * from an external module (shared library, DLL, WASM import).
+ *
+ * @property symbolName The symbol being imported.
+ * @property moduleName Source module (DLL name, .so name, WASM module).
+ * @property ordinal PE import-by-ordinal (null for import-by-name).
+ * @property isDelayLoad PE delay-loaded import (resolved on first call, not at load time).
+ * @property kind What is being imported (function, data, TLS, WASM table/memory/global).
+ */
 data class ImportEntry(
     val symbolName: String,
     val moduleName: String,              // DLL name (PE) / shared lib (ELF) / WASM module

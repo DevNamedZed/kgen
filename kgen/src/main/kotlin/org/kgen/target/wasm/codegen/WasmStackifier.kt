@@ -1,6 +1,7 @@
 package org.kgen.target.wasm.codegen
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 
 /**
  * Converts an IR function's CFG into WASM structured control flow.
@@ -143,9 +144,9 @@ class WasmStackifier(private val fn: IrFunction) {
         fun successors(block: BasicBlock): List<String> {
             val last = block.instructions.lastOrNull() ?: return emptyList()
             return when (last) {
-                is Instruction.Br -> listOf(last.target)
-                is Instruction.CondBr -> listOf(last.trueTarget, last.falseTarget)
-                is Instruction.Switch -> listOf(last.defaultTarget) + last.cases.map { it.second }
+                is Br -> listOf(last.target)
+                is CondBr -> listOf(last.trueTarget, last.falseTarget)
+                is Switch -> listOf(last.defaultTarget) + last.cases.map { it.second }
                 else -> emptyList()
             }
         }

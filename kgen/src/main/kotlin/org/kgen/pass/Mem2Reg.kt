@@ -1,6 +1,7 @@
 package org.kgen.pass
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 
 /**
  * Promotes alloca/load/store patterns to SSA values with phi nodes.
@@ -45,7 +46,7 @@ class Mem2Reg : ModulePass {
             val defBlocks = mutableSetOf<String>()
             for (block in fn.blocks) {
                 for (inst in block.instructions) {
-                    if (inst is Instruction.Store && inst.ptr.name == allocaName) {
+                    if (inst is Store && inst.ptr.name == allocaName) {
                         defBlocks.add(block.label)
                     }
                 }
@@ -59,7 +60,7 @@ class Mem2Reg : ModulePass {
                 nextId++
                 val preds = cfg.predecessors[phiBlock] ?: emptySet()
                 val placeholder = undefFor(allocType)
-                val phi = Instruction.Phi(phiRef, preds.map { placeholder to it })
+                val phi = Phi(phiRef, preds.map { placeholder to it })
                 val insts = blockInsts[phiBlock]!!
                 insts.add(0, phi)
                 phiRefs[phiBlock] = phiRef
@@ -76,17 +77,17 @@ class Mem2Reg : ModulePass {
                 for (i in insts.indices) {
                     val inst = insts[i]
                     when {
-                        inst is Instruction.Phi && phiRefs[blockLabel] == inst.dest -> {
+                        inst is Phi && phiRefs[blockLabel] == inst.dest -> {
                             defStack.addFirst(inst.dest)
                         }
-                        inst is Instruction.Alloca && inst.dest.name == allocaName -> {
+                        inst is Alloca && inst.dest.name == allocaName -> {
                             toRemove.add(i)
                         }
-                        inst is Instruction.Store && inst.ptr.name == allocaName -> {
+                        inst is Store && inst.ptr.name == allocaName -> {
                             defStack.addFirst(inst.value)
                             toRemove.add(i)
                         }
-                        inst is Instruction.Load && inst.ptr.name == allocaName -> {
+                        inst is Load && inst.ptr.name == allocaName -> {
                             globalReplacements[inst.dest.name] = defStack.first()
                             toRemove.add(i)
                         }
@@ -104,7 +105,7 @@ class Mem2Reg : ModulePass {
                     val succInsts = blockInsts[succ]!!
                     for (i in succInsts.indices) {
                         val phi = succInsts[i]
-                        if (phi is Instruction.Phi && phi.dest == phiRef) {
+                        if (phi is Phi && phi.dest == phiRef) {
                             val currentVal = defStack.first()
                             succInsts[i] = phi.copy(
                                 incoming = phi.incoming.map { (v, pred) ->
@@ -149,12 +150,12 @@ class Mem2Reg : ModulePass {
         return fn.copy(blocks = resultBlocks)
     }
 
-    private fun findPromotableAllocas(fn: IrFunction): Map<String, Instruction.Alloca> {
-        val allocas = mutableMapOf<String, Instruction.Alloca>()
+    private fun findPromotableAllocas(fn: IrFunction): Map<String, Alloca> {
+        val allocas = mutableMapOf<String, Alloca>()
 
         for (block in fn.blocks) {
             for (inst in block.instructions) {
-                if (inst is Instruction.Alloca && inst.numElements == null) {
+                if (inst is Alloca && inst.numElements == null) {
                     allocas[inst.dest.name] = inst
                 }
             }
@@ -167,12 +168,12 @@ class Mem2Reg : ModulePass {
         for (block in fn.blocks) {
             for (inst in block.instructions) {
                 when (inst) {
-                    is Instruction.Load -> {
+                    is Load -> {
                         if (inst.ptr.name in allocas && (inst.volatile || inst.ordering != null)) {
                             addressTaken.add(inst.ptr.name)
                         }
                     }
-                    is Instruction.Store -> {
+                    is Store -> {
                         if (inst.ptr.name in allocas && (inst.volatile || inst.ordering != null)) {
                             addressTaken.add(inst.ptr.name)
                         }
@@ -197,22 +198,22 @@ class Mem2Reg : ModulePass {
     }
 
     private fun nonLoadStoreOperands(inst: Instruction): List<Value> = when (inst) {
-        is Instruction.Call -> inst.args
-        is Instruction.GetElementPtr -> listOf(inst.ptr) + inst.indices
-        is Instruction.MemCpy -> listOf(inst.dst, inst.src)
-        is Instruction.MemSet -> listOf(inst.dst)
-        is Instruction.MemMove -> listOf(inst.dst, inst.src)
-        is Instruction.CmpXchg -> listOf(inst.ptr)
-        is Instruction.AtomicRMW -> listOf(inst.ptr)
-        is Instruction.PtrToInt -> listOf(inst.value)
-        is Instruction.BitCast -> listOf(inst.value)
-        is Instruction.Ret -> listOfNotNull(inst.value)
-        is Instruction.Select -> listOf(inst.condition, inst.trueValue, inst.falseValue)
-        is Instruction.ICmp -> listOf(inst.lhs, inst.rhs)
-        is Instruction.Add -> listOf(inst.lhs, inst.rhs)
-        is Instruction.Sub -> listOf(inst.lhs, inst.rhs)
-        is Instruction.Mul -> listOf(inst.lhs, inst.rhs)
-        is Instruction.Phi -> inst.incoming.map { it.first }
+        is Call -> inst.args
+        is GetElementPtr -> listOf(inst.ptr) + inst.indices
+        is MemCpy -> listOf(inst.dst, inst.src)
+        is MemSet -> listOf(inst.dst)
+        is MemMove -> listOf(inst.dst, inst.src)
+        is CmpXchg -> listOf(inst.ptr)
+        is AtomicRMW -> listOf(inst.ptr)
+        is PtrToInt -> listOf(inst.value)
+        is BitCast -> listOf(inst.value)
+        is Ret -> listOfNotNull(inst.value)
+        is Select -> listOf(inst.condition, inst.trueValue, inst.falseValue)
+        is ICmp -> listOf(inst.lhs, inst.rhs)
+        is Add -> listOf(inst.lhs, inst.rhs)
+        is Sub -> listOf(inst.lhs, inst.rhs)
+        is Mul -> listOf(inst.lhs, inst.rhs)
+        is Phi -> inst.incoming.map { it.first }
         else -> emptyList()
     }
 
@@ -239,13 +240,13 @@ class Mem2Reg : ModulePass {
     }
 
     private fun terminatorTargets(inst: Instruction): List<String> = when (inst) {
-        is Instruction.Br -> listOf(inst.target)
-        is Instruction.CondBr -> listOf(inst.trueTarget, inst.falseTarget)
-        is Instruction.Switch -> listOf(inst.defaultTarget) + inst.cases.map { it.second }
-        is Instruction.IndirectBr -> inst.targets
-        is Instruction.Invoke -> listOf(inst.normalDest, inst.unwindDest)
-        is Instruction.CallBr -> listOf(inst.fallthrough) + inst.indirectDests
-        is Instruction.CatchSwitch -> inst.handlers + listOfNotNull(inst.unwindDest)
+        is Br -> listOf(inst.target)
+        is CondBr -> listOf(inst.trueTarget, inst.falseTarget)
+        is Switch -> listOf(inst.defaultTarget) + inst.cases.map { it.second }
+        is IndirectBr -> inst.targets
+        is Invoke -> listOf(inst.normalDest, inst.unwindDest)
+        is CallBr -> listOf(inst.fallthrough) + inst.indirectDests
+        is CatchSwitch -> inst.handlers + listOfNotNull(inst.unwindDest)
         else -> emptyList()
     }
 
@@ -372,45 +373,45 @@ class Mem2Reg : ModulePass {
         fun rw(v: Value): Value = if (v is InstructionRef || v is Parameter) replacements[v.name] ?: v else v
 
         return when (inst) {
-            is Instruction.Add -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Sub -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Mul -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.SDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.UDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.SRem -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.URem -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.And -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Or -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Xor -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Shl -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.LShr -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.AShr -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Neg -> inst.copy(operand = rw(inst.operand))
-            is Instruction.ICmp -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.FAdd -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.FSub -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.FMul -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.FDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.FNeg -> inst.copy(operand = rw(inst.operand))
-            is Instruction.FCmp -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.ZExt -> inst.copy(value = rw(inst.value))
-            is Instruction.SExt -> inst.copy(value = rw(inst.value))
-            is Instruction.IntTrunc -> inst.copy(value = rw(inst.value))
-            is Instruction.Trunc -> inst.copy(operand = rw(inst.operand))
-            is Instruction.Ret -> inst.copy(value = inst.value?.let { rw(it) })
-            is Instruction.Call -> inst.copy(args = inst.args.map { rw(it) })
-            is Instruction.Select -> inst.copy(condition = rw(inst.condition), trueValue = rw(inst.trueValue), falseValue = rw(inst.falseValue))
-            is Instruction.Store -> inst.copy(value = rw(inst.value), ptr = rw(inst.ptr))
-            is Instruction.Load -> inst.copy(ptr = rw(inst.ptr))
-            is Instruction.CondBr -> inst.copy(condition = rw(inst.condition))
-            is Instruction.SIToFP -> inst.copy(value = rw(inst.value))
-            is Instruction.UIToFP -> inst.copy(value = rw(inst.value))
-            is Instruction.FPToSI -> inst.copy(value = rw(inst.value))
-            is Instruction.FPToUI -> inst.copy(value = rw(inst.value))
-            is Instruction.FPExt -> inst.copy(value = rw(inst.value))
-            is Instruction.FPTrunc -> inst.copy(value = rw(inst.value))
-            is Instruction.GetElementPtr -> inst.copy(ptr = rw(inst.ptr), indices = inst.indices.map { rw(it) })
-            is Instruction.Phi -> inst.copy(incoming = inst.incoming.map { (v, l) -> rw(v) to l })
+            is Add -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Sub -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Mul -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is SDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is UDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is SRem -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is URem -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is And -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Or -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Xor -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Shl -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is LShr -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is AShr -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Neg -> inst.copy(operand = rw(inst.operand))
+            is ICmp -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is FAdd -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is FSub -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is FMul -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is FDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is FNeg -> inst.copy(operand = rw(inst.operand))
+            is FCmp -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is ZExt -> inst.copy(value = rw(inst.value))
+            is SExt -> inst.copy(value = rw(inst.value))
+            is IntTrunc -> inst.copy(value = rw(inst.value))
+            is Trunc -> inst.copy(operand = rw(inst.operand))
+            is Ret -> inst.copy(value = inst.value?.let { rw(it) })
+            is Call -> inst.copy(args = inst.args.map { rw(it) })
+            is Select -> inst.copy(condition = rw(inst.condition), trueValue = rw(inst.trueValue), falseValue = rw(inst.falseValue))
+            is Store -> inst.copy(value = rw(inst.value), ptr = rw(inst.ptr))
+            is Load -> inst.copy(ptr = rw(inst.ptr))
+            is CondBr -> inst.copy(condition = rw(inst.condition))
+            is SIToFP -> inst.copy(value = rw(inst.value))
+            is UIToFP -> inst.copy(value = rw(inst.value))
+            is FPToSI -> inst.copy(value = rw(inst.value))
+            is FPToUI -> inst.copy(value = rw(inst.value))
+            is FPExt -> inst.copy(value = rw(inst.value))
+            is FPTrunc -> inst.copy(value = rw(inst.value))
+            is GetElementPtr -> inst.copy(ptr = rw(inst.ptr), indices = inst.indices.map { rw(it) })
+            is Phi -> inst.copy(incoming = inst.incoming.map { (v, l) -> rw(v) to l })
             else -> inst
         }
     }

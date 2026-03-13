@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.kgen.ir.*
 import org.kgen.ir.target.Target
 import org.kgen.target.jvm.*
+import org.kgen.ir.instructions.*
 
 /**
  * Tests compilation of code using Kgen intrinsics (memory access, pointers, GC).
@@ -34,7 +35,7 @@ class KgenIntrinsicsEndToEndTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "readInt" }
         val instructions = fn.blocks.flatMap { it.instructions }
-        assertTrue(instructions.any { it is Instruction.Load }, "Expected Load from loadInt intrinsic")
+        assertTrue(instructions.any { it is Load }, "Expected Load from loadInt intrinsic")
     }
 
     @Test
@@ -51,7 +52,7 @@ class KgenIntrinsicsEndToEndTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "writeInt" }
         val instructions = fn.blocks.flatMap { it.instructions }
-        assertTrue(instructions.any { it is Instruction.Store }, "Expected Store from storeInt intrinsic")
+        assertTrue(instructions.any { it is Store }, "Expected Store from storeInt intrinsic")
     }
 
     @Test
@@ -67,7 +68,7 @@ class KgenIntrinsicsEndToEndTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "readByte" }
         val instructions = fn.blocks.flatMap { it.instructions }
-        val loads = instructions.filterIsInstance<Instruction.Load>()
+        val loads = instructions.filterIsInstance<Load>()
         assertTrue(loads.any { it.loadType == Type.I8 }, "Expected I8 Load from loadByte")
     }
 
@@ -84,7 +85,7 @@ class KgenIntrinsicsEndToEndTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "allocBuffer" }
         val instructions = fn.blocks.flatMap { it.instructions }
-        assertTrue(instructions.any { it is Instruction.Alloca }, "Expected Alloca from stackAlloc")
+        assertTrue(instructions.any { it is Alloca }, "Expected Alloca from stackAlloc")
     }
 
     @Test
@@ -99,7 +100,7 @@ class KgenIntrinsicsEndToEndTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "checkpoint" }
         val instructions = fn.blocks.flatMap { it.instructions }
-        assertTrue(instructions.any { it is Instruction.GCSafepoint }, "Expected GCSafepoint")
+        assertTrue(instructions.any { it is GCSafepoint }, "Expected GCSafepoint")
     }
 
     @Test
@@ -170,9 +171,9 @@ class KgenIntrinsicsEndToEndTest {
         val fn = module.functions.first { it.name == "hash" }
         val instructions = fn.blocks.flatMap { it.instructions }
         // Should have loads (from loadByte intrinsic), muls (31 * h), adds
-        assertTrue(instructions.any { it is Instruction.Load }, "Expected Load from loadByte")
-        assertTrue(instructions.any { it is Instruction.Mul }, "Expected Mul for 31 * h")
-        assertTrue(instructions.any { it is Instruction.Add }, "Expected Add for h + byte")
+        assertTrue(instructions.any { it is Load }, "Expected Load from loadByte")
+        assertTrue(instructions.any { it is Mul }, "Expected Mul for 31 * h")
+        assertTrue(instructions.any { it is Add }, "Expected Add for h + byte")
     }
 
     @Test
@@ -188,7 +189,7 @@ class KgenIntrinsicsEndToEndTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "alloc" }
         val instructions = fn.blocks.flatMap { it.instructions }
-        val calls = instructions.filterIsInstance<Instruction.Call>()
+        val calls = instructions.filterIsInstance<Call>()
         assertTrue(calls.any { (it.function as? GlobalRef)?.name == "kgen_runtime_alloc" },
             "Expected call to kgen_runtime_alloc")
     }
@@ -215,8 +216,8 @@ class KgenIntrinsicsEndToEndTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "copyInt" }
         val instructions = fn.blocks.flatMap { it.instructions }
-        val loads = instructions.filterIsInstance<Instruction.Load>()
-        val stores = instructions.filterIsInstance<Instruction.Store>()
+        val loads = instructions.filterIsInstance<Load>()
+        val stores = instructions.filterIsInstance<Store>()
         assertTrue(loads.isNotEmpty(), "Expected Load from loadInt")
         assertTrue(stores.isNotEmpty(), "Expected Store from storeInt")
     }

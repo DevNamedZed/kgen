@@ -7,6 +7,7 @@ import org.kgen.binary.elf.ElfObjectWriter
 import org.kgen.binary.elf.ElfLinker
 import org.kgen.binary.elf.ElfMachine
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.codegen.*
 import org.kgen.codegen.alloc.*
 import org.kgen.binary.dwarf.*
@@ -121,6 +122,17 @@ class RiscVCodeGenerator : CodeGenerator {
                     isGlobal = sym.binding != SymbolBinding.LOCAL,
                 )
             }
+            val tdataSymbols = if (tdataBuilder.hasData()) {
+                tdataBuilder.symbols().map { sym ->
+                    CompiledCode.CodeSymbol(
+                        name = sym.name,
+                        offset = 0,
+                        kind = SymbolKind.DATA,
+                        isGlobal = false,
+                        tdataOffset = sym.value,
+                    )
+                }
+            } else emptyList()
             val definedNames = definedSymbols.map { it.name }.toSet() +
                 tdataBuilder.symbols().map { it.name }.toSet()
             val externalNames = symbols
@@ -154,7 +166,7 @@ class RiscVCodeGenerator : CodeGenerator {
 
             return CompiledCode(
                 textBytes = textBytes,
-                symbols = codeSymbols,
+                symbols = codeSymbols + tdataSymbols,
                 relocations = relocations,
                 externalSymbols = externalNames,
                 stackMaps = stackMaps,
@@ -289,7 +301,7 @@ class RiscVCodeGenerator : CodeGenerator {
             val map = mutableMapOf<Pair<String, String>, MutableList<Pair<InstructionRef, Value>>>()
             for (block in fn.blocks) {
                 for (inst in block.instructions) {
-                    if (inst !is Instruction.Phi) break
+                    if (inst !is Phi) break
                     for ((value, predLabel) in inst.incoming) {
                         map.getOrPut(predLabel to block.label) { mutableListOf() }
                             .add(inst.dest to value)
@@ -304,7 +316,7 @@ class RiscVCodeGenerator : CodeGenerator {
         private val hasGcStrategy: Boolean = fn.gc != null && fn.gc != "none"
         private var funcStartOffset = 0
         private val hasExceptionHandling: Boolean = fn.blocks.any { b ->
-            b.instructions.any { it is Instruction.Invoke || it is Instruction.LandingPad }
+            b.instructions.any { it is Invoke || it is LandingPad }
         }
         private val ehCallSites = mutableListOf<EhCallSite>()
         private val ehTypeNames = mutableListOf<String>()
@@ -421,12 +433,12 @@ class RiscVCodeGenerator : CodeGenerator {
                 val nextBlockLabel = fn.blocks.getOrNull(blockIdx + 1)?.label
                 for ((instIdx, inst) in block.instructions.withIndex()) {
                     val cur = inst
-                    if (cur is Instruction.Phi) continue
+                    if (cur is Phi) continue
 
                     // Fuse ICmp + CondBr
-                    if (cur is Instruction.ICmp) {
+                    if (cur is ICmp) {
                         val nextInst = block.instructions.getOrNull(instIdx + 1)
-                        if (nextInst is Instruction.CondBr) {
+                        if (nextInst is CondBr) {
                             val ni = nextInst
                             if (ni.condition.name == cur.dest.name) {
                                 emitFusedCmpBranch(cur, ni, nextBlockLabel)
@@ -434,7 +446,7 @@ class RiscVCodeGenerator : CodeGenerator {
                             }
                         }
                     }
-                    if (cur is Instruction.CondBr) {
+                    if (cur is CondBr) {
                         emitCondBr(cur, nextBlockLabel)
                         continue
                     }
@@ -446,120 +458,122 @@ class RiscVCodeGenerator : CodeGenerator {
         private fun emitInstruction(inst: Instruction) {
             val i = inst
             when (i) {
-                is Instruction.Add -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.add(rd, rs1, rs2) }
-                is Instruction.Sub -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.sub(rd, rs1, rs2) }
-                is Instruction.Mul -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.mul(rd, rs1, rs2) }
-                is Instruction.SDiv -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.div(rd, rs1, rs2) }
-                is Instruction.UDiv -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.divu(rd, rs1, rs2) }
-                is Instruction.SRem -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.rem(rd, rs1, rs2) }
-                is Instruction.URem -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.remu(rd, rs1, rs2) }
-                is Instruction.And -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.and(rd, rs1, rs2) }
-                is Instruction.Or -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.or(rd, rs1, rs2) }
-                is Instruction.Xor -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.xor(rd, rs1, rs2) }
-                is Instruction.Shl -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.sll(rd, rs1, rs2) }
-                is Instruction.LShr -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.srl(rd, rs1, rs2) }
-                is Instruction.AShr -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.sra(rd, rs1, rs2) }
+                is Add -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.add(rd, rs1, rs2) }
+                is Sub -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.sub(rd, rs1, rs2) }
+                is Mul -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.mul(rd, rs1, rs2) }
+                is SDiv -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.div(rd, rs1, rs2) }
+                is UDiv -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.divu(rd, rs1, rs2) }
+                is SRem -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.rem(rd, rs1, rs2) }
+                is URem -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.remu(rd, rs1, rs2) }
+                is And -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.and(rd, rs1, rs2) }
+                is Or -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.or(rd, rs1, rs2) }
+                is Xor -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.xor(rd, rs1, rs2) }
+                is Shl -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.sll(rd, rs1, rs2) }
+                is LShr -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.srl(rd, rs1, rs2) }
+                is AShr -> emitBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 -> asm.sra(rd, rs1, rs2) }
 
-                is Instruction.ICmp -> emitICmp(i)
-                is Instruction.Ret -> emitReturn(i)
-                is Instruction.Br -> emitBr(i)
-                is Instruction.IndirectBr -> emitIndirectBr(i)
-                is Instruction.Call -> emitCall(i)
-                is Instruction.Select -> emitSelect(i)
-                is Instruction.SExt -> emitSExt(i)
-                is Instruction.ZExt -> emitZExt(i)
-                is Instruction.Trunc -> emitTrunc(i)
-                is Instruction.Load -> emitLoad(i)
-                is Instruction.Store -> emitStore(i)
-                is Instruction.Alloca -> {}
+                is ICmp -> emitICmp(i)
+                is Ret -> emitReturn(i)
+                is Br -> emitBr(i)
+                is IndirectBr -> emitIndirectBr(i)
+                is Call -> emitCall(i)
+                is Select -> emitSelect(i)
+                is SExt -> emitSExt(i)
+                is ZExt -> emitZExt(i)
+                is Trunc -> emitTrunc(i)
+                is Load -> emitLoad(i)
+                is Store -> emitStore(i)
+                is Alloca -> {}
 
-                is Instruction.Neg -> emitNeg(i)
-                is Instruction.Not -> emitNot(i)
-                is Instruction.IntTrunc -> emitIntTrunc(i)
+                is Neg -> emitNeg(i)
+                is Not -> emitNot(i)
+                is IntTrunc -> emitIntTrunc(i)
 
-                is Instruction.FAdd -> emitFpBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 ->
+                is FAdd -> emitFpBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 ->
                     if (i.lhs.type == Type.F32) asm.faddS(rd, rs1, rs2) else asm.faddD(rd, rs1, rs2)
                 }
-                is Instruction.FSub -> emitFpBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 ->
+                is FSub -> emitFpBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 ->
                     if (i.lhs.type == Type.F32) asm.fsubS(rd, rs1, rs2) else asm.fsubD(rd, rs1, rs2)
                 }
-                is Instruction.FMul -> emitFpBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 ->
+                is FMul -> emitFpBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 ->
                     if (i.lhs.type == Type.F32) asm.fmulS(rd, rs1, rs2) else asm.fmulD(rd, rs1, rs2)
                 }
-                is Instruction.FDiv -> emitFpBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 ->
+                is FDiv -> emitFpBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 ->
                     if (i.lhs.type == Type.F32) asm.fdivS(rd, rs1, rs2) else asm.fdivD(rd, rs1, rs2)
                 }
-                is Instruction.FNeg -> emitFpNeg(i)
-                is Instruction.FCmp -> emitFCmp(i)
-                is Instruction.SIToFP -> emitSIToFP(i)
-                is Instruction.UIToFP -> emitUIToFP(i)
-                is Instruction.FPToSI -> emitFPToSI(i)
-                is Instruction.FPToUI -> emitFPToUI(i)
-                is Instruction.FPExt -> emitFPExt(i)
-                is Instruction.FPTrunc -> emitFPTrunc(i)
+                is FNeg -> emitFpNeg(i)
+                is FCmp -> emitFCmp(i)
+                is SIToFP -> emitSIToFP(i)
+                is UIToFP -> emitUIToFP(i)
+                is FPToSI -> emitFPToSI(i)
+                is FPToUI -> emitFPToUI(i)
+                is FPExt -> emitFPExt(i)
+                is FPTrunc -> emitFPTrunc(i)
 
-                is Instruction.Switch -> emitSwitch(i)
+                is Switch -> emitSwitch(i)
 
-                is Instruction.PtrToInt -> emitCopy(i.dest, i.value)
-                is Instruction.IntToPtr -> emitCopy(i.dest, i.value)
-                is Instruction.BitCast -> emitCopy(i.dest, i.value)
+                is PtrToInt -> emitCopy(i.dest, i.value)
+                is IntToPtr -> emitCopy(i.dest, i.value)
+                is BitCast -> emitCopy(i.dest, i.value)
 
-                is Instruction.Sqrt -> emitFpSqrt(i)
-                is Instruction.FAbs -> emitFpAbs(i)
-                is Instruction.FMin -> emitFpBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 ->
+                is Sqrt -> emitFpSqrt(i)
+                is FAbs -> emitFpAbs(i)
+                is FMin -> emitFpBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 ->
                     if (i.lhs.type == Type.F32) asm.fminS(rd, rs1, rs2) else asm.fminD(rd, rs1, rs2)
                 }
-                is Instruction.FMax -> emitFpBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 ->
+                is FMax -> emitFpBinOp(i.dest, i.lhs, i.rhs) { rd, rs1, rs2 ->
                     if (i.lhs.type == Type.F32) asm.fmaxS(rd, rs1, rs2) else asm.fmaxD(rd, rs1, rs2)
                 }
 
-                is Instruction.Unreachable -> asm.ebreak()
-                is Instruction.Trap -> asm.ebreak()
-                is Instruction.DebugTrap -> asm.ebreak()
+                is Unreachable -> asm.ebreak()
+                is Trap -> asm.ebreak()
+                is DebugTrap -> asm.ebreak()
 
-                is Instruction.DebugLoc -> {}
-                is Instruction.DebugValue -> {}
-                is Instruction.DebugDeclare -> {}
+                is DebugLoc -> {}
+                is DebugValue -> {}
+                is DebugDeclare -> {}
 
-                is Instruction.Fence -> asm.fence()
+                is Fence -> asm.fence()
 
-                is Instruction.GetElementPtr -> emitGetElementPtr(i)
-                is Instruction.ExtractValue -> emitExtractValue(i)
-                is Instruction.InsertValue -> emitInsertValue(i)
+                is GetElementPtr -> emitGetElementPtr(i)
+                is ExtractValue -> emitExtractValue(i)
+                is InsertValue -> emitInsertValue(i)
 
-                is Instruction.Ctlz -> emitCtlz(i)
-                is Instruction.Cttz -> emitCttz(i)
-                is Instruction.Ctpop -> emitCtpop(i)
-                is Instruction.BSwap -> emitBSwap(i)
+                is Ctlz -> emitCtlz(i)
+                is Cttz -> emitCttz(i)
+                is Ctpop -> emitCtpop(i)
+                is BSwap -> emitBSwap(i)
 
-                is Instruction.GCSafepoint -> emitGCSafepoint()
-                is Instruction.GCRoot -> emitGCRoot(i)
+                is GCSafepoint -> emitGCSafepoint()
+                is GCRoot -> emitGCRoot(i)
 
-                is Instruction.Invoke -> emitInvoke(i)
-                is Instruction.LandingPad -> emitLandingPad(i)
-                is Instruction.Resume -> emitResume(i)
+                is Invoke -> emitInvoke(i)
+                is CallBr -> emitCallBr(i)
+                is LandingPad -> emitLandingPad(i)
+                is Resume -> emitResume(i)
+                is Throw -> emitThrow(i)
 
-                is Instruction.CopySign -> emitCopySign(i)
-                is Instruction.SMin -> emitIntMinMax(i.dest, i.lhs, i.rhs, signed = true, isMin = true)
-                is Instruction.SMax -> emitIntMinMax(i.dest, i.lhs, i.rhs, signed = true, isMin = false)
-                is Instruction.UMin -> emitIntMinMax(i.dest, i.lhs, i.rhs, signed = false, isMin = true)
-                is Instruction.UMax -> emitIntMinMax(i.dest, i.lhs, i.rhs, signed = false, isMin = false)
-                is Instruction.Abs -> emitAbs(i)
-                is Instruction.FMA -> emitFMA(i)
-                is Instruction.FRem -> emitFRem(i)
-                is Instruction.BitReverse -> emitBitReverse(i)
-                is Instruction.Rotl -> emitRotl(i)
-                is Instruction.Rotr -> emitRotr(i)
-                is Instruction.MemCpy -> emitMemCpyLoop(i.dst, i.src, i.len)
-                is Instruction.MemSet -> emitMemSetLoop(i.dst, i.value, i.len)
-                is Instruction.MemMove -> emitMemCpyLoop(i.dst, i.src, i.len)
-                is Instruction.Prefetch -> {}
-                is Instruction.StackSave -> {
+                is CopySign -> emitCopySign(i)
+                is SMin -> emitIntMinMax(i.dest, i.lhs, i.rhs, signed = true, isMin = true)
+                is SMax -> emitIntMinMax(i.dest, i.lhs, i.rhs, signed = true, isMin = false)
+                is UMin -> emitIntMinMax(i.dest, i.lhs, i.rhs, signed = false, isMin = true)
+                is UMax -> emitIntMinMax(i.dest, i.lhs, i.rhs, signed = false, isMin = false)
+                is Abs -> emitAbs(i)
+                is FMA -> emitFMA(i)
+                is FRem -> emitFRem(i)
+                is BitReverse -> emitBitReverse(i)
+                is Rotl -> emitRotl(i)
+                is Rotr -> emitRotr(i)
+                is MemCpy -> emitMemCpyLoop(i.dst, i.src, i.len)
+                is MemSet -> emitMemSetLoop(i.dst, i.value, i.len)
+                is MemMove -> emitMemCpyLoop(i.dst, i.src, i.len)
+                is Prefetch -> {}
+                is StackSave -> {
                     val dest = getDest(i.dest.name)
                     asm.addi(dest, X2, 0) // mv dest, sp
                     storeTo(i.dest.name, dest)
                 }
-                is Instruction.StackRestore -> {
+                is StackRestore -> {
                     val src = getOrLoad(i.ptr)
                     asm.addi(X2, src, 0) // mv sp, src
                 }
@@ -645,7 +659,7 @@ class RiscVCodeGenerator : CodeGenerator {
             return currentType
         }
 
-        private fun emitGetElementPtr(inst: Instruction.GetElementPtr) {
+        private fun emitGetElementPtr(inst: GetElementPtr) {
             val destReg = getDest(inst.dest.name)
             val ptrReg = getOrLoad(inst.ptr)
             if (destReg != ptrReg) asm.mv(destReg, ptrReg)
@@ -697,7 +711,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitExtractValue(inst: Instruction.ExtractValue) {
+        private fun emitExtractValue(inst: ExtractValue) {
             val fieldOffset = aggregateFieldOffset(inst.aggregate.type, inst.indices)
             val aggLoc = alloc.locations[inst.aggregate.name]
             val baseOffset = when (aggLoc) {
@@ -710,7 +724,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitInsertValue(inst: Instruction.InsertValue) {
+        private fun emitInsertValue(inst: InsertValue) {
             val fieldOffset = aggregateFieldOffset(inst.aggregate.type, inst.indices)
             val aggLoc = alloc.locations[inst.aggregate.name]
             val destLoc = alloc.locations[inst.dest.name]
@@ -733,7 +747,7 @@ class RiscVCodeGenerator : CodeGenerator {
             emitStoreToFp(valReg, memOffset)
         }
 
-        private fun emitCtlz(inst: Instruction.Ctlz) {
+        private fun emitCtlz(inst: Ctlz) {
             // Software CLZ using binary search (branchless)
             // result = 0; if top half zero, shift up and add to result
             val src = getOrLoad(inst.operand)
@@ -808,7 +822,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitCttz(inst: Instruction.Cttz) {
+        private fun emitCttz(inst: Cttz) {
             // CTZ = popcount(~x & (x - 1))
             // Or use binary search similar to CLZ but from LSB
             val src = getOrLoad(inst.operand)
@@ -867,7 +881,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitCtpop(inst: Instruction.Ctpop) {
+        private fun emitCtpop(inst: Ctpop) {
             // Software popcount using the parallel counting algorithm
             // For RISC-V without Zbb, use Kernighan's bit-counting trick with a loop
             val src = getOrLoad(inst.operand)
@@ -888,7 +902,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitBSwap(inst: Instruction.BSwap) {
+        private fun emitBSwap(inst: BSwap) {
             // Byte-swap using shifts and masks
             val src = getOrLoad(inst.operand)
             val destReg = getDest(inst.dest.name)
@@ -946,7 +960,7 @@ class RiscVCodeGenerator : CodeGenerator {
             asm.call("kgen_safepoint_poll")
         }
 
-        private fun emitGCRoot(inst: Instruction.GCRoot) {
+        private fun emitGCRoot(inst: GCRoot) {
             gcRoots.add(inst.ptr.name)
         }
 
@@ -994,7 +1008,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(dest.name, destReg)
         }
 
-        private fun emitICmp(inst: Instruction.ICmp) {
+        private fun emitICmp(inst: ICmp) {
             val lhsReg = getOrLoad(inst.lhs)
             val rhsReg = getOrLoad(inst.rhs)
             val destReg = getDest(inst.dest.name)
@@ -1034,7 +1048,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitFusedCmpBranch(cmp: Instruction.ICmp, br: Instruction.CondBr, nextBlockLabel: String?) {
+        private fun emitFusedCmpBranch(cmp: ICmp, br: CondBr, nextBlockLabel: String?) {
             val lhsReg = getOrLoad(cmp.lhs)
             val rhsReg = getOrLoad(cmp.rhs)
             val trueTarget = br.trueTarget
@@ -1097,7 +1111,7 @@ class RiscVCodeGenerator : CodeGenerator {
             BranchKind.BGEU -> BranchKind.BLTU
         }
 
-        private fun emitCondBr(inst: Instruction.CondBr, nextBlockLabel: String?) {
+        private fun emitCondBr(inst: CondBr, nextBlockLabel: String?) {
             val condReg = getOrLoad(inst.condition)
             val trueTarget = inst.trueTarget
             val falseTarget = inst.falseTarget
@@ -1114,7 +1128,7 @@ class RiscVCodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitReturn(inst: Instruction.Ret) {
+        private fun emitReturn(inst: Ret) {
             val retVal = inst.value
             if (retVal != null) {
                 val reg = getOrLoad(retVal)
@@ -1123,17 +1137,17 @@ class RiscVCodeGenerator : CodeGenerator {
             emitEpilogue()
         }
 
-        private fun emitBr(inst: Instruction.Br) {
+        private fun emitBr(inst: Br) {
             emitPhiMoves(inst.target)
             asm.j("${fn.name}.${inst.target}")
         }
 
-        private fun emitIndirectBr(inst: Instruction.IndirectBr) {
+        private fun emitIndirectBr(inst: IndirectBr) {
             val addrReg = getOrLoad(inst.address)
             asm.jalr(X0, addrReg, 0)
         }
 
-        private fun emitSwitch(inst: Instruction.Switch) {
+        private fun emitSwitch(inst: Switch) {
             val valReg = getOrLoad(inst.value)
             for ((caseVal, target) in inst.cases) {
                 val caseReg = getOrLoad(caseVal)
@@ -1142,7 +1156,7 @@ class RiscVCodeGenerator : CodeGenerator {
             asm.j("${fn.name}.${inst.defaultTarget}")
         }
 
-        private fun emitCall(inst: Instruction.Call) {
+        private fun emitCall(inst: Call) {
             val args = inst.args
             val func = inst.function
             val dest = inst.dest
@@ -1166,7 +1180,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(dest.name, destReg)
         }
 
-        private fun emitInvoke(inst: Instruction.Invoke) {
+        private fun emitInvoke(inst: Invoke) {
             val funcName = when (val f = inst.function) {
                 is FunctionRef -> f.name
                 is GlobalRef -> f.name
@@ -1206,7 +1220,38 @@ class RiscVCodeGenerator : CodeGenerator {
             asm.j("${fn.name}.${inst.normalDest}")
         }
 
-        private fun emitLandingPad(inst: Instruction.LandingPad) {
+        private fun emitCallBr(inst: CallBr) {
+            // CallBr: call a function that may branch to indirect destinations (asm goto).
+            val funcName = when (val f = inst.function) {
+                is FunctionRef -> f.name
+                is GlobalRef -> f.name
+                else -> error("Unsupported callbr target: $f")
+            }
+
+            // Load arguments
+            for ((idx, arg) in inst.args.withIndex()) {
+                if (idx >= argRegs.size) { break }
+                val src = getOrLoad(arg)
+                if (src != argRegs[idx]) { asm.mv(argRegs[idx], src) }
+            }
+
+            // Emit the call
+            asm.call(funcName)
+
+            // Store return value
+            val dest = inst.dest
+            if (dest != null) {
+                val destReg = getDest(dest.name)
+                if (destReg != X10) { asm.mv(destReg, X10) }
+                storeTo(dest.name, destReg)
+            }
+
+            // Fall through to fallthrough block
+            emitPhiMoves(inst.fallthrough)
+            asm.j("${fn.name}.${inst.fallthrough}")
+        }
+
+        private fun emitLandingPad(inst: LandingPad) {
             // Landing pad entry point — unwinder transfers control here.
             // RISC-V Itanium ABI: A0 (X10) = exception pointer, A1 (X11) = selector
             val labelName = "${fn.name}.lp.${currentBlockLabel}"
@@ -1227,17 +1272,23 @@ class RiscVCodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitResume(inst: Instruction.Resume) {
-            // Call _Unwind_Resume(exceptionPtr) — A0 holds the pointer
+        private fun emitResume(inst: Resume) {
             val src = getOrLoad(inst.value)
             if (src != X10) asm.mv(X10, src)
             asm.call("_Unwind_Resume")
-            asm.ebreak() // unreachable
+            asm.ebreak()
+        }
+
+        private fun emitThrow(inst: Throw) {
+            val src = getOrLoad(inst.exception)
+            if (src != X10) asm.mv(X10, src)
+            asm.call("kgen_throw")
+            asm.ebreak()
         }
 
         private fun resolveActionIndex(unwindLabel: String): Int {
             val unwindBlock = fn.blocks.firstOrNull { it.label == unwindLabel } ?: return 0
-            val lp = unwindBlock.instructions.firstOrNull { it is Instruction.LandingPad } as? Instruction.LandingPad
+            val lp = unwindBlock.instructions.firstOrNull { it is LandingPad } as? LandingPad
                 ?: return 0
             if (lp.cleanup && lp.clauses.isEmpty()) return 0
             val catchClause = lp.clauses.filterIsInstance<LandingPadClause.Catch>().firstOrNull() ?: return 0
@@ -1262,7 +1313,7 @@ class RiscVCodeGenerator : CodeGenerator {
             ctx.lsdaTables.add(fn.name to lsda)
         }
 
-        private fun emitSelect(inst: Instruction.Select) {
+        private fun emitSelect(inst: Select) {
             val condReg = getOrLoad(inst.condition)
             val trueReg = getOrLoad(inst.trueValue)
             val falseReg = getOrLoad(inst.falseValue)
@@ -1275,7 +1326,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitSExt(inst: Instruction.SExt) {
+        private fun emitSExt(inst: SExt) {
             val src = getOrLoad(inst.value)
             val destReg = getDest(inst.dest.name)
             // Sign-extend 32-bit to 64-bit: addiw dest, src, 0
@@ -1283,7 +1334,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitZExt(inst: Instruction.ZExt) {
+        private fun emitZExt(inst: ZExt) {
             val src = getOrLoad(inst.value)
             val destReg = getDest(inst.dest.name)
             // Zero-extend 32 to 64: slli + srli by 32
@@ -1292,7 +1343,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitTrunc(inst: Instruction.Trunc) {
+        private fun emitTrunc(inst: Trunc) {
             val src = getOrLoad(inst.operand)
             val destReg = getDest(inst.dest.name)
             // Truncate to 32-bit: just copy (upper bits ignored by word operations)
@@ -1322,7 +1373,7 @@ class RiscVCodeGenerator : CodeGenerator {
             return dest
         }
 
-        private fun emitLoad(inst: Instruction.Load) {
+        private fun emitLoad(inst: Load) {
             val addrReg = if (inst.ptr is GlobalRef && isTlsGlobal((inst.ptr as GlobalRef).name)) {
                 loadTlsAddress((inst.ptr as GlobalRef).name, scratch)
             } else {
@@ -1338,7 +1389,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitStore(inst: Instruction.Store) {
+        private fun emitStore(inst: Store) {
             val addrReg = if (inst.ptr is GlobalRef && isTlsGlobal((inst.ptr as GlobalRef).name)) {
                 loadTlsAddress((inst.ptr as GlobalRef).name, scratch)
             } else {
@@ -1389,7 +1440,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(dest.name, destReg)
         }
 
-        private fun emitFpNeg(inst: Instruction.FNeg) {
+        private fun emitFpNeg(inst: FNeg) {
             moveToFp(F0, inst.operand)
             if (inst.operand.type == Type.F32) asm.fnegS(F0, F0) else asm.fnegD(F0, F0)
             val destReg = getDest(inst.dest.name)
@@ -1397,7 +1448,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitFCmp(inst: Instruction.FCmp) {
+        private fun emitFCmp(inst: FCmp) {
             moveToFp(F0, inst.lhs)
             moveToFp(F1, inst.rhs)
             val destReg = getDest(inst.dest.name)
@@ -1444,7 +1495,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitSIToFP(inst: Instruction.SIToFP) {
+        private fun emitSIToFP(inst: SIToFP) {
             val src = getOrLoad(inst.value)
             val destReg = getDest(inst.dest.name)
             when {
@@ -1456,7 +1507,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitUIToFP(inst: Instruction.UIToFP) {
+        private fun emitUIToFP(inst: UIToFP) {
             val src = getOrLoad(inst.value)
             val destReg = getDest(inst.dest.name)
             when {
@@ -1468,7 +1519,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitFPToSI(inst: Instruction.FPToSI) {
+        private fun emitFPToSI(inst: FPToSI) {
             moveToFp(F0, inst.value)
             val destReg = getDest(inst.dest.name)
             when {
@@ -1480,7 +1531,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitFPToUI(inst: Instruction.FPToUI) {
+        private fun emitFPToUI(inst: FPToUI) {
             moveToFp(F0, inst.value)
             val destReg = getDest(inst.dest.name)
             when {
@@ -1492,7 +1543,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitFPExt(inst: Instruction.FPExt) {
+        private fun emitFPExt(inst: FPExt) {
             moveToFp(F0, inst.value)
             asm.fcvtDS(F0, F0)
             val destReg = getDest(inst.dest.name)
@@ -1500,7 +1551,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitFPTrunc(inst: Instruction.FPTrunc) {
+        private fun emitFPTrunc(inst: FPTrunc) {
             moveToFp(F0, inst.value)
             asm.fcvtSD(F0, F0)
             val destReg = getDest(inst.dest.name)
@@ -1510,7 +1561,7 @@ class RiscVCodeGenerator : CodeGenerator {
 
         private var memOpId = 0
 
-        private fun emitCopySign(inst: Instruction.CopySign) {
+        private fun emitCopySign(inst: CopySign) {
             // RISC-V has native fsgnj: takes magnitude from rs1, sign from rs2
             moveToFp(F0, inst.magnitude)
             moveToFp(F1, inst.sign)
@@ -1541,7 +1592,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(dest.name, destReg)
         }
 
-        private fun emitAbs(inst: Instruction.Abs) {
+        private fun emitAbs(inst: Abs) {
             // abs(x) = x >= 0 ? x : -x → srai sign, x, 63; xor tmp, x, sign; sub dest, tmp, sign
             val src = getOrLoad(inst.operand)
             val destReg = getDest(inst.dest.name)
@@ -1552,7 +1603,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitFMA(inst: Instruction.FMA) {
+        private fun emitFMA(inst: FMA) {
             // fmadd: rd = rs1*rs2 + rs3
             moveToFp(F0, inst.a)
             moveToFp(F1, inst.b)
@@ -1563,7 +1614,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitFRem(inst: Instruction.FRem) {
+        private fun emitFRem(inst: FRem) {
             // a - trunc(a/b) * b: no native frem on RISC-V
             moveToFp(F0, inst.lhs)
             moveToFp(F1, inst.rhs)
@@ -1587,7 +1638,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitBitReverse(inst: Instruction.BitReverse) {
+        private fun emitBitReverse(inst: BitReverse) {
             // No native brev on base RISC-V — swap bits in a loop
             // For simplicity, use shift-and-mask approach (8 instructions for 64-bit)
             val src = getOrLoad(inst.operand)
@@ -1620,7 +1671,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitRotl(inst: Instruction.Rotl) {
+        private fun emitRotl(inst: Rotl) {
             // rotl(x, k) = (x << k) | (x >>> (bits - k))
             val src = getOrLoad(inst.value)
             val amt = getOrLoad(inst.amount)
@@ -1635,7 +1686,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitRotr(inst: Instruction.Rotr) {
+        private fun emitRotr(inst: Rotr) {
             // rotr(x, k) = (x >>> k) | (x << (bits - k))
             val src = getOrLoad(inst.value)
             val amt = getOrLoad(inst.amount)
@@ -1688,14 +1739,14 @@ class RiscVCodeGenerator : CodeGenerator {
             asm.label(doneLabel)
         }
 
-        private fun emitNeg(inst: Instruction.Neg) {
+        private fun emitNeg(inst: Neg) {
             val src = getOrLoad(inst.operand)
             val destReg = getDest(inst.dest.name)
             asm.sub(destReg, X0, src)
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitNot(inst: Instruction.Not) {
+        private fun emitNot(inst: Not) {
             val src = getOrLoad(inst.operand)
             val destReg = getDest(inst.dest.name)
             asm.xori(destReg, src, -1)
@@ -1709,7 +1760,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(dest.name, destReg)
         }
 
-        private fun emitFpSqrt(inst: Instruction.Sqrt) {
+        private fun emitFpSqrt(inst: Sqrt) {
             moveToFp(F0, inst.operand)
             if (inst.operand.type == Type.F32) asm.fsqrtS(F0, F0) else asm.fsqrtD(F0, F0)
             val destReg = getDest(inst.dest.name)
@@ -1717,7 +1768,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitFpAbs(inst: Instruction.FAbs) {
+        private fun emitFpAbs(inst: FAbs) {
             moveToFp(F0, inst.operand)
             if (inst.operand.type == Type.F32) asm.fabsS(F0, F0) else asm.fabsD(F0, F0)
             val destReg = getDest(inst.dest.name)
@@ -1725,7 +1776,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitIntTrunc(inst: Instruction.IntTrunc) {
+        private fun emitIntTrunc(inst: IntTrunc) {
             val src = getOrLoad(inst.value)
             val destReg = getDest(inst.dest.name)
             if (destReg != src) asm.mv(destReg, src)

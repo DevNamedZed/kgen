@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.kgen.ir.*
 import org.kgen.ir.target.Target
 import org.kgen.target.jvm.*
+import org.kgen.ir.instructions.*
 
 class StaticFieldTest {
 
@@ -97,8 +98,8 @@ class StaticFieldTest {
 
         val fn = module.functions.first { it.name == "storeAndLoad" }
         val instructions = allInstructions(fn)
-        assertTrue(instructions.any { it is Instruction.Store }, "Expected Store instruction for putstatic")
-        assertTrue(instructions.any { it is Instruction.Load }, "Expected Load instruction for getstatic")
+        assertTrue(instructions.any { it is Store }, "Expected Store instruction for putstatic")
+        assertTrue(instructions.any { it is Load }, "Expected Load instruction for getstatic")
     }
 
     @Test
@@ -339,9 +340,9 @@ class StaticFieldTest {
         val fn = module.functions.first { it.name == "accumulate" }
         val instructions = allInstructions(fn)
 
-        assertTrue(instructions.any { it is Instruction.Load }, "Expected Load for getstatic")
-        assertTrue(instructions.any { it is Instruction.Add }, "Expected Add for iadd")
-        assertTrue(instructions.any { it is Instruction.Store }, "Expected Store for putstatic")
+        assertTrue(instructions.any { it is Load }, "Expected Load for getstatic")
+        assertTrue(instructions.any { it is Add }, "Expected Add for iadd")
+        assertTrue(instructions.any { it is Store }, "Expected Store for putstatic")
 
         val global = module.globals.find { it.name.contains("total") }
         assertNotNull(global, "Expected global for 'total'")

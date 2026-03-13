@@ -3,9 +3,21 @@ package org.kgen.ir
 import org.kgen.ir.types.*
 
 /**
- * A compilation unit. Contains all the IR for a single input file or logical grouping.
+ * A compilation unit containing all IR for a single input file or logical grouping.
  *
- * Modules are immutable — build them using [IrBuilder] (imperative) or [ModuleBuilder] (DSL).
+ * A module holds:
+ * - [functions] -- the IR function bodies (each with basic blocks and instructions)
+ * - [globals] -- module-level variables and constants
+ * - [structs], [classes], [interfaces], [enums] -- type definitions
+ * - [globalCtors] / [globalDtors] -- static initializers and finalizers
+ * - [constraints] -- optional [IrCategory] restriction set (see [IrConstraints])
+ * - [submodules] -- nested logical groupings within this module
+ *
+ * Modules are immutable. Build them using
+ * [IrBuilder][org.kgen.ir.build.IrBuilder] (imperative) or the DSL builders.
+ * Then pass to a [CodeGenerator][org.kgen.codegen.CodeGenerator] to compile.
+ *
+ * See `spec/ir.md` for the module model specification.
  */
 data class Module(
     val name: String,

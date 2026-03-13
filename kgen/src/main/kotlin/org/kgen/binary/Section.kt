@@ -1,5 +1,24 @@
 package org.kgen.binary
 
+/**
+ * A section in an object file — a contiguous block of bytes with a name, type, and flags.
+ *
+ * Sections hold code (.text), data (.data/.rodata), debug info, relocation tables,
+ * and format-specific metadata. Use [kind] to classify sections regardless of format.
+ *
+ * ```kotlin
+ * val obj = X86CodeGenerator().generateObjectFile(module)
+ * val text = obj.sections.first { it.kind == SectionKind.TEXT }
+ * println("Code size: ${text.data.size} bytes")
+ * ```
+ *
+ * @property name Section name (e.g., ".text", ".data", "__TEXT,__text").
+ * @property kind Format-independent section classification.
+ * @property data Raw section bytes.
+ * @property address Virtual address when loaded into memory.
+ * @property align Required alignment in bytes.
+ * @property flags Section attributes (writable, executable, etc.).
+ */
 data class Section(
     val name: String,
     val kind: SectionKind,

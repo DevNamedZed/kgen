@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
 import org.kgen.ir.target.Target
 import org.kgen.target.jvm.*
+import org.kgen.ir.instructions.*
 
 /**
  * Unit tests for RuntimeCompiler: annotation detection, name mangling,
@@ -294,7 +295,7 @@ class RuntimeCompilerTest {
         val classBytes = buildSimpleClass("org/kgen/test/Passes", "identity", "(I)I", identityCode, 1, 1)
         val module = compile(classBytes)
         val fn = module.functions.first()
-        val allocas = fn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Alloca>()
+        val allocas = fn.blocks.flatMap { it.instructions }.filterIsInstance<Alloca>()
         assertTrue(allocas.isEmpty(), "Mem2Reg should remove allocas: found ${allocas.size}")
     }
 
@@ -488,7 +489,7 @@ class RuntimeCompilerTest {
         assertTrue(helloFn!!.blocks.isNotEmpty(), "hello should have a body")
 
         // hello should call puts
-        val calls = helloFn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Call>()
+        val calls = helloFn.blocks.flatMap { it.instructions }.filterIsInstance<Call>()
         assertTrue(calls.any { (it.function as? GlobalRef)?.name == "puts" },
             "hello should call puts: ${calls.map { (it.function as? GlobalRef)?.name }}")
     }
@@ -547,7 +548,7 @@ class RuntimeCompilerTest {
 
         // caller should call __libc_puts (not myPuts)
         val callerFn = module.functions.find { it.name == "caller" }!!
-        val calls = callerFn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Call>()
+        val calls = callerFn.blocks.flatMap { it.instructions }.filterIsInstance<Call>()
         assertTrue(calls.any { (it.function as? GlobalRef)?.name == "__libc_puts" },
             "caller should call __libc_puts: ${calls.map { (it.function as? GlobalRef)?.name }}")
     }
@@ -594,5 +595,137 @@ class RuntimeCompilerTest {
         assertEquals(Type.OpaquePointer, memcpy.params[0].type)
         assertEquals(Type.OpaquePointer, memcpy.params[1].type)
         assertEquals(Type.I64, memcpy.params[2].type)
+    }
+
+    // ---- Calling convention control ----
+
+    @Test
+    fun exportWithConventionSetsCallingConv() {
+        val classBytes = buildAnnotatedClassTwoValues(
+            "org/kgen/test/Conv", "fastFunc", "(I)I", identityCode, 1, 1,
+            "org/kgen/unmanaged/KgenExport",
+            "value" to "fast_func", "convention" to "fast"
+        )
+        val module = compile(classBytes)
+        val fn = module.functions.first { it.name == "fast_func" }
+        assertEquals(CallingConvention.FAST, fn.callingConv)
+    }
+
+    @Test
+    fun exportWithWin64Convention() {
+        val classBytes = buildAnnotatedClassTwoValues(
+            "org/kgen/test/Conv", "winFunc", "(I)I", identityCode, 1, 1,
+            "org/kgen/unmanaged/KgenExport",
+            "value" to "win_func", "convention" to "win64"
+        )
+        val module = compile(classBytes)
+        val fn = module.functions.first { it.name == "win_func" }
+        assertEquals(CallingConvention.WIN64, fn.callingConv)
+    }
+
+    @Test
+    fun exportWithSysv64Convention() {
+        val classBytes = buildAnnotatedClassTwoValues(
+            "org/kgen/test/Conv", "sysFunc", "(I)I", identityCode, 1, 1,
+            "org/kgen/unmanaged/KgenExport",
+            "value" to "sys_func", "convention" to "sysv64"
+        )
+        val module = compile(classBytes)
+        val fn = module.functions.first { it.name == "sys_func" }
+        assertEquals(CallingConvention.SYSV64, fn.callingConv)
+    }
+
+    @Test
+    fun exportWithEmptyConventionDefaultsToC() {
+        val classBytes = buildAnnotatedClass(
+            "org/kgen/test/Conv", "cFunc", "(I)I", identityCode, 1, 1,
+            annotationClass = "org/kgen/unmanaged/KgenExport",
+            annotationValue = "value" to "c_func"
+        )
+        val module = compile(classBytes)
+        val fn = module.functions.first { it.name == "c_func" }
+        assertEquals(CallingConvention.C, fn.callingConv)
+    }
+
+    @Test
+    fun exportWithColdConvention() {
+        val classBytes = buildAnnotatedClassTwoValues(
+            "org/kgen/test/Conv", "coldFunc", "()V", voidReturnCode, 0, 0,
+            "org/kgen/unmanaged/KgenExport",
+            "value" to "cold_func", "convention" to "cold"
+        )
+        val module = compile(classBytes)
+        val fn = module.functions.first { it.name == "cold_func" }
+        assertEquals(CallingConvention.COLD, fn.callingConv)
+    }
+
+    /** Build a class with an annotation having two string element-value pairs. */
+    private fun buildAnnotatedClassTwoValues(
+        className: String,
+        methodName: String,
+        desc: String,
+        code: ByteArray,
+        maxStack: Int,
+        maxLocals: Int,
+        annotationClass: String,
+        pair1: Pair<String, String>,
+        pair2: Pair<String, String>,
+        flags: Int = AccessFlags.PUBLIC or AccessFlags.STATIC,
+    ): ByteArray {
+        val cp = ConstantPoolBuilder()
+        val thisClassIdx = cp.classEntry(className)
+        val superClassIdx = cp.classEntry("java/lang/Object")
+        val nameIdx = cp.utf8(methodName)
+        val descIdx = cp.utf8(desc)
+        val codeNameIdx = cp.utf8("Code")
+
+        val codeAttr = AttributeBuilder.buildCode(
+            codeNameIdx,
+            CodeAttribute(maxStack, maxLocals, code, emptyList(), emptyList()),
+        )
+
+        val rtAnnotationsName = cp.utf8("RuntimeVisibleAnnotations")
+        val annotationData = buildAnnotationWithTwoStringValues(cp, annotationClass, pair1, pair2)
+        val attrs = listOf(codeAttr, AttributeInfo(rtAnnotationsName, annotationData))
+
+        val method = MethodInfo(
+            accessFlags = flags,
+            nameIndex = nameIdx,
+            descriptorIndex = descIdx,
+            attributes = attrs,
+        )
+
+        val cf = ClassFile(
+            minorVersion = 0, majorVersion = 50,
+            constantPool = cp.build(),
+            accessFlags = AccessFlags.PUBLIC or AccessFlags.SUPER,
+            thisClass = thisClassIdx, superClass = superClassIdx,
+            interfaces = emptyList(), fields = emptyList(),
+            methods = listOf(method), attributes = emptyList(),
+        )
+
+        return JvmClassWriter.write(cf)
+    }
+
+    private fun buildAnnotationWithTwoStringValues(
+        cp: ConstantPoolBuilder, className: String,
+        pair1: Pair<String, String>, pair2: Pair<String, String>,
+    ): ByteArray {
+        val typeIdx = cp.utf8("L${className};")
+        val name1Idx = cp.utf8(pair1.first)
+        val value1Idx = cp.utf8(pair1.second)
+        val name2Idx = cp.utf8(pair2.first)
+        val value2Idx = cp.utf8(pair2.second)
+        return byteArrayOf(
+            0x00, 0x01,  // num_annotations = 1
+            ((typeIdx shr 8) and 0xFF).toByte(), (typeIdx and 0xFF).toByte(),
+            0x00, 0x02,  // num_element_value_pairs = 2
+            ((name1Idx shr 8) and 0xFF).toByte(), (name1Idx and 0xFF).toByte(),
+            's'.code.toByte(),
+            ((value1Idx shr 8) and 0xFF).toByte(), (value1Idx and 0xFF).toByte(),
+            ((name2Idx shr 8) and 0xFF).toByte(), (name2Idx and 0xFF).toByte(),
+            's'.code.toByte(),
+            ((value2Idx shr 8) and 0xFF).toByte(), (value2Idx and 0xFF).toByte(),
+        )
     }
 }

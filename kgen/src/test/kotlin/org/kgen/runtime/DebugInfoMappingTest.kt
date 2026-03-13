@@ -2,10 +2,10 @@ package org.kgen.runtime
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
-import org.kgen.ir.Instruction
 import org.kgen.ir.target.Target
 import org.kgen.runtime.compile.RuntimeCompiler
 import org.kgen.target.jvm.*
+import org.kgen.ir.instructions.*
 
 class DebugInfoMappingTest {
 
@@ -93,7 +93,7 @@ class DebugInfoMappingTest {
         // Find DebugLoc instructions in the compiled IR
         val func = module.functions.first()
         val debugLocs = func.blocks.flatMap { block ->
-            block.instructions.filterIsInstance<Instruction.DebugLoc>()
+            block.instructions.filterIsInstance<DebugLoc>()
         }
 
         // Should have emitted DebugLoc for line 5 and line 6
@@ -110,7 +110,7 @@ class DebugInfoMappingTest {
 
         val func = module.functions.first()
         val debugLocs = func.blocks.flatMap { block ->
-            block.instructions.filterIsInstance<Instruction.DebugLoc>()
+            block.instructions.filterIsInstance<DebugLoc>()
         }
 
         for (loc in debugLocs) {
@@ -160,7 +160,7 @@ class DebugInfoMappingTest {
 
         val func = module.functions.first()
         val debugLocs = func.blocks.flatMap { block ->
-            block.instructions.filterIsInstance<Instruction.DebugLoc>()
+            block.instructions.filterIsInstance<DebugLoc>()
         }
 
         assertTrue(debugLocs.isEmpty(), "No DebugLoc expected without LineNumberTable")

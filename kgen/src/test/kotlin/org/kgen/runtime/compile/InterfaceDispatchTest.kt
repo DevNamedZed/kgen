@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.kgen.ir.*
 import org.kgen.ir.target.Target
 import org.kgen.target.jvm.*
+import org.kgen.ir.instructions.*
 
 /**
  * Tests for interface dispatch (invokeinterface bytecode) support.
@@ -79,7 +80,7 @@ class InterfaceDispatchTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "callIface" }
         val instructions = fn.blocks.flatMap { it.instructions }
-        val calls = instructions.filterIsInstance<Instruction.Call>()
+        val calls = instructions.filterIsInstance<Call>()
         assertTrue(calls.any { (it.function as? GlobalRef)?.name == "java_lang_Comparable_compareTo" },
             "Expected call to java_lang_Comparable_compareTo, got: ${calls.map { (it.function as? GlobalRef)?.name }}")
     }
@@ -93,7 +94,7 @@ class InterfaceDispatchTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "callIface" }
         val instructions = fn.blocks.flatMap { it.instructions }
-        val calls = instructions.filterIsInstance<Instruction.Call>()
+        val calls = instructions.filterIsInstance<Call>()
         val call = calls.first { (it.function as? GlobalRef)?.name == "java_lang_Comparable_compareTo" }
         // Should have 2 args: this + the Object parameter
         assertEquals(2, call.args.size, "Expected 2 args (this + param)")
@@ -130,7 +131,7 @@ class InterfaceDispatchTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "runIt" }
         val instructions = fn.blocks.flatMap { it.instructions }
-        val calls = instructions.filterIsInstance<Instruction.Call>()
+        val calls = instructions.filterIsInstance<Call>()
         assertTrue(calls.any { (it.function as? GlobalRef)?.name == "java_lang_Runnable_run" })
     }
 
@@ -212,7 +213,7 @@ class InterfaceDispatchTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "mixedCall" }
         val instructions = fn.blocks.flatMap { it.instructions }
-        val calls = instructions.filterIsInstance<Instruction.Call>()
+        val calls = instructions.filterIsInstance<Call>()
         assertTrue(calls.any { (it.function as? GlobalRef)?.name == "java_lang_Object_hashCode" })
         assertTrue(calls.any { (it.function as? GlobalRef)?.name == "java_lang_Comparable_compareTo" })
     }
@@ -253,7 +254,7 @@ class InterfaceDispatchTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "callAdder" }
         val instructions = fn.blocks.flatMap { it.instructions }
-        val calls = instructions.filterIsInstance<Instruction.Call>()
+        val calls = instructions.filterIsInstance<Call>()
         val addCall = calls.first { (it.function as? GlobalRef)?.name == "org_kgen_test_Adder_add" }
         // Should have 3 args: this + int + int
         assertEquals(3, addCall.args.size, "Expected 3 args (this + 2 ints)")

@@ -5,19 +5,38 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 /**
- * The central type in the reflect API. Represents any binary — ELF, PE, Mach-O,
- * JVM .class, WASM module — on disk or loaded in a process.
+ * Unified binary introspection entry point for the reflect API.
  *
- * File-based modules are just parsed data — no system resources, no close() needed.
+ * A Module represents any binary artifact — ELF, PE/COFF, Mach-O, JVM `.class`, .NET assembly,
+ * or WASM module — providing a single API surface to query symbols, functions, sections, types,
+ * imports, exports, debug info, and disassembly regardless of the underlying format.
  *
+ * Modules can be loaded from files, raw byte arrays, or pre-parsed [ObjectFile] instances.
+ * File-based modules are pure data (no system resources, no `close()` needed). Format-specific
+ * models ([elf], [pe], [machO], [classFile], [clr], [wasm]) are lazily parsed from the raw
+ * bytes on first access, giving you full access to format-level detail when needed.
+ *
+ * Typical usage for binary analysis:
  * ```java
+ * // Open any binary and inspect it
  * var module = Module.fromFile("libc.so.6");
  * module.name();               // "libc.so.6"
  * module.format();             // ObjectFormat.ELF
  * module.symbols();            // List<Symbol>
  * module.functions();          // List<Function>
  * module.function("strlen");   // Function?
+ *
+ * // Disassemble a function
+ * var insns = module.disassemble("strlen");
+ *
+ * // Access format-specific model
+ * var elf = module.elf();      // ElfFile with full ELF detail
+ *
+ * // Type reflection (JVM, CLR, or DWARF-based)
+ * var types = module.types();  // List<TypeInfo>
  * ```
+ *
+ * See `spec/reflect.md` for the full specification of the reflect API.
  */
 class Module private constructor(
     private val name: String,
@@ -149,6 +168,7 @@ class Module private constructor(
 
     /**
      * Disassemble raw bytes using this module's architecture.
+     * Automatically selects the correct disassembler backend based on [arch].
      */
     fun disassembleBytes(code: ByteArray, baseAddress: Long = 0): List<Instruction> {
         return when (obj.arch.arch) {

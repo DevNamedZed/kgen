@@ -7,6 +7,7 @@ import org.kgen.runtime.compile.SubsetValidator
 import org.kgen.target.jvm.JvmClassReader
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import org.kgen.ir.instructions.*
 
 class RuntimeSubsetTest {
 
@@ -330,7 +331,7 @@ class RuntimeSubsetTest {
 
         // The caller should have Call instructions referencing "add"
         val instructions = callerModule.functions[0].blocks.flatMap { it.instructions }
-        val calls = instructions.filterIsInstance<org.kgen.ir.Instruction.Call>()
+        val calls = instructions.filterIsInstance<org.kgen.ir.Call>()
         assertTrue(calls.size >= 2, "Expected at least 2 call instructions, got ${calls.size}")
     }
 
@@ -436,6 +437,6 @@ class RuntimeSubsetTest {
         assertEquals("loadAndReturn", module.functions[0].name)
         // Should have a Load instruction from the intrinsic lowering
         val instructions = module.functions[0].blocks.flatMap { it.instructions }
-        assertTrue(instructions.any { it is org.kgen.ir.Instruction.Load }, "Expected Load instruction from Kgen.loadByte intrinsic")
+        assertTrue(instructions.any { it is org.kgen.ir.Load }, "Expected Load instruction from Kgen.loadByte intrinsic")
     }
 }

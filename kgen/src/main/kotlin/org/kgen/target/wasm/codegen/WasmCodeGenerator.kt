@@ -3,6 +3,7 @@ package org.kgen.target.wasm.codegen
 import org.kgen.target.wasm.*
 import org.kgen.target.wasm.asm.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.codegen.*
 import org.kgen.codegen.alloc.LivenessAnalysis
 import org.kgen.codegen.alloc.LocalSlotAllocator
@@ -28,18 +29,18 @@ class WasmCodeGenerator : CodeGenerator {
         val needsMemory = module.functions.any { fn ->
             !fn.isExternal && fn.blocks.any { b ->
                 b.instructions.any {
-                    it is Instruction.Alloca || it is Instruction.Load ||
-                        it is Instruction.Store || it is Instruction.MemCpy ||
-                        it is Instruction.MemSet || it is Instruction.MemMove ||
-                        it is Instruction.GetElementPtr ||
-                        it is Instruction.ExtractValue || it is Instruction.InsertValue
+                    it is Alloca || it is Load ||
+                        it is Store || it is MemCpy ||
+                        it is MemSet || it is MemMove ||
+                        it is GetElementPtr ||
+                        it is ExtractValue || it is InsertValue
                 }
             }
         }
         val needsStackPointer = module.functions.any { fn ->
             !fn.isExternal && fn.blocks.any { b ->
                 b.instructions.any {
-                    it is Instruction.Alloca || it is Instruction.StackSave || it is Instruction.StackRestore
+                    it is Alloca || it is StackSave || it is StackRestore
                 }
             }
         }
@@ -94,7 +95,7 @@ class WasmCodeGenerator : CodeGenerator {
             }
 
             // Alloca support: saved stack pointer local
-            val hasAlloca = fn.blocks.any { b -> b.instructions.any { it is Instruction.Alloca } }
+            val hasAlloca = fn.blocks.any { b -> b.instructions.any { it is Alloca } }
             val savedSpSlot: Int
             if (hasAlloca) {
                 savedSpSlot = (locals.values.maxOrNull() ?: (fn.params.size - 1)) + 1
@@ -111,8 +112,8 @@ class WasmCodeGenerator : CodeGenerator {
                 for (block in fn.blocks) {
                     for (inst in block.instructions) {
                         when (inst) {
-                            is Instruction.Ret -> emitRet(inst, locals, hasAlloca, savedSpSlot, a)
-                            is Instruction.Alloca -> emitAlloca(inst, locals, a)
+                            is Ret -> emitRet(inst, locals, hasAlloca, savedSpSlot, a)
+                            is Alloca -> emitAlloca(inst, locals, a)
                             else -> emitInstruction(inst, locals, a)
                         }
                     }
@@ -146,7 +147,7 @@ class WasmCodeGenerator : CodeGenerator {
         // Ensure phi destinations have locals allocated
         for (block in fn.blocks) {
             for (inst in block.instructions) {
-                if (inst is Instruction.Phi && inst.dest.name !in locals) {
+                if (inst is Phi && inst.dest.name !in locals) {
                     val slot = (locals.values.maxOrNull() ?: (fn.params.size - 1)) + 1
                     locals[inst.dest.name] = slot
                     asm.declareLocal("_phi_${inst.dest.name}", irTypeToWasm(inst.dest.type))
@@ -173,12 +174,12 @@ class WasmCodeGenerator : CodeGenerator {
             val nextLabel = orderedBlocks.getOrNull(idx + 1)?.label
             for (inst in block.instructions) {
                 when (inst) {
-                    is Instruction.Phi -> {} // handled at branch sites
-                    is Instruction.Br -> emitBr(inst, block.label, nextLabel, phiMoves, labelStack, locals, asm)
-                    is Instruction.CondBr -> emitCondBr(inst, block.label, nextLabel, phiMoves, labelStack, locals, hasAlloca, savedSpSlot, asm)
-                    is Instruction.Switch -> emitSwitch(inst, block.label, nextLabel, phiMoves, labelStack, locals, asm)
-                    is Instruction.Ret -> emitRet(inst, locals, hasAlloca, savedSpSlot, asm)
-                    is Instruction.Alloca -> emitAlloca(inst, locals, asm)
+                    is Phi -> {} // handled at branch sites
+                    is Br -> emitBr(inst, block.label, nextLabel, phiMoves, labelStack, locals, asm)
+                    is CondBr -> emitCondBr(inst, block.label, nextLabel, phiMoves, labelStack, locals, hasAlloca, savedSpSlot, asm)
+                    is Switch -> emitSwitch(inst, block.label, nextLabel, phiMoves, labelStack, locals, asm)
+                    is Ret -> emitRet(inst, locals, hasAlloca, savedSpSlot, asm)
+                    is Alloca -> emitAlloca(inst, locals, asm)
                     else -> emitInstruction(inst, locals, asm)
                 }
             }
@@ -196,7 +197,7 @@ class WasmCodeGenerator : CodeGenerator {
     }
 
     private fun emitBr(
-        inst: Instruction.Br,
+        inst: Br,
         currentBlock: String,
         nextLabel: String?,
         phiMoves: Map<Pair<String, String>, List<Pair<String, Value>>>,
@@ -212,7 +213,7 @@ class WasmCodeGenerator : CodeGenerator {
     }
 
     private fun emitCondBr(
-        inst: Instruction.CondBr,
+        inst: CondBr,
         currentBlock: String,
         nextLabel: String?,
         phiMoves: Map<Pair<String, String>, List<Pair<String, Value>>>,
@@ -281,7 +282,7 @@ class WasmCodeGenerator : CodeGenerator {
     }
 
     private fun emitSwitch(
-        inst: Instruction.Switch,
+        inst: Switch,
         currentBlock: String,
         nextLabel: String?,
         phiMoves: Map<Pair<String, String>, List<Pair<String, Value>>>,
@@ -340,7 +341,7 @@ class WasmCodeGenerator : CodeGenerator {
     }
 
     private fun emitRet(
-        inst: Instruction.Ret,
+        inst: Ret,
         locals: Map<String, Int>,
         hasAlloca: Boolean,
         savedSpSlot: Int,
@@ -355,7 +356,7 @@ class WasmCodeGenerator : CodeGenerator {
         asm.return_()
     }
 
-    private fun emitAlloca(inst: Instruction.Alloca, locals: Map<String, Int>, asm: WasmAssembler) {
+    private fun emitAlloca(inst: Alloca, locals: Map<String, Int>, asm: WasmAssembler) {
         val elemSize = wasmTypeSizeBytes(inst.allocType)
         val numElems = inst.numElements
         // Subtract size from stack pointer
@@ -397,7 +398,7 @@ class WasmCodeGenerator : CodeGenerator {
         val result = mutableMapOf<Pair<String, String>, MutableList<Pair<String, Value>>>()
         for (block in fn.blocks) {
             for (inst in block.instructions) {
-                if (inst is Instruction.Phi) {
+                if (inst is Phi) {
                     for ((value, sourceBlock) in inst.incoming) {
                         result.getOrPut(sourceBlock to block.label) { mutableListOf() }
                             .add(inst.dest.name to value)
@@ -426,75 +427,75 @@ class WasmCodeGenerator : CodeGenerator {
 
     private fun emitInstruction(inst: Instruction, locals: Map<String, Int>, asm: WasmAssembler) {
         when (inst) {
-            is Instruction.Add -> {
+            is Add -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 when (inst.lhs.type) { Type.I32 -> asm.i32Add(); Type.I64 -> asm.i64Add(); else -> error("Unsupported add type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.Sub -> {
+            is Sub -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 when (inst.lhs.type) { Type.I32 -> asm.i32Sub(); Type.I64 -> asm.i64Sub(); else -> error("Unsupported sub type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.Mul -> {
+            is Mul -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 when (inst.lhs.type) { Type.I32 -> asm.i32Mul(); Type.I64 -> asm.i64Mul(); else -> error("Unsupported mul type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.And -> {
+            is And -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 when (inst.lhs.type) { Type.I32 -> asm.i32And(); Type.I64 -> asm.i64And(); else -> error("Unsupported and type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.Or -> {
+            is Or -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 when (inst.lhs.type) { Type.I32 -> asm.i32Or(); Type.I64 -> asm.i64Or(); else -> error("Unsupported or type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.Xor -> {
+            is Xor -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 when (inst.lhs.type) { Type.I32 -> asm.i32Xor(); Type.I64 -> asm.i64Xor(); else -> error("Unsupported xor type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.Shl -> {
+            is Shl -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 when (inst.lhs.type) { Type.I32 -> asm.i32Shl(); Type.I64 -> asm.i64Shl(); else -> error("Unsupported shl type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
 
-            is Instruction.FAdd -> {
+            is FAdd -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 when (inst.lhs.type) { Type.F32 -> asm.f32Add(); Type.F64 -> asm.f64Add(); else -> error("Unsupported fadd type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.FSub -> {
+            is FSub -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 when (inst.lhs.type) { Type.F32 -> asm.f32Sub(); Type.F64 -> asm.f64Sub(); else -> error("Unsupported fsub type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.FMul -> {
+            is FMul -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 when (inst.lhs.type) { Type.F32 -> asm.f32Mul(); Type.F64 -> asm.f64Mul(); else -> error("Unsupported fmul type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.FDiv -> {
+            is FDiv -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 when (inst.lhs.type) { Type.F32 -> asm.f32Div(); Type.F64 -> asm.f64Div(); else -> error("Unsupported fdiv type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
 
-            is Instruction.ICmp -> {
+            is ICmp -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 val type = inst.lhs.type
@@ -513,13 +514,13 @@ class WasmCodeGenerator : CodeGenerator {
                 asm.localSet(locals[inst.dest.name]!!)
             }
 
-            is Instruction.Ret -> {
+            is Ret -> {
                 val retVal = inst.value
                 if (retVal != null) pushValue(retVal, locals, asm)
                 asm.return_()
             }
 
-            is Instruction.Call -> {
+            is Call -> {
                 for (arg in inst.args) pushValue(arg, locals, asm)
                 val funcName = when (val f = inst.function) {
                     is FunctionRef -> f.name
@@ -531,45 +532,45 @@ class WasmCodeGenerator : CodeGenerator {
                 if (dest != null) asm.localSet(locals[dest.name]!!)
             }
 
-            is Instruction.SDiv -> {
+            is SDiv -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 when (inst.lhs.type) { Type.I32 -> asm.i32DivS(); Type.I64 -> asm.i64DivS(); else -> error("Unsupported sdiv type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.UDiv -> {
+            is UDiv -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 when (inst.lhs.type) { Type.I32 -> asm.i32DivU(); Type.I64 -> asm.i64DivU(); else -> error("Unsupported udiv type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.SRem -> {
+            is SRem -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 when (inst.lhs.type) { Type.I32 -> asm.i32RemS(); Type.I64 -> asm.i64RemS(); else -> error("Unsupported srem type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.URem -> {
+            is URem -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 when (inst.lhs.type) { Type.I32 -> asm.i32RemU(); Type.I64 -> asm.i64RemU(); else -> error("Unsupported urem type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
 
-            is Instruction.LShr -> {
+            is LShr -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 when (inst.lhs.type) { Type.I32 -> asm.i32ShrU(); Type.I64 -> asm.i64ShrU(); else -> error("Unsupported lshr type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.AShr -> {
+            is AShr -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 when (inst.lhs.type) { Type.I32 -> asm.i32ShrS(); Type.I64 -> asm.i64ShrS(); else -> error("Unsupported ashr type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
 
-            is Instruction.Neg -> {
+            is Neg -> {
                 val type = inst.operand.type
                 when (type) {
                     Type.I32 -> { asm.i32Const(0); pushValue(inst.operand, locals, asm); asm.i32Sub() }
@@ -578,7 +579,7 @@ class WasmCodeGenerator : CodeGenerator {
                 }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.Not -> {
+            is Not -> {
                 pushValue(inst.operand, locals, asm)
                 val type = inst.operand.type
                 when (type) {
@@ -589,57 +590,57 @@ class WasmCodeGenerator : CodeGenerator {
                 asm.localSet(locals[inst.dest.name]!!)
             }
 
-            is Instruction.FNeg -> {
+            is FNeg -> {
                 pushValue(inst.operand, locals, asm)
                 when (inst.operand.type) { Type.F32 -> asm.f32Neg(); Type.F64 -> asm.f64Neg(); else -> error("Unsupported fneg type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
 
-            is Instruction.Trunc -> {
+            is Trunc -> {
                 pushValue(inst.operand, locals, asm)
                 when (inst.operand.type) { Type.F32 -> asm.f32Trunc(); Type.F64 -> asm.f64Trunc(); else -> error("Unsupported trunc type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
 
-            is Instruction.FCmp -> emitFCmp(inst, locals, asm)
+            is FCmp -> emitFCmp(inst, locals, asm)
 
             // Type conversions
-            is Instruction.ZExt -> {
+            is ZExt -> {
                 pushValue(inst.value, locals, asm)
                 if (inst.value.type in setOf(Type.I1, Type.I8, Type.I16, Type.I32) && inst.toType == Type.I64) {
                     asm.i64ExtendI32U()
                 }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.SExt -> {
+            is SExt -> {
                 pushValue(inst.value, locals, asm)
                 if (inst.value.type in setOf(Type.I1, Type.I8, Type.I16, Type.I32) && inst.toType == Type.I64) {
                     asm.i64ExtendI32S()
                 }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.IntTrunc -> {
+            is IntTrunc -> {
                 pushValue(inst.value, locals, asm)
                 if (inst.value.type == Type.I64) asm.i32WrapI64()
                 asm.localSet(locals[inst.dest.name]!!)
             }
 
-            is Instruction.SIToFP -> { emitSIToFP(inst, locals, asm) }
-            is Instruction.UIToFP -> { emitUIToFP(inst, locals, asm) }
-            is Instruction.FPToSI -> { emitFPToSI(inst, locals, asm) }
-            is Instruction.FPToUI -> { emitFPToUI(inst, locals, asm) }
-            is Instruction.FPExt -> {
+            is SIToFP -> { emitSIToFP(inst, locals, asm) }
+            is UIToFP -> { emitUIToFP(inst, locals, asm) }
+            is FPToSI -> { emitFPToSI(inst, locals, asm) }
+            is FPToUI -> { emitFPToUI(inst, locals, asm) }
+            is FPExt -> {
                 pushValue(inst.value, locals, asm)
                 asm.f64PromoteF32()
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.FPTrunc -> {
+            is FPTrunc -> {
                 pushValue(inst.value, locals, asm)
                 asm.f32DemoteF64()
                 asm.localSet(locals[inst.dest.name]!!)
             }
 
-            is Instruction.Select -> {
+            is Select -> {
                 pushValue(inst.trueValue, locals, asm)
                 pushValue(inst.falseValue, locals, asm)
                 pushValue(inst.condition, locals, asm)
@@ -647,116 +648,116 @@ class WasmCodeGenerator : CodeGenerator {
                 asm.localSet(locals[inst.dest.name]!!)
             }
 
-            is Instruction.Load -> emitLoad(inst, locals, asm)
-            is Instruction.Store -> emitStore(inst, locals, asm)
+            is Load -> emitLoad(inst, locals, asm)
+            is Store -> emitStore(inst, locals, asm)
 
-            is Instruction.Ctlz -> {
+            is Ctlz -> {
                 pushValue(inst.operand, locals, asm)
                 when (inst.operand.type) { Type.I32 -> asm.i32Clz(); Type.I64 -> asm.i64Clz(); else -> error("Unsupported ctlz type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.Cttz -> {
+            is Cttz -> {
                 pushValue(inst.operand, locals, asm)
                 when (inst.operand.type) { Type.I32 -> asm.i32Ctz(); Type.I64 -> asm.i64Ctz(); else -> error("Unsupported cttz type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.Ctpop -> {
+            is Ctpop -> {
                 pushValue(inst.operand, locals, asm)
                 when (inst.operand.type) { Type.I32 -> asm.i32Popcnt(); Type.I64 -> asm.i64Popcnt(); else -> error("Unsupported ctpop type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
 
-            is Instruction.Sqrt -> {
+            is Sqrt -> {
                 pushValue(inst.operand, locals, asm)
                 when (inst.operand.type) { Type.F32 -> asm.f32Sqrt(); Type.F64 -> asm.f64Sqrt(); else -> error("Unsupported sqrt type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.Ceil -> {
+            is Ceil -> {
                 pushValue(inst.operand, locals, asm)
                 when (inst.operand.type) { Type.F32 -> asm.f32Ceil(); Type.F64 -> asm.f64Ceil(); else -> error("Unsupported ceil type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.Floor -> {
+            is Floor -> {
                 pushValue(inst.operand, locals, asm)
                 when (inst.operand.type) { Type.F32 -> asm.f32Floor(); Type.F64 -> asm.f64Floor(); else -> error("Unsupported floor type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.Round -> {
+            is Round -> {
                 pushValue(inst.operand, locals, asm)
                 when (inst.operand.type) { Type.F32 -> asm.f32Nearest(); Type.F64 -> asm.f64Nearest(); else -> error("Unsupported round type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.FAbs -> {
+            is FAbs -> {
                 pushValue(inst.operand, locals, asm)
                 when (inst.operand.type) { Type.F32 -> asm.f32Abs(); Type.F64 -> asm.f64Abs(); else -> error("Unsupported fabs type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
 
-            is Instruction.FMin -> {
+            is FMin -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 when (inst.lhs.type) { Type.F32 -> asm.f32Min(); Type.F64 -> asm.f64Min(); else -> error("Unsupported fmin type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.FMax -> {
+            is FMax -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 when (inst.lhs.type) { Type.F32 -> asm.f32Max(); Type.F64 -> asm.f64Max(); else -> error("Unsupported fmax type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.CopySign -> {
+            is CopySign -> {
                 pushValue(inst.magnitude, locals, asm)
                 pushValue(inst.sign, locals, asm)
                 when (inst.magnitude.type) { Type.F32 -> asm.f32Copysign(); Type.F64 -> asm.f64Copysign(); else -> error("Unsupported copysign type") }
                 asm.localSet(locals[inst.dest.name]!!)
             }
 
-            is Instruction.PtrToInt -> {
+            is PtrToInt -> {
                 pushValue(inst.value, locals, asm)
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.BitCast -> {
+            is BitCast -> {
                 pushValue(inst.value, locals, asm)
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.IntToPtr -> {
+            is IntToPtr -> {
                 pushValue(inst.value, locals, asm)
                 asm.localSet(locals[inst.dest.name]!!)
             }
 
-            is Instruction.Unreachable -> { asm.unreachable() }
-            is Instruction.Trap -> { asm.unreachable() }
-            is Instruction.DebugTrap -> { asm.unreachable() }
-            is Instruction.DebugLoc -> {}
-            is Instruction.DebugValue -> {}
-            is Instruction.DebugDeclare -> {}
+            is Unreachable -> { asm.unreachable() }
+            is Trap -> { asm.unreachable() }
+            is DebugTrap -> { asm.unreachable() }
+            is DebugLoc -> {}
+            is DebugValue -> {}
+            is DebugDeclare -> {}
 
-            is Instruction.BSwap -> {
+            is BSwap -> {
                 error("BSwap requires emulation and is not yet supported for WASM")
             }
 
-            is Instruction.MemCpy -> {
+            is MemCpy -> {
                 pushValue(inst.dst, locals, asm)
                 pushValue(inst.src, locals, asm)
                 pushValue(inst.len, locals, asm)
                 asm.memoryCopy(0, 0)
             }
-            is Instruction.MemSet -> {
+            is MemSet -> {
                 pushValue(inst.dst, locals, asm)
                 pushValue(inst.value, locals, asm)
                 pushValue(inst.len, locals, asm)
                 asm.memoryFill(0)
             }
 
-            is Instruction.GetElementPtr -> emitGep(inst, locals, asm)
-            is Instruction.ExtractValue -> emitExtractValue(inst, locals, asm)
-            is Instruction.InsertValue -> emitInsertValue(inst, locals, asm)
+            is GetElementPtr -> emitGep(inst, locals, asm)
+            is ExtractValue -> emitExtractValue(inst, locals, asm)
+            is InsertValue -> emitInsertValue(inst, locals, asm)
 
-            is Instruction.Fence -> {}
-            is Instruction.GCSafepoint -> {}
-            is Instruction.GCRoot -> {}
+            is Fence -> {}
+            is GCSafepoint -> {}
+            is GCRoot -> {}
 
-            is Instruction.SMin -> {
+            is SMin -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 pushValue(inst.lhs, locals, asm)
@@ -765,7 +766,7 @@ class WasmCodeGenerator : CodeGenerator {
                 asm.select()
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.SMax -> {
+            is SMax -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 pushValue(inst.lhs, locals, asm)
@@ -774,7 +775,7 @@ class WasmCodeGenerator : CodeGenerator {
                 asm.select()
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.UMin -> {
+            is UMin -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 pushValue(inst.lhs, locals, asm)
@@ -783,7 +784,7 @@ class WasmCodeGenerator : CodeGenerator {
                 asm.select()
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.UMax -> {
+            is UMax -> {
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.rhs, locals, asm)
                 pushValue(inst.lhs, locals, asm)
@@ -793,7 +794,7 @@ class WasmCodeGenerator : CodeGenerator {
                 asm.localSet(locals[inst.dest.name]!!)
             }
 
-            is Instruction.Abs -> {
+            is Abs -> {
                 // abs(x) = select(x, -x, x >= 0)
                 val tmpLocal = locals[inst.dest.name]!!
                 pushValue(inst.operand, locals, asm)
@@ -811,7 +812,7 @@ class WasmCodeGenerator : CodeGenerator {
                 asm.localSet(tmpLocal)
             }
 
-            is Instruction.FMA -> {
+            is FMA -> {
                 // a * b + c (no native WASM FMA)
                 pushValue(inst.a, locals, asm)
                 pushValue(inst.b, locals, asm)
@@ -821,7 +822,7 @@ class WasmCodeGenerator : CodeGenerator {
                 asm.localSet(locals[inst.dest.name]!!)
             }
 
-            is Instruction.FRem -> {
+            is FRem -> {
                 // a % b = a - trunc(a / b) * b
                 pushValue(inst.lhs, locals, asm)
                 pushValue(inst.lhs, locals, asm)
@@ -832,37 +833,37 @@ class WasmCodeGenerator : CodeGenerator {
                 asm.localSet(locals[inst.dest.name]!!)
             }
 
-            is Instruction.MemMove -> {
+            is MemMove -> {
                 pushValue(inst.dst, locals, asm)
                 pushValue(inst.src, locals, asm)
                 pushValue(inst.len, locals, asm)
                 asm.memoryCopy(0, 0)
             }
 
-            is Instruction.Rotl -> {
+            is Rotl -> {
                 pushValue(inst.value, locals, asm)
                 pushValue(inst.amount, locals, asm)
                 when (inst.value.type) { Type.I64 -> asm.i64Rotl(); else -> asm.i32Rotl() }
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.Rotr -> {
+            is Rotr -> {
                 pushValue(inst.value, locals, asm)
                 pushValue(inst.amount, locals, asm)
                 when (inst.value.type) { Type.I64 -> asm.i64Rotr(); else -> asm.i32Rotr() }
                 asm.localSet(locals[inst.dest.name]!!)
             }
 
-            is Instruction.BitReverse -> {
+            is BitReverse -> {
                 error("BitReverse requires emulation and is not yet supported for WASM")
             }
 
-            is Instruction.Prefetch -> {}
+            is Prefetch -> {}
 
-            is Instruction.StackSave -> {
+            is StackSave -> {
                 asm.globalGet(stackPointerGlobalIdx)
                 asm.localSet(locals[inst.dest.name]!!)
             }
-            is Instruction.StackRestore -> {
+            is StackRestore -> {
                 pushValue(inst.ptr, locals, asm)
                 asm.globalSet(stackPointerGlobalIdx)
             }
@@ -873,7 +874,7 @@ class WasmCodeGenerator : CodeGenerator {
 
     // ── Helper methods for complex instructions ────────────────────────
 
-    private fun emitFCmp(inst: Instruction.FCmp, locals: Map<String, Int>, asm: WasmAssembler) {
+    private fun emitFCmp(inst: FCmp, locals: Map<String, Int>, asm: WasmAssembler) {
         pushValue(inst.lhs, locals, asm)
         pushValue(inst.rhs, locals, asm)
         val type = inst.lhs.type
@@ -906,7 +907,7 @@ class WasmCodeGenerator : CodeGenerator {
         asm.localSet(locals[inst.dest.name]!!)
     }
 
-    private fun emitSIToFP(inst: Instruction.SIToFP, locals: Map<String, Int>, asm: WasmAssembler) {
+    private fun emitSIToFP(inst: SIToFP, locals: Map<String, Int>, asm: WasmAssembler) {
         pushValue(inst.value, locals, asm)
         when {
             inst.value.type in setOf(Type.I1, Type.I8, Type.I16, Type.I32) && inst.toType == Type.F32 -> asm.f32ConvertI32S()
@@ -918,7 +919,7 @@ class WasmCodeGenerator : CodeGenerator {
         asm.localSet(locals[inst.dest.name]!!)
     }
 
-    private fun emitUIToFP(inst: Instruction.UIToFP, locals: Map<String, Int>, asm: WasmAssembler) {
+    private fun emitUIToFP(inst: UIToFP, locals: Map<String, Int>, asm: WasmAssembler) {
         pushValue(inst.value, locals, asm)
         when {
             inst.value.type in setOf(Type.I1, Type.I8, Type.I16, Type.I32) && inst.toType == Type.F32 -> asm.f32ConvertI32U()
@@ -930,7 +931,7 @@ class WasmCodeGenerator : CodeGenerator {
         asm.localSet(locals[inst.dest.name]!!)
     }
 
-    private fun emitFPToSI(inst: Instruction.FPToSI, locals: Map<String, Int>, asm: WasmAssembler) {
+    private fun emitFPToSI(inst: FPToSI, locals: Map<String, Int>, asm: WasmAssembler) {
         pushValue(inst.value, locals, asm)
         when {
             inst.value.type == Type.F32 && inst.toType in setOf(Type.I1, Type.I8, Type.I16, Type.I32) -> asm.i32TruncF32S()
@@ -942,7 +943,7 @@ class WasmCodeGenerator : CodeGenerator {
         asm.localSet(locals[inst.dest.name]!!)
     }
 
-    private fun emitFPToUI(inst: Instruction.FPToUI, locals: Map<String, Int>, asm: WasmAssembler) {
+    private fun emitFPToUI(inst: FPToUI, locals: Map<String, Int>, asm: WasmAssembler) {
         pushValue(inst.value, locals, asm)
         when {
             inst.value.type == Type.F32 && inst.toType in setOf(Type.I1, Type.I8, Type.I16, Type.I32) -> asm.i32TruncF32U()
@@ -954,7 +955,7 @@ class WasmCodeGenerator : CodeGenerator {
         asm.localSet(locals[inst.dest.name]!!)
     }
 
-    private fun emitLoad(inst: Instruction.Load, locals: Map<String, Int>, asm: WasmAssembler) {
+    private fun emitLoad(inst: Load, locals: Map<String, Int>, asm: WasmAssembler) {
         pushValue(inst.ptr, locals, asm)
         when (inst.loadType) {
             Type.I8 -> asm.i32Load8U(0, 0)
@@ -968,7 +969,7 @@ class WasmCodeGenerator : CodeGenerator {
         asm.localSet(locals[inst.dest.name]!!)
     }
 
-    private fun emitStore(inst: Instruction.Store, locals: Map<String, Int>, asm: WasmAssembler) {
+    private fun emitStore(inst: Store, locals: Map<String, Int>, asm: WasmAssembler) {
         pushValue(inst.ptr, locals, asm)
         pushValue(inst.value, locals, asm)
         when (inst.value.type) {
@@ -982,7 +983,7 @@ class WasmCodeGenerator : CodeGenerator {
         }
     }
 
-    private fun emitGep(inst: Instruction.GetElementPtr, locals: Map<String, Int>, asm: WasmAssembler) {
+    private fun emitGep(inst: GetElementPtr, locals: Map<String, Int>, asm: WasmAssembler) {
         pushValue(inst.ptr, locals, asm)
         val constOffset = computeGepOffsetWasm(inst.baseType, inst.indices)
         if (constOffset != null) {
@@ -1034,7 +1035,7 @@ class WasmCodeGenerator : CodeGenerator {
         asm.localSet(locals[inst.dest.name]!!)
     }
 
-    private fun emitExtractValue(inst: Instruction.ExtractValue, locals: Map<String, Int>, asm: WasmAssembler) {
+    private fun emitExtractValue(inst: ExtractValue, locals: Map<String, Int>, asm: WasmAssembler) {
         val fieldOffset = wasmAggregateFieldOffset(inst.aggregate.type, inst.indices)
         val fieldType = wasmAggregateFieldType(inst.aggregate.type, inst.indices)
         pushValue(inst.aggregate, locals, asm)
@@ -1050,7 +1051,7 @@ class WasmCodeGenerator : CodeGenerator {
         asm.localSet(locals[inst.dest.name]!!)
     }
 
-    private fun emitInsertValue(inst: Instruction.InsertValue, locals: Map<String, Int>, asm: WasmAssembler) {
+    private fun emitInsertValue(inst: InsertValue, locals: Map<String, Int>, asm: WasmAssembler) {
         val fieldOffset = wasmAggregateFieldOffset(inst.aggregate.type, inst.indices)
         val fieldType = wasmAggregateFieldType(inst.aggregate.type, inst.indices)
 

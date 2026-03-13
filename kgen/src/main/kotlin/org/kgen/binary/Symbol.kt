@@ -1,5 +1,27 @@
 package org.kgen.binary
 
+/**
+ * A symbol in an object file — a named entity with an address, type, and visibility.
+ *
+ * Symbols represent functions, global variables, TLS variables, imports, and exports.
+ * They are the primary mechanism for cross-module linking and dynamic binding.
+ *
+ * ```kotlin
+ * val obj = ElfReader.toObjectFile(ElfReader.read(bytes))
+ * // Find all exported functions
+ * val exports = obj.symbols.filter { it.binding == SymbolBinding.GLOBAL && it.kind == SymbolKind.FUNCTION }
+ * // Look up a specific symbol
+ * val main = obj.symbols.firstOrNull { it.name == "main" }
+ * ```
+ *
+ * @property name Symbol name (may be mangled — use [org.kgen.binary.mangling.Demangler] to decode).
+ * @property value Virtual address or offset within the section.
+ * @property size Size in bytes (0 if unknown).
+ * @property section Owning section name (null for external/undefined symbols).
+ * @property binding Visibility scope (LOCAL, GLOBAL, WEAK).
+ * @property kind What the symbol represents (FUNCTION, DATA, TLS, etc.).
+ * @property visibility Dynamic linker visibility (DEFAULT, HIDDEN, PROTECTED).
+ */
 data class Symbol(
     val name: String,
     val value: Long = 0,                     // address or value

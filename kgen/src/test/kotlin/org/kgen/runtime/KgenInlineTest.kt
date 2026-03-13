@@ -3,10 +3,10 @@ package org.kgen.runtime
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.FnAttribute
-import org.kgen.ir.Instruction
 import org.kgen.ir.target.Target
 import org.kgen.runtime.compile.RuntimeCompiler
 import org.kgen.target.jvm.*
+import org.kgen.ir.instructions.*
 
 class KgenInlineTest {
 
@@ -138,7 +138,7 @@ class KgenInlineTest {
         assertNotNull(quadFunc, "quadruple function should exist")
 
         val calls = quadFunc!!.blocks.flatMap { block ->
-            block.instructions.filterIsInstance<Instruction.Call>()
+            block.instructions.filterIsInstance<Call>()
         }.filter { call ->
             val funcName = when (val f = call.function) {
                 is org.kgen.ir.FunctionRef -> f.name
@@ -161,7 +161,7 @@ class KgenInlineTest {
         assertNotNull(quadFunc)
 
         val adds = quadFunc!!.blocks.flatMap { block ->
-            block.instructions.filterIsInstance<Instruction.Add>()
+            block.instructions.filterIsInstance<Add>()
         }
 
         // doubleIt does x + x, called twice → should have 2 Add instructions

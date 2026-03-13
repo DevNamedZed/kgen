@@ -1,6 +1,7 @@
 package org.kgen.ir.verify
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.*
 import org.kgen.ir.types.*
 import org.junit.jupiter.api.Test
@@ -28,12 +29,12 @@ class IrVerifierComprehensiveTest {
         name: String = "f",
         params: List<Parameter> = emptyList(),
         returnType: Type = Type.Void,
-        blocks: List<BasicBlock> = listOf(BasicBlock("entry", listOf(Instruction.Ret(null)))),
+        blocks: List<BasicBlock> = listOf(BasicBlock("entry", listOf(Ret(null)))),
         isExternal: Boolean = false,
     ) = IrFunction(name, params, returnType, blocks, isExternal)
 
     private fun singleInstrFunc(vararg instructions: Instruction, returnType: Type = Type.Void): Module {
-        val instList = instructions.toList() + Instruction.Ret(null)
+        val instList = instructions.toList() + Ret(null)
         return Module(name = "test", functions = listOf(
             IrFunction("f", emptyList(), returnType, listOf(BasicBlock("entry", instList)))
         ))
@@ -78,8 +79,8 @@ class IrVerifierComprehensiveTest {
         val mod = Module(name = "test", functions = listOf(
             IrFunction("add", listOf(a, b), Type.I32, listOf(
                 BasicBlock("entry", listOf(
-                    Instruction.Add(ref("%0"), a, b),
-                    Instruction.Ret(ref("%0")),
+                    Add(ref("%0"), a, b),
+                    Ret(ref("%0")),
                 ))
             ))
         ))
@@ -129,11 +130,11 @@ class IrVerifierComprehensiveTest {
         val mod = Module(name = "test", functions = listOf(
             IrFunction("sw", listOf(a), Type.Void, listOf(
                 BasicBlock("entry", listOf(
-                    Instruction.Switch(a, "default", listOf(Constant.I32(0) to "case0", Constant.I32(1) to "case1")),
+                    Switch(a, "default", listOf(Constant.I32(0) to "case0", Constant.I32(1) to "case1")),
                 )),
-                BasicBlock("case0", listOf(Instruction.Ret(null))),
-                BasicBlock("case1", listOf(Instruction.Ret(null))),
-                BasicBlock("default", listOf(Instruction.Ret(null))),
+                BasicBlock("case0", listOf(Ret(null))),
+                BasicBlock("case1", listOf(Ret(null))),
+                BasicBlock("default", listOf(Ret(null))),
             ))
         ))
         assertValid(mod)
@@ -145,10 +146,10 @@ class IrVerifierComprehensiveTest {
         val mod = Module(name = "test", functions = listOf(
             IrFunction("mem", listOf(p), Type.I32, listOf(
                 BasicBlock("entry", listOf(
-                    Instruction.Alloca(ref("%0", Type.OpaquePointer), Type.I32),
-                    Instruction.Load(ref("%1", Type.I32), p, Type.I32),
-                    Instruction.Store(Constant.I32(42), p),
-                    Instruction.Ret(ref("%1", Type.I32)),
+                    Alloca(ref("%0", Type.OpaquePointer), Type.I32),
+                    Load(ref("%1", Type.I32), p, Type.I32),
+                    Store(Constant.I32(42), p),
+                    Ret(ref("%1", Type.I32)),
                 ))
             ))
         ))
@@ -161,8 +162,8 @@ class IrVerifierComprehensiveTest {
         val mod = Module(name = "test", functions = listOf(
             IrFunction("conv", listOf(a), Type.I64, listOf(
                 BasicBlock("entry", listOf(
-                    Instruction.ZExt(ref("%0", Type.I64), a, Type.I64),
-                    Instruction.Ret(ref("%0", Type.I64)),
+                    ZExt(ref("%0", Type.I64), a, Type.I64),
+                    Ret(ref("%0", Type.I64)),
                 ))
             ))
         ))
@@ -177,8 +178,8 @@ class IrVerifierComprehensiveTest {
         val mod = Module(name = "test", functions = listOf(
             IrFunction("sel", listOf(c, a, b), Type.I32, listOf(
                 BasicBlock("entry", listOf(
-                    Instruction.Select(ref("%0"), c, a, b),
-                    Instruction.Ret(ref("%0")),
+                    Select(ref("%0"), c, a, b),
+                    Ret(ref("%0")),
                 ))
             ))
         ))
@@ -193,12 +194,12 @@ class IrVerifierComprehensiveTest {
         val mod = Module(name = "test", functions = listOf(
             IrFunction("caller", listOf(a), Type.I32, listOf(
                 BasicBlock("entry", listOf(
-                    Instruction.Call(ref("%0"), funcRef, listOf(a), Type.I32),
-                    Instruction.Ret(ref("%0")),
+                    Call(ref("%0"), funcRef, listOf(a), Type.I32),
+                    Ret(ref("%0")),
                 ))
             )),
             IrFunction("callee", listOf(param32("x", 0)), Type.I32,
-                listOf(BasicBlock("entry", listOf(Instruction.Ret(param32("x", 0)))))),
+                listOf(BasicBlock("entry", listOf(Ret(param32("x", 0)))))),
         ))
         assertValid(mod)
     }
@@ -209,8 +210,8 @@ class IrVerifierComprehensiveTest {
         val mod = Module(name = "test", functions = listOf(
             IrFunction("gep", listOf(p), Type.OpaquePointer, listOf(
                 BasicBlock("entry", listOf(
-                    Instruction.GetElementPtr(ref("%0", Type.OpaquePointer), Type.I32, p, listOf(Constant.I32(0))),
-                    Instruction.Ret(ref("%0", Type.OpaquePointer)),
+                    GetElementPtr(ref("%0", Type.OpaquePointer), Type.I32, p, listOf(Constant.I32(0))),
+                    Ret(ref("%0", Type.OpaquePointer)),
                 ))
             ))
         ))
@@ -221,7 +222,7 @@ class IrVerifierComprehensiveTest {
     fun `valid function with unreachable passes`() {
         val mod = Module(name = "test", functions = listOf(
             IrFunction("unreachable", emptyList(), Type.Void, listOf(
-                BasicBlock("entry", listOf(Instruction.Unreachable())),
+                BasicBlock("entry", listOf(Unreachable())),
             ))
         ))
         assertValid(mod)
@@ -263,8 +264,8 @@ class IrVerifierComprehensiveTest {
         assertInvalid(
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
-                    BasicBlock("entry", listOf(Instruction.Ret(null))),
-                    BasicBlock("entry", listOf(Instruction.Ret(null))),
+                    BasicBlock("entry", listOf(Ret(null))),
+                    BasicBlock("entry", listOf(Ret(null))),
                 ))
             )),
             "Duplicate block label"
@@ -279,9 +280,9 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(a, b), Type.I32, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.Add(ref("%0"), a, b),
-                        Instruction.Sub(ref("%0"), a, b),
-                        Instruction.Ret(ref("%0")),
+                        Add(ref("%0"), a, b),
+                        Sub(ref("%0"), a, b),
+                        Ret(ref("%0")),
                     ))
                 ))
             )),
@@ -297,7 +298,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.Add(ref("%0"), Constant.I32(1), Constant.I32(2)),
+                        Add(ref("%0"), Constant.I32(1), Constant.I32(2)),
                     ))
                 ))
             )),
@@ -323,9 +324,9 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.Ret(null),
-                        Instruction.Add(ref("%0"), Constant.I32(1), Constant.I32(2)),
-                        Instruction.Ret(null),
+                        Ret(null),
+                        Add(ref("%0"), Constant.I32(1), Constant.I32(2)),
+                        Ret(null),
                     ))
                 ))
             )),
@@ -339,8 +340,8 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.Br("entry"),
-                        Instruction.Ret(null),
+                        Br("entry"),
+                        Ret(null),
                     )),
                 ))
             )),
@@ -355,7 +356,7 @@ class IrVerifierComprehensiveTest {
         assertInvalid(
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void,
-                    listOf(BasicBlock("entry", listOf(Instruction.Ret(null)))),
+                    listOf(BasicBlock("entry", listOf(Ret(null)))),
                     isExternal = true)
             )),
             "must not have a body"
@@ -377,112 +378,112 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `add with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Add(ref("%0"), Constant.I32(1), Constant.I64(2)),
+            Add(ref("%0"), Constant.I32(1), Constant.I64(2)),
         ), "add operands have different types")
     }
 
     @Test
     fun `add with float operands fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Add(ref("%0"), Constant.F32(1.0f), Constant.F32(2.0f)),
+            Add(ref("%0"), Constant.F32(1.0f), Constant.F32(2.0f)),
         ), "add operands must be integer type")
     }
 
     @Test
     fun `sub with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Sub(ref("%0"), Constant.I32(1), Constant.I64(2)),
+            Sub(ref("%0"), Constant.I32(1), Constant.I64(2)),
         ), "sub operands have different types")
     }
 
     @Test
     fun `mul with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Mul(ref("%0"), Constant.I32(1), Constant.I64(2)),
+            Mul(ref("%0"), Constant.I32(1), Constant.I64(2)),
         ), "mul operands have different types")
     }
 
     @Test
     fun `udiv with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.UDiv(ref("%0"), Constant.I32(1), Constant.I64(2)),
+            UDiv(ref("%0"), Constant.I32(1), Constant.I64(2)),
         ), "udiv operands have different types")
     }
 
     @Test
     fun `sdiv with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.SDiv(ref("%0"), Constant.I32(1), Constant.I64(2)),
+            SDiv(ref("%0"), Constant.I32(1), Constant.I64(2)),
         ), "sdiv operands have different types")
     }
 
     @Test
     fun `urem with float operands fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.URem(ref("%0"), Constant.F64(1.0), Constant.F64(2.0)),
+            URem(ref("%0"), Constant.F64(1.0), Constant.F64(2.0)),
         ), "urem operands must be integer type")
     }
 
     @Test
     fun `srem with float operands fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.SRem(ref("%0"), Constant.F32(1.0f), Constant.F32(2.0f)),
+            SRem(ref("%0"), Constant.F32(1.0f), Constant.F32(2.0f)),
         ), "srem operands must be integer type")
     }
 
     @Test
     fun `and with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.And(ref("%0"), Constant.I32(1), Constant.I64(2)),
+            And(ref("%0"), Constant.I32(1), Constant.I64(2)),
         ), "and operands have different types")
     }
 
     @Test
     fun `or with float operands fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Or(ref("%0"), Constant.F32(1.0f), Constant.F32(2.0f)),
+            Or(ref("%0"), Constant.F32(1.0f), Constant.F32(2.0f)),
         ), "or operands must be integer type")
     }
 
     @Test
     fun `xor with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Xor(ref("%0"), Constant.I32(1), Constant.I64(2)),
+            Xor(ref("%0"), Constant.I32(1), Constant.I64(2)),
         ), "xor operands have different types")
     }
 
     @Test
     fun `shl with float operands fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Shl(ref("%0"), Constant.F32(1.0f), Constant.F32(2.0f)),
+            Shl(ref("%0"), Constant.F32(1.0f), Constant.F32(2.0f)),
         ), "shl operands must be integer type")
     }
 
     @Test
     fun `lshr with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.LShr(ref("%0"), Constant.I32(1), Constant.I64(2)),
+            LShr(ref("%0"), Constant.I32(1), Constant.I64(2)),
         ), "lshr operands have different types")
     }
 
     @Test
     fun `ashr with float operands fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.AShr(ref("%0"), Constant.F64(1.0), Constant.F64(2.0)),
+            AShr(ref("%0"), Constant.F64(1.0), Constant.F64(2.0)),
         ), "ashr operands must be integer type")
     }
 
     @Test
     fun `rotl with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.RotateLeft(ref("%0"), Constant.I32(1), Constant.I64(2)),
+            RotateLeft(ref("%0"), Constant.I32(1), Constant.I64(2)),
         ), "rotl operands have different types")
     }
 
     @Test
     fun `rotr with float operands fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.RotateRight(ref("%0"), Constant.F32(1.0f), Constant.F32(2.0f)),
+            RotateRight(ref("%0"), Constant.F32(1.0f), Constant.F32(2.0f)),
         ), "rotr operands must be integer type")
     }
 
@@ -491,56 +492,56 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `neg with float operand fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Neg(ref("%0"), Constant.F32(1.0f)),
+            Neg(ref("%0"), Constant.F32(1.0f)),
         ), "neg operand must be integer type")
     }
 
     @Test
     fun `not with float operand fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Not(ref("%0"), Constant.F32(1.0f)),
+            Not(ref("%0"), Constant.F32(1.0f)),
         ), "not operand must be integer type")
     }
 
     @Test
     fun `abs with float operand fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Abs(ref("%0"), Constant.F64(1.0)),
+            Abs(ref("%0"), Constant.F64(1.0)),
         ), "abs operand must be integer type")
     }
 
     @Test
     fun `ctlz with float operand fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Ctlz(ref("%0"), Constant.F32(1.0f)),
+            Ctlz(ref("%0"), Constant.F32(1.0f)),
         ), "ctlz operand must be integer type")
     }
 
     @Test
     fun `cttz with float operand fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Cttz(ref("%0"), Constant.F32(1.0f)),
+            Cttz(ref("%0"), Constant.F32(1.0f)),
         ), "cttz operand must be integer type")
     }
 
     @Test
     fun `ctpop with float operand fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Ctpop(ref("%0"), Constant.F32(1.0f)),
+            Ctpop(ref("%0"), Constant.F32(1.0f)),
         ), "ctpop operand must be integer type")
     }
 
     @Test
     fun `bswap with float operand fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.BSwap(ref("%0"), Constant.F32(1.0f)),
+            BSwap(ref("%0"), Constant.F32(1.0f)),
         ), "bswap operand must be integer type")
     }
 
     @Test
     fun `bitreverse with float operand fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.BitReverse(ref("%0"), Constant.F64(1.0)),
+            BitReverse(ref("%0"), Constant.F64(1.0)),
         ), "bitreverse operand must be integer type")
     }
 
@@ -549,42 +550,42 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `sadd overflow with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.SAddOverflow(ref("%0", Type.Struct(null, listOf(Type.I32, Type.I1))), Constant.I32(1), Constant.I64(2)),
+            SAddOverflow(ref("%0", Type.Struct(null, listOf(Type.I32, Type.I1))), Constant.I32(1), Constant.I64(2)),
         ), "sadd.overflow operands have different types")
     }
 
     @Test
     fun `uadd overflow with float operands fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.UAddOverflow(ref("%0", Type.Struct(null, listOf(Type.F32, Type.I1))), Constant.F32(1.0f), Constant.F32(2.0f)),
+            UAddOverflow(ref("%0", Type.Struct(null, listOf(Type.F32, Type.I1))), Constant.F32(1.0f), Constant.F32(2.0f)),
         ), "uadd.overflow operands must be integer type")
     }
 
     @Test
     fun `ssub overflow with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.SSubOverflow(ref("%0", Type.Struct(null, listOf(Type.I32, Type.I1))), Constant.I32(1), Constant.I64(2)),
+            SSubOverflow(ref("%0", Type.Struct(null, listOf(Type.I32, Type.I1))), Constant.I32(1), Constant.I64(2)),
         ), "ssub.overflow operands have different types")
     }
 
     @Test
     fun `usub overflow with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.USubOverflow(ref("%0", Type.Struct(null, listOf(Type.I32, Type.I1))), Constant.I32(1), Constant.I64(2)),
+            USubOverflow(ref("%0", Type.Struct(null, listOf(Type.I32, Type.I1))), Constant.I32(1), Constant.I64(2)),
         ), "usub.overflow operands have different types")
     }
 
     @Test
     fun `smul overflow with float operands fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.SMulOverflow(ref("%0", Type.Struct(null, listOf(Type.F32, Type.I1))), Constant.F32(1.0f), Constant.F32(2.0f)),
+            SMulOverflow(ref("%0", Type.Struct(null, listOf(Type.F32, Type.I1))), Constant.F32(1.0f), Constant.F32(2.0f)),
         ), "smul.overflow operands must be integer type")
     }
 
     @Test
     fun `umul overflow with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.UMulOverflow(ref("%0", Type.Struct(null, listOf(Type.I32, Type.I1))), Constant.I32(1), Constant.I64(2)),
+            UMulOverflow(ref("%0", Type.Struct(null, listOf(Type.I32, Type.I1))), Constant.I32(1), Constant.I64(2)),
         ), "umul.overflow operands have different types")
     }
 
@@ -593,28 +594,28 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `sadd sat with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.SAddSat(ref("%0"), Constant.I32(1), Constant.I64(2)),
+            SAddSat(ref("%0"), Constant.I32(1), Constant.I64(2)),
         ), "sadd.sat operands have different types")
     }
 
     @Test
     fun `uadd sat with float operands fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.UAddSat(ref("%0"), Constant.F32(1.0f), Constant.F32(2.0f)),
+            UAddSat(ref("%0"), Constant.F32(1.0f), Constant.F32(2.0f)),
         ), "uadd.sat operands must be integer type")
     }
 
     @Test
     fun `ssub sat with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.SSubSat(ref("%0"), Constant.I32(1), Constant.I64(2)),
+            SSubSat(ref("%0"), Constant.I32(1), Constant.I64(2)),
         ), "ssub.sat operands have different types")
     }
 
     @Test
     fun `usub sat with float operands fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.USubSat(ref("%0"), Constant.F32(1.0f), Constant.F32(2.0f)),
+            USubSat(ref("%0"), Constant.F32(1.0f), Constant.F32(2.0f)),
         ), "usub.sat operands must be integer type")
     }
 
@@ -623,28 +624,28 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `smin with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.SMin(ref("%0"), Constant.I32(1), Constant.I64(2)),
+            SMin(ref("%0"), Constant.I32(1), Constant.I64(2)),
         ), "smin operands have different types")
     }
 
     @Test
     fun `smax with float operands fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.SMax(ref("%0"), Constant.F32(1.0f), Constant.F32(2.0f)),
+            SMax(ref("%0"), Constant.F32(1.0f), Constant.F32(2.0f)),
         ), "smax operands must be integer type")
     }
 
     @Test
     fun `umin with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.UMin(ref("%0"), Constant.I32(1), Constant.I64(2)),
+            UMin(ref("%0"), Constant.I32(1), Constant.I64(2)),
         ), "umin operands have different types")
     }
 
     @Test
     fun `umax with float operands fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.UMax(ref("%0"), Constant.F64(1.0), Constant.F64(2.0)),
+            UMax(ref("%0"), Constant.F64(1.0), Constant.F64(2.0)),
         ), "umax operands must be integer type")
     }
 
@@ -653,70 +654,70 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `fadd with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FAdd(ref("%0", Type.F32), Constant.F32(1.0f), Constant.F64(2.0)),
+            FAdd(ref("%0", Type.F32), Constant.F32(1.0f), Constant.F64(2.0)),
         ), "fadd operands have different types")
     }
 
     @Test
     fun `fadd with integer operands fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FAdd(ref("%0"), Constant.I32(1), Constant.I32(2)),
+            FAdd(ref("%0"), Constant.I32(1), Constant.I32(2)),
         ), "fadd operands must be float type")
     }
 
     @Test
     fun `fsub with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FSub(ref("%0", Type.F32), Constant.F32(1.0f), Constant.F64(2.0)),
+            FSub(ref("%0", Type.F32), Constant.F32(1.0f), Constant.F64(2.0)),
         ), "fsub operands have different types")
     }
 
     @Test
     fun `fmul with integer operands fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FMul(ref("%0"), Constant.I32(1), Constant.I32(2)),
+            FMul(ref("%0"), Constant.I32(1), Constant.I32(2)),
         ), "fmul operands must be float type")
     }
 
     @Test
     fun `fdiv with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FDiv(ref("%0", Type.F32), Constant.F32(1.0f), Constant.F64(2.0)),
+            FDiv(ref("%0", Type.F32), Constant.F32(1.0f), Constant.F64(2.0)),
         ), "fdiv operands have different types")
     }
 
     @Test
     fun `frem with integer operands fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FRem(ref("%0"), Constant.I32(1), Constant.I32(2)),
+            FRem(ref("%0"), Constant.I32(1), Constant.I32(2)),
         ), "frem operands must be float type")
     }
 
     @Test
     fun `fmin with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FMin(ref("%0", Type.F32), Constant.F32(1.0f), Constant.F64(2.0)),
+            FMin(ref("%0", Type.F32), Constant.F32(1.0f), Constant.F64(2.0)),
         ), "fmin operands have different types")
     }
 
     @Test
     fun `fmax with integer operands fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FMax(ref("%0"), Constant.I32(1), Constant.I32(2)),
+            FMax(ref("%0"), Constant.I32(1), Constant.I32(2)),
         ), "fmax operands must be float type")
     }
 
     @Test
     fun `copysign with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.CopySign(ref("%0", Type.F32), Constant.F32(1.0f), Constant.F64(2.0)),
+            CopySign(ref("%0", Type.F32), Constant.F32(1.0f), Constant.F64(2.0)),
         ), "copysign operands have different types")
     }
 
     @Test
     fun `copysign with integer operands fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.CopySign(ref("%0"), Constant.I32(1), Constant.I32(2)),
+            CopySign(ref("%0"), Constant.I32(1), Constant.I32(2)),
         ), "copysign operands must be float type")
     }
 
@@ -725,63 +726,63 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `fneg with integer operand fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FNeg(ref("%0"), Constant.I32(1)),
+            FNeg(ref("%0"), Constant.I32(1)),
         ), "fneg operand must be float type")
     }
 
     @Test
     fun `fabs with integer operand fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FAbs(ref("%0"), Constant.I32(1)),
+            FAbs(ref("%0"), Constant.I32(1)),
         ), "fabs operand must be float type")
     }
 
     @Test
     fun `sqrt with integer operand fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Sqrt(ref("%0"), Constant.I32(1)),
+            Sqrt(ref("%0"), Constant.I32(1)),
         ), "sqrt operand must be float type")
     }
 
     @Test
     fun `ceil with integer operand fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Ceil(ref("%0"), Constant.I32(1)),
+            Ceil(ref("%0"), Constant.I32(1)),
         ), "ceil operand must be float type")
     }
 
     @Test
     fun `floor with integer operand fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Floor(ref("%0"), Constant.I32(1)),
+            Floor(ref("%0"), Constant.I32(1)),
         ), "floor operand must be float type")
     }
 
     @Test
     fun `round with integer operand fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Round(ref("%0"), Constant.I32(1)),
+            Round(ref("%0"), Constant.I32(1)),
         ), "round operand must be float type")
     }
 
     @Test
     fun `trunc with integer operand fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Trunc(ref("%0"), Constant.I32(1)),
+            Trunc(ref("%0"), Constant.I32(1)),
         ), "trunc operand must be float type")
     }
 
     @Test
     fun `fma with mismatched operand types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FMA(ref("%0", Type.F32), Constant.F32(1.0f), Constant.F32(2.0f), Constant.F64(3.0)),
+            FMA(ref("%0", Type.F32), Constant.F32(1.0f), Constant.F32(2.0f), Constant.F64(3.0)),
         ), "fma operands must all be same type")
     }
 
     @Test
     fun `fma with integer operands fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FMA(ref("%0"), Constant.I32(1), Constant.I32(2), Constant.I32(3)),
+            FMA(ref("%0"), Constant.I32(1), Constant.I32(2), Constant.I32(3)),
         ), "fma operand must be float type")
     }
 
@@ -790,35 +791,35 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `icmp with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.ICmp(ref("%0", Type.I1), ICmpPredicate.EQ, Constant.I32(1), Constant.I64(2)),
+            ICmp(ref("%0", Type.I1), ICmpPredicate.EQ, Constant.I32(1), Constant.I64(2)),
         ), "icmp operands have different types")
     }
 
     @Test
     fun `icmp with non-i1 result fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.ICmp(ref("%0"), ICmpPredicate.EQ, Constant.I32(1), Constant.I32(2)),
+            ICmp(ref("%0"), ICmpPredicate.EQ, Constant.I32(1), Constant.I32(2)),
         ), "icmp result must be i1")
     }
 
     @Test
     fun `fcmp with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FCmp(ref("%0", Type.I1), FCmpPredicate.OEQ, Constant.F32(1.0f), Constant.F64(2.0)),
+            FCmp(ref("%0", Type.I1), FCmpPredicate.OEQ, Constant.F32(1.0f), Constant.F64(2.0)),
         ), "fcmp operands have different types")
     }
 
     @Test
     fun `fcmp with integer operands fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FCmp(ref("%0", Type.I1), FCmpPredicate.OEQ, Constant.I32(1), Constant.I32(2)),
+            FCmp(ref("%0", Type.I1), FCmpPredicate.OEQ, Constant.I32(1), Constant.I32(2)),
         ), "fcmp operands must be float type")
     }
 
     @Test
     fun `fcmp with non-i1 result fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FCmp(ref("%0"), FCmpPredicate.OEQ, Constant.F32(1.0f), Constant.F32(2.0f)),
+            FCmp(ref("%0"), FCmpPredicate.OEQ, Constant.F32(1.0f), Constant.F32(2.0f)),
         ), "fcmp result must be i1")
     }
 
@@ -827,35 +828,35 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `load from non-pointer fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Load(ref("%0"), Constant.I32(42), Type.I32),
+            Load(ref("%0"), Constant.I32(42), Type.I32),
         ), "load ptr operand must be pointer type")
     }
 
     @Test
     fun `load result type mismatch fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Load(ref("%0"), Constant.NullPtr, Type.I64),
+            Load(ref("%0"), Constant.NullPtr, Type.I64),
         ), "load result type")
     }
 
     @Test
     fun `store to non-pointer fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Store(Constant.I32(42), Constant.I32(0)),
+            Store(Constant.I32(42), Constant.I32(0)),
         ), "store ptr operand must be pointer type")
     }
 
     @Test
     fun `alloca with float numElements fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Alloca(ref("%0", Type.OpaquePointer), Type.I32, Constant.F32(4.0f)),
+            Alloca(ref("%0", Type.OpaquePointer), Type.I32, Constant.F32(4.0f)),
         ), "alloca numElements must be integer type")
     }
 
     @Test
     fun `cmpxchg with non-pointer fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.CmpXchg(ref("%0", Type.Struct(null, listOf(Type.I32, Type.I1))), Constant.I32(0), Constant.I32(1), Constant.I32(2),
+            CmpXchg(ref("%0", Type.Struct(null, listOf(Type.I32, Type.I1))), Constant.I32(0), Constant.I32(1), Constant.I32(2),
                 AtomicOrdering.SEQ_CST, AtomicOrdering.ACQUIRE),
         ), "cmpxchg ptr operand must be pointer type")
     }
@@ -863,7 +864,7 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `cmpxchg with mismatched cmp and new types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.CmpXchg(ref("%0", Type.Struct(null, listOf(Type.I32, Type.I1))), Constant.NullPtr, Constant.I32(1), Constant.I64(2),
+            CmpXchg(ref("%0", Type.Struct(null, listOf(Type.I32, Type.I1))), Constant.NullPtr, Constant.I32(1), Constant.I64(2),
                 AtomicOrdering.SEQ_CST, AtomicOrdering.ACQUIRE),
         ), "cmpxchg compare and new values must have same type")
     }
@@ -871,56 +872,56 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `atomicrmw with non-pointer fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.AtomicRMW(ref("%0"), AtomicRMWOp.ADD, Constant.I32(0), Constant.I32(1), AtomicOrdering.SEQ_CST),
+            AtomicRMW(ref("%0"), AtomicRMWOp.ADD, Constant.I32(0), Constant.I32(1), AtomicOrdering.SEQ_CST),
         ), "atomicrmw ptr operand must be pointer type")
     }
 
     @Test
     fun `memcpy with non-pointer dst fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.MemCpy(Constant.I32(0), Constant.NullPtr, Constant.I32(10)),
+            MemCpy(Constant.I32(0), Constant.NullPtr, Constant.I32(10)),
         ), "memcpy dst and src must be pointer types")
     }
 
     @Test
     fun `memset with non-pointer dst fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.MemSet(Constant.I32(0), Constant.I8(0), Constant.I32(10)),
+            MemSet(Constant.I32(0), Constant.I8(0), Constant.I32(10)),
         ), "memset dst must be pointer type")
     }
 
     @Test
     fun `memmove with non-pointer src fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.MemMove(Constant.NullPtr, Constant.I32(0), Constant.I32(10)),
+            MemMove(Constant.NullPtr, Constant.I32(0), Constant.I32(10)),
         ), "memmove dst and src must be pointer types")
     }
 
     @Test
     fun `prefetch with non-pointer address fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Prefetch(Constant.I32(0), 0, 3, 0),
+            Prefetch(Constant.I32(0), 0, 3, 0),
         ), "prefetch address must be pointer type")
     }
 
     @Test
     fun `stackrestore with non-pointer fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.StackRestore(Constant.I32(0)),
+            StackRestore(Constant.I32(0)),
         ), "stackrestore operand must be pointer type")
     }
 
     @Test
     fun `lifetime start with non-pointer fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.LifetimeStart(Constant.I32(0), 4),
+            LifetimeStart(Constant.I32(0), 4),
         ), "lifetime.start operand must be pointer type")
     }
 
     @Test
     fun `lifetime end with non-pointer fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.LifetimeEnd(Constant.I32(0), 4),
+            LifetimeEnd(Constant.I32(0), 4),
         ), "lifetime.end operand must be pointer type")
     }
 
@@ -929,28 +930,28 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `gep with non-pointer base fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.GetElementPtr(ref("%0", Type.OpaquePointer), Type.I32, Constant.I32(0), listOf(Constant.I32(0))),
+            GetElementPtr(ref("%0", Type.OpaquePointer), Type.I32, Constant.I32(0), listOf(Constant.I32(0))),
         ), "getelementptr ptr operand must be pointer type")
     }
 
     @Test
     fun `gep with no indices fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.GetElementPtr(ref("%0", Type.OpaquePointer), Type.I32, Constant.NullPtr, emptyList()),
+            GetElementPtr(ref("%0", Type.OpaquePointer), Type.I32, Constant.NullPtr, emptyList()),
         ), "getelementptr must have at least one index")
     }
 
     @Test
     fun `gep with non-integer index fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.GetElementPtr(ref("%0", Type.OpaquePointer), Type.I32, Constant.NullPtr, listOf(Constant.F32(0.0f))),
+            GetElementPtr(ref("%0", Type.OpaquePointer), Type.I32, Constant.NullPtr, listOf(Constant.F32(0.0f))),
         ), "getelementptr index 0 must be integer type")
     }
 
     @Test
     fun `gep with mixed integer and float indices fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.GetElementPtr(ref("%0", Type.OpaquePointer), Type.I32, Constant.NullPtr,
+            GetElementPtr(ref("%0", Type.OpaquePointer), Type.I32, Constant.NullPtr,
                 listOf(Constant.I32(0), Constant.F64(1.0))),
         ), "getelementptr index 1 must be integer type")
     }
@@ -962,7 +963,7 @@ class IrVerifierComprehensiveTest {
         assertInvalid(
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
-                    BasicBlock("entry", listOf(Instruction.Br("nonexistent"))),
+                    BasicBlock("entry", listOf(Br("nonexistent"))),
                 ))
             )),
             "br references undefined block"
@@ -975,10 +976,10 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(param32("a", 0)), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.CondBr(param32("a", 0), "t", "f"),
+                        CondBr(param32("a", 0), "t", "f"),
                     )),
-                    BasicBlock("t", listOf(Instruction.Ret(null))),
-                    BasicBlock("f", listOf(Instruction.Ret(null))),
+                    BasicBlock("t", listOf(Ret(null))),
+                    BasicBlock("f", listOf(Ret(null))),
                 ))
             )),
             "condbr condition must be i1"
@@ -991,9 +992,9 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(paramI1("c", 0)), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.CondBr(paramI1("c", 0), "missing", "ok"),
+                        CondBr(paramI1("c", 0), "missing", "ok"),
                     )),
-                    BasicBlock("ok", listOf(Instruction.Ret(null))),
+                    BasicBlock("ok", listOf(Ret(null))),
                 ))
             )),
             "condbr true references undefined block"
@@ -1006,9 +1007,9 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(paramI1("c", 0)), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.CondBr(paramI1("c", 0), "ok", "missing"),
+                        CondBr(paramI1("c", 0), "ok", "missing"),
                     )),
-                    BasicBlock("ok", listOf(Instruction.Ret(null))),
+                    BasicBlock("ok", listOf(Ret(null))),
                 ))
             )),
             "condbr false references undefined block"
@@ -1022,7 +1023,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(a), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.Switch(a, "missing", emptyList()),
+                        Switch(a, "missing", emptyList()),
                     )),
                 ))
             )),
@@ -1037,10 +1038,10 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(a), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.Switch(a, "default", listOf(Constant.I64(0) to "case0")),
+                        Switch(a, "default", listOf(Constant.I64(0) to "case0")),
                     )),
-                    BasicBlock("case0", listOf(Instruction.Ret(null))),
-                    BasicBlock("default", listOf(Instruction.Ret(null))),
+                    BasicBlock("case0", listOf(Ret(null))),
+                    BasicBlock("default", listOf(Ret(null))),
                 ))
             )),
             "switch case type"
@@ -1053,7 +1054,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.IndirectBr(Constant.I32(0), listOf("entry")),
+                        IndirectBr(Constant.I32(0), listOf("entry")),
                     )),
                 ))
             )),
@@ -1067,7 +1068,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(paramPtr("p", 0)), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.IndirectBr(paramPtr("p", 0), listOf("missing")),
+                        IndirectBr(paramPtr("p", 0), listOf("missing")),
                     )),
                 ))
             )),
@@ -1082,7 +1083,7 @@ class IrVerifierComprehensiveTest {
         assertInvalid(
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
-                    BasicBlock("entry", listOf(Instruction.Ret(Constant.I32(42)))),
+                    BasicBlock("entry", listOf(Ret(Constant.I32(42)))),
                 ))
             )),
             "ret with value in void function"
@@ -1094,7 +1095,7 @@ class IrVerifierComprehensiveTest {
         assertInvalid(
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.I32, listOf(
-                    BasicBlock("entry", listOf(Instruction.Ret(null))),
+                    BasicBlock("entry", listOf(Ret(null))),
                 ))
             )),
             "ret without value in non-void function"
@@ -1106,7 +1107,7 @@ class IrVerifierComprehensiveTest {
         assertInvalid(
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.I32, listOf(
-                    BasicBlock("entry", listOf(Instruction.Ret(Constant.I64(42)))),
+                    BasicBlock("entry", listOf(Ret(Constant.I64(42)))),
                 ))
             )),
             "ret type"
@@ -1121,8 +1122,8 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.Phi(ref("%0"), emptyList()),
-                        Instruction.Ret(null),
+                        Phi(ref("%0"), emptyList()),
+                        Ret(null),
                     )),
                 ))
             )),
@@ -1136,12 +1137,12 @@ class IrVerifierComprehensiveTest {
         assertInvalid(
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(c), Type.Void, listOf(
-                    BasicBlock("entry", listOf(Instruction.CondBr(c, "left", "right"))),
-                    BasicBlock("left", listOf(Instruction.Br("merge"))),
-                    BasicBlock("right", listOf(Instruction.Br("merge"))),
+                    BasicBlock("entry", listOf(CondBr(c, "left", "right"))),
+                    BasicBlock("left", listOf(Br("merge"))),
+                    BasicBlock("right", listOf(Br("merge"))),
                     BasicBlock("merge", listOf(
-                        Instruction.Phi(ref("%0"), listOf(Constant.I32(1) to "left", Constant.I64(2) to "right")),
-                        Instruction.Ret(null),
+                        Phi(ref("%0"), listOf(Constant.I32(1) to "left", Constant.I64(2) to "right")),
+                        Ret(null),
                     )),
                 ))
             )),
@@ -1155,8 +1156,8 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.Phi(ref("%0"), listOf(Constant.I32(1) to "nonexistent")),
-                        Instruction.Ret(null),
+                        Phi(ref("%0"), listOf(Constant.I32(1) to "nonexistent")),
+                        Ret(null),
                     )),
                 ))
             )),
@@ -1170,13 +1171,13 @@ class IrVerifierComprehensiveTest {
         assertInvalid(
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(c), Type.Void, listOf(
-                    BasicBlock("entry", listOf(Instruction.CondBr(c, "left", "right"))),
-                    BasicBlock("left", listOf(Instruction.Br("merge"))),
-                    BasicBlock("right", listOf(Instruction.Br("merge"))),
+                    BasicBlock("entry", listOf(CondBr(c, "left", "right"))),
+                    BasicBlock("left", listOf(Br("merge"))),
+                    BasicBlock("right", listOf(Br("merge"))),
                     BasicBlock("merge", listOf(
-                        Instruction.Add(ref("%0"), Constant.I32(1), Constant.I32(2)),
-                        Instruction.Phi(ref("%1"), listOf(Constant.I32(1) to "left", Constant.I32(2) to "right")),
-                        Instruction.Ret(null),
+                        Add(ref("%0"), Constant.I32(1), Constant.I32(2)),
+                        Phi(ref("%1"), listOf(Constant.I32(1) to "left", Constant.I32(2) to "right")),
+                        Ret(null),
                     )),
                 ))
             )),
@@ -1190,13 +1191,13 @@ class IrVerifierComprehensiveTest {
         assertInvalid(
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(c), Type.Void, listOf(
-                    BasicBlock("entry", listOf(Instruction.CondBr(c, "left", "right"))),
-                    BasicBlock("left", listOf(Instruction.Br("merge"))),
-                    BasicBlock("right", listOf(Instruction.Br("merge"))),
-                    BasicBlock("other", listOf(Instruction.Br("merge"))),
+                    BasicBlock("entry", listOf(CondBr(c, "left", "right"))),
+                    BasicBlock("left", listOf(Br("merge"))),
+                    BasicBlock("right", listOf(Br("merge"))),
+                    BasicBlock("other", listOf(Br("merge"))),
                     BasicBlock("merge", listOf(
-                        Instruction.Phi(ref("%0"), listOf(Constant.I32(1) to "left", Constant.I32(2) to "other")),
-                        Instruction.Ret(null),
+                        Phi(ref("%0"), listOf(Constant.I32(1) to "left", Constant.I32(2) to "other")),
+                        Ret(null),
                     )),
                 ))
             )),
@@ -1210,12 +1211,12 @@ class IrVerifierComprehensiveTest {
         assertInvalid(
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(c), Type.Void, listOf(
-                    BasicBlock("entry", listOf(Instruction.CondBr(c, "left", "right"))),
-                    BasicBlock("left", listOf(Instruction.Br("merge"))),
-                    BasicBlock("right", listOf(Instruction.Br("merge"))),
+                    BasicBlock("entry", listOf(CondBr(c, "left", "right"))),
+                    BasicBlock("left", listOf(Br("merge"))),
+                    BasicBlock("right", listOf(Br("merge"))),
                     BasicBlock("merge", listOf(
-                        Instruction.Phi(ref("%0"), listOf(Constant.I32(1) to "left", Constant.I32(3) to "left", Constant.I32(2) to "right")),
-                        Instruction.Ret(null),
+                        Phi(ref("%0"), listOf(Constant.I32(1) to "left", Constant.I32(3) to "left", Constant.I32(2) to "right")),
+                        Ret(null),
                     )),
                 ))
             )),
@@ -1228,126 +1229,126 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `inttrunc with float source fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.IntTrunc(ref("%0", Type.I16), Constant.F32(1.0f), Type.I16),
+            IntTrunc(ref("%0", Type.I16), Constant.F32(1.0f), Type.I16),
         ), "inttrunc source must be integer type")
     }
 
     @Test
     fun `inttrunc with float target fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.IntTrunc(ref("%0", Type.F32), Constant.I32(1), Type.F32),
+            IntTrunc(ref("%0", Type.F32), Constant.I32(1), Type.F32),
         ), "inttrunc target must be integer type")
     }
 
     @Test
     fun `zext with float source fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.ZExt(ref("%0", Type.I64), Constant.F32(1.0f), Type.I64),
+            ZExt(ref("%0", Type.I64), Constant.F32(1.0f), Type.I64),
         ), "zext source must be integer type")
     }
 
     @Test
     fun `sext with float target fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.SExt(ref("%0", Type.F64), Constant.I32(1), Type.F64),
+            SExt(ref("%0", Type.F64), Constant.I32(1), Type.F64),
         ), "sext target must be integer type")
     }
 
     @Test
     fun `fptrunc with integer source fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FPTrunc(ref("%0", Type.F32), Constant.I64(1), Type.F32),
+            FPTrunc(ref("%0", Type.F32), Constant.I64(1), Type.F32),
         ), "fptrunc source must be float type")
     }
 
     @Test
     fun `fptrunc with integer target fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FPTrunc(ref("%0"), Constant.F64(1.0), Type.I32),
+            FPTrunc(ref("%0"), Constant.F64(1.0), Type.I32),
         ), "fptrunc target must be float type")
     }
 
     @Test
     fun `fpext with integer source fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FPExt(ref("%0", Type.F64), Constant.I32(1), Type.F64),
+            FPExt(ref("%0", Type.F64), Constant.I32(1), Type.F64),
         ), "fpext source must be float type")
     }
 
     @Test
     fun `fpext with integer target fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FPExt(ref("%0"), Constant.F32(1.0f), Type.I64),
+            FPExt(ref("%0"), Constant.F32(1.0f), Type.I64),
         ), "fpext target must be float type")
     }
 
     @Test
     fun `fptoui with integer source fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FPToUI(ref("%0"), Constant.I32(1), Type.I32),
+            FPToUI(ref("%0"), Constant.I32(1), Type.I32),
         ), "fptoui source must be float type")
     }
 
     @Test
     fun `fptoui with float target fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FPToUI(ref("%0", Type.F32), Constant.F32(1.0f), Type.F32),
+            FPToUI(ref("%0", Type.F32), Constant.F32(1.0f), Type.F32),
         ), "fptoui target must be integer type")
     }
 
     @Test
     fun `fptosi with integer source fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.FPToSI(ref("%0"), Constant.I32(1), Type.I32),
+            FPToSI(ref("%0"), Constant.I32(1), Type.I32),
         ), "fptosi source must be float type")
     }
 
     @Test
     fun `uitofp with float source fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.UIToFP(ref("%0", Type.F32), Constant.F32(1.0f), Type.F32),
+            UIToFP(ref("%0", Type.F32), Constant.F32(1.0f), Type.F32),
         ), "uitofp source must be integer type")
     }
 
     @Test
     fun `uitofp with integer target fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.UIToFP(ref("%0"), Constant.I32(1), Type.I32),
+            UIToFP(ref("%0"), Constant.I32(1), Type.I32),
         ), "uitofp target must be float type")
     }
 
     @Test
     fun `sitofp with float source fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.SIToFP(ref("%0", Type.F32), Constant.F32(1.0f), Type.F32),
+            SIToFP(ref("%0", Type.F32), Constant.F32(1.0f), Type.F32),
         ), "sitofp source must be integer type")
     }
 
     @Test
     fun `ptrtoint with non-pointer source fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.PtrToInt(ref("%0"), Constant.I32(1), Type.I64),
+            PtrToInt(ref("%0"), Constant.I32(1), Type.I64),
         ), "ptrtoint source must be pointer type")
     }
 
     @Test
     fun `ptrtoint with non-integer target fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.PtrToInt(ref("%0", Type.F64), Constant.NullPtr, Type.F64),
+            PtrToInt(ref("%0", Type.F64), Constant.NullPtr, Type.F64),
         ), "ptrtoint target must be integer type")
     }
 
     @Test
     fun `inttoptr with non-integer source fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.IntToPtr(ref("%0", Type.OpaquePointer), Constant.F32(1.0f), Type.OpaquePointer),
+            IntToPtr(ref("%0", Type.OpaquePointer), Constant.F32(1.0f), Type.OpaquePointer),
         ), "inttoptr source must be integer type")
     }
 
     @Test
     fun `inttoptr with non-pointer target fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.IntToPtr(ref("%0"), Constant.I64(1), Type.I32),
+            IntToPtr(ref("%0"), Constant.I64(1), Type.I32),
         ), "inttoptr target must be pointer type")
     }
 
@@ -1356,21 +1357,21 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `bitcast between incompatible types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.BitCast(ref("%0", Type.F32), Constant.I32(1), Type.F32),
+            BitCast(ref("%0", Type.F32), Constant.I32(1), Type.F32),
         ), "bitcast between incompatible type categories")
     }
 
     @Test
     fun `addrspacecast with non-pointer source fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.AddrSpaceCast(ref("%0", Type.Pointer(Type.I8, 1)), Constant.I32(1), Type.Pointer(Type.I8, 1)),
+            AddrSpaceCast(ref("%0", Type.Pointer(Type.I8, 1)), Constant.I32(1), Type.Pointer(Type.I8, 1)),
         ), "addrspacecast source must be pointer type")
     }
 
     @Test
     fun `addrspacecast with non-pointer target fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.AddrSpaceCast(ref("%0"), Constant.NullPtr, Type.I64),
+            AddrSpaceCast(ref("%0"), Constant.NullPtr, Type.I64),
         ), "addrspacecast target must be pointer type")
     }
 
@@ -1379,21 +1380,21 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `extractelement from non-vector fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.ExtractElement(ref("%0"), Constant.I32(1), Constant.I32(0)),
+            ExtractElement(ref("%0"), Constant.I32(1), Constant.I32(0)),
         ), "extractelement operand must be vector type")
     }
 
     @Test
     fun `insertelement into non-vector fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.InsertElement(ref("%0"), Constant.I32(1), Constant.I32(2), Constant.I32(0)),
+            InsertElement(ref("%0"), Constant.I32(1), Constant.I32(2), Constant.I32(0)),
         ), "insertelement operand must be vector type")
     }
 
     @Test
     fun `shufflevector with non-vector fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.ShuffleVector(ref("%0", Type.Vector(Type.I32, 4)), Constant.I32(1), Constant.I32(2), listOf(0, 1)),
+            ShuffleVector(ref("%0", Type.Vector(Type.I32, 4)), Constant.I32(1), Constant.I32(2), listOf(0, 1)),
         ), "shufflevector operand must be vector type")
     }
 
@@ -1402,21 +1403,21 @@ class IrVerifierComprehensiveTest {
         val v1 = Constant.VectorConst(Type.Vector(Type.I32, 2), listOf(Constant.I32(1), Constant.I32(2)))
         val v2 = Constant.VectorConst(Type.Vector(Type.I64, 2), listOf(Constant.I64(1), Constant.I64(2)))
         assertInvalid(singleInstrFunc(
-            Instruction.ShuffleVector(ref("%0", Type.Vector(Type.I32, 2)), v1, v2, listOf(0, 1)),
+            ShuffleVector(ref("%0", Type.Vector(Type.I32, 2)), v1, v2, listOf(0, 1)),
         ), "shufflevector operands must have same type")
     }
 
     @Test
     fun `splat scalar type mismatch fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Splat(ref("%0", Type.Vector(Type.I32, 4)), Constant.I64(1), Type.Vector(Type.I32, 4)),
+            Splat(ref("%0", Type.Vector(Type.I32, 4)), Constant.I64(1), Type.Vector(Type.I32, 4)),
         ), "splat scalar type must match vector element type")
     }
 
     @Test
     fun `vector reduce with non-vector fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.VectorReduce(ref("%0"), VectorReduceOp.ADD, Constant.I32(1)),
+            VectorReduce(ref("%0"), VectorReduceOp.ADD, Constant.I32(1)),
         ), "vector.reduce operand must be vector type")
     }
 
@@ -1425,21 +1426,21 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `select with non-i1 condition fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Select(ref("%0"), Constant.I32(1), Constant.I32(2), Constant.I32(3)),
+            Select(ref("%0"), Constant.I32(1), Constant.I32(2), Constant.I32(3)),
         ), "select condition must be i1")
     }
 
     @Test
     fun `select with mismatched true false types fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Select(ref("%0"), Constant.I1(true), Constant.I32(2), Constant.I64(3)),
+            Select(ref("%0"), Constant.I1(true), Constant.I32(2), Constant.I64(3)),
         ), "select true/false values have different types")
     }
 
     @Test
     fun `select result type mismatch fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Select(ref("%0", Type.I64), Constant.I1(true), Constant.I32(2), Constant.I32(3)),
+            Select(ref("%0", Type.I64), Constant.I1(true), Constant.I32(2), Constant.I32(3)),
         ), "select result type")
     }
 
@@ -1449,7 +1450,7 @@ class IrVerifierComprehensiveTest {
     fun `call with wrong arg count fails`() {
         val funcType = Type.Function(listOf(Type.I32, Type.I32), Type.I32)
         assertInvalid(singleInstrFunc(
-            Instruction.Call(ref("%0"), FunctionRef("callee", funcType), listOf(Constant.I32(1)), Type.I32),
+            Call(ref("%0"), FunctionRef("callee", funcType), listOf(Constant.I32(1)), Type.I32),
         ), "call arg count")
     }
 
@@ -1457,7 +1458,7 @@ class IrVerifierComprehensiveTest {
     fun `call with wrong arg type fails`() {
         val funcType = Type.Function(listOf(Type.I32), Type.I32)
         assertInvalid(singleInstrFunc(
-            Instruction.Call(ref("%0"), FunctionRef("callee", funcType), listOf(Constant.I64(1)), Type.I32),
+            Call(ref("%0"), FunctionRef("callee", funcType), listOf(Constant.I64(1)), Type.I32),
         ), "call arg 0 type")
     }
 
@@ -1465,7 +1466,7 @@ class IrVerifierComprehensiveTest {
     fun `vararg call with fewer args than required fails`() {
         val funcType = Type.Function(listOf(Type.I32, Type.I32), Type.I32, vararg = true)
         assertInvalid(singleInstrFunc(
-            Instruction.Call(ref("%0"), FunctionRef("callee", funcType), listOf(Constant.I32(1)), Type.I32),
+            Call(ref("%0"), FunctionRef("callee", funcType), listOf(Constant.I32(1)), Type.I32),
         ), "call has fewer args than required params")
     }
 
@@ -1476,9 +1477,9 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.Invoke(null, FunctionRef("callee", funcType), emptyList(), Type.Void, "missing", "unwind"),
+                        Invoke(null, FunctionRef("callee", funcType), emptyList(), Type.Void, "missing", "unwind"),
                     )),
-                    BasicBlock("unwind", listOf(Instruction.Ret(null))),
+                    BasicBlock("unwind", listOf(Ret(null))),
                 ))
             )),
             "invoke normal references undefined block"
@@ -1492,9 +1493,9 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.Invoke(null, FunctionRef("callee", funcType), emptyList(), Type.Void, "normal", "missing"),
+                        Invoke(null, FunctionRef("callee", funcType), emptyList(), Type.Void, "normal", "missing"),
                     )),
-                    BasicBlock("normal", listOf(Instruction.Ret(null))),
+                    BasicBlock("normal", listOf(Ret(null))),
                 ))
             )),
             "invoke unwind references undefined block"
@@ -1506,14 +1507,14 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `expect type mismatch fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Expect(ref("%0"), Constant.I32(1), Constant.I64(2)),
+            Expect(ref("%0"), Constant.I32(1), Constant.I64(2)),
         ), "expect value type")
     }
 
     @Test
     fun `assume with non-i1 condition fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.Assume(Constant.I32(1)),
+            Assume(Constant.I32(1)),
         ), "assume condition must be i1")
     }
 
@@ -1522,14 +1523,14 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `newarray with float size fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.NewArray(ref("%0", Type.Reference(Type.Array(Type.I32, 0))), Type.I32, Constant.F32(10.0f)),
+            NewArray(ref("%0", Type.Reference(Type.Array(Type.I32, 0))), Type.I32, Constant.F32(10.0f)),
         ), "newarray size must be integer type")
     }
 
     @Test
     fun `newmultiarray with float dimension fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.NewMultiArray(ref("%0", Type.Reference(Type.Array(Type.I32, 0))), Type.I32,
+            NewMultiArray(ref("%0", Type.Reference(Type.Array(Type.I32, 0))), Type.I32,
                 listOf(Constant.I32(3), Constant.F64(4.0))),
         ), "newmultiarray dimension 1 must be integer type")
     }
@@ -1537,14 +1538,14 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `arrayget with float index fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.ArrayGet(ref("%0"), Constant.NullRef, Constant.F32(0.0f), Type.I32),
+            ArrayGet(ref("%0"), Constant.NullRef, Constant.F32(0.0f), Type.I32),
         ), "arrayget index must be integer type")
     }
 
     @Test
     fun `arrayset with float index fails`() {
         assertInvalid(singleInstrFunc(
-            Instruction.ArraySet(Constant.NullRef, Constant.F32(0.0f), Constant.I32(42), Type.I32),
+            ArraySet(Constant.NullRef, Constant.F32(0.0f), Constant.I32(42), Type.I32),
         ), "arrayset index must be integer type")
     }
 
@@ -1586,9 +1587,9 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.I32, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.Add(ref("%1"), ref("%0"), Constant.I32(1)),
-                        Instruction.Add(ref("%0"), Constant.I32(1), Constant.I32(2)),
-                        Instruction.Ret(ref("%1")),
+                        Add(ref("%1"), ref("%0"), Constant.I32(1)),
+                        Add(ref("%0"), Constant.I32(1), Constant.I32(2)),
+                        Ret(ref("%1")),
                     ))
                 ))
             )),
@@ -1602,8 +1603,8 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.I32, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.Add(ref("%0"), ref("%undef", Type.I32), Constant.I32(1)),
-                        Instruction.Ret(ref("%0")),
+                        Add(ref("%0"), ref("%undef", Type.I32), Constant.I32(1)),
+                        Ret(ref("%0")),
                     ))
                 ))
             )),
@@ -1618,18 +1619,18 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(c), Type.I32, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.CondBr(c, "left", "right"),
+                        CondBr(c, "left", "right"),
                     )),
                     BasicBlock("left", listOf(
-                        Instruction.Add(ref("%x"), Constant.I32(1), Constant.I32(2)),
-                        Instruction.Br("merge"),
+                        Add(ref("%x"), Constant.I32(1), Constant.I32(2)),
+                        Br("merge"),
                     )),
                     BasicBlock("right", listOf(
-                        Instruction.Add(ref("%y"), ref("%x"), Constant.I32(3)),
-                        Instruction.Br("merge"),
+                        Add(ref("%y"), ref("%x"), Constant.I32(3)),
+                        Br("merge"),
                     )),
                     BasicBlock("merge", listOf(
-                        Instruction.Ret(Constant.I32(0)),
+                        Ret(Constant.I32(0)),
                     )),
                 ))
             )),
@@ -1645,7 +1646,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.CatchSwitch(ref("%0", Type.Token), null, listOf("missing"), null),
+                        CatchSwitch(ref("%0", Type.Token), null, listOf("missing"), null),
                     )),
                 ))
             )),
@@ -1659,7 +1660,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.CatchRet(ref("%tok", Type.Token), "missing"),
+                        CatchRet(ref("%tok", Type.Token), "missing"),
                     )),
                 ))
             )),
@@ -1673,7 +1674,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.CleanupRet(ref("%tok", Type.Token), "missing"),
+                        CleanupRet(ref("%tok", Type.Token), "missing"),
                     )),
                 ))
             )),
@@ -1689,7 +1690,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.TagSwitch(Constant.I32(0), listOf("A" to "missing"), null),
+                        TagSwitch(Constant.I32(0), listOf("A" to "missing"), null),
                     )),
                 ))
             )),
@@ -1704,9 +1705,9 @@ class IrVerifierComprehensiveTest {
         val mod = Module(name = "test", functions = listOf(
             IrFunction("f", emptyList(), Type.Void, listOf(
                 BasicBlock("entry", listOf(
-                    Instruction.Add(ref("%0"), Constant.I32(1), Constant.I64(2)),
-                    Instruction.FAdd(ref("%1", Type.F32), Constant.I32(1), Constant.I32(2)),
-                    Instruction.Ret(Constant.I32(42)),
+                    Add(ref("%0"), Constant.I32(1), Constant.I64(2)),
+                    FAdd(ref("%1", Type.F32), Constant.I32(1), Constant.I32(2)),
+                    Ret(Constant.I32(42)),
                 )),
             )),
         ))
@@ -1769,14 +1770,14 @@ class IrVerifierComprehensiveTest {
 
     @Test
     fun `isTerminator recognizes all terminators`() {
-        assertTrue(IrVerifier.isTerminator(Instruction.Ret(null)))
-        assertTrue(IrVerifier.isTerminator(Instruction.Br("label")))
-        assertTrue(IrVerifier.isTerminator(Instruction.CondBr(Constant.I1(true), "t", "f")))
-        assertTrue(IrVerifier.isTerminator(Instruction.Switch(Constant.I32(0), "default", emptyList())))
-        assertTrue(IrVerifier.isTerminator(Instruction.Unreachable()))
-        assertTrue(IrVerifier.isTerminator(Instruction.Trap()))
-        assertFalse(IrVerifier.isTerminator(Instruction.Add(ref("%0"), Constant.I32(1), Constant.I32(2))))
-        assertFalse(IrVerifier.isTerminator(Instruction.Load(ref("%0"), Constant.NullPtr, Type.I32)))
+        assertTrue(IrVerifier.isTerminator(Ret(null)))
+        assertTrue(IrVerifier.isTerminator(Br("label")))
+        assertTrue(IrVerifier.isTerminator(CondBr(Constant.I1(true), "t", "f")))
+        assertTrue(IrVerifier.isTerminator(Switch(Constant.I32(0), "default", emptyList())))
+        assertTrue(IrVerifier.isTerminator(Unreachable()))
+        assertTrue(IrVerifier.isTerminator(Trap()))
+        assertFalse(IrVerifier.isTerminator(Add(ref("%0"), Constant.I32(1), Constant.I32(2))))
+        assertFalse(IrVerifier.isTerminator(Load(ref("%0"), Constant.NullPtr, Type.I32)))
     }
 
     // Valid complex module passes
@@ -1805,10 +1806,10 @@ class IrVerifierComprehensiveTest {
         val mod = Module(name = "test", functions = listOf(
             IrFunction("f", emptyList(), Type.Void, listOf(
                 BasicBlock("entry", listOf(
-                    Instruction.Add(ref("%0", Type.I8), Constant.I8(1), Constant.I8(2)),
-                    Instruction.Sub(ref("%1", Type.I16), Constant.I16(10), Constant.I16(5)),
-                    Instruction.Mul(ref("%2", Type.I64), Constant.I64(3), Constant.I64(4)),
-                    Instruction.Ret(null),
+                    Add(ref("%0", Type.I8), Constant.I8(1), Constant.I8(2)),
+                    Sub(ref("%1", Type.I16), Constant.I16(10), Constant.I16(5)),
+                    Mul(ref("%2", Type.I64), Constant.I64(3), Constant.I64(4)),
+                    Ret(null),
                 ))
             ))
         ))
@@ -1820,11 +1821,11 @@ class IrVerifierComprehensiveTest {
         val mod = Module(name = "test", functions = listOf(
             IrFunction("f", emptyList(), Type.Void, listOf(
                 BasicBlock("entry", listOf(
-                    Instruction.FAdd(ref("%0", Type.F32), Constant.F32(1.0f), Constant.F32(2.0f)),
-                    Instruction.FSub(ref("%1", Type.F64), Constant.F64(3.0), Constant.F64(4.0)),
-                    Instruction.FMul(ref("%2", Type.F32), Constant.F32(5.0f), Constant.F32(6.0f)),
-                    Instruction.FDiv(ref("%3", Type.F64), Constant.F64(7.0), Constant.F64(8.0)),
-                    Instruction.Ret(null),
+                    FAdd(ref("%0", Type.F32), Constant.F32(1.0f), Constant.F32(2.0f)),
+                    FSub(ref("%1", Type.F64), Constant.F64(3.0), Constant.F64(4.0)),
+                    FMul(ref("%2", Type.F32), Constant.F32(5.0f), Constant.F32(6.0f)),
+                    FDiv(ref("%3", Type.F64), Constant.F64(7.0), Constant.F64(8.0)),
+                    Ret(null),
                 ))
             ))
         ))
@@ -1836,14 +1837,14 @@ class IrVerifierComprehensiveTest {
         val mod = Module(name = "test", functions = listOf(
             IrFunction("f", emptyList(), Type.Void, listOf(
                 BasicBlock("entry", listOf(
-                    Instruction.And(ref("%0"), Constant.I32(0xFF), Constant.I32(0x0F)),
-                    Instruction.Or(ref("%1"), Constant.I32(0xF0), Constant.I32(0x0F)),
-                    Instruction.Xor(ref("%2"), Constant.I32(0xFF), Constant.I32(0x0F)),
-                    Instruction.Shl(ref("%3"), Constant.I32(1), Constant.I32(4)),
-                    Instruction.LShr(ref("%4"), Constant.I32(16), Constant.I32(2)),
-                    Instruction.AShr(ref("%5"), Constant.I32(-8), Constant.I32(1)),
-                    Instruction.Not(ref("%6"), Constant.I32(0)),
-                    Instruction.Ret(null),
+                    And(ref("%0"), Constant.I32(0xFF), Constant.I32(0x0F)),
+                    Or(ref("%1"), Constant.I32(0xF0), Constant.I32(0x0F)),
+                    Xor(ref("%2"), Constant.I32(0xFF), Constant.I32(0x0F)),
+                    Shl(ref("%3"), Constant.I32(1), Constant.I32(4)),
+                    LShr(ref("%4"), Constant.I32(16), Constant.I32(2)),
+                    AShr(ref("%5"), Constant.I32(-8), Constant.I32(1)),
+                    Not(ref("%6"), Constant.I32(0)),
+                    Ret(null),
                 ))
             ))
         ))
@@ -1855,18 +1856,18 @@ class IrVerifierComprehensiveTest {
         val mod = Module(name = "test", functions = listOf(
             IrFunction("f", emptyList(), Type.Void, listOf(
                 BasicBlock("entry", listOf(
-                    Instruction.ZExt(ref("%0", Type.I64), Constant.I32(1), Type.I64),
-                    Instruction.SExt(ref("%1", Type.I64), Constant.I32(-1), Type.I64),
-                    Instruction.IntTrunc(ref("%2", Type.I16), Constant.I32(1000), Type.I16),
-                    Instruction.FPExt(ref("%3", Type.F64), Constant.F32(1.0f), Type.F64),
-                    Instruction.FPTrunc(ref("%4", Type.F32), Constant.F64(1.0), Type.F32),
-                    Instruction.FPToUI(ref("%5"), Constant.F32(1.0f), Type.I32),
-                    Instruction.FPToSI(ref("%6"), Constant.F64(1.0), Type.I32),
-                    Instruction.UIToFP(ref("%7", Type.F32), Constant.I32(1), Type.F32),
-                    Instruction.SIToFP(ref("%8", Type.F64), Constant.I32(-1), Type.F64),
-                    Instruction.PtrToInt(ref("%9", Type.I64), Constant.NullPtr, Type.I64),
-                    Instruction.IntToPtr(ref("%10", Type.OpaquePointer), Constant.I64(0), Type.OpaquePointer),
-                    Instruction.Ret(null),
+                    ZExt(ref("%0", Type.I64), Constant.I32(1), Type.I64),
+                    SExt(ref("%1", Type.I64), Constant.I32(-1), Type.I64),
+                    IntTrunc(ref("%2", Type.I16), Constant.I32(1000), Type.I16),
+                    FPExt(ref("%3", Type.F64), Constant.F32(1.0f), Type.F64),
+                    FPTrunc(ref("%4", Type.F32), Constant.F64(1.0), Type.F32),
+                    FPToUI(ref("%5"), Constant.F32(1.0f), Type.I32),
+                    FPToSI(ref("%6"), Constant.F64(1.0), Type.I32),
+                    UIToFP(ref("%7", Type.F32), Constant.I32(1), Type.F32),
+                    SIToFP(ref("%8", Type.F64), Constant.I32(-1), Type.F64),
+                    PtrToInt(ref("%9", Type.I64), Constant.NullPtr, Type.I64),
+                    IntToPtr(ref("%10", Type.OpaquePointer), Constant.I64(0), Type.OpaquePointer),
+                    Ret(null),
                 ))
             ))
         ))
@@ -1880,12 +1881,12 @@ class IrVerifierComprehensiveTest {
         val mod = Module(name = "test", functions = listOf(
             IrFunction("f", emptyList(), Type.Void, listOf(
                 BasicBlock("entry", listOf(
-                    Instruction.ExtractElement(ref("%0"), vec, Constant.I32(0)),
-                    Instruction.InsertElement(ref("%1", vecType), vec, Constant.I32(99), Constant.I32(0)),
-                    Instruction.ShuffleVector(ref("%2", vecType), vec, vec, listOf(0, 1, 2, 3)),
-                    Instruction.Splat(ref("%3", vecType), Constant.I32(42), vecType),
-                    Instruction.VectorReduce(ref("%4"), VectorReduceOp.ADD, vec),
-                    Instruction.Ret(null),
+                    ExtractElement(ref("%0"), vec, Constant.I32(0)),
+                    InsertElement(ref("%1", vecType), vec, Constant.I32(99), Constant.I32(0)),
+                    ShuffleVector(ref("%2", vecType), vec, vec, listOf(0, 1, 2, 3)),
+                    Splat(ref("%3", vecType), Constant.I32(42), vecType),
+                    VectorReduce(ref("%4"), VectorReduceOp.ADD, vec),
+                    Ret(null),
                 ))
             ))
         ))
@@ -1899,7 +1900,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.CallBr(null, FunctionRef("callee", funcType), emptyList(), Type.Void, "missing", emptyList()),
+                        CallBr(null, FunctionRef("callee", funcType), emptyList(), Type.Void, "missing", emptyList()),
                     )),
                 ))
             )),
@@ -1914,9 +1915,9 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.CallBr(null, FunctionRef("callee", funcType), emptyList(), Type.Void, "ft", listOf("missing")),
+                        CallBr(null, FunctionRef("callee", funcType), emptyList(), Type.Void, "ft", listOf("missing")),
                     )),
-                    BasicBlock("ft", listOf(Instruction.Ret(null))),
+                    BasicBlock("ft", listOf(Ret(null))),
                 ))
             )),
             "callbr indirect references undefined block"
@@ -1929,10 +1930,10 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Instruction.TryCatchRegion("missing", listOf(CatchHandler(Type.ClassRef("Exception"), "handler"))),
-                        Instruction.Ret(null),
+                        TryCatchRegion("missing", listOf(CatchHandler(Type.ClassRef("Exception"), "handler"))),
+                        Ret(null),
                     )),
-                    BasicBlock("handler", listOf(Instruction.Ret(null))),
+                    BasicBlock("handler", listOf(Ret(null))),
                 ))
             )),
             "trycatch try references undefined block"
@@ -1944,15 +1945,15 @@ class IrVerifierComprehensiveTest {
         val c = paramI1("c", 0)
         val mod = Module(name = "test", functions = listOf(
             IrFunction("f", listOf(c), Type.I32, listOf(
-                BasicBlock("entry", listOf(Instruction.CondBr(c, "left", "right"))),
-                BasicBlock("left", listOf(Instruction.Br("merge"))),
-                BasicBlock("right", listOf(Instruction.Br("merge"))),
+                BasicBlock("entry", listOf(CondBr(c, "left", "right"))),
+                BasicBlock("left", listOf(Br("merge"))),
+                BasicBlock("right", listOf(Br("merge"))),
                 BasicBlock("merge", listOf(
-                    Instruction.Phi(ref("%0"), listOf(Constant.I32(1) to "left", Constant.I32(2) to "right")),
-                    Instruction.DebugLoc(1, 1, "test.kt"),
-                    Instruction.Phi(ref("%1"), listOf(Constant.I32(3) to "left", Constant.I32(4) to "right")),
-                    Instruction.Add(ref("%2"), ref("%0"), ref("%1")),
-                    Instruction.Ret(ref("%2")),
+                    Phi(ref("%0"), listOf(Constant.I32(1) to "left", Constant.I32(2) to "right")),
+                    DebugLoc(1, 1, "test.kt"),
+                    Phi(ref("%1"), listOf(Constant.I32(3) to "left", Constant.I32(4) to "right")),
+                    Add(ref("%2"), ref("%0"), ref("%1")),
+                    Ret(ref("%2")),
                 )),
             ))
         ))

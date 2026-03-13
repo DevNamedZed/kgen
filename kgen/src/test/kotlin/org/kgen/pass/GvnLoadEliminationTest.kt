@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -30,7 +31,7 @@ class GvnLoadEliminationTest {
         val insts = module.functions[0].blocks[0].instructions
         // Should have: load, add, ret (second load eliminated)
         assertEquals(3, insts.size, "Redundant load should be eliminated: $insts")
-        val addInst = insts[1] as Instruction.Add
+        val addInst = insts[1] as Add
         assertEquals(addInst.lhs.name, addInst.rhs.name, "Both operands should be the same load result")
     }
 
@@ -47,7 +48,7 @@ class GvnLoadEliminationTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val loads = insts.filterIsInstance<Instruction.Load>()
+        val loads = insts.filterIsInstance<Load>()
         assertEquals(2, loads.size, "Both loads should remain after intervening store")
     }
 
@@ -68,7 +69,7 @@ class GvnLoadEliminationTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val loads = insts.filterIsInstance<Instruction.Load>()
+        val loads = insts.filterIsInstance<Load>()
         assertEquals(1, loads.size, "Second load from 'a' should be eliminated (store was to 'b')")
     }
 
@@ -84,7 +85,7 @@ class GvnLoadEliminationTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val loads = insts.filterIsInstance<Instruction.Load>()
+        val loads = insts.filterIsInstance<Load>()
         assertEquals(2, loads.size, "Volatile loads should not be eliminated")
     }
 
@@ -105,7 +106,7 @@ class GvnLoadEliminationTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val loads = insts.filterIsInstance<Instruction.Load>()
+        val loads = insts.filterIsInstance<Load>()
         assertEquals(1, loads.size, "Second load from g1 should be eliminated (store was to g2)")
     }
 
@@ -124,7 +125,7 @@ class GvnLoadEliminationTest {
         }
         val fn = module.functions.find { !it.isExternal }!!
         val insts = fn.blocks[0].instructions
-        val loads = insts.filterIsInstance<Instruction.Load>()
+        val loads = insts.filterIsInstance<Load>()
         assertEquals(2, loads.size, "Both loads should remain after intervening call")
     }
 
@@ -143,7 +144,7 @@ class GvnLoadEliminationTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val loads = insts.filterIsInstance<Instruction.Load>()
+        val loads = insts.filterIsInstance<Load>()
         assertEquals(1, loads.size, "Two redundant loads should be eliminated")
     }
 
@@ -165,11 +166,11 @@ class GvnLoadEliminationTest {
             finalizeFunction()
         }
         val fn = module.functions[0]
-        val entryLoads = fn.blocks[0].instructions.filterIsInstance<Instruction.Load>()
+        val entryLoads = fn.blocks[0].instructions.filterIsInstance<Load>()
         assertEquals(1, entryLoads.size, "Entry should keep its load")
 
-        val leftLoads = fn.blocks.find { it.label == "left" }!!.instructions.filterIsInstance<Instruction.Load>()
-        val rightLoads = fn.blocks.find { it.label == "right" }!!.instructions.filterIsInstance<Instruction.Load>()
+        val leftLoads = fn.blocks.find { it.label == "left" }!!.instructions.filterIsInstance<Load>()
+        val rightLoads = fn.blocks.find { it.label == "right" }!!.instructions.filterIsInstance<Load>()
         assertEquals(0, leftLoads.size, "Left branch load should be eliminated")
         assertEquals(0, rightLoads.size, "Right branch load should be eliminated")
     }
@@ -193,7 +194,7 @@ class GvnLoadEliminationTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val loads = insts.filterIsInstance<Instruction.Load>()
+        val loads = insts.filterIsInstance<Load>()
         assertEquals(1, loads.size, "Second load from field 0 should be eliminated (store was to field 1)")
     }
 }

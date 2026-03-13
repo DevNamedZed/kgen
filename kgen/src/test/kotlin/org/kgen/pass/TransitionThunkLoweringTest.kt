@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -15,11 +16,11 @@ class TransitionThunkLoweringTest {
         val instrs = findFunc(result, "caller").blocks[0].instructions
 
         // Should be: GCSafepoint, Call(leave_managed), Call(target), Call(enter_managed), ret
-        assertTrue(instrs[0] is Instruction.GCSafepoint, "Should start with safepoint")
-        val leaveCall = instrs[1] as Instruction.Call
+        assertTrue(instrs[0] is GCSafepoint, "Should start with safepoint")
+        val leaveCall = instrs[1] as Call
         assertEquals(TransitionThunkLowering.RT_LEAVE_MANAGED, (leaveCall.function as GlobalRef).name)
-        assertTrue(instrs[2] is Instruction.Call, "Should have actual call")
-        val enterCall = instrs[3] as Instruction.Call
+        assertTrue(instrs[2] is Call, "Should have actual call")
+        val enterCall = instrs[3] as Call
         assertEquals(TransitionThunkLowering.RT_ENTER_MANAGED, (enterCall.function as GlobalRef).name)
     }
 
@@ -30,11 +31,11 @@ class TransitionThunkLoweringTest {
         val instrs = findFunc(result, "caller").blocks[0].instructions
 
         // Should be: Call(enter_managed), Call(target), GCSafepoint, Call(leave_managed), ret
-        val enterCall = instrs[0] as Instruction.Call
+        val enterCall = instrs[0] as Call
         assertEquals(TransitionThunkLowering.RT_ENTER_MANAGED, (enterCall.function as GlobalRef).name)
-        assertTrue(instrs[1] is Instruction.Call, "Should have actual call")
-        assertTrue(instrs[2] is Instruction.GCSafepoint, "Should have safepoint after")
-        val leaveCall = instrs[3] as Instruction.Call
+        assertTrue(instrs[1] is Call, "Should have actual call")
+        assertTrue(instrs[2] is GCSafepoint, "Should have safepoint after")
+        val leaveCall = instrs[3] as Call
         assertEquals(TransitionThunkLowering.RT_LEAVE_MANAGED, (leaveCall.function as GlobalRef).name)
     }
 
@@ -45,7 +46,7 @@ class TransitionThunkLoweringTest {
         val instrs = findFunc(result, "caller").blocks[0].instructions
 
         // The lowered Call should preserve the dest from the original ManagedCall
-        val actualCall = instrs[2] as Instruction.Call
+        val actualCall = instrs[2] as Call
         assertNotNull(actualCall.result)
     }
 
@@ -65,9 +66,9 @@ class TransitionThunkLoweringTest {
         val instrs = findFunc(result, "caller").blocks[0].instructions
 
         // No ManagedCall should remain
-        assertFalse(instrs.any { it is Instruction.ManagedCall })
+        assertFalse(instrs.any { it is ManagedCall })
         // Should have regular Call instructions
-        assertTrue(instrs.any { it is Instruction.Call })
+        assertTrue(instrs.any { it is Call })
     }
 
     private fun buildManagedCallModule(direction: ManagedCallDirection): Module {

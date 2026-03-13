@@ -1,6 +1,7 @@
 package org.kgen.pass
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 
 /**
  * Scalar Replacement of Aggregates (SROA).
@@ -38,7 +39,7 @@ class ScalarReplacementOfAggregates : ModulePass {
             for ((indices, fieldType) in fieldTypes) {
                 val fieldName = "%$nextId"
                 nextId++
-                val fieldAlloca = Instruction.Alloca(
+                val fieldAlloca = Alloca(
                     dest = InstructionRef(fieldName, Type.OpaquePointer),
                     allocType = fieldType,
                 )
@@ -50,7 +51,7 @@ class ScalarReplacementOfAggregates : ModulePass {
 
             for (block in fn.blocks) {
                 for (inst in block.instructions) {
-                    if (inst is Instruction.GetElementPtr && inst.ptr.name == allocaName) {
+                    if (inst is GetElementPtr && inst.ptr.name == allocaName) {
                         val indices = extractConstantIndices(inst) ?: continue
                         val fieldKey = normalizeIndices(indices)
                         val fieldAllocaName = fieldAllocaNames[fieldKey] ?: continue
@@ -73,7 +74,7 @@ class ScalarReplacementOfAggregates : ModulePass {
                 if (destName != null && destName in deadInsts) continue
 
                 when (inst) {
-                    is Instruction.Load -> {
+                    is Load -> {
                         val fieldAlloca = gepToFieldAlloca[inst.ptr.name]
                         if (fieldAlloca != null) {
                             newInsts.add(inst.copy(ptr = InstructionRef(fieldAlloca, Type.OpaquePointer)))
@@ -81,7 +82,7 @@ class ScalarReplacementOfAggregates : ModulePass {
                             newInsts.add(rewriteOperands(inst, replacements))
                         }
                     }
-                    is Instruction.Store -> {
+                    is Store -> {
                         val fieldAlloca = gepToFieldAlloca[inst.ptr.name]
                         if (fieldAlloca != null) {
                             newInsts.add(inst.copy(
@@ -101,12 +102,12 @@ class ScalarReplacementOfAggregates : ModulePass {
         return fn.copy(blocks = resultBlocks)
     }
 
-    private fun findReplaceableAllocas(fn: IrFunction): Map<String, Instruction.Alloca> {
-        val allocas = mutableMapOf<String, Instruction.Alloca>()
+    private fun findReplaceableAllocas(fn: IrFunction): Map<String, Alloca> {
+        val allocas = mutableMapOf<String, Alloca>()
 
         for (block in fn.blocks) {
             for (inst in block.instructions) {
-                if (inst is Instruction.Alloca && inst.numElements == null && isAggregate(inst.allocType)) {
+                if (inst is Alloca && inst.numElements == null && isAggregate(inst.allocType)) {
                     allocas[inst.dest.name] = inst
                 }
             }
@@ -119,7 +120,7 @@ class ScalarReplacementOfAggregates : ModulePass {
 
         for (block in fn.blocks) {
             for (inst in block.instructions) {
-                if (inst is Instruction.GetElementPtr && inst.ptr.name in allocas) {
+                if (inst is GetElementPtr && inst.ptr.name in allocas) {
                     val indices = extractConstantIndices(inst)
                     if (indices == null) {
                         nonReplaceable.add(inst.ptr.name)
@@ -138,12 +139,12 @@ class ScalarReplacementOfAggregates : ModulePass {
                 for (op in allOperands(inst)) {
                     val opName = op.name
                     if (opName in allocas) {
-                        if (inst !is Instruction.GetElementPtr) {
+                        if (inst !is GetElementPtr) {
                             nonReplaceable.add(opName)
                         }
                     }
                     if (opName in gepResults) {
-                        if (inst !is Instruction.Load && inst !is Instruction.Store) {
+                        if (inst !is Load && inst !is Store) {
                             nonReplaceable.add(gepResults[opName]!!)
                         }
                     }
@@ -188,7 +189,7 @@ class ScalarReplacementOfAggregates : ModulePass {
         return current
     }
 
-    private fun extractConstantIndices(gep: Instruction.GetElementPtr): List<Int>? {
+    private fun extractConstantIndices(gep: GetElementPtr): List<Int>? {
         return gep.indices.map { idx ->
             when (idx) {
                 is Constant.I32 -> idx.value
@@ -203,23 +204,23 @@ class ScalarReplacementOfAggregates : ModulePass {
     }
 
     private fun allOperands(inst: Instruction): List<Value> = when (inst) {
-        is Instruction.Load -> listOf(inst.ptr)
-        is Instruction.Store -> listOf(inst.value, inst.ptr)
-        is Instruction.GetElementPtr -> listOf(inst.ptr) + inst.indices
-        is Instruction.Call -> inst.args
-        is Instruction.Ret -> listOfNotNull(inst.value)
-        is Instruction.Add -> listOf(inst.lhs, inst.rhs)
-        is Instruction.Sub -> listOf(inst.lhs, inst.rhs)
-        is Instruction.Mul -> listOf(inst.lhs, inst.rhs)
-        is Instruction.ICmp -> listOf(inst.lhs, inst.rhs)
-        is Instruction.Select -> listOf(inst.condition, inst.trueValue, inst.falseValue)
-        is Instruction.Phi -> inst.incoming.map { it.first }
-        is Instruction.PtrToInt -> listOf(inst.value)
-        is Instruction.IntToPtr -> listOf(inst.value)
-        is Instruction.BitCast -> listOf(inst.value)
-        is Instruction.CondBr -> listOf(inst.condition)
-        is Instruction.ExtractValue -> listOf(inst.aggregate)
-        is Instruction.InsertValue -> listOf(inst.aggregate, inst.element)
+        is Load -> listOf(inst.ptr)
+        is Store -> listOf(inst.value, inst.ptr)
+        is GetElementPtr -> listOf(inst.ptr) + inst.indices
+        is Call -> inst.args
+        is Ret -> listOfNotNull(inst.value)
+        is Add -> listOf(inst.lhs, inst.rhs)
+        is Sub -> listOf(inst.lhs, inst.rhs)
+        is Mul -> listOf(inst.lhs, inst.rhs)
+        is ICmp -> listOf(inst.lhs, inst.rhs)
+        is Select -> listOf(inst.condition, inst.trueValue, inst.falseValue)
+        is Phi -> inst.incoming.map { it.first }
+        is PtrToInt -> listOf(inst.value)
+        is IntToPtr -> listOf(inst.value)
+        is BitCast -> listOf(inst.value)
+        is CondBr -> listOf(inst.condition)
+        is ExtractValue -> listOf(inst.aggregate)
+        is InsertValue -> listOf(inst.aggregate, inst.element)
         else -> emptyList()
     }
 
@@ -230,47 +231,47 @@ class ScalarReplacementOfAggregates : ModulePass {
         if (replacements.isEmpty()) return inst
         fun rw(v: Value): Value = rewriteValue(v, replacements)
         return when (inst) {
-            is Instruction.Add -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Sub -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Mul -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.SDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.UDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.SRem -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.URem -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.And -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Or -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Xor -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Shl -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.LShr -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.AShr -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Neg -> inst.copy(operand = rw(inst.operand))
-            is Instruction.ICmp -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.FAdd -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.FSub -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.FMul -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.FDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.FNeg -> inst.copy(operand = rw(inst.operand))
-            is Instruction.FCmp -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.ZExt -> inst.copy(value = rw(inst.value))
-            is Instruction.SExt -> inst.copy(value = rw(inst.value))
-            is Instruction.IntTrunc -> inst.copy(value = rw(inst.value))
-            is Instruction.Trunc -> inst.copy(operand = rw(inst.operand))
-            is Instruction.Ret -> inst.copy(value = inst.value?.let { rw(it) })
-            is Instruction.Call -> inst.copy(args = inst.args.map { rw(it) })
-            is Instruction.Select -> inst.copy(condition = rw(inst.condition), trueValue = rw(inst.trueValue), falseValue = rw(inst.falseValue))
-            is Instruction.Store -> inst.copy(value = rw(inst.value), ptr = rw(inst.ptr))
-            is Instruction.Load -> inst.copy(ptr = rw(inst.ptr))
-            is Instruction.CondBr -> inst.copy(condition = rw(inst.condition))
-            is Instruction.SIToFP -> inst.copy(value = rw(inst.value))
-            is Instruction.UIToFP -> inst.copy(value = rw(inst.value))
-            is Instruction.FPToSI -> inst.copy(value = rw(inst.value))
-            is Instruction.FPToUI -> inst.copy(value = rw(inst.value))
-            is Instruction.FPExt -> inst.copy(value = rw(inst.value))
-            is Instruction.FPTrunc -> inst.copy(value = rw(inst.value))
-            is Instruction.GetElementPtr -> inst.copy(ptr = rw(inst.ptr), indices = inst.indices.map { rw(it) })
-            is Instruction.Phi -> inst.copy(incoming = inst.incoming.map { (v, l) -> rw(v) to l })
-            is Instruction.ExtractValue -> inst.copy(aggregate = rw(inst.aggregate))
-            is Instruction.InsertValue -> inst.copy(aggregate = rw(inst.aggregate), element = rw(inst.element))
+            is Add -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Sub -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Mul -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is SDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is UDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is SRem -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is URem -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is And -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Or -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Xor -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Shl -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is LShr -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is AShr -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Neg -> inst.copy(operand = rw(inst.operand))
+            is ICmp -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is FAdd -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is FSub -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is FMul -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is FDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is FNeg -> inst.copy(operand = rw(inst.operand))
+            is FCmp -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is ZExt -> inst.copy(value = rw(inst.value))
+            is SExt -> inst.copy(value = rw(inst.value))
+            is IntTrunc -> inst.copy(value = rw(inst.value))
+            is Trunc -> inst.copy(operand = rw(inst.operand))
+            is Ret -> inst.copy(value = inst.value?.let { rw(it) })
+            is Call -> inst.copy(args = inst.args.map { rw(it) })
+            is Select -> inst.copy(condition = rw(inst.condition), trueValue = rw(inst.trueValue), falseValue = rw(inst.falseValue))
+            is Store -> inst.copy(value = rw(inst.value), ptr = rw(inst.ptr))
+            is Load -> inst.copy(ptr = rw(inst.ptr))
+            is CondBr -> inst.copy(condition = rw(inst.condition))
+            is SIToFP -> inst.copy(value = rw(inst.value))
+            is UIToFP -> inst.copy(value = rw(inst.value))
+            is FPToSI -> inst.copy(value = rw(inst.value))
+            is FPToUI -> inst.copy(value = rw(inst.value))
+            is FPExt -> inst.copy(value = rw(inst.value))
+            is FPTrunc -> inst.copy(value = rw(inst.value))
+            is GetElementPtr -> inst.copy(ptr = rw(inst.ptr), indices = inst.indices.map { rw(it) })
+            is Phi -> inst.copy(incoming = inst.incoming.map { (v, l) -> rw(v) to l })
+            is ExtractValue -> inst.copy(aggregate = rw(inst.aggregate))
+            is InsertValue -> inst.copy(aggregate = rw(inst.aggregate), element = rw(inst.element))
             else -> inst
         }
     }

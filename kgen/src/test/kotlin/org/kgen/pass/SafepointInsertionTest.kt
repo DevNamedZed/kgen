@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -20,7 +21,7 @@ class SafepointInsertionTest {
         val result = SafepointInsertion().run(module)
         val instrs = result.functions[0].blocks[0].instructions
         assertEquals(1, instrs.size)
-        assertTrue(instrs[0] is Instruction.Ret)
+        assertTrue(instrs[0] is Ret)
     }
 
     @Test
@@ -28,8 +29,8 @@ class SafepointInsertionTest {
         val module = buildFunctionWithCall("statepoint")
         val result = SafepointInsertion().run(module)
         val instrs = findFunc(result, "f").blocks[0].instructions
-        assertTrue(instrs[0] is Instruction.GCSafepoint, "Should insert safepoint before call")
-        assertTrue(instrs[1] is Instruction.Call, "Call should follow safepoint")
+        assertTrue(instrs[0] is GCSafepoint, "Should insert safepoint before call")
+        assertTrue(instrs[1] is Call, "Call should follow safepoint")
     }
 
     @Test
@@ -39,8 +40,8 @@ class SafepointInsertionTest {
 
         val loopBlock = result.functions[0].blocks[1]
         val lastTwo = loopBlock.instructions.takeLast(2)
-        assertTrue(lastTwo[0] is Instruction.GCSafepoint, "Should insert safepoint before back-edge")
-        assertTrue(lastTwo[1] is Instruction.CondBr, "Back-edge branch should follow")
+        assertTrue(lastTwo[0] is GCSafepoint, "Should insert safepoint before back-edge")
+        assertTrue(lastTwo[1] is CondBr, "Back-edge branch should follow")
     }
 
     @Test
@@ -48,7 +49,7 @@ class SafepointInsertionTest {
         val module = buildFunctionWithExistingSafepoint("statepoint")
         val result = SafepointInsertion().run(module)
         val instrs = findFunc(result, "f").blocks[0].instructions
-        val safepointCount = instrs.count { it is Instruction.GCSafepoint }
+        val safepointCount = instrs.count { it is GCSafepoint }
         assertEquals(1, safepointCount, "Should not duplicate existing safepoint")
     }
 
@@ -57,7 +58,7 @@ class SafepointInsertionTest {
         val module = buildFunctionWithCall("none")
         val result = SafepointInsertion().run(module)
         val instrs = findFunc(result, "f").blocks[0].instructions
-        assertFalse(instrs.any { it is Instruction.GCSafepoint })
+        assertFalse(instrs.any { it is GCSafepoint })
     }
 
     @Test
@@ -65,7 +66,7 @@ class SafepointInsertionTest {
         val module = buildFunctionWithCall("shadow-stack")
         val result = SafepointInsertion().run(module)
         val instrs = findFunc(result, "f").blocks[0].instructions
-        assertTrue(instrs[0] is Instruction.GCSafepoint)
+        assertTrue(instrs[0] is GCSafepoint)
     }
 
     @Test
@@ -94,8 +95,8 @@ class SafepointInsertionTest {
 
         val result = SafepointInsertion().run(withGc)
         val instrs = findFunc(result, "f").blocks[0].instructions
-        assertTrue(instrs[0] is Instruction.GCSafepoint)
-        assertTrue(instrs[1] is Instruction.ManagedCall)
+        assertTrue(instrs[0] is GCSafepoint)
+        assertTrue(instrs[1] is ManagedCall)
     }
 
     private fun buildFunctionWithCall(gc: String): Module {

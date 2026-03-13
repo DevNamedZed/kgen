@@ -2,6 +2,7 @@ package org.kgen.target.riscv.codegen
 
 import org.kgen.target.riscv.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.codegen.alloc.*
 
 sealed interface RiscVLocation {

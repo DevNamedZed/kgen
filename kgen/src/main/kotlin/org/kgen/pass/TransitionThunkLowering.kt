@@ -1,9 +1,10 @@
 package org.kgen.pass
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 
 /**
- * Lowers [Instruction.ManagedCall] instructions into a sequence that handles
+ * Lowers [ManagedCall] instructions into a sequence that handles
  * managed/native boundary transitions.
  *
  * For managed-to-native transitions:
@@ -33,7 +34,7 @@ class TransitionThunkLowering : ModulePass {
         val newBlocks = fn.blocks.map { block ->
             val newInstructions = mutableListOf<Instruction>()
             for (inst in block.instructions) {
-                if (inst is Instruction.ManagedCall) {
+                if (inst is ManagedCall) {
                     counter++
                     lowerManagedCall(inst, newInstructions, counter)
                 } else {
@@ -46,25 +47,25 @@ class TransitionThunkLowering : ModulePass {
     }
 
     private fun lowerManagedCall(
-        mc: Instruction.ManagedCall,
+        mc: ManagedCall,
         out: MutableList<Instruction>,
         id: Int,
     ) {
         when (mc.direction) {
             ManagedCallDirection.MANAGED_TO_NATIVE -> {
                 // Safepoint before leaving managed code
-                out.add(Instruction.GCSafepoint())
+                out.add(GCSafepoint())
                 // Notify runtime we're entering native code
-                out.add(Instruction.Call(
+                out.add(Call(
                     null,
                     GlobalRef(RT_LEAVE_MANAGED, Type.Function(emptyList(), Type.Void)),
                     emptyList(),
                     Type.Void,
                 ))
                 // Actual call
-                out.add(Instruction.Call(mc.dest, mc.function, mc.args, mc.returnType))
+                out.add(Call(mc.dest, mc.function, mc.args, mc.returnType))
                 // Notify runtime we're back in managed code
-                out.add(Instruction.Call(
+                out.add(Call(
                     null,
                     GlobalRef(RT_ENTER_MANAGED, Type.Function(emptyList(), Type.Void)),
                     emptyList(),
@@ -73,18 +74,18 @@ class TransitionThunkLowering : ModulePass {
             }
             ManagedCallDirection.NATIVE_TO_MANAGED -> {
                 // Notify runtime we're entering managed code
-                out.add(Instruction.Call(
+                out.add(Call(
                     null,
                     GlobalRef(RT_ENTER_MANAGED, Type.Function(emptyList(), Type.Void)),
                     emptyList(),
                     Type.Void,
                 ))
                 // Actual call
-                out.add(Instruction.Call(mc.dest, mc.function, mc.args, mc.returnType))
+                out.add(Call(mc.dest, mc.function, mc.args, mc.returnType))
                 // Safepoint on return to managed code
-                out.add(Instruction.GCSafepoint())
+                out.add(GCSafepoint())
                 // Notify runtime we're leaving managed code
-                out.add(Instruction.Call(
+                out.add(Call(
                     null,
                     GlobalRef(RT_LEAVE_MANAGED, Type.Function(emptyList(), Type.Void)),
                     emptyList(),

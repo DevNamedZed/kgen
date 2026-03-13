@@ -1,6 +1,7 @@
 package org.kgen.target.x86.codegen
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.codegen.alloc.LiveInterval
 import org.kgen.codegen.alloc.LivenessAnalysis
 import org.kgen.target.x86.*
@@ -61,36 +62,36 @@ class LinearScanAllocator(
             for (inst in block.instructions) {
                 // Binary ops: dest should prefer lhs register (x86 is destructive: dest = lhs op rhs)
                 val lhsName = when (inst) {
-                    is Instruction.Add -> inst.lhs.name
-                    is Instruction.Sub -> inst.lhs.name
-                    is Instruction.Mul -> inst.lhs.name
-                    is Instruction.And -> inst.lhs.name
-                    is Instruction.Or -> inst.lhs.name
-                    is Instruction.Xor -> inst.lhs.name
-                    is Instruction.Shl -> inst.lhs.name
-                    is Instruction.LShr -> inst.lhs.name
-                    is Instruction.AShr -> inst.lhs.name
-                    is Instruction.FAdd -> inst.lhs.name
-                    is Instruction.FSub -> inst.lhs.name
-                    is Instruction.FMul -> inst.lhs.name
-                    is Instruction.FDiv -> inst.lhs.name
+                    is Add -> inst.lhs.name
+                    is Sub -> inst.lhs.name
+                    is Mul -> inst.lhs.name
+                    is And -> inst.lhs.name
+                    is Or -> inst.lhs.name
+                    is Xor -> inst.lhs.name
+                    is Shl -> inst.lhs.name
+                    is LShr -> inst.lhs.name
+                    is AShr -> inst.lhs.name
+                    is FAdd -> inst.lhs.name
+                    is FSub -> inst.lhs.name
+                    is FMul -> inst.lhs.name
+                    is FDiv -> inst.lhs.name
                     else -> null
                 }
                 if (lhsName != null) {
                     val destName = when (inst) {
-                        is Instruction.Add -> inst.dest.name
-                        is Instruction.Sub -> inst.dest.name
-                        is Instruction.Mul -> inst.dest.name
-                        is Instruction.And -> inst.dest.name
-                        is Instruction.Or -> inst.dest.name
-                        is Instruction.Xor -> inst.dest.name
-                        is Instruction.Shl -> inst.dest.name
-                        is Instruction.LShr -> inst.dest.name
-                        is Instruction.AShr -> inst.dest.name
-                        is Instruction.FAdd -> inst.dest.name
-                        is Instruction.FSub -> inst.dest.name
-                        is Instruction.FMul -> inst.dest.name
-                        is Instruction.FDiv -> inst.dest.name
+                        is Add -> inst.dest.name
+                        is Sub -> inst.dest.name
+                        is Mul -> inst.dest.name
+                        is And -> inst.dest.name
+                        is Or -> inst.dest.name
+                        is Xor -> inst.dest.name
+                        is Shl -> inst.dest.name
+                        is LShr -> inst.dest.name
+                        is AShr -> inst.dest.name
+                        is FAdd -> inst.dest.name
+                        is FSub -> inst.dest.name
+                        is FMul -> inst.dest.name
+                        is FDiv -> inst.dest.name
                         else -> null
                     }
                     if (destName != null) hints[destName] = lhsName
@@ -98,11 +99,11 @@ class LinearScanAllocator(
 
                 // Copy-like: bitcast, trunc, zext, sext — dest should prefer source register
                 val copyPair: Pair<String, String>? = when (inst) {
-                    is Instruction.BitCast -> inst.dest.name to inst.value.name
-                    is Instruction.Trunc -> inst.dest.name to inst.operand.name
-                    is Instruction.ZExt -> inst.dest.name to inst.value.name
-                    is Instruction.SExt -> inst.dest.name to inst.value.name
-                    is Instruction.IntTrunc -> inst.dest.name to inst.value.name
+                    is BitCast -> inst.dest.name to inst.value.name
+                    is Trunc -> inst.dest.name to inst.operand.name
+                    is ZExt -> inst.dest.name to inst.value.name
+                    is SExt -> inst.dest.name to inst.value.name
+                    is IntTrunc -> inst.dest.name to inst.value.name
                     else -> null
                 }
                 if (copyPair != null) {
@@ -116,8 +117,8 @@ class LinearScanAllocator(
     private val hasDiv: Boolean by lazy {
         fn.blocks.any { block ->
             block.instructions.any {
-                it is Instruction.SDiv || it is Instruction.UDiv ||
-                it is Instruction.SRem || it is Instruction.URem
+                it is SDiv || it is UDiv ||
+                it is SRem || it is URem
             }
         }
     }

@@ -89,9 +89,58 @@ data class WasmModule(
         }
     }
 
-    data class Element(val type: Int, val initExpr: ByteArray?, val funcIndices: List<Int>) {
-        override fun equals(other: Any?) = this === other || (other is Element && type == other.type && funcIndices == other.funcIndices)
-        override fun hashCode(): Int = 31 * type + funcIndices.hashCode()
+    /**
+     * An element segment. WASM defines 8 forms (0–7) covering three modes
+     * (active/passive/declarative) and two init encodings (func indices vs expressions).
+     */
+    sealed interface Element {
+        /** Reference type for this segment (funcref or externref). */
+        val refType: WasmRefType
+
+        /** Function indices (forms 0–3). Empty for expression-based forms. */
+        val funcIndices: List<Int>
+
+        /** Init expressions as raw bytes including 0x0B terminator (forms 4–7). Empty for index-based forms. */
+        val initExprs: List<ByteArray>
+
+        /** Active element segment — initializes a table at the given offset. */
+        data class Active(
+            val tableIndex: Int,
+            val offsetExpr: ByteArray,
+            override val refType: WasmRefType,
+            override val funcIndices: List<Int> = emptyList(),
+            override val initExprs: List<ByteArray> = emptyList(),
+        ) : Element {
+            override fun equals(other: Any?) = this === other || (other is Active && tableIndex == other.tableIndex
+                    && offsetExpr.contentEquals(other.offsetExpr) && refType == other.refType
+                    && funcIndices == other.funcIndices && initExprs.size == other.initExprs.size
+                    && initExprs.zip(other.initExprs).all { (a, b) -> a.contentEquals(b) })
+            override fun hashCode(): Int = 31 * (31 * tableIndex + refType.hashCode()) + funcIndices.hashCode()
+        }
+
+        /** Passive element segment — can be used with table.init. */
+        data class Passive(
+            override val refType: WasmRefType,
+            override val funcIndices: List<Int> = emptyList(),
+            override val initExprs: List<ByteArray> = emptyList(),
+        ) : Element {
+            override fun equals(other: Any?) = this === other || (other is Passive && refType == other.refType
+                    && funcIndices == other.funcIndices && initExprs.size == other.initExprs.size
+                    && initExprs.zip(other.initExprs).all { (a, b) -> a.contentEquals(b) })
+            override fun hashCode(): Int = 31 * refType.hashCode() + funcIndices.hashCode()
+        }
+
+        /** Declarative element segment — declares references for ref.func validation. */
+        data class Declarative(
+            override val refType: WasmRefType,
+            override val funcIndices: List<Int> = emptyList(),
+            override val initExprs: List<ByteArray> = emptyList(),
+        ) : Element {
+            override fun equals(other: Any?) = this === other || (other is Declarative && refType == other.refType
+                    && funcIndices == other.funcIndices && initExprs.size == other.initExprs.size
+                    && initExprs.zip(other.initExprs).all { (a, b) -> a.contentEquals(b) })
+            override fun hashCode(): Int = 31 * refType.hashCode() + funcIndices.hashCode()
+        }
     }
 
     sealed interface DataSegment {

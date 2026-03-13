@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
 import org.kgen.ir.target.Target
 import org.kgen.target.jvm.*
+import org.kgen.ir.instructions.*
 
 /**
  * Comprehensive tests for all Kgen intrinsic lowering in BytecodeToIrLowering.
@@ -41,7 +42,7 @@ class KgenIntrinsicsFullTest {
                 code.ireturn()
             }
         }
-        val loads = allInstructions(compile(classBytes)).filterIsInstance<Instruction.Load>()
+        val loads = allInstructions(compile(classBytes)).filterIsInstance<Load>()
         assertTrue(loads.any { it.loadType == Type.I8 }, "loadByte should produce I8 Load")
     }
 
@@ -54,7 +55,7 @@ class KgenIntrinsicsFullTest {
                 code.ireturn()
             }
         }
-        val loads = allInstructions(compile(classBytes)).filterIsInstance<Instruction.Load>()
+        val loads = allInstructions(compile(classBytes)).filterIsInstance<Load>()
         assertTrue(loads.any { it.loadType == Type.I16 }, "loadShort should produce I16 Load")
     }
 
@@ -67,7 +68,7 @@ class KgenIntrinsicsFullTest {
                 code.ireturn()
             }
         }
-        val loads = allInstructions(compile(classBytes)).filterIsInstance<Instruction.Load>()
+        val loads = allInstructions(compile(classBytes)).filterIsInstance<Load>()
         assertTrue(loads.any { it.loadType == Type.I32 }, "loadInt should produce I32 Load")
     }
 
@@ -80,7 +81,7 @@ class KgenIntrinsicsFullTest {
                 code.lreturn()
             }
         }
-        val loads = allInstructions(compile(classBytes)).filterIsInstance<Instruction.Load>()
+        val loads = allInstructions(compile(classBytes)).filterIsInstance<Load>()
         assertTrue(loads.any { it.loadType == Type.I64 }, "loadLong should produce I64 Load")
     }
 
@@ -96,7 +97,7 @@ class KgenIntrinsicsFullTest {
                 code.return_()
             }
         }
-        val stores = allInstructions(compile(classBytes)).filterIsInstance<Instruction.Store>()
+        val stores = allInstructions(compile(classBytes)).filterIsInstance<Store>()
         assertTrue(stores.isNotEmpty(), "storeByte should produce Store instruction")
     }
 
@@ -110,7 +111,7 @@ class KgenIntrinsicsFullTest {
                 code.return_()
             }
         }
-        val stores = allInstructions(compile(classBytes)).filterIsInstance<Instruction.Store>()
+        val stores = allInstructions(compile(classBytes)).filterIsInstance<Store>()
         assertTrue(stores.isNotEmpty(), "storeShort should produce Store instruction")
     }
 
@@ -124,7 +125,7 @@ class KgenIntrinsicsFullTest {
                 code.return_()
             }
         }
-        val stores = allInstructions(compile(classBytes)).filterIsInstance<Instruction.Store>()
+        val stores = allInstructions(compile(classBytes)).filterIsInstance<Store>()
         assertTrue(stores.isNotEmpty(), "storeInt should produce Store instruction")
     }
 
@@ -138,7 +139,7 @@ class KgenIntrinsicsFullTest {
                 code.return_()
             }
         }
-        val stores = allInstructions(compile(classBytes)).filterIsInstance<Instruction.Store>()
+        val stores = allInstructions(compile(classBytes)).filterIsInstance<Store>()
         assertTrue(stores.isNotEmpty(), "storeLong should produce Store instruction")
     }
 
@@ -155,8 +156,8 @@ class KgenIntrinsicsFullTest {
             }
         }
         val insns = allInstructions(compile(classBytes))
-        assertTrue(insns.any { it is Instruction.Add }, "offset(long, int) should produce Add")
-        assertTrue(insns.any { it is Instruction.SExt }, "offset with int should sign-extend to i64")
+        assertTrue(insns.any { it is Add }, "offset(long, int) should produce Add")
+        assertTrue(insns.any { it is SExt }, "offset with int should sign-extend to i64")
     }
 
     @Test
@@ -170,7 +171,7 @@ class KgenIntrinsicsFullTest {
             }
         }
         val insns = allInstructions(compile(classBytes))
-        assertTrue(insns.any { it is Instruction.Add }, "offset(long, long) should produce Add")
+        assertTrue(insns.any { it is Add }, "offset(long, long) should produce Add")
         // No SExt needed for long variant
     }
 
@@ -186,7 +187,7 @@ class KgenIntrinsicsFullTest {
             }
         }
         val insns = allInstructions(compile(classBytes))
-        assertTrue(insns.any { it is Instruction.Alloca }, "stackAlloc should produce Alloca")
+        assertTrue(insns.any { it is Alloca }, "stackAlloc should produce Alloca")
     }
 
     // ---- GC/runtime intrinsics ----
@@ -200,7 +201,7 @@ class KgenIntrinsicsFullTest {
             }
         }
         val insns = allInstructions(compile(classBytes))
-        assertTrue(insns.any { it is Instruction.GCSafepoint }, "safepoint should produce GCSafepoint")
+        assertTrue(insns.any { it is GCSafepoint }, "safepoint should produce GCSafepoint")
     }
 
     @Test
@@ -213,7 +214,7 @@ class KgenIntrinsicsFullTest {
             }
         }
         val insns = allInstructions(compile(classBytes))
-        assertTrue(insns.any { it is Instruction.GCRoot }, "gcRoot should produce GCRoot")
+        assertTrue(insns.any { it is GCRoot }, "gcRoot should produce GCRoot")
     }
 
     @Test
@@ -228,7 +229,7 @@ class KgenIntrinsicsFullTest {
             }
         }
         val insns = allInstructions(compile(classBytes))
-        assertTrue(insns.any { it is Instruction.WriteBarrier }, "writeBarrier should produce WriteBarrier")
+        assertTrue(insns.any { it is WriteBarrier }, "writeBarrier should produce WriteBarrier")
     }
 
     @Test
@@ -241,7 +242,7 @@ class KgenIntrinsicsFullTest {
             }
         }
         val insns = allInstructions(compile(classBytes))
-        assertTrue(insns.any { it is Instruction.ReadBarrier }, "readBarrier should produce ReadBarrier")
+        assertTrue(insns.any { it is ReadBarrier }, "readBarrier should produce ReadBarrier")
     }
 
     @Test
@@ -253,7 +254,7 @@ class KgenIntrinsicsFullTest {
                 code.lreturn()
             }
         }
-        val calls = allInstructions(compile(classBytes)).filterIsInstance<Instruction.Call>()
+        val calls = allInstructions(compile(classBytes)).filterIsInstance<Call>()
         assertTrue(
             calls.any { (it.function as? GlobalRef)?.name == "kgen_runtime_alloc" },
             "runtimeAlloc should produce call to kgen_runtime_alloc",
@@ -269,7 +270,7 @@ class KgenIntrinsicsFullTest {
                 code.return_()
             }
         }
-        val calls = allInstructions(compile(classBytes)).filterIsInstance<Instruction.Call>()
+        val calls = allInstructions(compile(classBytes)).filterIsInstance<Call>()
         assertTrue(
             calls.any { (it.function as? GlobalRef)?.name == "kgen_runtime_free" },
             "runtimeFree should produce call to kgen_runtime_free",
@@ -297,9 +298,9 @@ class KgenIntrinsicsFullTest {
             }
         }
         val insns = allInstructions(compile(classBytes))
-        assertTrue(insns.any { it is Instruction.Load }, "Should have Load")
-        assertTrue(insns.any { it is Instruction.Store }, "Should have Store")
-        assertTrue(insns.any { it is Instruction.Add }, "Should have Add for offset")
+        assertTrue(insns.any { it is Load }, "Should have Load")
+        assertTrue(insns.any { it is Store }, "Should have Store")
+        assertTrue(insns.any { it is Add }, "Should have Add for offset")
     }
 
     @Test
@@ -319,7 +320,7 @@ class KgenIntrinsicsFullTest {
             }
         }
         val insns = allInstructions(compile(classBytes))
-        assertTrue(insns.any { it is Instruction.GCSafepoint }, "Loop should have safepoint")
+        assertTrue(insns.any { it is GCSafepoint }, "Loop should have safepoint")
     }
 
     @Test
@@ -337,8 +338,8 @@ class KgenIntrinsicsFullTest {
             }
         }
         val insns = allInstructions(compile(classBytes))
-        assertTrue(insns.any { it is Instruction.Alloca }, "Should have Alloca from stackAlloc")
-        assertTrue(insns.any { it is Instruction.Store }, "Should have Store from storeInt")
+        assertTrue(insns.any { it is Alloca }, "Should have Alloca from stackAlloc")
+        assertTrue(insns.any { it is Store }, "Should have Store from storeInt")
     }
 
     @Test
@@ -364,7 +365,7 @@ class KgenIntrinsicsFullTest {
                 code.lreturn()
             }
         }
-        val loads = allInstructions(compile(classBytes)).filterIsInstance<Instruction.Load>()
+        val loads = allInstructions(compile(classBytes)).filterIsInstance<Load>()
         val types = loads.map { it.loadType }.toSet()
         assertTrue(Type.I8 in types, "Should have I8 load")
         assertTrue(Type.I16 in types, "Should have I16 load")
@@ -392,9 +393,9 @@ class KgenIntrinsicsFullTest {
             }
         }
         val insns = allInstructions(compile(classBytes))
-        assertTrue(insns.any { it is Instruction.GCRoot }, "Should have GCRoot")
-        assertTrue(insns.any { it is Instruction.WriteBarrier }, "Should have WriteBarrier")
-        assertTrue(insns.any { it is Instruction.ReadBarrier }, "Should have ReadBarrier")
+        assertTrue(insns.any { it is GCRoot }, "Should have GCRoot")
+        assertTrue(insns.any { it is WriteBarrier }, "Should have WriteBarrier")
+        assertTrue(insns.any { it is ReadBarrier }, "Should have ReadBarrier")
     }
 
     @Test
@@ -410,7 +411,7 @@ class KgenIntrinsicsFullTest {
                 code.return_()
             }
         }
-        val calls = allInstructions(compile(classBytes)).filterIsInstance<Instruction.Call>()
+        val calls = allInstructions(compile(classBytes)).filterIsInstance<Call>()
         val callNames = calls.mapNotNull { (it.function as? GlobalRef)?.name }
         assertTrue("kgen_runtime_alloc" in callNames, "Should call kgen_runtime_alloc")
         assertTrue("kgen_runtime_free" in callNames, "Should call kgen_runtime_free")
@@ -429,7 +430,7 @@ class KgenIntrinsicsFullTest {
         }
         val module = RuntimeCompiler(Target.arm64()).compile(classBytes)
         val loads = module.functions.flatMap { it.blocks.flatMap { b -> b.instructions } }
-            .filterIsInstance<Instruction.Load>()
+            .filterIsInstance<Load>()
         assertTrue(loads.any { it.loadType == Type.I32 }, "ARM64 loadInt should produce I32 Load")
     }
 
@@ -445,7 +446,7 @@ class KgenIntrinsicsFullTest {
         }
         val module = RuntimeCompiler(Target.riscv64()).compile(classBytes)
         val stores = module.functions.flatMap { it.blocks.flatMap { b -> b.instructions } }
-            .filterIsInstance<Instruction.Store>()
+            .filterIsInstance<Store>()
         assertTrue(stores.isNotEmpty(), "RISC-V storeInt should produce Store")
     }
 }

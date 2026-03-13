@@ -3,6 +3,13 @@ package org.kgen.reflect
 import org.kgen.binary.elf.ElfReader
 import org.kgen.binary.macho.MachOReader
 import org.kgen.binary.pe.PeReader
+import org.kgen.ir.target.Arch
+import org.kgen.ir.target.Target
+import org.kgen.target.arm64.Arm64Register
+import org.kgen.target.arm64.asm.Arm64Assembler
+import org.kgen.target.riscv.X6
+import org.kgen.target.riscv.asm.RiscVAssembler
+import org.kgen.target.x86.asm.X86Assembler
 import java.io.File
 
 /**
@@ -15,8 +22,9 @@ import java.io.File
  * calls through the IAT are redirected.
  *
  * ```java
- * // Redirect puts() to our custom function
- * var hook = Hook.gotHook(binaryPath, "puts", myPutsAddress);
+ * // Redirect puts() via GOT: two-step API
+ * var got = Hook.findGotEntry(binaryPath, "puts");
+ * var hook = Hook.hookGot(baseAddress + got.getOffset(), myPutsAddress);
  * // ... all puts() calls now go to myPutsAddress ...
  * hook.unhook();  // restore original
  *
@@ -47,43 +55,118 @@ object Hook {
 
     /**
      * Install an inline hook: overwrite the first bytes of the function at [target]
-     * with a jump to [replacement]. x86-64 only.
+     * with a jump to [replacement].
+     *
+     * Auto-detects the host architecture. For explicit arch control, use the overload
+     * that takes an [Arch] parameter.
      *
      * Returns an [ActiveHook] that can restore the original code.
-     * The original bytes are saved so you can call the original function via a trampoline.
      */
     @JvmStatic
     fun inlineHook(target: Long, replacement: Long): ActiveHook {
+        return inlineHook(target, replacement, Target.native().arch)
+    }
+
+    /**
+     * Install an inline hook for a specific architecture.
+     */
+    @JvmStatic
+    fun inlineHook(target: Long, replacement: Long, arch: Arch): ActiveHook {
+        return when (arch) {
+            Arch.X86_64 -> inlineHookX86(target, replacement)
+            Arch.ARM64 -> inlineHookArm64(target, replacement)
+            Arch.RISCV64 -> inlineHookRiscV(target, replacement)
+            else -> error("Inline hook not supported for $arch")
+        }
+    }
+
+    private fun inlineHookX86(target: Long, replacement: Long): ActiveHook {
         val distance = replacement - target - 5
         val use64bit = distance > Int.MAX_VALUE || distance < Int.MIN_VALUE
         val patchSize = if (use64bit) 14 else 5
-
         val original = CodePatch.read(target, patchSize)
-
         if (use64bit) {
             CodePatch.writeAbsoluteJump(target, replacement)
         } else {
             CodePatch.writeJump(target, replacement)
         }
-
         return InlineHookImpl(target, original)
+    }
+
+    private fun inlineHookArm64(target: Long, replacement: Long): ActiveHook {
+        val distance = replacement - target
+        val useAbsolute = distance < -0x8000000L || distance > 0x7FFFFFFL
+        val patchSize = if (useAbsolute) 20 else 4
+        val original = CodePatch.read(target, patchSize)
+        if (useAbsolute) {
+            CodePatch.writeArm64AbsoluteJump(target, replacement)
+        } else {
+            CodePatch.writeArm64Jump(target, replacement)
+        }
+        return InlineHookImpl(target, original)
+    }
+
+    private fun inlineHookRiscV(target: Long, replacement: Long): ActiveHook {
+        val distance = replacement - target
+        val useAbsolute = distance < -0x100000L || distance > 0xFFFFFL
+        if (useAbsolute) {
+            // Variable-length absolute jump — compute size by assembling
+            val asm = RiscVAssembler()
+            asm.li(X6, replacement)
+            asm.jalr(org.kgen.target.riscv.X0, X6, 0)
+            val patchSize = asm.toByteArray().size
+            val original = CodePatch.read(target, patchSize)
+            CodePatch.writeRiscVAbsoluteJump(target, replacement)
+            return InlineHookImpl(target, original)
+        } else {
+            val original = CodePatch.read(target, 4)
+            CodePatch.writeRiscVJump(target, replacement)
+            return InlineHookImpl(target, original)
+        }
     }
 
     /**
      * Create a trampoline that executes the original code displaced by an inline hook,
      * then jumps back to the hooked function after the hook site.
      *
-     * This lets you call the original function even while the hook is active.
-     * Returns a [NativeCode] whose base address is the trampoline entry point.
+     * Auto-detects the host architecture.
      */
     @JvmStatic
     fun createTrampoline(originalBytes: ByteArray, continueAddress: Long): NativeCode {
-        // Trampoline: execute the saved original instructions, then jump back
-        val jumpBack = ByteArray(14)
-        jumpBack[0] = 0xFF.toByte()
-        jumpBack[1] = 0x25
-        for (i in 0..7) jumpBack[6 + i] = ((continueAddress shr (i * 8)) and 0xFF).toByte()
+        return createTrampoline(originalBytes, continueAddress, Target.native().arch)
+    }
 
+    /**
+     * Create a trampoline for a specific architecture.
+     */
+    @JvmStatic
+    fun createTrampoline(originalBytes: ByteArray, continueAddress: Long, arch: Arch): NativeCode {
+        val jumpBack = when (arch) {
+            Arch.X86_64 -> {
+                val asm = X86Assembler()
+                asm.emitByte(0xFF)
+                asm.emitByte(0x25)
+                asm.emitInt32(0)
+                asm.emitInt64(continueAddress)
+                asm.toByteArray()
+            }
+            Arch.ARM64 -> {
+                val asm = Arm64Assembler()
+                asm.movz(Arm64Register.X16, (continueAddress and 0xFFFF).toInt(), 0)
+                asm.movk(Arm64Register.X16, ((continueAddress shr 16) and 0xFFFF).toInt(), 16)
+                asm.movk(Arm64Register.X16, ((continueAddress shr 32) and 0xFFFF).toInt(), 32)
+                asm.movk(Arm64Register.X16, ((continueAddress shr 48) and 0xFFFF).toInt(), 48)
+                asm.br(Arm64Register.X16)
+                asm.bytes()
+            }
+            Arch.RISCV64 -> {
+                val asm = RiscVAssembler()
+                asm.li(X6, continueAddress)
+                asm.jalr(org.kgen.target.riscv.X0, X6, 0)
+                asm.toByteArray()
+            }
+            else -> error("Trampoline not supported for $arch")
+        }
         val trampoline = originalBytes + jumpBack
         return NativeCode.loadBytes(trampoline, mapOf("trampoline" to 0L))
     }

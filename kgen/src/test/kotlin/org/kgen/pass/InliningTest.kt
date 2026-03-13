@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
+import org.kgen.ir.instructions.*
 
 class InliningTest {
 
@@ -33,8 +34,8 @@ class InliningTest {
         }
         val mainInsts = module.functions[1].blocks[0].instructions
         // Should be inlined: add(10, 20) + ret
-        assertFalse(mainInsts.any { it is Instruction.Call }, "Call should be inlined away: $mainInsts")
-        assertTrue(mainInsts.any { it is Instruction.Add }, "Inlined add should be present: $mainInsts")
+        assertFalse(mainInsts.any { it is Call }, "Call should be inlined away: $mainInsts")
+        assertTrue(mainInsts.any { it is Add }, "Inlined add should be present: $mainInsts")
     }
 
     @Test
@@ -53,7 +54,7 @@ class InliningTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        val addInst = mainInsts.filterIsInstance<Instruction.Add>().firstOrNull()
+        val addInst = mainInsts.filterIsInstance<Add>().firstOrNull()
         assertNotNull(addInst, "Should have inlined add: $mainInsts")
         assertEquals("5", addInst!!.lhs.name, "Both operands should be the argument 5")
         assertEquals("5", addInst.rhs.name)
@@ -70,7 +71,7 @@ class InliningTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertTrue(mainInsts.any { it is Instruction.Call }, "External call should remain")
+        assertTrue(mainInsts.any { it is Call }, "External call should remain")
     }
 
     @Test
@@ -89,7 +90,7 @@ class InliningTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertTrue(mainInsts.any { it is Instruction.Call }, "Recursive call should not be inlined")
+        assertTrue(mainInsts.any { it is Call }, "Recursive call should not be inlined")
     }
 
     @Test
@@ -112,7 +113,7 @@ class InliningTest {
 
         val module = smallInliner.run(ir.build())
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertTrue(mainInsts.any { it is Instruction.Call }, "Large function should not be inlined: $mainInsts")
+        assertTrue(mainInsts.any { it is Call }, "Large function should not be inlined: $mainInsts")
     }
 
     @Test
@@ -132,8 +133,8 @@ class InliningTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call }, "Both calls should be inlined: $mainInsts")
-        val adds = mainInsts.filterIsInstance<Instruction.Add>()
+        assertFalse(mainInsts.any { it is Call }, "Both calls should be inlined: $mainInsts")
+        val adds = mainInsts.filterIsInstance<Add>()
         assertEquals(2, adds.size, "Should have two inlined adds: $mainInsts")
     }
 
@@ -152,7 +153,7 @@ class InliningTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call }, "Void call should be inlined: $mainInsts")
+        assertFalse(mainInsts.any { it is Call }, "Void call should be inlined: $mainInsts")
         assertEquals(1, mainInsts.size, "Only ret should remain: $mainInsts")
     }
 
@@ -191,8 +192,8 @@ class InliningTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call }, "Call should be inlined: $mainInsts")
-        val mulInst = mainInsts.filterIsInstance<Instruction.Mul>().first()
+        assertFalse(mainInsts.any { it is Call }, "Call should be inlined: $mainInsts")
+        val mulInst = mainInsts.filterIsInstance<Mul>().first()
         assertTrue(mulInst.lhs is Parameter, "Should use caller's parameter: ${mulInst.lhs}")
     }
 }

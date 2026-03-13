@@ -10,16 +10,23 @@ import java.nio.ByteOrder
  * Reads PE/COFF binaries into a structured [PeFile] model.
  *
  * Supports full PE executables/DLLs (PE32 and PE32+), raw COFF .obj files,
- * and .NET assemblies with CLR metadata.
+ * and .NET assemblies with CLR metadata. Parses sections, import/export directories,
+ * relocations, debug directories, and (for .NET binaries) the CLR metadata tables
+ * via [ClrTableParser][org.kgen.binary.pe.clr.ClrTableParser].
  *
- * ```kotlin
- * val pe = PeReader.read(bytes)
- * pe.sections.forEach { println("${it.name}: ${it.virtualSize} bytes") }
- * pe.importDirectories.forEach { dir ->
- *     println("DLL: ${dir.name}")
- *     dir.entries.forEach { println("  ${it.name}") }
+ * ```java
+ * PeFile pe = PeReader.read(bytes);
+ * for (PeSectionHeader s : pe.getSections()) {
+ *     System.out.println(s.getName() + ": " + s.getVirtualSize() + " bytes");
+ * }
+ * for (PeImportDirectory dir : pe.getImportDirectories()) {
+ *     System.out.println("DLL: " + dir.getName());
  * }
  * ```
+ *
+ * For the universal [ObjectFile] model, use [toObjectFile].
+ *
+ * See `spec/object-formats.md` for the object format model specification.
  */
 object PeReader {
 

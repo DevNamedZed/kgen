@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
+import org.kgen.ir.instructions.*
 
 class InstructionCombiningTest {
 
@@ -25,7 +26,7 @@ class InstructionCombiningTest {
             ret(sum)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertTrue(ret.value is Parameter, "x + 0 should simplify to x: ${ret.value}")
     }
 
@@ -38,7 +39,7 @@ class InstructionCombiningTest {
             ret(sum)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertTrue(ret.value is Parameter, "0 + x should simplify to x")
     }
 
@@ -51,7 +52,7 @@ class InstructionCombiningTest {
             ret(diff)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertTrue(ret.value is Parameter, "x - 0 should simplify to x")
     }
 
@@ -64,7 +65,7 @@ class InstructionCombiningTest {
             ret(diff)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(0, (ret.value as Constant.I32).value, "x - x should be 0")
     }
 
@@ -77,7 +78,7 @@ class InstructionCombiningTest {
             ret(prod)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertTrue(ret.value is Parameter, "x * 1 should simplify to x")
     }
 
@@ -90,7 +91,7 @@ class InstructionCombiningTest {
             ret(prod)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(0, (ret.value as Constant.I32).value, "x * 0 should be 0")
     }
 
@@ -103,7 +104,7 @@ class InstructionCombiningTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(0, (ret.value as Constant.I32).value, "x & 0 should be 0")
     }
 
@@ -116,7 +117,7 @@ class InstructionCombiningTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertTrue(ret.value is Parameter, "x & -1 should simplify to x")
     }
 
@@ -129,7 +130,7 @@ class InstructionCombiningTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertTrue(ret.value is Parameter, "x | 0 should simplify to x")
     }
 
@@ -142,7 +143,7 @@ class InstructionCombiningTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertTrue(ret.value is Parameter, "x ^ 0 should simplify to x")
     }
 
@@ -155,7 +156,7 @@ class InstructionCombiningTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(0, (ret.value as Constant.I32).value, "x ^ x should be 0")
     }
 
@@ -168,7 +169,7 @@ class InstructionCombiningTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertTrue(ret.value is Parameter, "x << 0 should simplify to x")
     }
 
@@ -181,7 +182,7 @@ class InstructionCombiningTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals("a", ret.value?.name, "select(true, a, b) should be a")
     }
 
@@ -194,7 +195,7 @@ class InstructionCombiningTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals("b", ret.value?.name, "select(false, a, b) should be b")
     }
 
@@ -207,7 +208,7 @@ class InstructionCombiningTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertEquals("x", ret.value?.name, "select(c, x, x) should be x")
     }
 
@@ -222,7 +223,7 @@ class InstructionCombiningTest {
             ret(c)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertTrue(ret.value is Parameter, "Chained identity ops should simplify to x: ${ret.value}")
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "Only ret should remain: $insts")
@@ -237,7 +238,7 @@ class InstructionCombiningTest {
             ret(result)
             finalizeFunction()
         }
-        val ret = module.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = module.functions[0].blocks[0].instructions.last() as Ret
         assertTrue(ret.value is Parameter, "i64: x + 0 should simplify to x")
     }
 
@@ -252,6 +253,6 @@ class InstructionCombiningTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(2, insts.size, "Non-identity add should remain")
-        assertTrue(insts[0] is Instruction.Add)
+        assertTrue(insts[0] is Add)
     }
 }

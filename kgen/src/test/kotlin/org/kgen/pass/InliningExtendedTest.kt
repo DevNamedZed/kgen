@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -31,10 +32,10 @@ class InliningExtendedTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
+        assertFalse(mainInsts.any { it is Call })
         // After inlining identity(42), the call is removed and the return value
         // references the argument constant directly
-        val ret = mainInsts.last() as Instruction.Ret
+        val ret = mainInsts.last() as Ret
         assertNotNull(ret.value, "Return value should not be null")
     }
 
@@ -54,8 +55,8 @@ class InliningExtendedTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
-        assertTrue(mainInsts.any { it is Instruction.Sub })
+        assertFalse(mainInsts.any { it is Call })
+        assertTrue(mainInsts.any { it is Sub })
     }
 
     @Test
@@ -76,8 +77,8 @@ class InliningExtendedTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
-        val adds = mainInsts.filterIsInstance<Instruction.Add>()
+        assertFalse(mainInsts.any { it is Call })
+        val adds = mainInsts.filterIsInstance<Add>()
         assertEquals(2, adds.size)
     }
 
@@ -97,8 +98,8 @@ class InliningExtendedTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
-        assertTrue(mainInsts.any { it is Instruction.And })
+        assertFalse(mainInsts.any { it is Call })
+        assertTrue(mainInsts.any { it is And })
     }
 
     @Test
@@ -119,9 +120,9 @@ class InliningExtendedTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
-        assertTrue(mainInsts.any { it is Instruction.ICmp })
-        assertTrue(mainInsts.any { it is Instruction.Select })
+        assertFalse(mainInsts.any { it is Call })
+        assertTrue(mainInsts.any { it is ICmp })
+        assertTrue(mainInsts.any { it is Select })
     }
 
     @Test
@@ -144,9 +145,9 @@ class InliningExtendedTest {
         }
         // Multi-block functions should now be inlined — no Call instructions remain
         val allInsts = module.functions[1].blocks.flatMap { it.instructions }
-        assertFalse(allInsts.any { it is Instruction.Call }, "Multi-block function should be inlined")
+        assertFalse(allInsts.any { it is Call }, "Multi-block function should be inlined")
         // The inlined function should contain a CondBr (from the multiblock's entry)
-        assertTrue(allInsts.any { it is Instruction.CondBr }, "Inlined function should have CondBr")
+        assertTrue(allInsts.any { it is CondBr }, "Inlined function should have CondBr")
     }
 
     @Test
@@ -165,8 +166,8 @@ class InliningExtendedTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
-        assertTrue(mainInsts.any { it is Instruction.ZExt })
+        assertFalse(mainInsts.any { it is Call })
+        assertTrue(mainInsts.any { it is ZExt })
     }
 
     @Test
@@ -185,8 +186,8 @@ class InliningExtendedTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
-        assertTrue(mainInsts.any { it is Instruction.FAdd })
+        assertFalse(mainInsts.any { it is Call })
+        assertTrue(mainInsts.any { it is FAdd })
     }
 
     @Test
@@ -207,8 +208,8 @@ class InliningExtendedTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
-        val adds = mainInsts.filterIsInstance<Instruction.Add>()
+        assertFalse(mainInsts.any { it is Call })
+        val adds = mainInsts.filterIsInstance<Add>()
         assertEquals(3, adds.size)
     }
 
@@ -229,9 +230,9 @@ class InliningExtendedTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
-        assertTrue(mainInsts.any { it is Instruction.Mul })
-        assertTrue(mainInsts.any { it is Instruction.Add })
+        assertFalse(mainInsts.any { it is Call })
+        assertTrue(mainInsts.any { it is Mul })
+        assertTrue(mainInsts.any { it is Add })
     }
 
     @Test
@@ -255,9 +256,9 @@ class InliningExtendedTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[2].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
-        assertTrue(mainInsts.any { it is Instruction.Add })
-        assertTrue(mainInsts.any { it is Instruction.Mul })
+        assertFalse(mainInsts.any { it is Call })
+        assertTrue(mainInsts.any { it is Add })
+        assertTrue(mainInsts.any { it is Mul })
     }
 
     @Test
@@ -278,7 +279,7 @@ class InliningExtendedTest {
 
         val module = small.run(ir.build())
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertTrue(mainInsts.any { it is Instruction.Call }, "Should not inline with max=1")
+        assertTrue(mainInsts.any { it is Call }, "Should not inline with max=1")
     }
 
     @Test
@@ -298,8 +299,8 @@ class InliningExtendedTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
-        assertTrue(mainInsts.any { it is Instruction.Store })
+        assertFalse(mainInsts.any { it is Call })
+        assertTrue(mainInsts.any { it is Store })
     }
 
     @Test
@@ -321,8 +322,8 @@ class InliningExtendedTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
-        assertTrue(mainInsts.any { it is Instruction.Mul })
+        assertFalse(mainInsts.any { it is Call })
+        assertTrue(mainInsts.any { it is Mul })
     }
 
     @Test
@@ -347,8 +348,8 @@ class InliningExtendedTest {
         }
         assertEquals(3, module.functions.size, "All functions should be preserved")
         // Both callers should be inlined
-        assertFalse(module.functions[1].blocks[0].instructions.any { it is Instruction.Call })
-        assertFalse(module.functions[2].blocks[0].instructions.any { it is Instruction.Call })
+        assertFalse(module.functions[1].blocks[0].instructions.any { it is Call })
+        assertFalse(module.functions[2].blocks[0].instructions.any { it is Call })
     }
 
     @Test
@@ -369,8 +370,8 @@ class InliningExtendedTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
-        assertTrue(mainInsts.any { it is Instruction.Alloca })
+        assertFalse(mainInsts.any { it is Call })
+        assertTrue(mainInsts.any { it is Alloca })
     }
 
     @Test
@@ -389,8 +390,8 @@ class InliningExtendedTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
-        assertTrue(mainInsts.any { it is Instruction.Shl })
+        assertFalse(mainInsts.any { it is Call })
+        assertTrue(mainInsts.any { it is Shl })
     }
 
     @Test
@@ -409,8 +410,8 @@ class InliningExtendedTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
-        assertTrue(mainInsts.any { it is Instruction.SIToFP })
+        assertFalse(mainInsts.any { it is Call })
+        assertTrue(mainInsts.any { it is SIToFP })
     }
 
     @Test
@@ -432,7 +433,7 @@ class InliningExtendedTest {
         }
         val mainInsts = module.functions[2].blocks[0].instructions
         // extern call should remain, intern call should be inlined
-        val calls = mainInsts.filterIsInstance<Instruction.Call>()
+        val calls = mainInsts.filterIsInstance<Call>()
         assertEquals(1, calls.size, "Only extern call should remain: $mainInsts")
     }
 
@@ -452,8 +453,8 @@ class InliningExtendedTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
-        assertTrue(mainInsts.any { it is Instruction.Add })
+        assertFalse(mainInsts.any { it is Call })
+        assertTrue(mainInsts.any { it is Add })
     }
 
     @Test
@@ -472,9 +473,9 @@ class InliningExtendedTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
-        assertTrue(mainInsts.any { it is Instruction.Mul })
-        assertTrue(mainInsts.any { it is Instruction.Store })
+        assertFalse(mainInsts.any { it is Call })
+        assertTrue(mainInsts.any { it is Mul })
+        assertTrue(mainInsts.any { it is Store })
     }
 
     @Test
@@ -495,8 +496,8 @@ class InliningExtendedTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
-        assertTrue(mainInsts.any { it is Instruction.GetElementPtr })
+        assertFalse(mainInsts.any { it is Call })
+        assertTrue(mainInsts.any { it is GetElementPtr })
     }
 
     @Test
@@ -511,7 +512,7 @@ class InliningExtendedTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertTrue(mainInsts.any { it is Instruction.Call }, "External call should remain")
+        assertTrue(mainInsts.any { it is Call }, "External call should remain")
     }
 
     @Test
@@ -530,7 +531,7 @@ class InliningExtendedTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertTrue(mainInsts.any { it is Instruction.Call },
+        assertTrue(mainInsts.any { it is Call },
             "Recursive function should not be inlined")
     }
 
@@ -551,9 +552,9 @@ class InliningExtendedTest {
             finalizeFunction()
         }
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
-        assertTrue(mainInsts.any { it is Instruction.Or })
-        assertTrue(mainInsts.any { it is Instruction.Xor })
+        assertFalse(mainInsts.any { it is Call })
+        assertTrue(mainInsts.any { it is Or })
+        assertTrue(mainInsts.any { it is Xor })
     }
 
     @Test

@@ -3,6 +3,7 @@ package org.kgen.target.x86.codegen
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -108,7 +109,7 @@ class X86ICmpConstantTest {
         val module = ir.build()
         val fn = module.functions[0]
         val bodyBlock = fn.blocks.first { it.label == "body" }
-        val phiInst = bodyBlock.instructions[0] as Instruction.Phi
+        val phiInst = bodyBlock.instructions[0] as Phi
         val patched = phiInst.copy(incoming = phiInst.incoming + (iNext to "body"))
         val patchedBlock = bodyBlock.copy(instructions = listOf(patched) + bodyBlock.instructions.drop(1))
         val patchedFn = fn.copy(blocks = fn.blocks.map { if (it.label == "body") patchedBlock else it })

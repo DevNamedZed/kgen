@@ -1,6 +1,7 @@
 package org.kgen.codegen.alloc
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 
 /**
  * Graph coloring register allocator using Chaitin-Briggs with optimistic spilling.
@@ -188,7 +189,7 @@ class GraphColoringAllocator : RegisterAllocator {
             for (block in fn.blocks) {
                 for (inst in block.instructions) {
                     // Phi nodes: incoming values should prefer the phi destination
-                    if (inst is Instruction.Phi) {
+                    if (inst is Phi) {
                         for ((value, _) in inst.incoming) {
                             if (value is Parameter || value is InstructionRef) {
                                 if (value.name in intervalMap && inst.dest.name in intervalMap) {
@@ -203,11 +204,11 @@ class GraphColoringAllocator : RegisterAllocator {
 
                     // Copy-like instructions
                     val copyPair = when (inst) {
-                        is Instruction.BitCast -> inst.value.name to inst.dest.name
-                        is Instruction.Trunc -> inst.operand.name to inst.dest.name
-                        is Instruction.ZExt -> inst.value.name to inst.dest.name
-                        is Instruction.SExt -> inst.value.name to inst.dest.name
-                        is Instruction.IntTrunc -> inst.value.name to inst.dest.name
+                        is BitCast -> inst.value.name to inst.dest.name
+                        is Trunc -> inst.operand.name to inst.dest.name
+                        is ZExt -> inst.value.name to inst.dest.name
+                        is SExt -> inst.value.name to inst.dest.name
+                        is IntTrunc -> inst.value.name to inst.dest.name
                         else -> null
                     }
                     if (copyPair != null && copyPair.first in intervalMap && copyPair.second in intervalMap) {

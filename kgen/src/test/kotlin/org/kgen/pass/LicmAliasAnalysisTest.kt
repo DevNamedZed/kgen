@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -62,7 +63,7 @@ class LicmAliasAnalysisTest {
         val fn = hoisted.functions[0]
         val preheader = fn.blocks.find { it.label.contains("preheader") }
         assertNotNull(preheader, "Preheader should exist: ${fn.blocks.map { it.label }}")
-        val preheaderLoads = preheader!!.instructions.filterIsInstance<Instruction.Load>()
+        val preheaderLoads = preheader!!.instructions.filterIsInstance<Load>()
         assertTrue(preheaderLoads.isNotEmpty(), "Load from global should be hoisted to preheader")
     }
 
@@ -95,7 +96,7 @@ class LicmAliasAnalysisTest {
         val hoisted = licm.run(module)
         val fn = hoisted.functions[0]
         val loopBlock = fn.blocks.find { it.label == "loop" }!!
-        val loopLoads = loopBlock.instructions.filterIsInstance<Instruction.Load>()
+        val loopLoads = loopBlock.instructions.filterIsInstance<Load>()
         assertTrue(loopLoads.isNotEmpty(), "Load aliasing loop store should NOT be hoisted")
     }
 
@@ -127,7 +128,7 @@ class LicmAliasAnalysisTest {
         val fn = hoisted.functions[0]
         val preheader = fn.blocks.find { it.label.contains("preheader") }
         assertNotNull(preheader, "Preheader should exist")
-        val preheaderLoads = preheader!!.instructions.filterIsInstance<Instruction.Load>()
+        val preheaderLoads = preheader!!.instructions.filterIsInstance<Load>()
         assertTrue(preheaderLoads.isNotEmpty(), "Load from global should be hoisted when loop has no stores to globals")
     }
 
@@ -158,7 +159,7 @@ class LicmAliasAnalysisTest {
         val hoisted = licm.run(module)
         val fn = hoisted.functions[0]
         val loopBlock = fn.blocks.find { it.label == "loop" }!!
-        val loopLoads = loopBlock.instructions.filterIsInstance<Instruction.Load>()
+        val loopLoads = loopBlock.instructions.filterIsInstance<Load>()
         assertTrue(loopLoads.any { it.volatile }, "Volatile load should NOT be hoisted")
     }
 
@@ -197,7 +198,7 @@ class LicmAliasAnalysisTest {
         val fn = hoisted.functions[0]
         val preheader = fn.blocks.find { it.label.contains("preheader") }
         assertNotNull(preheader, "Preheader should exist: ${fn.blocks.map { it.label }}")
-        val preheaderLoads = preheader!!.instructions.filterIsInstance<Instruction.Load>()
+        val preheaderLoads = preheader!!.instructions.filterIsInstance<Load>()
         assertTrue(preheaderLoads.isNotEmpty(), "Load from field 0 should be hoisted when loop only stores to field 1")
     }
 
@@ -230,7 +231,7 @@ class LicmAliasAnalysisTest {
         val hoisted = licm.run(module)
         val fn = hoisted.functions.find { !it.isExternal }!!
         val loopBlock = fn.blocks.find { it.label == "loop" }!!
-        val loopLoads = loopBlock.instructions.filterIsInstance<Instruction.Load>()
+        val loopLoads = loopBlock.instructions.filterIsInstance<Load>()
         assertTrue(loopLoads.isNotEmpty(), "Load should NOT be hoisted when loop contains a call")
     }
 }

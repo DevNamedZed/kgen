@@ -7,6 +7,7 @@ import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 import org.kgen.pass.OptLevel
 import org.kgen.target.x86.codegen.X86CodeGenerator
+import org.kgen.ir.instructions.*
 
 class OptimizationPipelineTest {
 
@@ -33,7 +34,7 @@ class OptimizationPipelineTest {
         val optimized = OptLevel.O2.pipeline().execute(module)
 
         val fn = optimized.functions[0]
-        val hasAlloca = fn.blocks.any { b -> b.instructions.any { it is Instruction.Alloca } }
+        val hasAlloca = fn.blocks.any { b -> b.instructions.any { it is Alloca } }
         assertFalse(hasAlloca, "Alloca should be promoted by mem2reg")
 
         val obj = X86CodeGenerator().generateObjectFile(optimized)
@@ -79,7 +80,7 @@ class OptimizationPipelineTest {
         val optimized = OptLevel.O2.pipeline().execute(module)
 
         val fn = optimized.functions[0]
-        val hasPhi = fn.blocks.any { b -> b.instructions.any { it is Instruction.Phi } }
+        val hasPhi = fn.blocks.any { b -> b.instructions.any { it is Phi } }
         assertTrue(hasPhi, "Mem2reg should produce phi: ${fn.blocks.map { it.label to it.instructions }}")
 
         val obj = X86CodeGenerator().generateObjectFile(optimized)

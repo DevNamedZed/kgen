@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
+import org.kgen.ir.instructions.*
 
 class JumpThreadingTest {
 
@@ -35,8 +36,8 @@ class JumpThreadingTest {
         val blocks = module.functions[0].blocks
         assertEquals(1, blocks.size, "Should merge entry+then, dead code removed: ${blocks.map { it.label }}")
         val last = blocks[0].instructions.last()
-        assertTrue(last is Instruction.Ret)
-        assertEquals(1, ((last as Instruction.Ret).value as Constant.I32).value, "Should take true branch")
+        assertTrue(last is Ret)
+        assertEquals(1, ((last as Ret).value as Constant.I32).value, "Should take true branch")
     }
 
     @Test
@@ -57,8 +58,8 @@ class JumpThreadingTest {
         val blocks = module.functions[0].blocks
         assertEquals(1, blocks.size, "Should merge entry+else, dead code removed: ${blocks.map { it.label }}")
         val last = blocks[0].instructions.last()
-        assertTrue(last is Instruction.Ret)
-        assertEquals(2, ((last as Instruction.Ret).value as Constant.I32).value, "Should take false branch")
+        assertTrue(last is Ret)
+        assertEquals(2, ((last as Ret).value as Constant.I32).value, "Should take false branch")
     }
 
     @Test
@@ -77,7 +78,7 @@ class JumpThreadingTest {
         // Same target → br → merge → single block
         assertEquals(1, blocks.size, "Should merge into one block: ${blocks.map { it.label }}")
         val last = blocks[0].instructions.last()
-        assertTrue(last is Instruction.Ret)
+        assertTrue(last is Ret)
     }
 
     @Test
@@ -136,7 +137,7 @@ class JumpThreadingTest {
         }
         val entry = module.functions[0].blocks[0]
         val last = entry.instructions.last()
-        assertTrue(last is Instruction.CondBr, "Dynamic condBr should be preserved: $last")
+        assertTrue(last is CondBr, "Dynamic condBr should be preserved: $last")
     }
 
     @Test
@@ -185,8 +186,8 @@ class JumpThreadingTest {
         val blocks = module.functions[0].blocks
         assertEquals(1, blocks.size, "Chain should merge into one block: ${blocks.map { it.label }}")
         val last = blocks[0].instructions.last()
-        assertTrue(last is Instruction.Ret)
-        assertEquals(42, ((last as Instruction.Ret).value as Constant.I32).value)
+        assertTrue(last is Ret)
+        assertEquals(42, ((last as Ret).value as Constant.I32).value)
     }
 
     @Test

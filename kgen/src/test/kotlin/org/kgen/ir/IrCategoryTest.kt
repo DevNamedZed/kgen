@@ -2,6 +2,7 @@ package org.kgen.ir
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.kgen.ir.instructions.*
 
 class IrCategoryTest {
 
@@ -75,213 +76,213 @@ class IrCategoryTest {
 
         listOf(
             // Arithmetic
-            Instruction.Add(ref, ref, ref2),
-            Instruction.Sub(ref, ref, ref2),
-            Instruction.Mul(ref, ref, ref2),
-            Instruction.UDiv(ref, ref, ref2),
-            Instruction.SDiv(ref, ref, ref2),
-            Instruction.URem(ref, ref, ref2),
-            Instruction.SRem(ref, ref, ref2),
-            Instruction.Neg(ref, ref),
-            Instruction.SAddOverflow(ref, ref, ref2),
-            Instruction.UAddOverflow(ref, ref, ref2),
-            Instruction.SSubOverflow(ref, ref, ref2),
-            Instruction.USubOverflow(ref, ref, ref2),
-            Instruction.SMulOverflow(ref, ref, ref2),
-            Instruction.UMulOverflow(ref, ref, ref2),
-            Instruction.SAddSat(ref, ref, ref2),
-            Instruction.UAddSat(ref, ref, ref2),
-            Instruction.SSubSat(ref, ref, ref2),
-            Instruction.USubSat(ref, ref, ref2),
-            Instruction.SMin(ref, ref, ref2),
-            Instruction.SMax(ref, ref, ref2),
-            Instruction.UMin(ref, ref, ref2),
-            Instruction.UMax(ref, ref, ref2),
-            Instruction.Abs(ref, ref),
-            Instruction.FAdd(ref, ref, ref2),
-            Instruction.FSub(ref, ref, ref2),
-            Instruction.FMul(ref, ref, ref2),
-            Instruction.FDiv(ref, ref, ref2),
-            Instruction.FRem(ref, ref, ref2),
-            Instruction.FNeg(ref, ref),
-            Instruction.FAbs(ref, ref),
-            Instruction.FMA(ref, ref, ref2, ref),
-            Instruction.FMin(ref, ref, ref2),
-            Instruction.FMax(ref, ref, ref2),
-            Instruction.Sqrt(ref, ref),
-            Instruction.Ceil(ref, ref),
-            Instruction.Floor(ref, ref),
-            Instruction.Round(ref, ref),
-            Instruction.Trunc(ref, ref),
-            Instruction.CopySign(ref, ref, ref2),
+            Add(ref, ref, ref2),
+            Sub(ref, ref, ref2),
+            Mul(ref, ref, ref2),
+            UDiv(ref, ref, ref2),
+            SDiv(ref, ref, ref2),
+            URem(ref, ref, ref2),
+            SRem(ref, ref, ref2),
+            Neg(ref, ref),
+            SAddOverflow(ref, ref, ref2),
+            UAddOverflow(ref, ref, ref2),
+            SSubOverflow(ref, ref, ref2),
+            USubOverflow(ref, ref, ref2),
+            SMulOverflow(ref, ref, ref2),
+            UMulOverflow(ref, ref, ref2),
+            SAddSat(ref, ref, ref2),
+            UAddSat(ref, ref, ref2),
+            SSubSat(ref, ref, ref2),
+            USubSat(ref, ref, ref2),
+            SMin(ref, ref, ref2),
+            SMax(ref, ref, ref2),
+            UMin(ref, ref, ref2),
+            UMax(ref, ref, ref2),
+            Abs(ref, ref),
+            FAdd(ref, ref, ref2),
+            FSub(ref, ref, ref2),
+            FMul(ref, ref, ref2),
+            FDiv(ref, ref, ref2),
+            FRem(ref, ref, ref2),
+            FNeg(ref, ref),
+            FAbs(ref, ref),
+            FMA(ref, ref, ref2, ref),
+            FMin(ref, ref, ref2),
+            FMax(ref, ref, ref2),
+            Sqrt(ref, ref),
+            Ceil(ref, ref),
+            Floor(ref, ref),
+            Round(ref, ref),
+            Trunc(ref, ref),
+            CopySign(ref, ref, ref2),
 
             // Bitwise
-            Instruction.And(ref, ref, ref2),
-            Instruction.Or(ref, ref, ref2),
-            Instruction.Xor(ref, ref, ref2),
-            Instruction.Not(ref, ref),
-            Instruction.Shl(ref, ref, ref2),
-            Instruction.LShr(ref, ref, ref2),
-            Instruction.AShr(ref, ref, ref2),
-            Instruction.RotateLeft(ref, ref, ref2),
-            Instruction.RotateRight(ref, ref, ref2),
-            Instruction.Ctlz(ref, ref),
-            Instruction.Cttz(ref, ref),
-            Instruction.Ctpop(ref, ref),
-            Instruction.BSwap(ref, ref),
-            Instruction.BitReverse(ref, ref),
-            Instruction.Rotl(ref, ref, ref2),
-            Instruction.Rotr(ref, ref, ref2),
+            And(ref, ref, ref2),
+            Or(ref, ref, ref2),
+            Xor(ref, ref, ref2),
+            Not(ref, ref),
+            Shl(ref, ref, ref2),
+            LShr(ref, ref, ref2),
+            AShr(ref, ref, ref2),
+            RotateLeft(ref, ref, ref2),
+            RotateRight(ref, ref, ref2),
+            Ctlz(ref, ref),
+            Cttz(ref, ref),
+            Ctpop(ref, ref),
+            BSwap(ref, ref),
+            BitReverse(ref, ref),
+            Rotl(ref, ref, ref2),
+            Rotr(ref, ref, ref2),
 
             // Comparison
-            Instruction.ICmp(ref, ICmpPredicate.EQ, ref, ref2),
-            Instruction.FCmp(ref, FCmpPredicate.OEQ, ref, ref2),
+            ICmp(ref, ICmpPredicate.EQ, ref, ref2),
+            FCmp(ref, FCmpPredicate.OEQ, ref, ref2),
 
             // Memory
-            Instruction.Alloca(ref, Type.I32),
-            Instruction.Load(ref, ptr, Type.I32),
-            Instruction.Store(ref, ptr),
-            Instruction.GetElementPtr(ref, Type.I32, ptr, listOf(ref)),
-            Instruction.MemCpy(ptr, ptr, ref),
-            Instruction.MemSet(ptr, ref, ref2),
-            Instruction.MemMove(ptr, ptr, ref),
-            Instruction.Prefetch(ptr, 0, 3, 1),
-            Instruction.StackSave(ref),
-            Instruction.StackRestore(ptr),
-            Instruction.LifetimeStart(ptr, 4),
-            Instruction.LifetimeEnd(ptr, 4),
+            Alloca(ref, Type.I32),
+            Load(ref, ptr, Type.I32),
+            Store(ref, ptr),
+            GetElementPtr(ref, Type.I32, ptr, listOf(ref)),
+            MemCpy(ptr, ptr, ref),
+            MemSet(ptr, ref, ref2),
+            MemMove(ptr, ptr, ref),
+            Prefetch(ptr, 0, 3, 1),
+            StackSave(ref),
+            StackRestore(ptr),
+            LifetimeStart(ptr, 4),
+            LifetimeEnd(ptr, 4),
 
             // Atomic
-            Instruction.Fence(AtomicOrdering.SEQ_CST),
-            Instruction.CmpXchg(ref, ptr, ref, ref2, AtomicOrdering.SEQ_CST, AtomicOrdering.ACQUIRE),
-            Instruction.AtomicRMW(ref, AtomicRMWOp.ADD, ptr, ref, AtomicOrdering.SEQ_CST),
+            Fence(AtomicOrdering.SEQ_CST),
+            CmpXchg(ref, ptr, ref, ref2, AtomicOrdering.SEQ_CST, AtomicOrdering.ACQUIRE),
+            AtomicRMW(ref, AtomicRMWOp.ADD, ptr, ref, AtomicOrdering.SEQ_CST),
 
             // Conversion
-            Instruction.IntTrunc(ref, ref, Type.I16),
-            Instruction.ZExt(ref, ref, Type.I64),
-            Instruction.SExt(ref, ref, Type.I64),
-            Instruction.FPTrunc(ref, ref, Type.F32),
-            Instruction.FPExt(ref, ref, Type.F64),
-            Instruction.FPToUI(ref, ref, Type.I32),
-            Instruction.FPToSI(ref, ref, Type.I32),
-            Instruction.UIToFP(ref, ref, Type.F64),
-            Instruction.SIToFP(ref, ref, Type.F64),
-            Instruction.PtrToInt(ref, ptr, Type.I64),
-            Instruction.IntToPtr(ref, ref, Type.Pointer(Type.I32)),
-            Instruction.BitCast(ref, ref, Type.F32),
-            Instruction.AddrSpaceCast(ref, ptr, Type.Pointer(Type.I32, 1)),
+            IntTrunc(ref, ref, Type.I16),
+            ZExt(ref, ref, Type.I64),
+            SExt(ref, ref, Type.I64),
+            FPTrunc(ref, ref, Type.F32),
+            FPExt(ref, ref, Type.F64),
+            FPToUI(ref, ref, Type.I32),
+            FPToSI(ref, ref, Type.I32),
+            UIToFP(ref, ref, Type.F64),
+            SIToFP(ref, ref, Type.F64),
+            PtrToInt(ref, ptr, Type.I64),
+            IntToPtr(ref, ref, Type.Pointer(Type.I32)),
+            BitCast(ref, ref, Type.F32),
+            AddrSpaceCast(ref, ptr, Type.Pointer(Type.I32, 1)),
 
             // Terminator
-            Instruction.Ret(ref),
-            Instruction.Br("target"),
-            Instruction.CondBr(ref, "t", "f"),
-            Instruction.Switch(ref, "default", emptyList()),
-            Instruction.IndirectBr(ptr, listOf("a", "b")),
-            Instruction.Unreachable(),
-            Instruction.Trap(),
-            Instruction.DebugTrap(),
+            Ret(ref),
+            Br("target"),
+            CondBr(ref, "t", "f"),
+            Switch(ref, "default", emptyList()),
+            IndirectBr(ptr, listOf("a", "b")),
+            Unreachable(),
+            Trap(),
+            DebugTrap(),
 
             // Call
-            Instruction.Call(ref, funcRef, listOf(ref), Type.I32),
-            Instruction.Invoke(ref, funcRef, listOf(ref), Type.I32, "normal", "unwind"),
-            Instruction.CallBr(ref, funcRef, listOf(ref), Type.I32, "fall", listOf("a")),
-            Instruction.VAStart(ptr),
-            Instruction.VAEnd(ptr),
-            Instruction.VACopy(ptr, ptr),
-            Instruction.VAArg(ref, ptr, Type.I32),
+            Call(ref, funcRef, listOf(ref), Type.I32),
+            Invoke(ref, funcRef, listOf(ref), Type.I32, "normal", "unwind"),
+            CallBr(ref, funcRef, listOf(ref), Type.I32, "fall", listOf("a")),
+            VAStart(ptr),
+            VAEnd(ptr),
+            VACopy(ptr, ptr),
+            VAArg(ref, ptr, Type.I32),
 
             // SSA
-            Instruction.Phi(ref, listOf(ref to "a", ref2 to "b")),
-            Instruction.Select(ref, ref, ref, ref2),
-            Instruction.Freeze(ref, ref),
+            Phi(ref, listOf(ref to "a", ref2 to "b")),
+            Select(ref, ref, ref, ref2),
+            Freeze(ref, ref),
 
             // Vector
-            Instruction.ExtractElement(ref, vec, ref),
-            Instruction.InsertElement(ref, vec, ref, ref2),
-            Instruction.ShuffleVector(ref, vec, vec, listOf(0, 1, 2, 3)),
-            Instruction.Splat(ref, ref, vecType),
-            Instruction.VectorReduce(ref, VectorReduceOp.ADD, vec),
+            ExtractElement(ref, vec, ref),
+            InsertElement(ref, vec, ref, ref2),
+            ShuffleVector(ref, vec, vec, listOf(0, 1, 2, 3)),
+            Splat(ref, ref, vecType),
+            VectorReduce(ref, VectorReduceOp.ADD, vec),
 
             // Aggregate
-            Instruction.ExtractValue(ref, structVal, listOf(0)),
-            Instruction.InsertValue(ref, structVal, ref, listOf(0)),
+            ExtractValue(ref, structVal, listOf(0)),
+            InsertValue(ref, structVal, ref, listOf(0)),
 
             // Exception
-            Instruction.LandingPad(ref, Type.I32, emptyList()),
-            Instruction.Resume(ref),
-            Instruction.CatchSwitch(ref, null, listOf("h1"), null),
-            Instruction.CatchPad(ref, ref, emptyList()),
-            Instruction.CleanupPad(ref, null, emptyList()),
-            Instruction.CatchRet(ref, "dest"),
-            Instruction.CleanupRet(ref, null),
-            Instruction.Throw(ref),
-            Instruction.TryCatchRegion("try", emptyList()),
+            LandingPad(ref, Type.I32, emptyList()),
+            Resume(ref),
+            CatchSwitch(ref, null, listOf("h1"), null),
+            CatchPad(ref, ref, emptyList()),
+            CleanupPad(ref, null, emptyList()),
+            CatchRet(ref, "dest"),
+            CleanupRet(ref, null),
+            Throw(ref),
+            TryCatchRegion("try", emptyList()),
 
             // Object
-            Instruction.NewObject(ref, "Foo"),
-            Instruction.NewArray(ref, Type.I32, ref),
-            Instruction.NewMultiArray(ref, Type.I32, listOf(ref)),
-            Instruction.GetField(ref, ref, "Foo", "x", Type.I32),
-            Instruction.PutField(ref, "Foo", "x", Type.I32, ref2),
-            Instruction.GetStatic(ref, "Foo", "y", Type.I32),
-            Instruction.PutStatic("Foo", "y", Type.I32, ref),
-            Instruction.VirtualCall(ref, ref, "Foo", "bar", funcType, listOf(ref)),
-            Instruction.InterfaceCall(ref, ref, "IFoo", "bar", funcType, listOf(ref)),
-            Instruction.SpecialCall(ref, ref, "Foo", "bar", funcType, listOf(ref)),
-            Instruction.StaticCall(ref, "Foo", "bar", funcType, listOf(ref)),
-            Instruction.DynamicCall(ref, BootstrapMethod("Cls", "bsm", funcType), "name", funcType, listOf(ref)),
-            Instruction.ConstructorCall(ref, "Foo", funcType, listOf(ref)),
-            Instruction.InstanceOf(ref, ref, Type.ClassRef("Foo")),
-            Instruction.CheckCast(ref, ref, Type.ClassRef("Foo")),
-            Instruction.TypeId(ref, ref),
-            Instruction.ArrayGet(ref, ref, ref2, Type.I32),
-            Instruction.ArraySet(ref, ref2, ref, Type.I32),
-            Instruction.ArrayLength(ref, ref),
-            Instruction.MonitorEnter(ref),
-            Instruction.MonitorExit(ref),
-            Instruction.Box(ref, ref, Type.ClassRef("Integer")),
-            Instruction.Unbox(ref, ref, Type.I32),
-            Instruction.ClosureCreate(ref, funcRef, listOf(ref), funcType),
-            Instruction.ClosureInvoke(ref, ref, listOf(ref), Type.I32),
-            Instruction.ConstructVariant(ref, taggedUnion, "A", listOf(ref)),
-            Instruction.GetTag(ref, unionVal),
-            Instruction.GetVariantField(ref, unionVal, "A", 0),
-            Instruction.TagSwitch(unionVal, listOf("A" to "block_a")),
-            Instruction.CatchValue(ref, Type.ClassRef("Exception")),
-            Instruction.MakeWeakRef(ref, ref),
-            Instruction.ReadWeakRef(ref, ref),
-            Instruction.ClearWeakRef(ref),
+            NewObject(ref, "Foo"),
+            NewArray(ref, Type.I32, ref),
+            NewMultiArray(ref, Type.I32, listOf(ref)),
+            GetField(ref, ref, "Foo", "x", Type.I32),
+            PutField(ref, "Foo", "x", Type.I32, ref2),
+            GetStatic(ref, "Foo", "y", Type.I32),
+            PutStatic("Foo", "y", Type.I32, ref),
+            VirtualCall(ref, ref, "Foo", "bar", funcType, listOf(ref)),
+            InterfaceCall(ref, ref, "IFoo", "bar", funcType, listOf(ref)),
+            SpecialCall(ref, ref, "Foo", "bar", funcType, listOf(ref)),
+            StaticCall(ref, "Foo", "bar", funcType, listOf(ref)),
+            DynamicCall(ref, BootstrapMethod("Cls", "bsm", funcType), "name", funcType, listOf(ref)),
+            ConstructorCall(ref, "Foo", funcType, listOf(ref)),
+            InstanceOf(ref, ref, Type.ClassRef("Foo")),
+            CheckCast(ref, ref, Type.ClassRef("Foo")),
+            TypeId(ref, ref),
+            ArrayGet(ref, ref, ref2, Type.I32),
+            ArraySet(ref, ref2, ref, Type.I32),
+            ArrayLength(ref, ref),
+            MonitorEnter(ref),
+            MonitorExit(ref),
+            Box(ref, ref, Type.ClassRef("Integer")),
+            Unbox(ref, ref, Type.I32),
+            ClosureCreate(ref, funcRef, listOf(ref), funcType),
+            ClosureInvoke(ref, ref, listOf(ref), Type.I32),
+            ConstructVariant(ref, taggedUnion, "A", listOf(ref)),
+            GetTag(ref, unionVal),
+            GetVariantField(ref, unionVal, "A", 0),
+            TagSwitch(unionVal, listOf("A" to "block_a")),
+            CatchValue(ref, Type.ClassRef("Exception")),
+            MakeWeakRef(ref, ref),
+            ReadWeakRef(ref, ref),
+            ClearWeakRef(ref),
 
             // Runtime
-            Instruction.GCAlloc(ref, Type.I32),
-            Instruction.GCSafepoint(),
-            Instruction.GCRoot(ptr, null),
-            Instruction.Pin(ref, ref),
-            Instruction.Unpin(ref),
-            Instruction.InteriorPtr(ref, ref, ref2, Type.I32),
-            Instruction.WriteBarrier(ref, ref2, ref),
-            Instruction.ReadBarrier(ref, ref),
-            Instruction.ManagedCall(ref, funcRef, listOf(ref), Type.I32, ManagedCallDirection.MANAGED_TO_NATIVE),
-            Instruction.RefRetain(ref),
-            Instruction.RefRelease(ref),
-            Instruction.RefCount(ref, ref),
-            Instruction.CoroBegin(ref, ref, ptr),
-            Instruction.CoroEnd(ref),
-            Instruction.CoroSuspend(ref, null),
-            Instruction.CoroResume(ref),
-            Instruction.CoroDestroy(ref),
-            Instruction.CoroSize(ref),
+            GCAlloc(ref, Type.I32),
+            GCSafepoint(),
+            GCRoot(ptr, null),
+            Pin(ref, ref),
+            Unpin(ref),
+            InteriorPtr(ref, ref, ref2, Type.I32),
+            WriteBarrier(ref, ref2, ref),
+            ReadBarrier(ref, ref),
+            ManagedCall(ref, funcRef, listOf(ref), Type.I32, ManagedCallDirection.MANAGED_TO_NATIVE),
+            RefRetain(ref),
+            RefRelease(ref),
+            RefCount(ref, ref),
+            CoroBegin(ref, ref, ptr),
+            CoroEnd(ref),
+            CoroSuspend(ref, null),
+            CoroResume(ref),
+            CoroDestroy(ref),
+            CoroSize(ref),
 
             // Debug
-            Instruction.DebugLoc(1, 1, "scope"),
-            Instruction.DebugValue("x", ref),
-            Instruction.DebugDeclare("x", ptr),
-            Instruction.Assume(ref),
-            Instruction.Expect(ref, ref, Constant.I32(1)),
+            DebugLoc(1, 1, "scope"),
+            DebugValue("x", ref),
+            DebugDeclare("x", ptr),
+            Assume(ref),
+            Expect(ref, ref, Constant.I32(1)),
 
             // Intrinsic
-            Instruction.Intrinsic(ref, "llvm.sqrt", listOf(ref), Type.F64),
-            Instruction.InlineAsm(ref, "nop", "", args = emptyList()),
+            Intrinsic(ref, "llvm.sqrt", listOf(ref), Type.F64),
+            InlineAsm(ref, "nop", "", args = emptyList()),
         )
     }
 
@@ -296,87 +297,87 @@ class IrCategoryTest {
     fun arithmeticInstructionsAreCategorizedCorrectly() {
         val arithmetic = allInstructions.filter { it.category == IrCategory.ARITHMETIC }
         assertTrue(arithmetic.size >= 27, "Expected at least 27 arithmetic instructions, got ${arithmetic.size}")
-        assertTrue(arithmetic.any { it is Instruction.Add })
-        assertTrue(arithmetic.any { it is Instruction.FMA })
-        assertTrue(arithmetic.any { it is Instruction.Sqrt })
+        assertTrue(arithmetic.any { it is Add })
+        assertTrue(arithmetic.any { it is FMA })
+        assertTrue(arithmetic.any { it is Sqrt })
     }
 
     @Test
     fun bitwiseInstructionsAreCategorizedCorrectly() {
         val bitwise = allInstructions.filter { it.category == IrCategory.BITWISE }
         assertTrue(bitwise.size >= 14, "Expected at least 14 bitwise instructions, got ${bitwise.size}")
-        assertTrue(bitwise.any { it is Instruction.And })
-        assertTrue(bitwise.any { it is Instruction.Ctlz })
-        assertTrue(bitwise.any { it is Instruction.BSwap })
+        assertTrue(bitwise.any { it is And })
+        assertTrue(bitwise.any { it is Ctlz })
+        assertTrue(bitwise.any { it is BSwap })
     }
 
     @Test
     fun memoryInstructionsAreCategorizedCorrectly() {
         val memory = allInstructions.filter { it.category == IrCategory.MEMORY }
-        assertTrue(memory.any { it is Instruction.Alloca })
-        assertTrue(memory.any { it is Instruction.Load })
-        assertTrue(memory.any { it is Instruction.Store })
-        assertTrue(memory.any { it is Instruction.GetElementPtr })
-        assertTrue(memory.any { it is Instruction.MemCpy })
-        assertTrue(memory.any { it is Instruction.StackSave })
-        assertTrue(memory.any { it is Instruction.LifetimeStart })
+        assertTrue(memory.any { it is Alloca })
+        assertTrue(memory.any { it is Load })
+        assertTrue(memory.any { it is Store })
+        assertTrue(memory.any { it is GetElementPtr })
+        assertTrue(memory.any { it is MemCpy })
+        assertTrue(memory.any { it is StackSave })
+        assertTrue(memory.any { it is LifetimeStart })
     }
 
     @Test
     fun atomicInstructionsAreCategorizedCorrectly() {
         val atomic = allInstructions.filter { it.category == IrCategory.ATOMIC }
         assertEquals(3, atomic.size)
-        assertTrue(atomic.any { it is Instruction.Fence })
-        assertTrue(atomic.any { it is Instruction.CmpXchg })
-        assertTrue(atomic.any { it is Instruction.AtomicRMW })
+        assertTrue(atomic.any { it is Fence })
+        assertTrue(atomic.any { it is CmpXchg })
+        assertTrue(atomic.any { it is AtomicRMW })
     }
 
     @Test
     fun objectInstructionsAreCategorizedCorrectly() {
         val obj = allInstructions.filter { it.category == IrCategory.OBJECT }
         assertTrue(obj.size >= 31, "Expected at least 31 object instructions, got ${obj.size}")
-        assertTrue(obj.any { it is Instruction.NewObject })
-        assertTrue(obj.any { it is Instruction.VirtualCall })
-        assertTrue(obj.any { it is Instruction.ClosureCreate })
-        assertTrue(obj.any { it is Instruction.TagSwitch })
-        assertTrue(obj.any { it is Instruction.Throw })
-        assertTrue(obj.any { it is Instruction.TryCatchRegion })
+        assertTrue(obj.any { it is NewObject })
+        assertTrue(obj.any { it is VirtualCall })
+        assertTrue(obj.any { it is ClosureCreate })
+        assertTrue(obj.any { it is TagSwitch })
+        assertTrue(obj.any { it is Throw })
+        assertTrue(obj.any { it is TryCatchRegion })
     }
 
     @Test
     fun runtimeInstructionsAreCategorizedCorrectly() {
         val runtime = allInstructions.filter { it.category == IrCategory.RUNTIME }
         assertTrue(runtime.size >= 12, "Expected at least 12 runtime instructions, got ${runtime.size}")
-        assertTrue(runtime.any { it is Instruction.GCAlloc })
-        assertTrue(runtime.any { it is Instruction.WriteBarrier })
-        assertTrue(runtime.any { it is Instruction.CoroBegin })
-        assertTrue(runtime.any { it is Instruction.RefRetain })
+        assertTrue(runtime.any { it is GCAlloc })
+        assertTrue(runtime.any { it is WriteBarrier })
+        assertTrue(runtime.any { it is CoroBegin })
+        assertTrue(runtime.any { it is RefRetain })
     }
 
     @Test
     fun exceptionInstructionsAreCategorizedCorrectly() {
         val eh = allInstructions.filter { it.category == IrCategory.EXCEPTION }
-        assertTrue(eh.any { it is Instruction.LandingPad })
-        assertTrue(eh.any { it is Instruction.CatchSwitch })
+        assertTrue(eh.any { it is LandingPad })
+        assertTrue(eh.any { it is CatchSwitch })
     }
 
     @Test
     fun interopInstructionsAreCategorizedCorrectly() {
         val interop = allInstructions.filter { it.category == IrCategory.INTEROP }
-        assertTrue(interop.any { it is Instruction.Pin })
-        assertTrue(interop.any { it is Instruction.Unpin })
-        assertTrue(interop.any { it is Instruction.InteriorPtr })
-        assertTrue(interop.any { it is Instruction.ManagedCall })
+        assertTrue(interop.any { it is Pin })
+        assertTrue(interop.any { it is Unpin })
+        assertTrue(interop.any { it is InteriorPtr })
+        assertTrue(interop.any { it is ManagedCall })
     }
 
     @Test
     fun terminatorInstructionsAreCategorizedCorrectly() {
         val term = allInstructions.filter { it.category == IrCategory.TERMINATOR }
-        assertTrue(term.any { it is Instruction.Ret })
-        assertTrue(term.any { it is Instruction.Br })
-        assertTrue(term.any { it is Instruction.CondBr })
-        assertTrue(term.any { it is Instruction.Unreachable })
-        assertTrue(term.any { it is Instruction.Trap })
+        assertTrue(term.any { it is Ret })
+        assertTrue(term.any { it is Br })
+        assertTrue(term.any { it is CondBr })
+        assertTrue(term.any { it is Unreachable })
+        assertTrue(term.any { it is Trap })
     }
 
     @Test

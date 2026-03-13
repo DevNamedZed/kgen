@@ -1,6 +1,7 @@
 package org.kgen.pass
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.target.Arch
 import org.kgen.ir.target.Target
 
@@ -223,7 +224,7 @@ class MixedModeCompiler(
         for (block in fn.blocks) {
             for (inst in block.instructions) {
                 when (inst) {
-                    is Instruction.Call -> {
+                    is Call -> {
                         val target = inst.function
                         if (target is GlobalRef || target is FunctionRef) {
                             callees.add(target.name)

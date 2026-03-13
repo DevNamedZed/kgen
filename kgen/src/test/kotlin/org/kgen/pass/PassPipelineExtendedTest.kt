@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -25,7 +26,7 @@ class PassPipelineExtendedTest {
             finalizeFunction()
         }
         val result = PassPipeline().add(ConstantFolding()).execute(module)
-        val ret = result.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = result.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(10, (ret.value as Constant.I32).value)
     }
 
@@ -72,7 +73,7 @@ class PassPipelineExtendedTest {
             .execute(module)
         val insts = result.functions[0].blocks[0].instructions
         assertEquals(1, insts.size)
-        assertEquals(10, ((insts[0] as Instruction.Ret).value as Constant.I32).value)
+        assertEquals(10, ((insts[0] as Ret).value as Constant.I32).value)
     }
 
     // --- Multiple functions independently optimized ---
@@ -96,9 +97,9 @@ class PassPipelineExtendedTest {
             finalizeFunction()
         }
         val result = PassPipeline().add(ConstantFolding()).execute(module)
-        assertEquals(2, ((result.functions[0].blocks[0].instructions.last() as Instruction.Ret).value as Constant.I32).value)
-        assertEquals(9, ((result.functions[1].blocks[0].instructions.last() as Instruction.Ret).value as Constant.I32).value)
-        assertEquals(58, ((result.functions[2].blocks[0].instructions.last() as Instruction.Ret).value as Constant.I32).value)
+        assertEquals(2, ((result.functions[0].blocks[0].instructions.last() as Ret).value as Constant.I32).value)
+        assertEquals(9, ((result.functions[1].blocks[0].instructions.last() as Ret).value as Constant.I32).value)
+        assertEquals(58, ((result.functions[2].blocks[0].instructions.last() as Ret).value as Constant.I32).value)
     }
 
     // --- Pass interaction: GVN + instcombine + DCE ---
@@ -180,7 +181,7 @@ class PassPipelineExtendedTest {
             .execute(module)
         val blocks = result.functions[0].blocks
         assertEquals(1, blocks.size)
-        val ret = blocks[0].instructions.last() as Instruction.Ret
+        val ret = blocks[0].instructions.last() as Ret
         assertEquals(1, (ret.value as Constant.I32).value, "10+20=30 > 25 → yes branch")
     }
 
@@ -199,7 +200,7 @@ class PassPipelineExtendedTest {
         val result = OptLevel.O1.pipeline().execute(module)
         val insts = result.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "O1 should remove identity ops: $insts")
-        assertTrue((insts[0] as Instruction.Ret).value is Parameter)
+        assertTrue((insts[0] as Ret).value is Parameter)
     }
 
     // --- O2 pipeline with complex function ---
@@ -255,7 +256,7 @@ class PassPipelineExtendedTest {
             .execute(module)
         assertEquals(5, result.functions.size)
         for (i in 0..4) {
-            val ret = result.functions[i].blocks[0].instructions.last() as Instruction.Ret
+            val ret = result.functions[i].blocks[0].instructions.last() as Ret
             assertEquals((i + 1) * 2, (ret.value as Constant.I32).value)
         }
     }
@@ -272,7 +273,7 @@ class PassPipelineExtendedTest {
             finalizeFunction()
         }
         val result = PassPipeline().add(ConstantFolding()).execute(module)
-        val ret = result.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = result.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(3_000_000_000L, (ret.value as Constant.I64).value)
     }
 
@@ -295,7 +296,7 @@ class PassPipelineExtendedTest {
         assertEquals(3, result.functions.size)
         assertTrue(result.functions[0].isExternal)
         assertTrue(result.functions[1].isExternal)
-        val ret = result.functions[2].blocks[0].instructions.last() as Instruction.Ret
+        val ret = result.functions[2].blocks[0].instructions.last() as Ret
         assertEquals(3, (ret.value as Constant.I32).value)
     }
 
@@ -323,7 +324,7 @@ class PassPipelineExtendedTest {
             .execute(module)
         val blocks = result.functions[0].blocks
         assertEquals(1, blocks.size)
-        val ret = blocks[0].instructions.last() as Instruction.Ret
+        val ret = blocks[0].instructions.last() as Ret
         assertEquals(100, (ret.value as Constant.I32).value, "5==5 is true → then branch")
     }
 
@@ -349,7 +350,7 @@ class PassPipelineExtendedTest {
             .execute(module)
         val blocks = result.functions[0].blocks
         assertEquals(1, blocks.size)
-        val ret = blocks[0].instructions.last() as Instruction.Ret
+        val ret = blocks[0].instructions.last() as Ret
         assertEquals(200, (ret.value as Constant.I32).value, "1>10 is false → else branch")
     }
 
@@ -373,7 +374,7 @@ class PassPipelineExtendedTest {
             .execute(module)
         val insts = result.functions[0].blocks[0].instructions
         assertEquals(1, insts.size)
-        assertEquals(10, ((insts[0] as Instruction.Ret).value as Constant.I32).value)
+        assertEquals(10, ((insts[0] as Ret).value as Constant.I32).value)
     }
 
     // --- All dead code ---
@@ -417,7 +418,7 @@ class PassPipelineExtendedTest {
             .add(DeadCodeElimination())
             .execute(module)
         val mainInsts = result.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
+        assertFalse(mainInsts.any { it is Call })
     }
 
     // --- WASM target pipeline ---
@@ -435,7 +436,7 @@ class PassPipelineExtendedTest {
             .add(ConstantFolding())
             .add(DeadCodeElimination())
             .execute(module)
-        val ret = result.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = result.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(30, (ret.value as Constant.I32).value)
     }
 

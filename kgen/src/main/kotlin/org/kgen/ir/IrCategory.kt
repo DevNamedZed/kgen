@@ -54,7 +54,13 @@ enum class IrCategory {
     // --- Tier 3: Object ---
 
     /** Allocation, fields, dispatch, type ops, arrays, closures, ADTs — object model. */
-    OBJECT;
+    OBJECT,
+
+    /** FrameState, Guard, Deoptimize, OSREntry — speculative optimization with fallback. */
+    DEOPTIMIZATION,
+
+    /** GPU and general-purpose compute: thread IDs, barriers, kernel launch, warp ops. */
+    COMPUTE;
 
     /** The compilation pipeline tier this category belongs to. */
     val tier: IrTier get() = when (this) {
@@ -64,5 +70,7 @@ enum class IrCategory {
         RUNTIME -> IrTier.RUNTIME
         INTEROP -> IrTier.INTEROP
         OBJECT -> IrTier.OBJECT
+        DEOPTIMIZATION -> IrTier.STRUCTURAL
+        COMPUTE -> IrTier.MACHINE
     }
 }

@@ -7,6 +7,7 @@ import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 import org.kgen.pass.Mem2Reg
 import org.kgen.target.jvm.*
+import org.kgen.ir.instructions.*
 
 class ArrayAccessTest {
 
@@ -95,7 +96,7 @@ class ArrayAccessTest {
         val fn = module.functions.first { it.name == "createArray" }
         val instructions = allInstructions(fn)
         val hasMallocCall = instructions.any {
-            it is Instruction.Call && it.function.name == "malloc"
+            it is Call && it.function.name == "malloc"
         }
         assertTrue(hasMallocCall, "Expected call to 'malloc' for newarray, " +
             "instructions: ${instructions.map { it::class.simpleName }}")
@@ -117,9 +118,9 @@ class ArrayAccessTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "loadFirst" }
         val instructions = allInstructions(fn)
-        assertTrue(instructions.any { it is Instruction.GetElementPtr },
+        assertTrue(instructions.any { it is GetElementPtr },
             "Expected GetElementPtr for iaload, got: ${instructions.map { it::class.simpleName }}")
-        assertTrue(instructions.any { it is Instruction.Load },
+        assertTrue(instructions.any { it is Load },
             "Expected Load for iaload, got: ${instructions.map { it::class.simpleName }}")
     }
 
@@ -140,9 +141,9 @@ class ArrayAccessTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "storeFirst" }
         val instructions = allInstructions(fn)
-        assertTrue(instructions.any { it is Instruction.GetElementPtr },
+        assertTrue(instructions.any { it is GetElementPtr },
             "Expected GetElementPtr for iastore, got: ${instructions.map { it::class.simpleName }}")
-        assertTrue(instructions.any { it is Instruction.Store },
+        assertTrue(instructions.any { it is Store },
             "Expected Store for iastore, got: ${instructions.map { it::class.simpleName }}")
     }
 
@@ -161,7 +162,7 @@ class ArrayAccessTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "getLength" }
         val instructions = allInstructions(fn)
-        assertTrue(instructions.any { it is Instruction.Load },
+        assertTrue(instructions.any { it is Load },
             "Expected Load for arraylength, got: ${instructions.map { it::class.simpleName }}")
     }
 
@@ -202,9 +203,9 @@ class ArrayAccessTest {
         val instructions = allInstructions(fn)
 
         // Loop should produce phi nodes after Mem2Reg
-        assertTrue(instructions.any { it is Instruction.Phi },
+        assertTrue(instructions.any { it is Phi },
             "Expected Phi from loop after Mem2Reg, got: ${instructions.map { it::class.simpleName }}")
-        assertTrue(instructions.any { it is Instruction.Add },
+        assertTrue(instructions.any { it is Add },
             "Expected Add for iadd, got: ${instructions.map { it::class.simpleName }}")
     }
 

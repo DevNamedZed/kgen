@@ -1,6 +1,7 @@
 package org.kgen.ir.types
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 
 /** DSL entry point: `classDef("MyClass") { extends("Base"); field("x", Type.I32) }`. */
 fun classDef(name: String, body: ClassDefBuilder.() -> Unit): ClassDef =

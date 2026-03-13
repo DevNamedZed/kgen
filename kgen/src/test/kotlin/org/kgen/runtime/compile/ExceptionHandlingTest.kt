@@ -5,13 +5,13 @@ import org.junit.jupiter.api.Test
 import org.kgen.ir.*
 import org.kgen.ir.target.Target
 import org.kgen.target.jvm.*
+import org.kgen.ir.instructions.*
 
 /**
- * Tests for basic exception handling support in BytecodeToIrLowering.
+ * Tests for exception handling support in BytecodeToIrLowering.
  *
- * In the kgen native compilation model, athrow is lowered to a trap (abort).
- * Exception tables are not yet used for try/catch → landing pad conversion,
- * but athrow bytecode is supported and compiles to native code.
+ * athrow is lowered to a call to kgen_throw (which calls _Unwind_RaiseException),
+ * followed by an unreachable instruction.
  */
 class ExceptionHandlingTest {
 
@@ -26,7 +26,7 @@ class ExceptionHandlingTest {
     }
 
     @Test
-    fun `athrow compiles to trap instruction`() {
+    fun `athrow compiles to kgen_throw call`() {
         val classBytes = buildClass {
             method("abort", "(Ljava/lang/Object;)V", AccessFlags.PUBLIC or AccessFlags.STATIC) { code ->
                 code.aload(0)
@@ -37,8 +37,26 @@ class ExceptionHandlingTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "abort" }
         val instructions = fn.blocks.flatMap { it.instructions }
-        assertTrue(instructions.any { it is Instruction.Trap },
-            "Expected Trap from athrow, got: ${instructions.map { it::class.simpleName }}")
+        assertTrue(instructions.any { it is Call && (it as Call).function.let { f ->
+            f is GlobalRef && f.name == "kgen_throw"
+        }}, "Expected call to kgen_throw from athrow, got: ${instructions.map { it::class.simpleName }}")
+        assertTrue(instructions.any { it is Unreachable },
+            "Expected Unreachable after kgen_throw")
+    }
+
+    @Test
+    fun `athrow declares kgen_throw as external function`() {
+        val classBytes = buildClass {
+            method("abort", "(Ljava/lang/Object;)V", AccessFlags.PUBLIC or AccessFlags.STATIC) { code ->
+                code.aload(0)
+                code.athrow()
+            }
+        }
+
+        val module = compile(classBytes)
+        val throwFn = module.functions.firstOrNull { it.name == "kgen_throw" }
+        assertNotNull(throwFn, "Module should declare kgen_throw")
+        assertTrue(throwFn!!.blocks.isEmpty(), "kgen_throw should be an external declaration (no body)")
     }
 
     @Test
@@ -48,7 +66,6 @@ class ExceptionHandlingTest {
                 code.iload(0)
                 code.iconst(0)
                 code.ifIcmpge("ok")
-                // throw path: create null and throw (trap)
                 code.aconstNull()
                 code.athrow()
                 code.label("ok")
@@ -59,9 +76,9 @@ class ExceptionHandlingTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "check" }
         val instructions = fn.blocks.flatMap { it.instructions }
-        assertTrue(instructions.any { it is Instruction.Trap },
-            "Expected Trap in throw branch")
-        assertTrue(instructions.any { it is Instruction.Ret },
+        assertTrue(instructions.any { it is Call },
+            "Expected call (kgen_throw) in throw branch")
+        assertTrue(instructions.any { it is Ret },
             "Expected Ret in ok branch")
     }
 
@@ -105,8 +122,9 @@ class ExceptionHandlingTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "safeDivide" }
         val instructions = fn.blocks.flatMap { it.instructions }
-        assertTrue(instructions.any { it is Instruction.Trap })
-        assertTrue(instructions.any { it is Instruction.SDiv || it is Instruction.UDiv })
+        assertTrue(instructions.any { it is Call },
+            "Expected call (kgen_throw) in throw branch")
+        assertTrue(instructions.any { it is SDiv || it is UDiv })
     }
 
     @Test

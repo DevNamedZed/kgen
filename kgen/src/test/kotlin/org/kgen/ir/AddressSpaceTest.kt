@@ -2,6 +2,7 @@ package org.kgen.ir
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
+import org.kgen.ir.instructions.*
 
 class AddressSpaceTest {
 
@@ -109,7 +110,7 @@ class AddressSpaceTest {
         val dst = Type.Pointer(Type.I32, AddressSpace.GENERIC)
         val srcRef = InstructionRef("%src", src)
         val dstRef = InstructionRef("%dst", dst)
-        val cast = Instruction.AddrSpaceCast(dstRef, srcRef, dst)
+        val cast = AddrSpaceCast(dstRef, srcRef, dst)
 
         assertEquals(AddressSpace.MANAGED, AddressSpace.of(cast.value.type))
         assertEquals(AddressSpace.GENERIC, AddressSpace.of(cast.toType))

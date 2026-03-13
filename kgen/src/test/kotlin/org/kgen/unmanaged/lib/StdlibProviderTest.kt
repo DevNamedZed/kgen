@@ -7,6 +7,7 @@ import org.kgen.ir.target.Target
 import org.kgen.runtime.compile.NativeCompiler
 import org.kgen.runtime.compile.RuntimeCompiler
 import org.kgen.target.jvm.*
+import org.kgen.ir.instructions.*
 
 class StdlibProviderTest {
 
@@ -131,7 +132,7 @@ class StdlibProviderTest {
         assertNotNull(fn, "Should have 'main' function")
 
         // Should call kgen_println_str instead of PrintStream.println
-        val calls = fn!!.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Call>()
+        val calls = fn!!.blocks.flatMap { it.instructions }.filterIsInstance<Call>()
         assertTrue(calls.any { (it.function as? GlobalRef)?.name == "kgen_println_str" },
             "Should call kgen_println_str, got calls: ${calls.map { (it.function as? GlobalRef)?.name }}")
     }
@@ -178,7 +179,7 @@ class StdlibProviderTest {
         val fn = module.functions.find { it.name == "absVal" }
         assertNotNull(fn)
 
-        val calls = fn!!.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Call>()
+        val calls = fn!!.blocks.flatMap { it.instructions }.filterIsInstance<Call>()
         assertTrue(calls.any { (it.function as? GlobalRef)?.name == "kgen_math_abs_int" },
             "Should call kgen_math_abs_int")
     }
@@ -225,7 +226,7 @@ class StdlibProviderTest {
         val fn = module.functions.find { it.name == "len" }
         assertNotNull(fn)
 
-        val calls = fn!!.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Call>()
+        val calls = fn!!.blocks.flatMap { it.instructions }.filterIsInstance<Call>()
         assertTrue(calls.any { (it.function as? GlobalRef)?.name == "kgen_string_length" },
             "Should call kgen_string_length")
     }
@@ -303,7 +304,7 @@ class StdlibProviderTest {
         val module = StdlibProvider.generate(Target.x86_64())
         val fn = module.functions.find { it.name == "kgen_println_str" }
         assertNotNull(fn, "Should have kgen_println_str function")
-        val calls = fn!!.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Call>()
+        val calls = fn!!.blocks.flatMap { it.instructions }.filterIsInstance<Call>()
         val callNames = calls.map { it.function }.mapNotNull {
             when (it) {
                 is FunctionRef -> it.name
@@ -320,7 +321,7 @@ class StdlibProviderTest {
         val module = StdlibProvider.generate(Target.x86_64())
         val fn = module.functions.find { it.name == "kgen_println_int" }
         assertNotNull(fn, "Should have kgen_println_int function")
-        val calls = fn!!.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Call>()
+        val calls = fn!!.blocks.flatMap { it.instructions }.filterIsInstance<Call>()
         val callNames = calls.map { it.function }.mapNotNull {
             when (it) {
                 is FunctionRef -> it.name
@@ -337,7 +338,7 @@ class StdlibProviderTest {
         val module = StdlibProvider.generate(Target.x86_64())
         val fn = module.functions.find { it.name == "kgen_math_sqrt" }
         assertNotNull(fn, "Should have kgen_math_sqrt function")
-        val calls = fn!!.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Call>()
+        val calls = fn!!.blocks.flatMap { it.instructions }.filterIsInstance<Call>()
         val callNames = calls.map { it.function }.mapNotNull {
             when (it) {
                 is FunctionRef -> it.name
@@ -354,7 +355,7 @@ class StdlibProviderTest {
         val module = StdlibProvider.generate(Target.x86_64())
         val fn = module.functions.find { it.name == "kgen_strconcat_begin" }
         assertNotNull(fn, "Should have kgen_strconcat_begin function")
-        val calls = fn!!.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Call>()
+        val calls = fn!!.blocks.flatMap { it.instructions }.filterIsInstance<Call>()
         val callNames = calls.map { it.function }.mapNotNull {
             when (it) {
                 is FunctionRef -> it.name
@@ -381,6 +382,285 @@ class StdlibProviderTest {
         val mathSqrt = module.functions.find { it.name == "kgen_math_sqrt" }!!
         assertEquals(1, mathSqrt.params.size)
         assertEquals(Type.F64, mathSqrt.params[0].type)
+    }
+
+    @Test
+    fun containsNewPrintlnOverloads() {
+        val module = StdlibProvider.generate(Target.x86_64())
+        val names = module.functions.map { it.name }.toSet()
+        assertTrue("kgen_println_float" in names)
+        assertTrue("kgen_println_boolean" in names)
+        assertTrue("kgen_println_char" in names)
+        assertTrue("kgen_print_str" in names)
+        assertTrue("kgen_print_int" in names)
+        assertTrue("kgen_print_long" in names)
+    }
+
+    @Test
+    fun containsExpandedStringOps() {
+        val module = StdlibProvider.generate(Target.x86_64())
+        val names = module.functions.map { it.name }.toSet()
+        assertTrue("kgen_string_isEmpty" in names)
+        assertTrue("kgen_string_indexOf" in names)
+        assertTrue("kgen_string_substring" in names)
+        assertTrue("kgen_string_contains" in names)
+        assertTrue("kgen_string_startsWith" in names)
+    }
+
+    @Test
+    fun containsExpandedMathOps() {
+        val module = StdlibProvider.generate(Target.x86_64())
+        val names = module.functions.map { it.name }.toSet()
+        assertTrue("kgen_math_min_long" in names)
+        assertTrue("kgen_math_max_long" in names)
+        assertTrue("kgen_math_min_double" in names)
+        assertTrue("kgen_math_max_double" in names)
+        assertTrue("kgen_math_ceil" in names)
+        assertTrue("kgen_math_floor" in names)
+        assertTrue("kgen_math_round" in names)
+        assertTrue("kgen_math_log" in names)
+        assertTrue("kgen_math_exp" in names)
+    }
+
+    @Test
+    fun containsNumericConversion() {
+        val module = StdlibProvider.generate(Target.x86_64())
+        val names = module.functions.map { it.name }.toSet()
+        assertTrue("kgen_double_to_string" in names)
+        assertTrue("kgen_int_parse" in names)
+        assertTrue("kgen_long_parse" in names)
+    }
+
+    @Test
+    fun containsExceptionHandling() {
+        val module = StdlibProvider.generate(Target.x86_64())
+        val names = module.functions.map { it.name }.toSet()
+        assertTrue("kgen_throw" in names)
+    }
+
+    @Test
+    fun nativeNameMapsNewPrintlnOverloads() {
+        assertEquals("kgen_println_float",
+            StdlibProvider.nativeName("java/io/PrintStream", "println", "(F)V"))
+        assertEquals("kgen_println_boolean",
+            StdlibProvider.nativeName("java/io/PrintStream", "println", "(Z)V"))
+        assertEquals("kgen_println_char",
+            StdlibProvider.nativeName("java/io/PrintStream", "println", "(C)V"))
+        assertEquals("kgen_print_str",
+            StdlibProvider.nativeName("java/io/PrintStream", "print", "(Ljava/lang/String;)V"))
+        assertEquals("kgen_print_int",
+            StdlibProvider.nativeName("java/io/PrintStream", "print", "(I)V"))
+        assertEquals("kgen_print_long",
+            StdlibProvider.nativeName("java/io/PrintStream", "print", "(J)V"))
+    }
+
+    @Test
+    fun nativeNameMapsExpandedStringOps() {
+        assertEquals("kgen_string_isEmpty",
+            StdlibProvider.nativeName("java/lang/String", "isEmpty", "()Z"))
+        assertEquals("kgen_string_indexOf",
+            StdlibProvider.nativeName("java/lang/String", "indexOf", "(I)I"))
+        assertEquals("kgen_string_substring",
+            StdlibProvider.nativeName("java/lang/String", "substring", "(II)Ljava/lang/String;"))
+        assertEquals("kgen_string_contains",
+            StdlibProvider.nativeName("java/lang/String", "contains", "(Ljava/lang/CharSequence;)Z"))
+        assertEquals("kgen_string_startsWith",
+            StdlibProvider.nativeName("java/lang/String", "startsWith", "(Ljava/lang/String;)Z"))
+    }
+
+    @Test
+    fun nativeNameMapsExpandedMathOps() {
+        assertEquals("kgen_math_min_long",
+            StdlibProvider.nativeName("java/lang/Math", "min", "(JJ)J"))
+        assertEquals("kgen_math_max_long",
+            StdlibProvider.nativeName("java/lang/Math", "max", "(JJ)J"))
+        assertEquals("kgen_math_min_double",
+            StdlibProvider.nativeName("java/lang/Math", "min", "(DD)D"))
+        assertEquals("kgen_math_max_double",
+            StdlibProvider.nativeName("java/lang/Math", "max", "(DD)D"))
+        assertEquals("kgen_math_ceil",
+            StdlibProvider.nativeName("java/lang/Math", "ceil", "(D)D"))
+        assertEquals("kgen_math_floor",
+            StdlibProvider.nativeName("java/lang/Math", "floor", "(D)D"))
+        assertEquals("kgen_math_round",
+            StdlibProvider.nativeName("java/lang/Math", "round", "(D)J"))
+        assertEquals("kgen_math_log",
+            StdlibProvider.nativeName("java/lang/Math", "log", "(D)D"))
+        assertEquals("kgen_math_exp",
+            StdlibProvider.nativeName("java/lang/Math", "exp", "(D)D"))
+    }
+
+    @Test
+    fun nativeNameMapsNumericConversion() {
+        assertEquals("kgen_double_to_string",
+            StdlibProvider.nativeName("java/lang/Double", "toString", "(D)Ljava/lang/String;"))
+        assertEquals("kgen_int_parse",
+            StdlibProvider.nativeName("java/lang/Integer", "parseInt", "(Ljava/lang/String;)I"))
+        assertEquals("kgen_long_parse",
+            StdlibProvider.nativeName("java/lang/Long", "parseLong", "(Ljava/lang/String;)J"))
+    }
+
+    @Test
+    fun stringContainsCompilesFromBytecode() {
+        val cp = ConstantPoolBuilder()
+        val thisClass = cp.classEntry("test/StrContains")
+        val superClass = cp.classEntry("java/lang/Object")
+        val codeIdx = cp.utf8("Code")
+
+        val containsRef = cp.methodRef("java/lang/String", "contains", "(Ljava/lang/CharSequence;)Z")
+        val nameIdx = cp.utf8("check")
+        val descIdx = cp.utf8("(Ljava/lang/String;Ljava/lang/String;)Z")
+
+        // aload_0, aload_1, invokevirtual contains, ireturn
+        val code = byteArrayOf(
+            0x2A.toByte(),                                                    // aload_0
+            0x2B.toByte(),                                                    // aload_1
+            0xB6.toByte(), (containsRef shr 8).toByte(), containsRef.toByte(), // invokevirtual
+            0xAC.toByte(),                                                    // ireturn
+        )
+
+        val codeAttr = AttributeBuilder.buildCode(codeIdx, CodeAttribute(
+            maxStack = 2, maxLocals = 2, code = code,
+            exceptionTable = emptyList(), attributes = emptyList(),
+        ))
+        val method = MethodInfo(
+            accessFlags = AccessFlags.PUBLIC or AccessFlags.STATIC,
+            nameIndex = nameIdx, descriptorIndex = descIdx,
+            attributes = listOf(codeAttr),
+        )
+
+        val classBytes = JvmClassWriter.write(ClassFile(
+            minorVersion = 0, majorVersion = 50,
+            constantPool = cp.build(),
+            accessFlags = AccessFlags.PUBLIC or AccessFlags.SUPER,
+            thisClass = thisClass, superClass = superClass,
+            interfaces = emptyList(), fields = emptyList(),
+            methods = listOf(method), attributes = emptyList(),
+        ))
+
+        val module = RuntimeCompiler(Target.x86_64()).compile(classBytes)
+        val fn = module.functions.find { it.name == "check" }
+        assertNotNull(fn)
+        val calls = fn!!.blocks.flatMap { it.instructions }.filterIsInstance<Call>()
+        assertTrue(calls.any { (it.function as? GlobalRef)?.name == "kgen_string_contains" },
+            "Should call kgen_string_contains")
+    }
+
+    @Test
+    fun mathCeilCompilesFromBytecode() {
+        val cp = ConstantPoolBuilder()
+        val thisClass = cp.classEntry("test/MathCeil")
+        val superClass = cp.classEntry("java/lang/Object")
+        val codeIdx = cp.utf8("Code")
+
+        val ceilRef = cp.methodRef("java/lang/Math", "ceil", "(D)D")
+        val nameIdx = cp.utf8("ceilVal")
+        val descIdx = cp.utf8("(D)D")
+
+        // dload_0, invokestatic Math.ceil, dreturn
+        val code = byteArrayOf(
+            0x26.toByte(),                                            // dload_0
+            0xB8.toByte(), (ceilRef shr 8).toByte(), ceilRef.toByte(), // invokestatic
+            0xAF.toByte(),                                            // dreturn
+        )
+
+        val codeAttr = AttributeBuilder.buildCode(codeIdx, CodeAttribute(
+            maxStack = 2, maxLocals = 2, code = code,
+            exceptionTable = emptyList(), attributes = emptyList(),
+        ))
+        val method = MethodInfo(
+            accessFlags = AccessFlags.PUBLIC or AccessFlags.STATIC,
+            nameIndex = nameIdx, descriptorIndex = descIdx,
+            attributes = listOf(codeAttr),
+        )
+
+        val classBytes = JvmClassWriter.write(ClassFile(
+            minorVersion = 0, majorVersion = 50,
+            constantPool = cp.build(),
+            accessFlags = AccessFlags.PUBLIC or AccessFlags.SUPER,
+            thisClass = thisClass, superClass = superClass,
+            interfaces = emptyList(), fields = emptyList(),
+            methods = listOf(method), attributes = emptyList(),
+        ))
+
+        val module = RuntimeCompiler(Target.x86_64()).compile(classBytes)
+        val fn = module.functions.find { it.name == "ceilVal" }
+        assertNotNull(fn)
+        val calls = fn!!.blocks.flatMap { it.instructions }.filterIsInstance<Call>()
+        assertTrue(calls.any { (it.function as? GlobalRef)?.name == "kgen_math_ceil" },
+            "Should call kgen_math_ceil")
+    }
+
+    @Test
+    fun intParseCompilesFromBytecode() {
+        val cp = ConstantPoolBuilder()
+        val thisClass = cp.classEntry("test/ParseInt")
+        val superClass = cp.classEntry("java/lang/Object")
+        val codeIdx = cp.utf8("Code")
+
+        val parseRef = cp.methodRef("java/lang/Integer", "parseInt", "(Ljava/lang/String;)I")
+        val nameIdx = cp.utf8("parse")
+        val descIdx = cp.utf8("(Ljava/lang/String;)I")
+
+        // aload_0, invokestatic Integer.parseInt, ireturn
+        val code = byteArrayOf(
+            0x2A.toByte(),                                              // aload_0
+            0xB8.toByte(), (parseRef shr 8).toByte(), parseRef.toByte(), // invokestatic
+            0xAC.toByte(),                                              // ireturn
+        )
+
+        val codeAttr = AttributeBuilder.buildCode(codeIdx, CodeAttribute(
+            maxStack = 1, maxLocals = 1, code = code,
+            exceptionTable = emptyList(), attributes = emptyList(),
+        ))
+        val method = MethodInfo(
+            accessFlags = AccessFlags.PUBLIC or AccessFlags.STATIC,
+            nameIndex = nameIdx, descriptorIndex = descIdx,
+            attributes = listOf(codeAttr),
+        )
+
+        val classBytes = JvmClassWriter.write(ClassFile(
+            minorVersion = 0, majorVersion = 50,
+            constantPool = cp.build(),
+            accessFlags = AccessFlags.PUBLIC or AccessFlags.SUPER,
+            thisClass = thisClass, superClass = superClass,
+            interfaces = emptyList(), fields = emptyList(),
+            methods = listOf(method), attributes = emptyList(),
+        ))
+
+        val module = RuntimeCompiler(Target.x86_64()).compile(classBytes)
+        val fn = module.functions.find { it.name == "parse" }
+        assertNotNull(fn)
+        val calls = fn!!.blocks.flatMap { it.instructions }.filterIsInstance<Call>()
+        assertTrue(calls.any { (it.function as? GlobalRef)?.name == "kgen_int_parse" },
+            "Should call kgen_int_parse")
+    }
+
+    @Test
+    fun handledMethodsSetMatchesNativeNameMapping() {
+        // Every entry in HANDLED_METHODS should have a corresponding nativeName mapping
+        for (sig in StdlibProvider.HANDLED_METHODS) {
+            val parts = sig.split(".")
+            val className = parts[0]
+            val rest = parts[1].split(":")
+            val methodName = rest[0]
+            val descriptor = ":" + rest[1]
+            val nativeName = StdlibProvider.nativeName(className, methodName, descriptor.removePrefix(":"))
+            assertNotNull(nativeName, "HANDLED_METHODS entry '$sig' has no nativeName mapping")
+        }
+    }
+
+    @Test
+    fun expandedStdlibCompilesNatively() {
+        val module = StdlibProvider.generate(Target.x86_64())
+        val gen = org.kgen.target.x86.codegen.X86CodeGenerator()
+        val code = gen.generateCode(module)
+        // Verify all new functions compiled
+        val symbols = code.symbols.map { it.name }.toSet()
+        assertTrue("kgen_string_contains" in symbols, "Should have kgen_string_contains symbol")
+        assertTrue("kgen_math_ceil" in symbols, "Should have kgen_math_ceil symbol")
+        assertTrue("kgen_int_parse" in symbols, "Should have kgen_int_parse symbol")
+        assertTrue("kgen_throw" in symbols, "Should have kgen_throw symbol")
     }
 
     @Test

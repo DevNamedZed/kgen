@@ -1,6 +1,7 @@
 package org.kgen.pass
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 
 /**
  * Loop-invariant code motion (LICM) — hoists instructions out of loops
@@ -110,7 +111,7 @@ class LoopInvariantCodeMotion : ModulePass {
         }
 
         // Create preheader block: hoisted instructions + br to header
-        val preheader = BasicBlock(preheaderLabel, hoistedInsts + Instruction.Br(header))
+        val preheader = BasicBlock(preheaderLabel, hoistedInsts + Br(header))
 
         // Redirect external predecessors to preheader
         val result = mutableListOf<BasicBlock>()
@@ -134,12 +135,12 @@ class LoopInvariantCodeMotion : ModulePass {
         return result.map { block ->
             if (block.label != header) return@map block
             val newInsts = block.instructions.map { inst ->
-                if (inst !is Instruction.Phi) return@map inst
+                if (inst !is Phi) return@map inst
                 val newIncoming = inst.incoming.map { (value, pred) ->
                     if (pred in extPredSet) value to preheaderLabel
                     else value to pred
                 }
-                Instruction.Phi(inst.dest, newIncoming)
+                Phi(inst.dest, newIncoming)
             }
             BasicBlock(block.label, newInsts)
         }.toMutableList()
@@ -151,20 +152,20 @@ class LoopInvariantCodeMotion : ModulePass {
         aa: AliasAnalysis,
     ): Boolean = when (inst) {
         // Pure computation instructions can always be hoisted
-        is Instruction.Add, is Instruction.Sub, is Instruction.Mul,
-        is Instruction.SDiv, is Instruction.UDiv, is Instruction.SRem, is Instruction.URem,
-        is Instruction.And, is Instruction.Or, is Instruction.Xor,
-        is Instruction.Shl, is Instruction.LShr, is Instruction.AShr,
-        is Instruction.ICmp, is Instruction.Neg,
-        is Instruction.ZExt, is Instruction.SExt, is Instruction.Trunc, is Instruction.IntTrunc,
-        is Instruction.FAdd, is Instruction.FSub, is Instruction.FMul, is Instruction.FDiv,
-        is Instruction.FNeg, is Instruction.FCmp,
-        is Instruction.SIToFP, is Instruction.UIToFP, is Instruction.FPToSI, is Instruction.FPToUI,
-        is Instruction.FPTrunc, is Instruction.FPExt,
-        is Instruction.Select, is Instruction.GetElementPtr -> true
+        is Add, is Sub, is Mul,
+        is SDiv, is UDiv, is SRem, is URem,
+        is And, is Or, is Xor,
+        is Shl, is LShr, is AShr,
+        is ICmp, is Neg,
+        is ZExt, is SExt, is Trunc, is IntTrunc,
+        is FAdd, is FSub, is FMul, is FDiv,
+        is FNeg, is FCmp,
+        is SIToFP, is UIToFP, is FPToSI, is FPToUI,
+        is FPTrunc, is FPExt,
+        is Select, is GetElementPtr -> true
 
         // Loads can be hoisted if they don't alias any memory write in the loop
-        is Instruction.Load -> {
+        is Load -> {
             !inst.volatile && loopStores.all { store ->
                 val storePtr = aa.memoryPointer(store)
                 // If we can't determine the write target (e.g., calls), assume it may alias
@@ -196,53 +197,53 @@ class LoopInvariantCodeMotion : ModulePass {
     }
 
     private fun operands(inst: Instruction): List<Value> = when (inst) {
-        is Instruction.Add -> listOf(inst.lhs, inst.rhs)
-        is Instruction.Sub -> listOf(inst.lhs, inst.rhs)
-        is Instruction.Mul -> listOf(inst.lhs, inst.rhs)
-        is Instruction.SDiv -> listOf(inst.lhs, inst.rhs)
-        is Instruction.UDiv -> listOf(inst.lhs, inst.rhs)
-        is Instruction.SRem -> listOf(inst.lhs, inst.rhs)
-        is Instruction.URem -> listOf(inst.lhs, inst.rhs)
-        is Instruction.And -> listOf(inst.lhs, inst.rhs)
-        is Instruction.Or -> listOf(inst.lhs, inst.rhs)
-        is Instruction.Xor -> listOf(inst.lhs, inst.rhs)
-        is Instruction.Shl -> listOf(inst.lhs, inst.rhs)
-        is Instruction.LShr -> listOf(inst.lhs, inst.rhs)
-        is Instruction.AShr -> listOf(inst.lhs, inst.rhs)
-        is Instruction.ICmp -> listOf(inst.lhs, inst.rhs)
-        is Instruction.Neg -> listOf(inst.operand)
-        is Instruction.ZExt -> listOf(inst.value)
-        is Instruction.SExt -> listOf(inst.value)
-        is Instruction.Trunc -> listOf(inst.operand)
-        is Instruction.IntTrunc -> listOf(inst.value)
-        is Instruction.FAdd -> listOf(inst.lhs, inst.rhs)
-        is Instruction.FSub -> listOf(inst.lhs, inst.rhs)
-        is Instruction.FMul -> listOf(inst.lhs, inst.rhs)
-        is Instruction.FDiv -> listOf(inst.lhs, inst.rhs)
-        is Instruction.FNeg -> listOf(inst.operand)
-        is Instruction.FCmp -> listOf(inst.lhs, inst.rhs)
-        is Instruction.SIToFP -> listOf(inst.value)
-        is Instruction.UIToFP -> listOf(inst.value)
-        is Instruction.FPToSI -> listOf(inst.value)
-        is Instruction.FPToUI -> listOf(inst.value)
-        is Instruction.FPTrunc -> listOf(inst.value)
-        is Instruction.FPExt -> listOf(inst.value)
-        is Instruction.Select -> listOf(inst.condition, inst.trueValue, inst.falseValue)
-        is Instruction.GetElementPtr -> listOf(inst.ptr) + inst.indices
-        is Instruction.Load -> listOf(inst.ptr)
+        is Add -> listOf(inst.lhs, inst.rhs)
+        is Sub -> listOf(inst.lhs, inst.rhs)
+        is Mul -> listOf(inst.lhs, inst.rhs)
+        is SDiv -> listOf(inst.lhs, inst.rhs)
+        is UDiv -> listOf(inst.lhs, inst.rhs)
+        is SRem -> listOf(inst.lhs, inst.rhs)
+        is URem -> listOf(inst.lhs, inst.rhs)
+        is And -> listOf(inst.lhs, inst.rhs)
+        is Or -> listOf(inst.lhs, inst.rhs)
+        is Xor -> listOf(inst.lhs, inst.rhs)
+        is Shl -> listOf(inst.lhs, inst.rhs)
+        is LShr -> listOf(inst.lhs, inst.rhs)
+        is AShr -> listOf(inst.lhs, inst.rhs)
+        is ICmp -> listOf(inst.lhs, inst.rhs)
+        is Neg -> listOf(inst.operand)
+        is ZExt -> listOf(inst.value)
+        is SExt -> listOf(inst.value)
+        is Trunc -> listOf(inst.operand)
+        is IntTrunc -> listOf(inst.value)
+        is FAdd -> listOf(inst.lhs, inst.rhs)
+        is FSub -> listOf(inst.lhs, inst.rhs)
+        is FMul -> listOf(inst.lhs, inst.rhs)
+        is FDiv -> listOf(inst.lhs, inst.rhs)
+        is FNeg -> listOf(inst.operand)
+        is FCmp -> listOf(inst.lhs, inst.rhs)
+        is SIToFP -> listOf(inst.value)
+        is UIToFP -> listOf(inst.value)
+        is FPToSI -> listOf(inst.value)
+        is FPToUI -> listOf(inst.value)
+        is FPTrunc -> listOf(inst.value)
+        is FPExt -> listOf(inst.value)
+        is Select -> listOf(inst.condition, inst.trueValue, inst.falseValue)
+        is GetElementPtr -> listOf(inst.ptr) + inst.indices
+        is Load -> listOf(inst.ptr)
         else -> emptyList()
     }
 
     private fun redirectTerminator(block: BasicBlock, from: String, to: String): BasicBlock {
         val last = block.instructions.lastOrNull() ?: return block
         val newLast = when (last) {
-            is Instruction.Br -> if (last.target == from) Instruction.Br(to) else last
-            is Instruction.CondBr -> Instruction.CondBr(
+            is Br -> if (last.target == from) Br(to) else last
+            is CondBr -> CondBr(
                 last.condition,
                 if (last.trueTarget == from) to else last.trueTarget,
                 if (last.falseTarget == from) to else last.falseTarget,
             )
-            is Instruction.Switch -> Instruction.Switch(
+            is Switch -> Switch(
                 last.value,
                 if (last.defaultTarget == from) to else last.defaultTarget,
                 last.cases.map { (c, t) -> c to (if (t == from) to else t) },
@@ -282,10 +283,10 @@ class LoopInvariantCodeMotion : ModulePass {
     }
 
     private fun terminatorTargets(inst: Instruction): List<String> = when (inst) {
-        is Instruction.Br -> listOf(inst.target)
-        is Instruction.CondBr -> listOf(inst.trueTarget, inst.falseTarget)
-        is Instruction.Switch -> listOf(inst.defaultTarget) + inst.cases.map { it.second }
-        is Instruction.IndirectBr -> inst.targets
+        is Br -> listOf(inst.target)
+        is CondBr -> listOf(inst.trueTarget, inst.falseTarget)
+        is Switch -> listOf(inst.defaultTarget) + inst.cases.map { it.second }
+        is IndirectBr -> inst.targets
         else -> emptyList()
     }
 

@@ -1,6 +1,8 @@
 package org.kgen.ir
 
-/** Bootstrap method descriptor for [Instruction.DynamicCall] (invokedynamic). */
+import org.kgen.ir.instructions.*
+
+/** Bootstrap method descriptor for [DynamicCall] (invokedynamic). */
 data class BootstrapMethod(
     val className: String,
     val methodName: String,

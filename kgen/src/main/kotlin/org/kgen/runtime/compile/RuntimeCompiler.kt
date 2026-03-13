@@ -2,6 +2,7 @@ package org.kgen.runtime.compile
 
 import org.kgen.ir.*
 import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.instructions.*
 import org.kgen.ir.target.Target
 import org.kgen.pass.Inlining
 import org.kgen.pass.Mem2Reg
@@ -41,6 +42,7 @@ class RuntimeCompiler(
             throw RuntimeSubsetException(cf.thisClassName, errors)
         }
 
+        val isKgenNative = hasClassAnnotation(cf, "org/kgen/unmanaged/KgenNative")
         val builder = IrBuilder(cf.thisClassName.replace('/', '_'), target)
         val classPrefix = cf.thisClassName.replace('/', '_')
         val importMap = mutableMapOf<String, String>() // java method name → native symbol name
@@ -77,6 +79,10 @@ class RuntimeCompiler(
             val isNative = flags and AccessFlags.NATIVE != 0
 
             if (isNative) continue
+            // Skip constructors/clinit for @KgenNative classes — these are just
+            // Kotlin object/companion singleton setup, not meaningful native code.
+            // Regular classes (compiled via NativeCompiler) keep their clinit.
+            if ((name == "<init>" || name == "<clinit>") && isKgenNative) continue
 
             val codeAttr = method.attributes.firstOrNull { cf.string(it.nameIndex) == "Code" }
                 ?: continue
@@ -84,6 +90,8 @@ class RuntimeCompiler(
             val code = AttributeParser.parseCode(codeAttr, cf.constantPool)
             val isExported = hasAnnotation(method, cf, "org/kgen/unmanaged/KgenExport")
             val exportName = getAnnotationStringValue(method, cf, "org/kgen/unmanaged/KgenExport", "value")
+            val conventionStr = getAnnotationStringValue(method, cf, "org/kgen/unmanaged/KgenExport", "convention")
+            val callingConv = parseCallingConvention(conventionStr)
             val isInline = hasAnnotation(method, cf, "org/kgen/unmanaged/KgenInline")
             val isLeaf = hasAnnotation(method, cf, "org/kgen/unmanaged/KgenLeaf")
 
@@ -100,7 +108,8 @@ class RuntimeCompiler(
             }
 
             BytecodeToIrLowering(builder, cf, irName, desc, code, isExported, attrs,
-                isInstance = !isStatic, classLayout = classLayout, importMap = importMap).lower()
+                isInstance = !isStatic, classLayout = classLayout, importMap = importMap,
+                callingConv = callingConv).lower()
 
             if (name == "<clinit>") {
                 builder.addGlobalCtor(irName)
@@ -111,6 +120,25 @@ class RuntimeCompiler(
         module = Mem2Reg().run(module)
         module = Inlining().run(module)
         return module
+    }
+
+    private fun hasClassAnnotation(cf: ClassFile, annotationClass: String): Boolean {
+        for (attr in cf.attributes) {
+            val attrName = cf.string(attr.nameIndex)
+            if (attrName == "RuntimeVisibleAnnotations" || attrName == "RuntimeInvisibleAnnotations") {
+                val data = attr.data
+                val count = ((data[0].toInt() and 0xFF) shl 8) or (data[1].toInt() and 0xFF)
+                var pos = 2
+                for (i in 0 until count) {
+                    val typeIdx = ((data[pos].toInt() and 0xFF) shl 8) or (data[pos + 1].toInt() and 0xFF)
+                    val typeName = cf.constantPool.utf8(typeIdx)
+                    val className = typeName.removePrefix("L").removeSuffix(";")
+                    if (className == annotationClass) return true
+                    pos = skipAnnotation(data, pos + 2)
+                }
+            }
+        }
+        return false
     }
 
     private fun hasAnnotation(method: MethodInfo, cf: ClassFile, annotationClass: String): Boolean {
@@ -204,6 +232,23 @@ class RuntimeCompiler(
             }
         }
         return pos
+    }
+
+    private fun parseCallingConvention(value: String?): CallingConvention {
+        if (value.isNullOrEmpty()) return CallingConvention.C
+        return when (value.lowercase()) {
+            "c" -> CallingConvention.C
+            "fast" -> CallingConvention.FAST
+            "cold" -> CallingConvention.COLD
+            "tail" -> CallingConvention.TAIL
+            "swift" -> CallingConvention.SWIFT
+            "win64" -> CallingConvention.WIN64
+            "sysv64" -> CallingConvention.SYSV64
+            "aapcs" -> CallingConvention.AAPCS
+            "aapcs_vfp" -> CallingConvention.AAPCS_VFP
+            "ghc" -> CallingConvention.GHC
+            else -> throw IllegalArgumentException("Unknown calling convention: $value")
+        }
     }
 }
 

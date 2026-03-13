@@ -7,6 +7,7 @@ import org.kgen.ir.target.Target
 import org.kgen.ir.text.IrPrinter
 import org.kgen.ir.text.IrParser
 import org.kgen.ir.text.IrSerializer
+import org.kgen.ir.instructions.*
 
 class MixedModeIrTest {
 
@@ -70,22 +71,22 @@ class MixedModeIrTest {
         val module = ir.build()
         val func = module.functions[0]
         assertEquals(3, func.blocks[0].instructions.size)
-        assertTrue(func.blocks[0].instructions[0] is Instruction.Pin)
-        assertTrue(func.blocks[0].instructions[1] is Instruction.Unpin)
+        assertTrue(func.blocks[0].instructions[0] is Pin)
+        assertTrue(func.blocks[0].instructions[1] is Unpin)
     }
 
     @Test
     fun pinInstructionResult() {
         val ref = InstructionRef("r1", Type.Reference(Type.I64))
         val dest = InstructionRef("pinned", Type.PinnedRef(Type.ClassRef("X")))
-        val pin = Instruction.Pin(dest, ref)
+        val pin = Pin(dest, ref)
         assertEquals(dest, pin.result)
     }
 
     @Test
     fun unpinHasNoResult() {
         val ref = InstructionRef("pinned", Type.PinnedRef(Type.I32))
-        val unpin = Instruction.Unpin(ref)
+        val unpin = Unpin(ref)
         assertNull(unpin.result)
     }
 
@@ -102,7 +103,7 @@ class MixedModeIrTest {
         ir.ret()
         ir.finalizeFunction()
         val module = ir.build()
-        val inst = module.functions[0].blocks[0].instructions[0] as Instruction.InteriorPtr
+        val inst = module.functions[0].blocks[0].instructions[0] as InteriorPtr
         assertEquals(Type.F64, inst.pointeeType)
     }
 
@@ -113,7 +114,7 @@ class MixedModeIrTest {
         val obj = InstructionRef("obj", Type.Reference(Type.I64))
         val fieldIdx = Constant.I32(3)
         val value = InstructionRef("val", Type.Reference(Type.I32))
-        val wb = Instruction.WriteBarrier(obj, fieldIdx, value)
+        val wb = WriteBarrier(obj, fieldIdx, value)
         assertNull(wb.result)
     }
 
@@ -131,7 +132,7 @@ class MixedModeIrTest {
         ir.ret()
         ir.finalizeFunction()
         val module = ir.build()
-        assertTrue(module.functions[0].blocks[0].instructions[0] is Instruction.WriteBarrier)
+        assertTrue(module.functions[0].blocks[0].instructions[0] is WriteBarrier)
     }
 
     // --- ReadBarrier instruction ---
@@ -140,7 +141,7 @@ class MixedModeIrTest {
     fun readBarrierInstruction() {
         val ref = InstructionRef("ref", Type.Reference(Type.I64))
         val dest = InstructionRef("updated", Type.Reference(Type.I64))
-        val rb = Instruction.ReadBarrier(dest, ref)
+        val rb = ReadBarrier(dest, ref)
         assertEquals(dest, rb.result)
     }
 
@@ -155,7 +156,7 @@ class MixedModeIrTest {
         ir.ret(result)
         ir.finalizeFunction()
         val module = ir.build()
-        assertTrue(module.functions[0].blocks[0].instructions[0] is Instruction.ReadBarrier)
+        assertTrue(module.functions[0].blocks[0].instructions[0] is ReadBarrier)
     }
 
     // --- ManagedCall instruction ---
@@ -164,7 +165,7 @@ class MixedModeIrTest {
     fun managedCallManagedToNative() {
         val func = GlobalRef("native_fn", Type.Function(listOf(Type.I32), Type.I64))
         val dest = InstructionRef("r", Type.I64)
-        val mc = Instruction.ManagedCall(dest, func, listOf(Constant.I32(42)), Type.I64, ManagedCallDirection.MANAGED_TO_NATIVE)
+        val mc = ManagedCall(dest, func, listOf(Constant.I32(42)), Type.I64, ManagedCallDirection.MANAGED_TO_NATIVE)
         assertEquals(dest, mc.result)
         assertEquals(ManagedCallDirection.MANAGED_TO_NATIVE, mc.direction)
     }
@@ -172,7 +173,7 @@ class MixedModeIrTest {
     @Test
     fun managedCallNativeToManaged() {
         val func = GlobalRef("managed_fn", Type.Function(listOf(Type.I32), Type.Void))
-        val mc = Instruction.ManagedCall(null, func, listOf(Constant.I32(1)), Type.Void, ManagedCallDirection.NATIVE_TO_MANAGED)
+        val mc = ManagedCall(null, func, listOf(Constant.I32(1)), Type.Void, ManagedCallDirection.NATIVE_TO_MANAGED)
         assertNull(mc.result)
         assertEquals(ManagedCallDirection.NATIVE_TO_MANAGED, mc.direction)
     }
@@ -190,8 +191,8 @@ class MixedModeIrTest {
         ir.finalizeFunction()
         val module = ir.build()
         val inst = findFunction(module, "caller").blocks[0].instructions[0]
-        assertTrue(inst is Instruction.ManagedCall)
-        assertEquals(ManagedCallDirection.MANAGED_TO_NATIVE, (inst as Instruction.ManagedCall).direction)
+        assertTrue(inst is ManagedCall)
+        assertEquals(ManagedCallDirection.MANAGED_TO_NATIVE, (inst as ManagedCall).direction)
     }
 
     @Test
@@ -294,8 +295,8 @@ class MixedModeIrTest {
 
         assertEquals(module.functions.size, parsed.functions.size)
         val instrs = parsed.functions[0].blocks[0].instructions
-        assertTrue(instrs[0] is Instruction.Pin)
-        assertTrue(instrs[1] is Instruction.Unpin)
+        assertTrue(instrs[0] is Pin)
+        assertTrue(instrs[1] is Unpin)
     }
 
     @Test
@@ -312,8 +313,8 @@ class MixedModeIrTest {
         val text = IrPrinter.print(module)
         val parsed = IrParser.parse(text)
         val inst = parsed.functions[0].blocks[0].instructions[0]
-        assertTrue(inst is Instruction.InteriorPtr)
-        assertEquals(Type.F64, (inst as Instruction.InteriorPtr).pointeeType)
+        assertTrue(inst is InteriorPtr)
+        assertEquals(Type.F64, (inst as InteriorPtr).pointeeType)
     }
 
     @Test
@@ -333,7 +334,7 @@ class MixedModeIrTest {
 
         val text = IrPrinter.print(module)
         val parsed = IrParser.parse(text)
-        assertTrue(parsed.functions[0].blocks[0].instructions[0] is Instruction.WriteBarrier)
+        assertTrue(parsed.functions[0].blocks[0].instructions[0] is WriteBarrier)
     }
 
     @Test
@@ -349,7 +350,7 @@ class MixedModeIrTest {
 
         val text = IrPrinter.print(module)
         val parsed = IrParser.parse(text)
-        assertTrue(parsed.functions[0].blocks[0].instructions[0] is Instruction.ReadBarrier)
+        assertTrue(parsed.functions[0].blocks[0].instructions[0] is ReadBarrier)
     }
 
     @Test
@@ -367,8 +368,8 @@ class MixedModeIrTest {
         val text = IrPrinter.print(module)
         val parsed = IrParser.parse(text)
         val inst = findFunction(parsed, "caller").blocks[0].instructions[0]
-        assertTrue(inst is Instruction.ManagedCall)
-        assertEquals(ManagedCallDirection.MANAGED_TO_NATIVE, (inst as Instruction.ManagedCall).direction)
+        assertTrue(inst is ManagedCall)
+        assertEquals(ManagedCallDirection.MANAGED_TO_NATIVE, (inst as ManagedCall).direction)
         assertEquals(2, inst.args.size)
     }
 
@@ -387,8 +388,8 @@ class MixedModeIrTest {
         val text = IrPrinter.print(module)
         val parsed = IrParser.parse(text)
         val inst = findFunction(parsed, "caller").blocks[0].instructions[0]
-        assertTrue(inst is Instruction.ManagedCall)
-        assertEquals(ManagedCallDirection.NATIVE_TO_MANAGED, (inst as Instruction.ManagedCall).direction)
+        assertTrue(inst is ManagedCall)
+        assertEquals(ManagedCallDirection.NATIVE_TO_MANAGED, (inst as ManagedCall).direction)
     }
 
     // --- Binary serialization round-trip ---
@@ -410,8 +411,8 @@ class MixedModeIrTest {
 
         assertEquals(module.functions.size, deserialized.functions.size)
         val instrs = deserialized.functions[0].blocks[0].instructions
-        assertTrue(instrs[0] is Instruction.Pin)
-        assertTrue(instrs[1] is Instruction.Unpin)
+        assertTrue(instrs[0] is Pin)
+        assertTrue(instrs[1] is Unpin)
     }
 
     @Test
@@ -428,8 +429,8 @@ class MixedModeIrTest {
         val bytes = serializer.serialize(module)
         val deserialized = serializer.deserialize(bytes)
         val inst = deserialized.functions[0].blocks[0].instructions[0]
-        assertTrue(inst is Instruction.InteriorPtr)
-        assertEquals(Type.F64, (inst as Instruction.InteriorPtr).pointeeType)
+        assertTrue(inst is InteriorPtr)
+        assertEquals(Type.F64, (inst as InteriorPtr).pointeeType)
     }
 
     @Test
@@ -447,8 +448,8 @@ class MixedModeIrTest {
         val bytes = serializer.serialize(module)
         val deserialized = serializer.deserialize(bytes)
         val inst = findFunction(deserialized, "caller").blocks[0].instructions[0]
-        assertTrue(inst is Instruction.ManagedCall)
-        assertEquals(ManagedCallDirection.MANAGED_TO_NATIVE, (inst as Instruction.ManagedCall).direction)
+        assertTrue(inst is ManagedCall)
+        assertEquals(ManagedCallDirection.MANAGED_TO_NATIVE, (inst as ManagedCall).direction)
     }
 
     @Test
@@ -468,7 +469,7 @@ class MixedModeIrTest {
 
         val bytes = serializer.serialize(module)
         val deserialized = serializer.deserialize(bytes)
-        assertTrue(deserialized.functions[0].blocks[0].instructions[0] is Instruction.WriteBarrier)
+        assertTrue(deserialized.functions[0].blocks[0].instructions[0] is WriteBarrier)
     }
 
     @Test
@@ -484,7 +485,7 @@ class MixedModeIrTest {
 
         val bytes = serializer.serialize(module)
         val deserialized = serializer.deserialize(bytes)
-        assertTrue(deserialized.functions[0].blocks[0].instructions[0] is Instruction.ReadBarrier)
+        assertTrue(deserialized.functions[0].blocks[0].instructions[0] is ReadBarrier)
     }
 
     @Test
@@ -544,9 +545,9 @@ class MixedModeIrTest {
         val module = ir.build()
 
         val instrs = module.functions[0].blocks[0].instructions
-        assertTrue(instrs[0] is Instruction.Pin)
-        assertTrue(instrs[1] is Instruction.InteriorPtr)
-        assertTrue(instrs[2] is Instruction.Unpin)
+        assertTrue(instrs[0] is Pin)
+        assertTrue(instrs[1] is InteriorPtr)
+        assertTrue(instrs[2] is Unpin)
     }
 
     @Test
@@ -570,8 +571,8 @@ class MixedModeIrTest {
         val module = ir.build()
 
         val instrs = module.functions[0].blocks[0].instructions
-        assertTrue(instrs[0] is Instruction.WriteBarrier)
-        assertTrue(instrs[1] is Instruction.PutField)
+        assertTrue(instrs[0] is WriteBarrier)
+        assertTrue(instrs[1] is PutField)
     }
 
     @Test
@@ -597,8 +598,8 @@ class MixedModeIrTest {
         val module = ir.build()
 
         val instrs = findFunction(module, "pipeline").blocks[0].instructions
-        val mc1 = instrs[0] as Instruction.ManagedCall
-        val mc2 = instrs[1] as Instruction.ManagedCall
+        val mc1 = instrs[0] as ManagedCall
+        val mc2 = instrs[1] as ManagedCall
         assertEquals(ManagedCallDirection.MANAGED_TO_NATIVE, mc1.direction)
         assertEquals(ManagedCallDirection.NATIVE_TO_MANAGED, mc2.direction)
     }
@@ -632,13 +633,13 @@ class MixedModeIrTest {
         val origInstrs = findFunction(module, "mixed_func").blocks[0].instructions
         val parsedInstrs = findFunction(parsed, "mixed_func").blocks[0].instructions
         assertEquals(origInstrs.size, parsedInstrs.size)
-        assertTrue(parsedInstrs[0] is Instruction.Pin)
-        assertTrue(parsedInstrs[1] is Instruction.InteriorPtr)
-        assertTrue(parsedInstrs[2] is Instruction.ReadBarrier)
-        assertTrue(parsedInstrs[3] is Instruction.ManagedCall)
-        assertTrue(parsedInstrs[4] is Instruction.WriteBarrier)
-        assertTrue(parsedInstrs[5] is Instruction.Unpin)
-        assertTrue(parsedInstrs[6] is Instruction.Ret)
+        assertTrue(parsedInstrs[0] is Pin)
+        assertTrue(parsedInstrs[1] is InteriorPtr)
+        assertTrue(parsedInstrs[2] is ReadBarrier)
+        assertTrue(parsedInstrs[3] is ManagedCall)
+        assertTrue(parsedInstrs[4] is WriteBarrier)
+        assertTrue(parsedInstrs[5] is Unpin)
+        assertTrue(parsedInstrs[6] is Ret)
     }
 
     @Test

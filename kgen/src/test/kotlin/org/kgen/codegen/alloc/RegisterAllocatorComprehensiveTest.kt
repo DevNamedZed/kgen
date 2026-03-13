@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -282,7 +283,7 @@ class RegisterAllocatorComprehensiveTest {
 
         @Test
         fun `operandValues extracts binary op operands`() {
-            val inst = Instruction.Add(
+            val inst = Add(
                 InstructionRef("r", Type.I64),
                 Parameter("a", Type.I64, 0),
                 Parameter("b", Type.I64, 1)
@@ -293,7 +294,7 @@ class RegisterAllocatorComprehensiveTest {
 
         @Test
         fun `operandValues ignores constants`() {
-            val inst = Instruction.Mul(
+            val inst = Mul(
                 InstructionRef("r", Type.I64),
                 Parameter("a", Type.I64, 0),
                 Constant.I64(42)
@@ -305,7 +306,7 @@ class RegisterAllocatorComprehensiveTest {
 
         @Test
         fun `operandValues extracts phi incoming values`() {
-            val inst = Instruction.Phi(
+            val inst = Phi(
                 InstructionRef("r", Type.I64),
                 listOf(
                     Parameter("a", Type.I64, 0) to "bb1",
@@ -318,7 +319,7 @@ class RegisterAllocatorComprehensiveTest {
 
         @Test
         fun `operandValues extracts select operands`() {
-            val inst = Instruction.Select(
+            val inst = Select(
                 InstructionRef("r", Type.I64),
                 Parameter("cond", Type.I1, 0),
                 Parameter("t", Type.I64, 1),
@@ -331,7 +332,7 @@ class RegisterAllocatorComprehensiveTest {
         @Test
         fun `operandValues extracts call arguments`() {
             val fnType = Type.Function(listOf(Type.I64, Type.I64), Type.I64)
-            val inst = Instruction.Call(
+            val inst = Call(
                 InstructionRef("r", Type.I64),
                 GlobalRef("foo", fnType),
                 listOf(Parameter("a", Type.I64, 0), Parameter("b", Type.I64, 1)),
@@ -343,28 +344,28 @@ class RegisterAllocatorComprehensiveTest {
 
         @Test
         fun `operandValues handles ret with value`() {
-            val inst = Instruction.Ret(Parameter("x", Type.I64, 0))
+            val inst = Ret(Parameter("x", Type.I64, 0))
             val ops = LivenessAnalysis.operandValues(inst)
             assertEquals(1, ops.size)
         }
 
         @Test
         fun `operandValues handles ret void`() {
-            val inst = Instruction.Ret(null)
+            val inst = Ret(null)
             val ops = LivenessAnalysis.operandValues(inst)
             assertTrue(ops.isEmpty())
         }
 
         @Test
         fun `operandValues handles branch`() {
-            val inst = Instruction.Br("target")
+            val inst = Br("target")
             val ops = LivenessAnalysis.operandValues(inst)
             assertTrue(ops.isEmpty())
         }
 
         @Test
         fun `operandValues handles conditional branch`() {
-            val inst = Instruction.CondBr(
+            val inst = CondBr(
                 Parameter("cond", Type.I1, 0), "then", "else"
             )
             val ops = LivenessAnalysis.operandValues(inst)
@@ -1878,7 +1879,7 @@ class RegisterAllocatorComprehensiveTest {
 
         @Test
         fun `negation instruction operand extracted`() {
-            val inst = Instruction.Neg(
+            val inst = Neg(
                 InstructionRef("r", Type.I64),
                 Parameter("x", Type.I64, 0)
             )
@@ -1889,7 +1890,7 @@ class RegisterAllocatorComprehensiveTest {
 
         @Test
         fun `bitwise not instruction operand extracted`() {
-            val inst = Instruction.Not(
+            val inst = Not(
                 InstructionRef("r", Type.I64),
                 Parameter("x", Type.I64, 0)
             )
@@ -1900,7 +1901,7 @@ class RegisterAllocatorComprehensiveTest {
         @Test
         fun `store instruction extracts value and pointer`() {
             val ptrType = Type.Pointer(Type.I64)
-            val inst = Instruction.Store(
+            val inst = Store(
                 Parameter("val", Type.I64, 0),
                 Parameter("ptr", ptrType, 1),
             )
@@ -1911,7 +1912,7 @@ class RegisterAllocatorComprehensiveTest {
         @Test
         fun `load instruction extracts pointer`() {
             val ptrType = Type.Pointer(Type.I64)
-            val inst = Instruction.Load(
+            val inst = Load(
                 InstructionRef("r", Type.I64),
                 Parameter("ptr", ptrType, 0),
                 Type.I64,
@@ -1922,7 +1923,7 @@ class RegisterAllocatorComprehensiveTest {
 
         @Test
         fun `zext instruction extracts operand`() {
-            val inst = Instruction.ZExt(
+            val inst = ZExt(
                 InstructionRef("r", Type.I64),
                 Parameter("x", Type.I32, 0),
                 Type.I64,
@@ -1933,7 +1934,7 @@ class RegisterAllocatorComprehensiveTest {
 
         @Test
         fun `sext instruction extracts operand`() {
-            val inst = Instruction.SExt(
+            val inst = SExt(
                 InstructionRef("r", Type.I64),
                 Parameter("x", Type.I32, 0),
                 Type.I64,

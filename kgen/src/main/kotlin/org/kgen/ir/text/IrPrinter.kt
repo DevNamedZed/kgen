@@ -1,6 +1,7 @@
 package org.kgen.ir.text
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.types.*
 
 /**
@@ -198,157 +199,157 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
 
     private fun instrStr(inst: Instruction): String = when (inst) {
         // Integer arithmetic
-        is Instruction.Add -> "${inst.dest.name} = add${wrapFlags(inst.nuw, inst.nsw)} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.Sub -> "${inst.dest.name} = sub${wrapFlags(inst.nuw, inst.nsw)} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.Mul -> "${inst.dest.name} = mul${wrapFlags(inst.nuw, inst.nsw)} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.UDiv -> "${inst.dest.name} = udiv${if (inst.exact) " exact" else ""} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.SDiv -> "${inst.dest.name} = sdiv${if (inst.exact) " exact" else ""} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.URem -> "${inst.dest.name} = urem ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.SRem -> "${inst.dest.name} = srem ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.Neg -> "${inst.dest.name} = neg ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
+        is Add -> "${inst.dest.name} = add${wrapFlags(inst.nuw, inst.nsw)} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is Sub -> "${inst.dest.name} = sub${wrapFlags(inst.nuw, inst.nsw)} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is Mul -> "${inst.dest.name} = mul${wrapFlags(inst.nuw, inst.nsw)} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is UDiv -> "${inst.dest.name} = udiv${if (inst.exact) " exact" else ""} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is SDiv -> "${inst.dest.name} = sdiv${if (inst.exact) " exact" else ""} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is URem -> "${inst.dest.name} = urem ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is SRem -> "${inst.dest.name} = srem ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is Neg -> "${inst.dest.name} = neg ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
 
         // Overflow-checked
-        is Instruction.SAddOverflow -> "${inst.dest.name} = sadd.overflow ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.UAddOverflow -> "${inst.dest.name} = uadd.overflow ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.SSubOverflow -> "${inst.dest.name} = ssub.overflow ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.USubOverflow -> "${inst.dest.name} = usub.overflow ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.SMulOverflow -> "${inst.dest.name} = smul.overflow ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.UMulOverflow -> "${inst.dest.name} = umul.overflow ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is SAddOverflow -> "${inst.dest.name} = sadd.overflow ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is UAddOverflow -> "${inst.dest.name} = uadd.overflow ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is SSubOverflow -> "${inst.dest.name} = ssub.overflow ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is USubOverflow -> "${inst.dest.name} = usub.overflow ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is SMulOverflow -> "${inst.dest.name} = smul.overflow ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is UMulOverflow -> "${inst.dest.name} = umul.overflow ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
 
         // Saturating
-        is Instruction.SAddSat -> "${inst.dest.name} = sadd.sat ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.UAddSat -> "${inst.dest.name} = uadd.sat ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.SSubSat -> "${inst.dest.name} = ssub.sat ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.USubSat -> "${inst.dest.name} = usub.sat ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is SAddSat -> "${inst.dest.name} = sadd.sat ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is UAddSat -> "${inst.dest.name} = uadd.sat ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is SSubSat -> "${inst.dest.name} = ssub.sat ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is USubSat -> "${inst.dest.name} = usub.sat ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
 
         // Min/max
-        is Instruction.SMin -> "${inst.dest.name} = smin ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.SMax -> "${inst.dest.name} = smax ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.UMin -> "${inst.dest.name} = umin ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.UMax -> "${inst.dest.name} = umax ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.Abs -> "${inst.dest.name} = abs ${typeStr(inst.operand.type)} ${valStr(inst.operand)}${if (inst.isIntMin) " int_min" else ""}"
+        is SMin -> "${inst.dest.name} = smin ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is SMax -> "${inst.dest.name} = smax ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is UMin -> "${inst.dest.name} = umin ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is UMax -> "${inst.dest.name} = umax ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is Abs -> "${inst.dest.name} = abs ${typeStr(inst.operand.type)} ${valStr(inst.operand)}${if (inst.isIntMin) " int_min" else ""}"
 
         // Float arithmetic
-        is Instruction.FAdd -> "${inst.dest.name} = fadd${fmStr(inst.fastMath)} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.FSub -> "${inst.dest.name} = fsub${fmStr(inst.fastMath)} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.FMul -> "${inst.dest.name} = fmul${fmStr(inst.fastMath)} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.FDiv -> "${inst.dest.name} = fdiv${fmStr(inst.fastMath)} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.FRem -> "${inst.dest.name} = frem${fmStr(inst.fastMath)} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.FNeg -> "${inst.dest.name} = fneg${fmStr(inst.fastMath)} ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
-        is Instruction.FAbs -> "${inst.dest.name} = fabs ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
-        is Instruction.FMA -> "${inst.dest.name} = fma ${typeStr(inst.a.type)} ${valStr(inst.a)}, ${valStr(inst.b)}, ${valStr(inst.c)}"
-        is Instruction.FMin -> "${inst.dest.name} = fmin ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.FMax -> "${inst.dest.name} = fmax ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.Sqrt -> "${inst.dest.name} = sqrt ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
-        is Instruction.Ceil -> "${inst.dest.name} = ceil ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
-        is Instruction.Floor -> "${inst.dest.name} = floor ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
-        is Instruction.Round -> "${inst.dest.name} = round ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
-        is Instruction.Trunc -> "${inst.dest.name} = trunc ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
-        is Instruction.CopySign -> "${inst.dest.name} = copysign ${typeStr(inst.magnitude.type)} ${valStr(inst.magnitude)}, ${valStr(inst.sign)}"
+        is FAdd -> "${inst.dest.name} = fadd${fmStr(inst.fastMath)} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is FSub -> "${inst.dest.name} = fsub${fmStr(inst.fastMath)} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is FMul -> "${inst.dest.name} = fmul${fmStr(inst.fastMath)} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is FDiv -> "${inst.dest.name} = fdiv${fmStr(inst.fastMath)} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is FRem -> "${inst.dest.name} = frem${fmStr(inst.fastMath)} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is FNeg -> "${inst.dest.name} = fneg${fmStr(inst.fastMath)} ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
+        is FAbs -> "${inst.dest.name} = fabs ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
+        is FMA -> "${inst.dest.name} = fma ${typeStr(inst.a.type)} ${valStr(inst.a)}, ${valStr(inst.b)}, ${valStr(inst.c)}"
+        is FMin -> "${inst.dest.name} = fmin ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is FMax -> "${inst.dest.name} = fmax ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is Sqrt -> "${inst.dest.name} = sqrt ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
+        is Ceil -> "${inst.dest.name} = ceil ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
+        is Floor -> "${inst.dest.name} = floor ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
+        is Round -> "${inst.dest.name} = round ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
+        is Trunc -> "${inst.dest.name} = trunc ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
+        is CopySign -> "${inst.dest.name} = copysign ${typeStr(inst.magnitude.type)} ${valStr(inst.magnitude)}, ${valStr(inst.sign)}"
 
         // Bitwise
-        is Instruction.And -> "${inst.dest.name} = and ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.Or -> "${inst.dest.name} = or ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.Xor -> "${inst.dest.name} = xor ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.Not -> "${inst.dest.name} = not ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
-        is Instruction.Shl -> "${inst.dest.name} = shl${wrapFlags(inst.nuw, inst.nsw)} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.LShr -> "${inst.dest.name} = lshr${if (inst.exact) " exact" else ""} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.AShr -> "${inst.dest.name} = ashr${if (inst.exact) " exact" else ""} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.RotateLeft -> "${inst.dest.name} = rotl ${typeStr(inst.value.type)} ${valStr(inst.value)}, ${valStr(inst.amount)}"
-        is Instruction.RotateRight -> "${inst.dest.name} = rotr ${typeStr(inst.value.type)} ${valStr(inst.value)}, ${valStr(inst.amount)}"
-        is Instruction.Rotl -> "${inst.dest.name} = rotl ${typeStr(inst.value.type)} ${valStr(inst.value)}, ${valStr(inst.amount)}"
-        is Instruction.Rotr -> "${inst.dest.name} = rotr ${typeStr(inst.value.type)} ${valStr(inst.value)}, ${valStr(inst.amount)}"
+        is And -> "${inst.dest.name} = and ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is Or -> "${inst.dest.name} = or ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is Xor -> "${inst.dest.name} = xor ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is Not -> "${inst.dest.name} = not ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
+        is Shl -> "${inst.dest.name} = shl${wrapFlags(inst.nuw, inst.nsw)} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is LShr -> "${inst.dest.name} = lshr${if (inst.exact) " exact" else ""} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is AShr -> "${inst.dest.name} = ashr${if (inst.exact) " exact" else ""} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is RotateLeft -> "${inst.dest.name} = rotl ${typeStr(inst.value.type)} ${valStr(inst.value)}, ${valStr(inst.amount)}"
+        is RotateRight -> "${inst.dest.name} = rotr ${typeStr(inst.value.type)} ${valStr(inst.value)}, ${valStr(inst.amount)}"
+        is Rotl -> "${inst.dest.name} = rotl ${typeStr(inst.value.type)} ${valStr(inst.value)}, ${valStr(inst.amount)}"
+        is Rotr -> "${inst.dest.name} = rotr ${typeStr(inst.value.type)} ${valStr(inst.value)}, ${valStr(inst.amount)}"
 
         // Bit manipulation
-        is Instruction.Ctlz -> "${inst.dest.name} = ctlz ${typeStr(inst.operand.type)} ${valStr(inst.operand)}${if (inst.isZeroPoison) " zero_poison" else ""}"
-        is Instruction.Cttz -> "${inst.dest.name} = cttz ${typeStr(inst.operand.type)} ${valStr(inst.operand)}${if (inst.isZeroPoison) " zero_poison" else ""}"
-        is Instruction.Ctpop -> "${inst.dest.name} = ctpop ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
-        is Instruction.BSwap -> "${inst.dest.name} = bswap ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
-        is Instruction.BitReverse -> "${inst.dest.name} = bitreverse ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
+        is Ctlz -> "${inst.dest.name} = ctlz ${typeStr(inst.operand.type)} ${valStr(inst.operand)}${if (inst.isZeroPoison) " zero_poison" else ""}"
+        is Cttz -> "${inst.dest.name} = cttz ${typeStr(inst.operand.type)} ${valStr(inst.operand)}${if (inst.isZeroPoison) " zero_poison" else ""}"
+        is Ctpop -> "${inst.dest.name} = ctpop ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
+        is BSwap -> "${inst.dest.name} = bswap ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
+        is BitReverse -> "${inst.dest.name} = bitreverse ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
 
         // Comparison
-        is Instruction.ICmp -> "${inst.dest.name} = icmp ${inst.predicate.name.lowercase()} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is Instruction.FCmp -> "${inst.dest.name} = fcmp${fmStr(inst.fastMath)} ${inst.predicate.name.lowercase()} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is ICmp -> "${inst.dest.name} = icmp ${inst.predicate.name.lowercase()} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
+        is FCmp -> "${inst.dest.name} = fcmp${fmStr(inst.fastMath)} ${inst.predicate.name.lowercase()} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
 
         // Memory
-        is Instruction.Alloca -> {
+        is Alloca -> {
             val num = if (inst.numElements != null) ", ${typeStr(inst.numElements.type)} ${valStr(inst.numElements)}" else ""
             val align = if (inst.align != null) ", align ${inst.align}" else ""
             "${inst.dest.name} = alloca ${typeStr(inst.allocType)}$num$align"
         }
-        is Instruction.Load -> {
+        is Load -> {
             val vol = if (inst.volatile) "volatile " else ""
             val align = if (inst.align != null) ", align ${inst.align}" else ""
             val ord = if (inst.ordering != null) " ${inst.ordering.name.lowercase()}" else ""
             "${inst.dest.name} = load ${vol}${typeStr(inst.loadType)}, ptr ${valStr(inst.ptr)}$align$ord"
         }
-        is Instruction.Store -> {
+        is Store -> {
             val vol = if (inst.volatile) "volatile " else ""
             val align = if (inst.align != null) ", align ${inst.align}" else ""
             val ord = if (inst.ordering != null) " ${inst.ordering.name.lowercase()}" else ""
             "store ${vol}${typeStr(inst.value.type)} ${valStr(inst.value)}, ptr ${valStr(inst.ptr)}$align$ord"
         }
-        is Instruction.GetElementPtr -> {
+        is GetElementPtr -> {
             val ib = if (inst.inBounds) " inbounds" else ""
             val indices = inst.indices.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
             "${inst.dest.name} = getelementptr$ib ${typeStr(inst.baseType)}, ptr ${valStr(inst.ptr)}, $indices"
         }
-        is Instruction.Fence -> {
+        is Fence -> {
             val scope = if (inst.syncScope != null) " syncscope(${quote(inst.syncScope)})" else ""
             "fence$scope ${inst.ordering.name.lowercase()}"
         }
-        is Instruction.CmpXchg -> {
+        is CmpXchg -> {
             val weak = if (inst.weak) " weak" else ""
             val vol = if (inst.volatile) " volatile" else ""
             "${inst.dest.name} = cmpxchg$weak$vol ptr ${valStr(inst.ptr)}, ${typeStr(inst.cmp.type)} ${valStr(inst.cmp)}, ${typeStr(inst.new.type)} ${valStr(inst.new)} ${inst.successOrdering.name.lowercase()} ${inst.failureOrdering.name.lowercase()}"
         }
-        is Instruction.AtomicRMW -> {
+        is AtomicRMW -> {
             val vol = if (inst.volatile) " volatile" else ""
             "${inst.dest.name} = atomicrmw$vol ${inst.op.name.lowercase()} ptr ${valStr(inst.ptr)}, ${typeStr(inst.value.type)} ${valStr(inst.value)} ${inst.ordering.name.lowercase()}"
         }
-        is Instruction.MemCpy -> "memcpy ptr ${valStr(inst.dst)}, ptr ${valStr(inst.src)}, ${typeStr(inst.len.type)} ${valStr(inst.len)}${if (inst.volatile) " volatile" else ""}"
-        is Instruction.MemSet -> "memset ptr ${valStr(inst.dst)}, ${typeStr(inst.value.type)} ${valStr(inst.value)}, ${typeStr(inst.len.type)} ${valStr(inst.len)}${if (inst.volatile) " volatile" else ""}"
-        is Instruction.MemMove -> "memmove ptr ${valStr(inst.dst)}, ptr ${valStr(inst.src)}, ${typeStr(inst.len.type)} ${valStr(inst.len)}${if (inst.volatile) " volatile" else ""}"
-        is Instruction.Prefetch -> "prefetch ptr ${valStr(inst.address)}, ${inst.rw}, ${inst.locality}, ${inst.cacheType}"
+        is MemCpy -> "memcpy ptr ${valStr(inst.dst)}, ptr ${valStr(inst.src)}, ${typeStr(inst.len.type)} ${valStr(inst.len)}${if (inst.volatile) " volatile" else ""}"
+        is MemSet -> "memset ptr ${valStr(inst.dst)}, ${typeStr(inst.value.type)} ${valStr(inst.value)}, ${typeStr(inst.len.type)} ${valStr(inst.len)}${if (inst.volatile) " volatile" else ""}"
+        is MemMove -> "memmove ptr ${valStr(inst.dst)}, ptr ${valStr(inst.src)}, ${typeStr(inst.len.type)} ${valStr(inst.len)}${if (inst.volatile) " volatile" else ""}"
+        is Prefetch -> "prefetch ptr ${valStr(inst.address)}, ${inst.rw}, ${inst.locality}, ${inst.cacheType}"
 
         // Stack
-        is Instruction.StackSave -> "${inst.dest.name} = stacksave"
-        is Instruction.StackRestore -> "stackrestore ${valStr(inst.ptr)}"
+        is StackSave -> "${inst.dest.name} = stacksave"
+        is StackRestore -> "stackrestore ${valStr(inst.ptr)}"
 
         // Lifetime
-        is Instruction.LifetimeStart -> "lifetime.start ptr ${valStr(inst.ptr)}, ${inst.size}"
-        is Instruction.LifetimeEnd -> "lifetime.end ptr ${valStr(inst.ptr)}, ${inst.size}"
+        is LifetimeStart -> "lifetime.start ptr ${valStr(inst.ptr)}, ${inst.size}"
+        is LifetimeEnd -> "lifetime.end ptr ${valStr(inst.ptr)}, ${inst.size}"
 
         // Conversions
-        is Instruction.IntTrunc -> "${inst.dest.name} = inttrunc ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
-        is Instruction.ZExt -> "${inst.dest.name} = zext ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
-        is Instruction.SExt -> "${inst.dest.name} = sext ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
-        is Instruction.FPTrunc -> "${inst.dest.name} = fptrunc ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
-        is Instruction.FPExt -> "${inst.dest.name} = fpext ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
-        is Instruction.FPToUI -> "${inst.dest.name} = fptoui ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
-        is Instruction.FPToSI -> "${inst.dest.name} = fptosi ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
-        is Instruction.UIToFP -> "${inst.dest.name} = uitofp ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
-        is Instruction.SIToFP -> "${inst.dest.name} = sitofp ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
-        is Instruction.PtrToInt -> "${inst.dest.name} = ptrtoint ptr ${valStr(inst.value)} to ${typeStr(inst.toType)}"
-        is Instruction.IntToPtr -> "${inst.dest.name} = inttoptr ${typeStr(inst.value.type)} ${valStr(inst.value)} to ptr"
-        is Instruction.BitCast -> "${inst.dest.name} = bitcast ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
-        is Instruction.AddrSpaceCast -> "${inst.dest.name} = addrspacecast ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
+        is IntTrunc -> "${inst.dest.name} = inttrunc ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
+        is ZExt -> "${inst.dest.name} = zext ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
+        is SExt -> "${inst.dest.name} = sext ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
+        is FPTrunc -> "${inst.dest.name} = fptrunc ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
+        is FPExt -> "${inst.dest.name} = fpext ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
+        is FPToUI -> "${inst.dest.name} = fptoui ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
+        is FPToSI -> "${inst.dest.name} = fptosi ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
+        is UIToFP -> "${inst.dest.name} = uitofp ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
+        is SIToFP -> "${inst.dest.name} = sitofp ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
+        is PtrToInt -> "${inst.dest.name} = ptrtoint ptr ${valStr(inst.value)} to ${typeStr(inst.toType)}"
+        is IntToPtr -> "${inst.dest.name} = inttoptr ${typeStr(inst.value.type)} ${valStr(inst.value)} to ptr"
+        is BitCast -> "${inst.dest.name} = bitcast ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
+        is AddrSpaceCast -> "${inst.dest.name} = addrspacecast ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.toType)}"
 
         // Control flow
-        is Instruction.Ret -> if (inst.value != null) "ret ${typeStr(inst.value.type)} ${valStr(inst.value)}" else "ret void"
-        is Instruction.Br -> "br label %${inst.target}"
-        is Instruction.CondBr -> "br ${typeStr(Type.I1)} ${valStr(inst.condition)}, label %${inst.trueTarget}, label %${inst.falseTarget}"
-        is Instruction.Switch -> {
+        is Ret -> if (inst.value != null) "ret ${typeStr(inst.value.type)} ${valStr(inst.value)}" else "ret void"
+        is Br -> "br label %${inst.target}"
+        is CondBr -> "br ${typeStr(Type.I1)} ${valStr(inst.condition)}, label %${inst.trueTarget}, label %${inst.falseTarget}"
+        is Switch -> {
             val cases = inst.cases.joinToString(", ") { (c, t) -> "${typeStr(c.type)} ${constStr(c)} -> label %$t" }
             "switch ${typeStr(inst.value.type)} ${valStr(inst.value)}, label %${inst.defaultTarget} [$cases]"
         }
-        is Instruction.IndirectBr -> "indirectbr ptr ${valStr(inst.address)}, [${inst.targets.joinToString(", ") { "label %$it" }}]"
-        is Instruction.Unreachable -> "unreachable"
-        is Instruction.Trap -> "trap"
-        is Instruction.DebugTrap -> "debugtrap"
+        is IndirectBr -> "indirectbr ptr ${valStr(inst.address)}, [${inst.targets.joinToString(", ") { "label %$it" }}]"
+        is Unreachable -> "unreachable"
+        is Trap -> "trap"
+        is DebugTrap -> "debugtrap"
 
         // Calls
-        is Instruction.Call -> {
+        is Call -> {
             val tail = if (inst.tailCall != TailCallKind.NONE) "${inst.tailCall.name.lowercase()} " else ""
             val cc = if (inst.callingConv != CallingConvention.C) "${inst.callingConv.name.lowercase()} " else ""
             val args = inst.args.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
@@ -358,12 +359,12 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
                 "${tail}call $cc${typeStr(inst.returnType)} ${valStr(inst.function)}($args)"
             }
         }
-        is Instruction.Invoke -> {
+        is Invoke -> {
             val args = inst.args.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
             val dest = if (inst.dest != null) "${inst.dest.name} = " else ""
             "${dest}invoke ${typeStr(inst.returnType)} ${valStr(inst.function)}($args) to label %${inst.normalDest} unwind label %${inst.unwindDest}"
         }
-        is Instruction.CallBr -> {
+        is CallBr -> {
             val args = inst.args.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
             val dest = if (inst.dest != null) "${inst.dest.name} = " else ""
             val indirect = inst.indirectDests.joinToString(", ") { "label %$it" }
@@ -371,13 +372,13 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
         }
 
         // Varargs
-        is Instruction.VAStart -> "va_start ${valStr(inst.argList)}"
-        is Instruction.VAEnd -> "va_end ${valStr(inst.argList)}"
-        is Instruction.VACopy -> "va_copy ${valStr(inst.dst)}, ${valStr(inst.src)}"
-        is Instruction.VAArg -> "${inst.dest.name} = va_arg ${valStr(inst.argList)}, ${typeStr(inst.argType)}"
+        is VAStart -> "va_start ${valStr(inst.argList)}"
+        is VAEnd -> "va_end ${valStr(inst.argList)}"
+        is VACopy -> "va_copy ${valStr(inst.dst)}, ${valStr(inst.src)}"
+        is VAArg -> "${inst.dest.name} = va_arg ${valStr(inst.argList)}, ${typeStr(inst.argType)}"
 
         // Exception handling
-        is Instruction.LandingPad -> {
+        is LandingPad -> {
             val cleanup = if (inst.cleanup) " cleanup" else ""
             val clauses = inst.clauses.joinToString(" ") {
                 when (it) {
@@ -387,166 +388,166 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
             }
             "${inst.dest.name} = landingpad ${typeStr(inst.resultType)}$cleanup $clauses"
         }
-        is Instruction.Resume -> "resume ${typeStr(inst.value.type)} ${valStr(inst.value)}"
-        is Instruction.CatchSwitch -> {
+        is Resume -> "resume ${typeStr(inst.value.type)} ${valStr(inst.value)}"
+        is CatchSwitch -> {
             val parent = if (inst.parentPad != null) valStr(inst.parentPad) else "none"
             val handlers = inst.handlers.joinToString(", ") { "label %$it" }
             val unwind = if (inst.unwindDest != null) " unwind label %${inst.unwindDest}" else " unwind to caller"
             "${inst.dest.name} = catchswitch within $parent [$handlers]$unwind"
         }
-        is Instruction.CatchPad -> {
+        is CatchPad -> {
             val args = inst.args.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
             "${inst.dest.name} = catchpad within ${valStr(inst.catchSwitch)} [$args]"
         }
-        is Instruction.CleanupPad -> {
+        is CleanupPad -> {
             val parent = if (inst.parentPad != null) valStr(inst.parentPad) else "none"
             val args = inst.args.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
             "${inst.dest.name} = cleanuppad within $parent [$args]"
         }
-        is Instruction.CatchRet -> "catchret from ${valStr(inst.catchPad)} to label %${inst.dest}"
-        is Instruction.CleanupRet -> {
+        is CatchRet -> "catchret from ${valStr(inst.catchPad)} to label %${inst.dest}"
+        is CleanupRet -> {
             val unwind = if (inst.unwindDest != null) "unwind label %${inst.unwindDest}" else "unwind to caller"
             "cleanupret from ${valStr(inst.cleanupPad)} $unwind"
         }
 
         // SSA
-        is Instruction.Phi -> {
+        is Phi -> {
             val incoming = inst.incoming.joinToString(", ") { (v, b) -> "[${valStr(v)}, %$b]" }
             "${inst.dest.name} = phi ${typeStr(inst.dest.type)} $incoming"
         }
-        is Instruction.Select -> "${inst.dest.name} = select ${typeStr(Type.I1)} ${valStr(inst.condition)}, ${typeStr(inst.trueValue.type)} ${valStr(inst.trueValue)}, ${typeStr(inst.falseValue.type)} ${valStr(inst.falseValue)}"
-        is Instruction.Freeze -> "${inst.dest.name} = freeze ${typeStr(inst.value.type)} ${valStr(inst.value)}"
+        is Select -> "${inst.dest.name} = select ${typeStr(Type.I1)} ${valStr(inst.condition)}, ${typeStr(inst.trueValue.type)} ${valStr(inst.trueValue)}, ${typeStr(inst.falseValue.type)} ${valStr(inst.falseValue)}"
+        is Freeze -> "${inst.dest.name} = freeze ${typeStr(inst.value.type)} ${valStr(inst.value)}"
 
         // Vector
-        is Instruction.ExtractElement -> "${inst.dest.name} = extractelement ${typeStr(inst.vector.type)} ${valStr(inst.vector)}, ${typeStr(inst.index.type)} ${valStr(inst.index)}"
-        is Instruction.InsertElement -> "${inst.dest.name} = insertelement ${typeStr(inst.vector.type)} ${valStr(inst.vector)}, ${typeStr(inst.element.type)} ${valStr(inst.element)}, ${typeStr(inst.index.type)} ${valStr(inst.index)}"
-        is Instruction.ShuffleVector -> "${inst.dest.name} = shufflevector ${typeStr(inst.v1.type)} ${valStr(inst.v1)}, ${typeStr(inst.v2.type)} ${valStr(inst.v2)}, <${inst.mask.joinToString(", ")}>"
-        is Instruction.Splat -> "${inst.dest.name} = splat ${typeStr(inst.scalar.type)} ${valStr(inst.scalar)} to ${typeStr(inst.vectorType)}"
-        is Instruction.VectorReduce -> "${inst.dest.name} = vector.reduce.${inst.op.name.lowercase()} ${typeStr(inst.vector.type)} ${valStr(inst.vector)}"
+        is ExtractElement -> "${inst.dest.name} = extractelement ${typeStr(inst.vector.type)} ${valStr(inst.vector)}, ${typeStr(inst.index.type)} ${valStr(inst.index)}"
+        is InsertElement -> "${inst.dest.name} = insertelement ${typeStr(inst.vector.type)} ${valStr(inst.vector)}, ${typeStr(inst.element.type)} ${valStr(inst.element)}, ${typeStr(inst.index.type)} ${valStr(inst.index)}"
+        is ShuffleVector -> "${inst.dest.name} = shufflevector ${typeStr(inst.v1.type)} ${valStr(inst.v1)}, ${typeStr(inst.v2.type)} ${valStr(inst.v2)}, <${inst.mask.joinToString(", ")}>"
+        is Splat -> "${inst.dest.name} = splat ${typeStr(inst.scalar.type)} ${valStr(inst.scalar)} to ${typeStr(inst.vectorType)}"
+        is VectorReduce -> "${inst.dest.name} = vector.reduce.${inst.op.name.lowercase()} ${typeStr(inst.vector.type)} ${valStr(inst.vector)}"
 
         // Aggregate
-        is Instruction.ExtractValue -> "${inst.dest.name} = extractvalue ${typeStr(inst.aggregate.type)} ${valStr(inst.aggregate)}, ${inst.indices.joinToString(", ")}"
-        is Instruction.InsertValue -> "${inst.dest.name} = insertvalue ${typeStr(inst.aggregate.type)} ${valStr(inst.aggregate)}, ${typeStr(inst.element.type)} ${valStr(inst.element)}, ${inst.indices.joinToString(", ")}"
+        is ExtractValue -> "${inst.dest.name} = extractvalue ${typeStr(inst.aggregate.type)} ${valStr(inst.aggregate)}, ${inst.indices.joinToString(", ")}"
+        is InsertValue -> "${inst.dest.name} = insertvalue ${typeStr(inst.aggregate.type)} ${valStr(inst.aggregate)}, ${typeStr(inst.element.type)} ${valStr(inst.element)}, ${inst.indices.joinToString(", ")}"
 
         // High-level: Objects
-        is Instruction.NewObject -> {
+        is NewObject -> {
             val typeArgs = if (inst.typeArgs.isNotEmpty()) "<${inst.typeArgs.joinToString(", ") { typeStr(it) }}>" else ""
             "${inst.dest.name} = new ${inst.className}$typeArgs"
         }
-        is Instruction.NewArray -> "${inst.dest.name} = newarray ${typeStr(inst.elementType)}, ${typeStr(inst.size.type)} ${valStr(inst.size)}"
-        is Instruction.NewMultiArray -> {
+        is NewArray -> "${inst.dest.name} = newarray ${typeStr(inst.elementType)}, ${typeStr(inst.size.type)} ${valStr(inst.size)}"
+        is NewMultiArray -> {
             val dims = inst.dimensions.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
             "${inst.dest.name} = newmultiarray ${typeStr(inst.elementType)}, [$dims]"
         }
 
         // High-level: Fields
-        is Instruction.GetField -> "${inst.dest.name} = getfield ${inst.className}.${inst.fieldName}: ${typeStr(inst.fieldType)}, ${valStr(inst.obj)}"
-        is Instruction.PutField -> "putfield ${inst.className}.${inst.fieldName}: ${typeStr(inst.fieldType)}, ${valStr(inst.obj)}, ${valStr(inst.value)}"
-        is Instruction.GetStatic -> "${inst.dest.name} = getstatic ${inst.className}.${inst.fieldName}: ${typeStr(inst.fieldType)}"
-        is Instruction.PutStatic -> "putstatic ${inst.className}.${inst.fieldName}: ${typeStr(inst.fieldType)}, ${valStr(inst.value)}"
+        is GetField -> "${inst.dest.name} = getfield ${inst.className}.${inst.fieldName}: ${typeStr(inst.fieldType)}, ${valStr(inst.obj)}"
+        is PutField -> "putfield ${inst.className}.${inst.fieldName}: ${typeStr(inst.fieldType)}, ${valStr(inst.obj)}, ${valStr(inst.value)}"
+        is GetStatic -> "${inst.dest.name} = getstatic ${inst.className}.${inst.fieldName}: ${typeStr(inst.fieldType)}"
+        is PutStatic -> "putstatic ${inst.className}.${inst.fieldName}: ${typeStr(inst.fieldType)}, ${valStr(inst.value)}"
 
         // High-level: Dispatch
-        is Instruction.VirtualCall -> {
+        is VirtualCall -> {
             val args = inst.args.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
             val dest = if (inst.dest != null) "${inst.dest.name} = " else ""
             "${dest}virtualcall ${valStr(inst.obj)}.${inst.className}::${inst.methodName}($args): ${typeStr(inst.methodType.ret)}"
         }
-        is Instruction.InterfaceCall -> {
+        is InterfaceCall -> {
             val args = inst.args.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
             val dest = if (inst.dest != null) "${inst.dest.name} = " else ""
             "${dest}interfacecall ${valStr(inst.obj)}.${inst.interfaceName}::${inst.methodName}($args): ${typeStr(inst.methodType.ret)}"
         }
-        is Instruction.SpecialCall -> {
+        is SpecialCall -> {
             val args = inst.args.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
             val dest = if (inst.dest != null) "${inst.dest.name} = " else ""
             "${dest}specialcall ${valStr(inst.obj)}.${inst.className}::${inst.methodName}($args): ${typeStr(inst.methodType.ret)}"
         }
-        is Instruction.StaticCall -> {
+        is StaticCall -> {
             val args = inst.args.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
             val dest = if (inst.dest != null) "${inst.dest.name} = " else ""
             "${dest}staticcall ${inst.className}::${inst.methodName}($args): ${typeStr(inst.methodType.ret)}"
         }
-        is Instruction.DynamicCall -> {
+        is DynamicCall -> {
             val args = inst.args.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
             val dest = if (inst.dest != null) "${inst.dest.name} = " else ""
             "${dest}dynamiccall ${inst.name}($args): ${typeStr(inst.methodType.ret)}"
         }
-        is Instruction.ConstructorCall -> {
+        is ConstructorCall -> {
             val args = inst.args.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
             "constructorcall ${inst.className}::init(${valStr(inst.obj)}, $args)"
         }
 
         // High-level: Type ops
-        is Instruction.InstanceOf -> "${inst.dest.name} = instanceof ${valStr(inst.obj)}, ${typeStr(inst.checkType)}"
-        is Instruction.CheckCast -> "${inst.dest.name} = checkcast ${valStr(inst.obj)} to ${typeStr(inst.castType)}"
-        is Instruction.TypeId -> "${inst.dest.name} = typeid ${valStr(inst.obj)}"
+        is InstanceOf -> "${inst.dest.name} = instanceof ${valStr(inst.obj)}, ${typeStr(inst.checkType)}"
+        is CheckCast -> "${inst.dest.name} = checkcast ${valStr(inst.obj)} to ${typeStr(inst.castType)}"
+        is TypeId -> "${inst.dest.name} = typeid ${valStr(inst.obj)}"
 
         // High-level: Managed arrays
-        is Instruction.ArrayGet -> "${inst.dest.name} = arrayget ${typeStr(inst.elementType)} ${valStr(inst.array)}, ${valStr(inst.index)}"
-        is Instruction.ArraySet -> "arrayset ${typeStr(inst.elementType)} ${valStr(inst.array)}, ${valStr(inst.index)}, ${valStr(inst.value)}"
-        is Instruction.ArrayLength -> "${inst.dest.name} = arraylength ${valStr(inst.array)}"
+        is ArrayGet -> "${inst.dest.name} = arrayget ${typeStr(inst.elementType)} ${valStr(inst.array)}, ${valStr(inst.index)}"
+        is ArraySet -> "arrayset ${typeStr(inst.elementType)} ${valStr(inst.array)}, ${valStr(inst.index)}, ${valStr(inst.value)}"
+        is ArrayLength -> "${inst.dest.name} = arraylength ${valStr(inst.array)}"
 
         // High-level: Monitors
-        is Instruction.MonitorEnter -> "monitorenter ${valStr(inst.obj)}"
-        is Instruction.MonitorExit -> "monitorexit ${valStr(inst.obj)}"
+        is MonitorEnter -> "monitorenter ${valStr(inst.obj)}"
+        is MonitorExit -> "monitorexit ${valStr(inst.obj)}"
 
         // High-level: Exceptions
-        is Instruction.Throw -> "throw ${valStr(inst.exception)}"
-        is Instruction.TryCatchRegion -> {
+        is Throw -> "throw ${valStr(inst.exception)}"
+        is TryCatchRegion -> {
             val catches = inst.catches.joinToString(", ") { "catch ${typeStr(it.exceptionType)} -> %${it.handlerBlock}" }
             val fin = if (inst.finallyBlock != null) " finally %${inst.finallyBlock}" else ""
             "trycatch %${inst.tryBlock} [$catches]$fin"
         }
 
         // High-level: Box/unbox
-        is Instruction.Box -> "${inst.dest.name} = box ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.boxType)}"
-        is Instruction.Unbox -> "${inst.dest.name} = unbox ${valStr(inst.obj)} to ${typeStr(inst.unboxType)}"
+        is Box -> "${inst.dest.name} = box ${typeStr(inst.value.type)} ${valStr(inst.value)} to ${typeStr(inst.boxType)}"
+        is Unbox -> "${inst.dest.name} = unbox ${valStr(inst.obj)} to ${typeStr(inst.unboxType)}"
 
         // High-level: Weak references
-        is Instruction.CatchValue -> "${inst.dest.name} = catch.value ${typeStr(inst.exceptionType)}"
-        is Instruction.MakeWeakRef -> "${inst.dest.name} = make.weakref ${valStr(inst.obj)}"
-        is Instruction.ReadWeakRef -> "${inst.dest.name} = read.weakref ${valStr(inst.weakRef)}"
-        is Instruction.ClearWeakRef -> "clear.weakref ${valStr(inst.weakRef)}"
+        is CatchValue -> "${inst.dest.name} = catch.value ${typeStr(inst.exceptionType)}"
+        is MakeWeakRef -> "${inst.dest.name} = make.weakref ${valStr(inst.obj)}"
+        is ReadWeakRef -> "${inst.dest.name} = read.weakref ${valStr(inst.weakRef)}"
+        is ClearWeakRef -> "clear.weakref ${valStr(inst.weakRef)}"
 
         // High-level: Closures
-        is Instruction.ClosureCreate -> {
+        is ClosureCreate -> {
             val captures = inst.captures.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
             "${inst.dest.name} = closure.create ${valStr(inst.function)}, [$captures]: ${typeStr(inst.closureType)}"
         }
-        is Instruction.ClosureInvoke -> {
+        is ClosureInvoke -> {
             val args = inst.args.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
             val dest = if (inst.dest != null) "${inst.dest.name} = " else ""
             "${dest}closure.invoke ${valStr(inst.closure)}($args): ${typeStr(inst.returnType)}"
         }
 
         // High-level: Tagged unions
-        is Instruction.ConstructVariant -> {
+        is ConstructVariant -> {
             val fields = inst.fields.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
             "${inst.dest.name} = construct.variant ${typeStr(inst.unionType)} ${inst.variantName}($fields)"
         }
-        is Instruction.GetTag -> "${inst.dest.name} = gettag ${valStr(inst.union)}"
-        is Instruction.GetVariantField -> "${inst.dest.name} = getvariantfield ${valStr(inst.union)}.${inst.variantName}[${inst.fieldIndex}]"
-        is Instruction.TagSwitch -> {
+        is GetTag -> "${inst.dest.name} = gettag ${valStr(inst.union)}"
+        is GetVariantField -> "${inst.dest.name} = getvariantfield ${valStr(inst.union)}.${inst.variantName}[${inst.fieldIndex}]"
+        is TagSwitch -> {
             val cases = inst.cases.joinToString(", ") { (variant, target) -> "$variant -> %$target" }
             val default = if (inst.defaultTarget != null) ", default -> %${inst.defaultTarget}" else ""
             "tagswitch ${valStr(inst.union)} [$cases$default]"
         }
 
         // GC
-        is Instruction.GCAlloc -> {
+        is GCAlloc -> {
             val size = if (inst.size != null) ", ${typeStr(inst.size.type)} ${valStr(inst.size)}" else ""
             "${inst.dest.name} = gc.alloc ${typeStr(inst.allocType)}$size"
         }
-        is Instruction.GCSafepoint -> "gc.safepoint"
-        is Instruction.GCRoot -> "gc.root ${valStr(inst.ptr)}${if (inst.metadata != null) ", ${valStr(inst.metadata)}" else ""}"
+        is GCSafepoint -> "gc.safepoint"
+        is GCRoot -> "gc.root ${valStr(inst.ptr)}${if (inst.metadata != null) ", ${valStr(inst.metadata)}" else ""}"
 
         // Pinning and interior pointers
-        is Instruction.Pin -> "${inst.dest.name} = gc.pin ${typeStr(inst.ref.type)} ${valStr(inst.ref)}"
-        is Instruction.Unpin -> "gc.unpin ${typeStr(inst.ref.type)} ${valStr(inst.ref)}"
-        is Instruction.InteriorPtr -> "${inst.dest.name} = gc.interior_ptr ${typeStr(inst.ref.type)} ${valStr(inst.ref)}, ${typeStr(inst.index.type)} ${valStr(inst.index)}, ${typeStr(inst.pointeeType)}"
-        is Instruction.WriteBarrier -> "gc.write_barrier ${typeStr(inst.obj.type)} ${valStr(inst.obj)}, ${typeStr(inst.fieldIndex.type)} ${valStr(inst.fieldIndex)}, ${typeStr(inst.value.type)} ${valStr(inst.value)}"
-        is Instruction.ReadBarrier -> "${inst.dest.name} = gc.read_barrier ${typeStr(inst.ref.type)} ${valStr(inst.ref)}"
-        is Instruction.ManagedCall -> {
+        is Pin -> "${inst.dest.name} = gc.pin ${typeStr(inst.ref.type)} ${valStr(inst.ref)}"
+        is Unpin -> "gc.unpin ${typeStr(inst.ref.type)} ${valStr(inst.ref)}"
+        is InteriorPtr -> "${inst.dest.name} = gc.interior_ptr ${typeStr(inst.ref.type)} ${valStr(inst.ref)}, ${typeStr(inst.index.type)} ${valStr(inst.index)}, ${typeStr(inst.pointeeType)}"
+        is WriteBarrier -> "gc.write_barrier ${typeStr(inst.obj.type)} ${valStr(inst.obj)}, ${typeStr(inst.fieldIndex.type)} ${valStr(inst.fieldIndex)}, ${typeStr(inst.value.type)} ${valStr(inst.value)}"
+        is ReadBarrier -> "${inst.dest.name} = gc.read_barrier ${typeStr(inst.ref.type)} ${valStr(inst.ref)}"
+        is ManagedCall -> {
             val args = inst.args.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
             val dest = if (inst.dest != null) "${inst.dest.name} = " else ""
             val dir = if (inst.direction == ManagedCallDirection.MANAGED_TO_NATIVE) "managed_to_native" else "native_to_managed"
@@ -554,27 +555,27 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
         }
 
         // Refcounting
-        is Instruction.RefRetain -> "ref.retain ${valStr(inst.obj)}"
-        is Instruction.RefRelease -> "ref.release ${valStr(inst.obj)}"
-        is Instruction.RefCount -> "${inst.dest.name} = ref.count ${valStr(inst.obj)}"
+        is RefRetain -> "ref.retain ${valStr(inst.obj)}"
+        is RefRelease -> "ref.release ${valStr(inst.obj)}"
+        is RefCount -> "${inst.dest.name} = ref.count ${valStr(inst.obj)}"
 
         // Coroutines
-        is Instruction.CoroBegin -> "${inst.dest.name} = coro.begin ${valStr(inst.id)}, ${valStr(inst.mem)}"
-        is Instruction.CoroEnd -> "coro.end ${valStr(inst.handle)}${if (inst.unwind) " unwind" else ""}"
-        is Instruction.CoroSuspend -> "${inst.dest.name} = coro.suspend${if (inst.save != null) " ${valStr(inst.save)}" else ""}${if (inst.isFinal) " final" else ""}"
-        is Instruction.CoroResume -> "coro.resume ${valStr(inst.handle)}"
-        is Instruction.CoroDestroy -> "coro.destroy ${valStr(inst.handle)}"
-        is Instruction.CoroSize -> "${inst.dest.name} = coro.size"
+        is CoroBegin -> "${inst.dest.name} = coro.begin ${valStr(inst.id)}, ${valStr(inst.mem)}"
+        is CoroEnd -> "coro.end ${valStr(inst.handle)}${if (inst.unwind) " unwind" else ""}"
+        is CoroSuspend -> "${inst.dest.name} = coro.suspend${if (inst.save != null) " ${valStr(inst.save)}" else ""}${if (inst.isFinal) " final" else ""}"
+        is CoroResume -> "coro.resume ${valStr(inst.handle)}"
+        is CoroDestroy -> "coro.destroy ${valStr(inst.handle)}"
+        is CoroSize -> "${inst.dest.name} = coro.size"
 
         // Intrinsic
-        is Instruction.Intrinsic -> {
+        is Intrinsic -> {
             val args = inst.args.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
             val dest = if (inst.dest != null) "${inst.dest.name} = " else ""
             "${dest}intrinsic @${inst.name}($args): ${typeStr(inst.returnType)}"
         }
 
         // Inline assembly
-        is Instruction.InlineAsm -> {
+        is InlineAsm -> {
             val args = inst.args.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
             val dest = if (inst.dest != null) "${inst.dest.name} = " else ""
             val se = if (inst.sideEffects) " sideeffect" else ""
@@ -582,13 +583,13 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
         }
 
         // Debug
-        is Instruction.DebugLoc -> "dbg.loc ${inst.line}:${inst.col} scope ${quote(inst.scope)}${if (inst.inlinedAt != null) " inlined_at ${quote(inst.inlinedAt)}" else ""}"
-        is Instruction.DebugValue -> "dbg.value ${quote(inst.variable)} = ${valStr(inst.value)}${if (inst.expression != null) " expr ${quote(inst.expression)}" else ""}"
-        is Instruction.DebugDeclare -> "dbg.declare ${quote(inst.variable)} = ${valStr(inst.address)}${if (inst.expression != null) " expr ${quote(inst.expression)}" else ""}"
+        is DebugLoc -> "dbg.loc ${inst.line}:${inst.col} scope ${quote(inst.scope)}${if (inst.inlinedAt != null) " inlined_at ${quote(inst.inlinedAt)}" else ""}"
+        is DebugValue -> "dbg.value ${quote(inst.variable)} = ${valStr(inst.value)}${if (inst.expression != null) " expr ${quote(inst.expression)}" else ""}"
+        is DebugDeclare -> "dbg.declare ${quote(inst.variable)} = ${valStr(inst.address)}${if (inst.expression != null) " expr ${quote(inst.expression)}" else ""}"
 
         // Hints
-        is Instruction.Assume -> "assume ${valStr(inst.condition)}"
-        is Instruction.Expect -> "${inst.dest.name} = expect ${typeStr(inst.value.type)} ${valStr(inst.value)}, ${constStr(inst.expected)}"
+        is Assume -> "assume ${valStr(inst.condition)}"
+        is Expect -> "${inst.dest.name} = expect ${typeStr(inst.value.type)} ${valStr(inst.value)}, ${constStr(inst.expected)}"
     }
 
     companion object {

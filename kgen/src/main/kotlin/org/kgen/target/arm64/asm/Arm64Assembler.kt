@@ -408,6 +408,13 @@ class Arm64Assembler {
         emit(0x14000000)
     }
 
+    // B with raw byte offset (must be 4-byte aligned)
+    fun b(offset: Int) {
+        require(offset % 4 == 0) { "ARM64 branch offset must be 4-byte aligned" }
+        val imm26 = (offset shr 2) and 0x03FFFFFF
+        emit(0x14000000 or imm26)
+    }
+
     // BL label (26-bit offset, sets LR)
     fun bl(label: String) {
         fixups.add(Fixup(buf.size(), label, FixupKind.BRANCH_26))

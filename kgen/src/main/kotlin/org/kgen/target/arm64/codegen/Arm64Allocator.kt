@@ -2,6 +2,7 @@ package org.kgen.target.arm64.codegen
 
 import org.kgen.target.arm64.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.codegen.alloc.*
 
 sealed interface Arm64Location {

@@ -5,8 +5,18 @@ import java.util.EnumSet
 /**
  * Predefined instruction category constraint sets for common compilation scenarios.
  *
- * Use these with [IrBuilder][org.kgen.ir.build.IrBuilder] to restrict which
- * instruction categories are allowed:
+ * The IR has 17 instruction categories ([IrCategory]) spanning from low-level machine
+ * operations (ARITHMETIC, MEMORY, ATOMIC) to high-level managed concepts (OBJECT, RUNTIME).
+ * Constraints restrict which categories an [IrBuilder][org.kgen.ir.build.IrBuilder] accepts,
+ * catching misuse at build time rather than during codegen.
+ *
+ * Preset hierarchy (each level adds categories):
+ * - [STRUCTURAL] -- terminators, calls, SSA, debug, intrinsics (always needed)
+ * - [NATIVE] -- structural + all machine categories (no GC, no objects)
+ * - [RUNTIME_NATIVE] -- native + RUNTIME (for GC/runtime code written in native)
+ * - [MIXED] -- runtime-native + INTEROP (managed/native boundary)
+ * - [MANAGED_VM] -- structural + OBJECT only (JVM/MSIL targets)
+ * - [MANAGED_NATIVE] / [ALL] -- everything
  *
  * ```java
  * // Only machine-level code (no GC, no objects)
@@ -17,6 +27,8 @@ import java.util.EnumSet
  * ```
  *
  * Pass `null` to allow all categories (the default).
+ *
+ * See `spec/ir.md` for the full constraint system specification.
  */
 object IrConstraints {
 

@@ -1,6 +1,7 @@
 package org.kgen.pass
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 
 /**
  * Evaluates instructions with constant operands at compile time.
@@ -39,48 +40,48 @@ class ConstantFolding : ModulePass {
     }
 
     private fun tryFold(inst: Instruction): Constant? = when (inst) {
-        is Instruction.Add -> foldBinOpI32(inst.lhs, inst.rhs) { a, b -> a + b }
+        is Add -> foldBinOpI32(inst.lhs, inst.rhs) { a, b -> a + b }
             ?: foldBinOpI64(inst.lhs, inst.rhs) { a, b -> a + b }
-        is Instruction.Sub -> foldBinOpI32(inst.lhs, inst.rhs) { a, b -> a - b }
+        is Sub -> foldBinOpI32(inst.lhs, inst.rhs) { a, b -> a - b }
             ?: foldBinOpI64(inst.lhs, inst.rhs) { a, b -> a - b }
-        is Instruction.Mul -> foldBinOpI32(inst.lhs, inst.rhs) { a, b -> a * b }
+        is Mul -> foldBinOpI32(inst.lhs, inst.rhs) { a, b -> a * b }
             ?: foldBinOpI64(inst.lhs, inst.rhs) { a, b -> a * b }
-        is Instruction.SDiv -> foldDivI32(inst.lhs, inst.rhs, signed = true, rem = false)
+        is SDiv -> foldDivI32(inst.lhs, inst.rhs, signed = true, rem = false)
             ?: foldDivI64(inst.lhs, inst.rhs, signed = true, rem = false)
-        is Instruction.UDiv -> foldDivI32(inst.lhs, inst.rhs, signed = false, rem = false)
-        is Instruction.SRem -> foldDivI32(inst.lhs, inst.rhs, signed = true, rem = true)
+        is UDiv -> foldDivI32(inst.lhs, inst.rhs, signed = false, rem = false)
+        is SRem -> foldDivI32(inst.lhs, inst.rhs, signed = true, rem = true)
             ?: foldDivI64(inst.lhs, inst.rhs, signed = true, rem = true)
-        is Instruction.URem -> foldDivI32(inst.lhs, inst.rhs, signed = false, rem = true)
-        is Instruction.And -> foldBinOpI32(inst.lhs, inst.rhs) { a, b -> a and b }
+        is URem -> foldDivI32(inst.lhs, inst.rhs, signed = false, rem = true)
+        is And -> foldBinOpI32(inst.lhs, inst.rhs) { a, b -> a and b }
             ?: foldBinOpI64(inst.lhs, inst.rhs) { a, b -> a and b }
-        is Instruction.Or -> foldBinOpI32(inst.lhs, inst.rhs) { a, b -> a or b }
+        is Or -> foldBinOpI32(inst.lhs, inst.rhs) { a, b -> a or b }
             ?: foldBinOpI64(inst.lhs, inst.rhs) { a, b -> a or b }
-        is Instruction.Xor -> foldBinOpI32(inst.lhs, inst.rhs) { a, b -> a xor b }
+        is Xor -> foldBinOpI32(inst.lhs, inst.rhs) { a, b -> a xor b }
             ?: foldBinOpI64(inst.lhs, inst.rhs) { a, b -> a xor b }
-        is Instruction.Shl -> foldBinOpI32(inst.lhs, inst.rhs) { a, b -> a shl b }
+        is Shl -> foldBinOpI32(inst.lhs, inst.rhs) { a, b -> a shl b }
             ?: foldBinOpI64(inst.lhs, inst.rhs) { a, b -> a shl b.toInt() }
-        is Instruction.LShr -> foldBinOpI32(inst.lhs, inst.rhs) { a, b -> a ushr b }
+        is LShr -> foldBinOpI32(inst.lhs, inst.rhs) { a, b -> a ushr b }
             ?: foldBinOpI64(inst.lhs, inst.rhs) { a, b -> a ushr b.toInt() }
-        is Instruction.AShr -> foldBinOpI32(inst.lhs, inst.rhs) { a, b -> a shr b }
+        is AShr -> foldBinOpI32(inst.lhs, inst.rhs) { a, b -> a shr b }
             ?: foldBinOpI64(inst.lhs, inst.rhs) { a, b -> a shr b.toInt() }
-        is Instruction.Neg -> when (val op = inst.operand) {
+        is Neg -> when (val op = inst.operand) {
             is Constant.I32 -> Constant.I32(-op.value)
             is Constant.I64 -> Constant.I64(-op.value)
             else -> null
         }
-        is Instruction.ICmp -> foldICmp(inst)
-        is Instruction.FAdd -> foldBinOpF64(inst.lhs, inst.rhs) { a, b -> a + b }
-        is Instruction.FSub -> foldBinOpF64(inst.lhs, inst.rhs) { a, b -> a - b }
-        is Instruction.FMul -> foldBinOpF64(inst.lhs, inst.rhs) { a, b -> a * b }
-        is Instruction.FDiv -> foldBinOpF64(inst.lhs, inst.rhs) { a, b -> a / b }
-        is Instruction.FNeg -> when (val op = inst.operand) {
+        is ICmp -> foldICmp(inst)
+        is FAdd -> foldBinOpF64(inst.lhs, inst.rhs) { a, b -> a + b }
+        is FSub -> foldBinOpF64(inst.lhs, inst.rhs) { a, b -> a - b }
+        is FMul -> foldBinOpF64(inst.lhs, inst.rhs) { a, b -> a * b }
+        is FDiv -> foldBinOpF64(inst.lhs, inst.rhs) { a, b -> a / b }
+        is FNeg -> when (val op = inst.operand) {
             is Constant.F64 -> Constant.F64(-op.value)
             is Constant.F32 -> Constant.F32(-op.value)
             else -> null
         }
-        is Instruction.ZExt -> foldZExt(inst)
-        is Instruction.SExt -> foldSExt(inst)
-        is Instruction.IntTrunc -> foldIntTrunc(inst)
+        is ZExt -> foldZExt(inst)
+        is SExt -> foldSExt(inst)
+        is IntTrunc -> foldIntTrunc(inst)
         else -> null
     }
 
@@ -120,7 +121,7 @@ class ConstantFolding : ModulePass {
         return null
     }
 
-    private fun foldICmp(inst: Instruction.ICmp): Constant? {
+    private fun foldICmp(inst: ICmp): Constant? {
         val l = inst.lhs
         val r = inst.rhs
         val result = when {
@@ -144,7 +145,7 @@ class ConstantFolding : ModulePass {
         ICmpPredicate.UGE -> if (bits == 32) l.toUInt() >= r.toUInt() else l.toULong() >= r.toULong()
     }
 
-    private fun foldZExt(inst: Instruction.ZExt): Constant? = when (val v = inst.value) {
+    private fun foldZExt(inst: ZExt): Constant? = when (val v = inst.value) {
         is Constant.I1 -> when (inst.dest.type) {
             Type.I32 -> Constant.I32(if (v.value) 1 else 0)
             Type.I64 -> Constant.I64(if (v.value) 1L else 0L)
@@ -167,7 +168,7 @@ class ConstantFolding : ModulePass {
         else -> null
     }
 
-    private fun foldSExt(inst: Instruction.SExt): Constant? = when (val v = inst.value) {
+    private fun foldSExt(inst: SExt): Constant? = when (val v = inst.value) {
         is Constant.I1 -> when (inst.dest.type) {
             Type.I32 -> Constant.I32(if (v.value) -1 else 0)
             Type.I64 -> Constant.I64(if (v.value) -1L else 0L)
@@ -190,7 +191,7 @@ class ConstantFolding : ModulePass {
         else -> null
     }
 
-    private fun foldIntTrunc(inst: Instruction.IntTrunc): Constant? = when (val v = inst.value) {
+    private fun foldIntTrunc(inst: IntTrunc): Constant? = when (val v = inst.value) {
         is Constant.I64 -> when (inst.toType) {
             Type.I32 -> Constant.I32(v.value.toInt())
             Type.I16 -> Constant.I16(v.value.toShort())
@@ -211,45 +212,45 @@ class ConstantFolding : ModulePass {
         fun rw(v: Value): Value = if (v is InstructionRef || v is Parameter) replacements[v.name] ?: v else v
 
         return when (inst) {
-            is Instruction.Add -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Sub -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Mul -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.SDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.UDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.SRem -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.URem -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.And -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Or -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Xor -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Shl -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.LShr -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.AShr -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Neg -> inst.copy(operand = rw(inst.operand))
-            is Instruction.ICmp -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.FAdd -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.FSub -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.FMul -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.FDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.FNeg -> inst.copy(operand = rw(inst.operand))
-            is Instruction.FCmp -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.ZExt -> inst.copy(value = rw(inst.value))
-            is Instruction.SExt -> inst.copy(value = rw(inst.value))
-            is Instruction.IntTrunc -> inst.copy(value = rw(inst.value))
-            is Instruction.Trunc -> inst.copy(operand = rw(inst.operand))
-            is Instruction.Ret -> inst.copy(value = inst.value?.let { rw(it) })
-            is Instruction.Call -> inst.copy(args = inst.args.map { rw(it) })
-            is Instruction.Select -> inst.copy(condition = rw(inst.condition), trueValue = rw(inst.trueValue), falseValue = rw(inst.falseValue))
-            is Instruction.Store -> inst.copy(value = rw(inst.value), ptr = rw(inst.ptr))
-            is Instruction.Load -> inst.copy(ptr = rw(inst.ptr))
-            is Instruction.CondBr -> inst.copy(condition = rw(inst.condition))
-            is Instruction.SIToFP -> inst.copy(value = rw(inst.value))
-            is Instruction.UIToFP -> inst.copy(value = rw(inst.value))
-            is Instruction.FPToSI -> inst.copy(value = rw(inst.value))
-            is Instruction.FPToUI -> inst.copy(value = rw(inst.value))
-            is Instruction.FPExt -> inst.copy(value = rw(inst.value))
-            is Instruction.FPTrunc -> inst.copy(value = rw(inst.value))
-            is Instruction.GetElementPtr -> inst.copy(ptr = rw(inst.ptr), indices = inst.indices.map { rw(it) })
-            is Instruction.Phi -> inst.copy(incoming = inst.incoming.map { (v, l) -> rw(v) to l })
+            is Add -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Sub -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Mul -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is SDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is UDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is SRem -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is URem -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is And -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Or -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Xor -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Shl -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is LShr -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is AShr -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Neg -> inst.copy(operand = rw(inst.operand))
+            is ICmp -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is FAdd -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is FSub -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is FMul -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is FDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is FNeg -> inst.copy(operand = rw(inst.operand))
+            is FCmp -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is ZExt -> inst.copy(value = rw(inst.value))
+            is SExt -> inst.copy(value = rw(inst.value))
+            is IntTrunc -> inst.copy(value = rw(inst.value))
+            is Trunc -> inst.copy(operand = rw(inst.operand))
+            is Ret -> inst.copy(value = inst.value?.let { rw(it) })
+            is Call -> inst.copy(args = inst.args.map { rw(it) })
+            is Select -> inst.copy(condition = rw(inst.condition), trueValue = rw(inst.trueValue), falseValue = rw(inst.falseValue))
+            is Store -> inst.copy(value = rw(inst.value), ptr = rw(inst.ptr))
+            is Load -> inst.copy(ptr = rw(inst.ptr))
+            is CondBr -> inst.copy(condition = rw(inst.condition))
+            is SIToFP -> inst.copy(value = rw(inst.value))
+            is UIToFP -> inst.copy(value = rw(inst.value))
+            is FPToSI -> inst.copy(value = rw(inst.value))
+            is FPToUI -> inst.copy(value = rw(inst.value))
+            is FPExt -> inst.copy(value = rw(inst.value))
+            is FPTrunc -> inst.copy(value = rw(inst.value))
+            is GetElementPtr -> inst.copy(ptr = rw(inst.ptr), indices = inst.indices.map { rw(it) })
+            is Phi -> inst.copy(incoming = inst.incoming.map { (v, l) -> rw(v) to l })
             else -> inst
         }
     }

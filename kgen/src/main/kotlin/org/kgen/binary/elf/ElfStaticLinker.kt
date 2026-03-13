@@ -9,11 +9,27 @@ import org.kgen.binary.BinaryWriter.writeU64
 import java.io.ByteArrayOutputStream
 
 /**
- * Links relocatable ELF64 ObjectFiles into a fully static executable.
+ * Links one or more relocatable [ObjectFile]s into a fully static ELF64 executable.
  *
- * Produces a minimal ELF binary with no dynamic linking infrastructure —
- * no .interp, .dynamic, PLT, GOT, .dynsym, or .dynstr. All symbols must
- * be resolved at link time.
+ * Produces a minimal ELF binary with no dynamic linking infrastructure --
+ * no `.interp`, `.dynamic`, PLT, GOT, `.dynsym`, or `.dynstr`. All symbols must
+ * be resolved at link time. The linker merges `.text`, `.rodata`, `.data`, and `.tdata`
+ * sections from all inputs, resolves symbols (GLOBAL overrides WEAK), applies relocations,
+ * and emits a ready-to-run executable.
+ *
+ * Supports relocations for x86-64, ARM64, and RISC-V, including TLS relocations
+ * (LOCAL_EXEC, INITIAL_EXEC, GENERAL_DYNAMIC relaxed to LOCAL_EXEC for static linking).
+ * Debug sections (DWARF) are passed through to the output.
+ *
+ * The entry point is resolved from `_start` or `main` symbols.
+ *
+ * ```java
+ * var linker = new ElfStaticLinker(ElfMachine.X86_64.getCode());
+ * byte[] exe = linker.link(List.of(objectFile));
+ * Files.write(Path.of("a.out"), exe);
+ * ```
+ *
+ * See `spec/roadmap.md` for the full list of supported relocation types.
  */
 class ElfStaticLinker(
     private val machine: Int = ElfMachine.X86_64.code,
@@ -23,6 +39,13 @@ class ElfStaticLinker(
         const val PAGE_SIZE = 0x1000L
     }
 
+    /**
+     * Link the given relocatable object files into a static ELF64 executable.
+     *
+     * @param objects one or more relocatable [ObjectFile]s to link
+     * @return the complete ELF executable as a byte array
+     * @throws IllegalStateException if there are undefined symbols after resolution
+     */
     fun link(objects: List<ObjectFile>): ByteArray {
         require(objects.isNotEmpty()) { "No object files to link" }
         val merger = SectionMerger(objects)
@@ -140,6 +163,12 @@ class ElfStaticLinker(
                 }
             }
             undefinedSymbols.removeAll(globalSymbols.keys)
+
+            // __tls_get_addr is eliminated by GD→LE relaxation in static linking
+            val hasTlsgd = objects.any { obj -> obj.relocations.any { it.type == RelocationType.X86_64.TLSGD } }
+            if (hasTlsgd) {
+                undefinedSymbols.remove("__tls_get_addr")
+            }
 
             if (undefinedSymbols.isNotEmpty()) {
                 throw IllegalStateException(
@@ -295,6 +324,11 @@ class ElfStaticLinker(
                     val patchOffset = (placement.mergedOffset + rel.offset).toInt()
                     val patchVaddr = sectionVaddr + patchOffset
 
+                    // Skip PLT32 to __tls_get_addr — eliminated by GD→LE relaxation
+                    if (rel.symbol == "__tls_get_addr" && rel.type == RelocationType.X86_64.PLT32) {
+                        continue
+                    }
+
                     val targetVaddr = symVaddrs[rel.symbol]
                         ?: throw IllegalStateException("Undefined symbol: ${rel.symbol}")
 
@@ -430,6 +464,87 @@ class ElfStaticLinker(
                 RelocationType.RiscV.RELAX -> {
                     // Linker relaxation marker — no patching needed
                 }
+
+                // x86-64 TLS LOCAL_EXEC: TP points past TLS block, so offset is negative
+                RelocationType.X86_64.TPOFF32 -> {
+                    val tpOff = (targetVaddr + rel.addend - (layout.tdataVaddr + layout.tdataFileSize)).toInt()
+                    putI32(bytes, offset, tpOff)
+                }
+                // x86-64 TLS GENERAL_DYNAMIC → relaxed to LOCAL_EXEC in static link:
+                // Rewrite 16-byte GD sequence to: mov rax,fs:[0]; lea rax,[rax+tpoff32]
+                RelocationType.X86_64.TLSGD -> {
+                    val tpOff = (targetVaddr + rel.addend - (layout.tdataVaddr + layout.tdataFileSize)).toInt()
+                    // The TLSGD relocation points at the disp32 of the LEA.
+                    // The GD sequence starts 4 bytes before that (66 48 8d 3d).
+                    val seqStart = offset - 4
+                    // Write: 64 48 8b 04 25 00 00 00 00  (mov rax, fs:[0]) — 9 bytes
+                    bytes[seqStart + 0] = 0x64.toByte()
+                    bytes[seqStart + 1] = 0x48.toByte()
+                    bytes[seqStart + 2] = 0x8B.toByte()
+                    bytes[seqStart + 3] = 0x04.toByte()
+                    bytes[seqStart + 4] = 0x25.toByte()
+                    bytes[seqStart + 5] = 0x00
+                    bytes[seqStart + 6] = 0x00
+                    bytes[seqStart + 7] = 0x00
+                    bytes[seqStart + 8] = 0x00
+                    // Write: 48 8d 80 XX XX XX XX  (lea rax, [rax+tpoff32]) — 7 bytes
+                    bytes[seqStart + 9] = 0x48.toByte()
+                    bytes[seqStart + 10] = 0x8D.toByte()
+                    bytes[seqStart + 11] = 0x80.toByte()
+                    putI32(bytes, seqStart + 12, tpOff)
+                }
+                // x86-64 TLS INITIAL_EXEC → relaxed to LOCAL_EXEC in static link:
+                // Rewrite: add reg, [rip+disp32] → lea reg, [reg+disp32] with TPOFF32
+                RelocationType.X86_64.GOTTPOFF -> {
+                    val tpOff = (targetVaddr + rel.addend - (layout.tdataVaddr + layout.tdataFileSize)).toInt()
+                    // Rewrite opcode: 0x03 (ADD) → 0x8D (LEA)
+                    bytes[offset - 2] = 0x8D.toByte()
+                    // Rewrite ModRM: [rip+disp32] (0x05|reg<<3) → [reg+disp32] (0x80|reg<<3|reg)
+                    val modRM = bytes[offset - 1].toInt() and 0xFF
+                    val reg = (modRM shr 3) and 7
+                    bytes[offset - 1] = (0x80 or (reg shl 3) or reg).toByte()
+                    putI32(bytes, offset, tpOff)
+                }
+
+                // ARM64 TLS LOCAL_EXEC: TP-relative offset (TP points to start of TLS)
+                RelocationType.AArch64.TLSLE_ADD_TPREL_HI12 -> {
+                    val tpOff = targetVaddr + rel.addend - layout.tdataVaddr
+                    val imm12 = ((tpOff shr 12) and 0xFFF).toInt() shl 10
+                    val insn = readI32(bytes, offset)
+                    putI32(bytes, offset, (insn and 0xFFC003FF.toInt()) or imm12)
+                }
+                RelocationType.AArch64.TLSLE_ADD_TPREL_LO12,
+                RelocationType.AArch64.TLSLE_ADD_TPREL_LO12_NC -> {
+                    val tpOff = targetVaddr + rel.addend - layout.tdataVaddr
+                    val imm12 = (tpOff.toInt() and 0xFFF) shl 10
+                    val insn = readI32(bytes, offset)
+                    putI32(bytes, offset, (insn and 0xFFC003FF.toInt()) or imm12)
+                }
+
+                // RISC-V TLS LOCAL_EXEC: TP-relative offset
+                RelocationType.RiscV.TPREL_HI20 -> {
+                    val tpOff = targetVaddr + rel.addend - layout.tdataVaddr
+                    val hi = ((tpOff + 0x800) shr 12).toInt()
+                    val existing = readI32(bytes, offset)
+                    putI32(bytes, offset, (existing and 0xFFF) or (hi shl 12))
+                }
+                RelocationType.RiscV.TPREL_LO12_I -> {
+                    val tpOff = (targetVaddr + rel.addend - layout.tdataVaddr).toInt() and 0xFFF
+                    val existing = readI32(bytes, offset)
+                    putI32(bytes, offset, (existing and 0x000FFFFF) or (tpOff shl 20))
+                }
+                RelocationType.RiscV.TPREL_LO12_S -> {
+                    val tpOff = (targetVaddr + rel.addend - layout.tdataVaddr).toInt() and 0xFFF
+                    val imm11_5 = (tpOff shr 5) and 0x7F
+                    val imm4_0 = tpOff and 0x1F
+                    val existing = readI32(bytes, offset)
+                    val mask = (0x7F shl 25) or (0x1F shl 7)
+                    putI32(bytes, offset, (existing and mask.inv()) or (imm11_5 shl 25) or (imm4_0 shl 7))
+                }
+                RelocationType.RiscV.TPREL_ADD -> {
+                    // Linker relaxation marker — no patching needed
+                }
+
                 else -> throw IllegalStateException("Unsupported relocation type: ${rel.type}")
             }
         }

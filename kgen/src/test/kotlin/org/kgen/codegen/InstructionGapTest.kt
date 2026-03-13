@@ -773,4 +773,38 @@ class InstructionGapTest {
             ir.ret()
         })
     }
+
+    private fun buildF64TernaryModule(target: Target, block: (IrBuilder, List<Value>) -> Unit): Module {
+        val ir = IrBuilder("test", target)
+        val params = ir.createFunction("test_func",
+            listOf(Param("a", Type.F64), Param("b", Type.F64), Param("c", Type.F64)), Type.F64)
+        ir.positionAtEnd(ir.appendBlock("entry"))
+        block(ir, params)
+        ir.finalizeFunction()
+        return ir.build()
+    }
+
+    @Test fun `fma compiles on x86 with vfmadd`() = assertDoesNotThrow {
+        compileX86(buildF64TernaryModule(Target.x86_64()) { ir, p -> ir.ret(ir.fma(p[0], p[1], p[2])) })
+    }
+
+    @Test fun `fma compiles on arm64`() = assertDoesNotThrow {
+        compileArm64(buildF64TernaryModule(Target.arm64()) { ir, p -> ir.ret(ir.fma(p[0], p[1], p[2])) })
+    }
+
+    @Test fun `fma compiles on riscv`() = assertDoesNotThrow {
+        compileRiscV(buildF64TernaryModule(Target.riscv64()) { ir, p -> ir.ret(ir.fma(p[0], p[1], p[2])) })
+    }
+
+    @Test fun `fma compiles on wasm`() = assertDoesNotThrow {
+        compileWasm(buildF64TernaryModule(Target.wasm()) { ir, p -> ir.ret(ir.fma(p[0], p[1], p[2])) })
+    }
+
+    @Test fun `fma compiles on jvm`() = assertDoesNotThrow {
+        compileJvm(buildF64TernaryModule(Target.jvm()) { ir, p -> ir.ret(ir.fma(p[0], p[1], p[2])) })
+    }
+
+    @Test fun `fma compiles on cil`() = assertDoesNotThrow {
+        compileCil(buildF64TernaryModule(Target.msil()) { ir, p -> ir.ret(ir.fma(p[0], p[1], p[2])) })
+    }
 }

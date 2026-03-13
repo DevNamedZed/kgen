@@ -152,11 +152,59 @@ class WasmModuleWriter private constructor(private val module: WasmModule) {
         writeSection(9) { s ->
             writeU32(s, module.elements.size)
             for (elem in module.elements) {
-                writeU32(s, elem.type)
-                if (elem.initExpr != null) s.write(elem.initExpr)
-                writeU32(s, elem.funcIndices.size)
-                for (idx in elem.funcIndices) writeU32(s, idx)
+                val usesExprs = elem.initExprs.isNotEmpty()
+                val flags = computeElementFlags(elem, usesExprs)
+                writeU32(s, flags)
+
+                when (elem) {
+                    is WasmModule.Element.Active -> {
+                        if (flags == 2 || flags == 6) {
+                            writeU32(s, elem.tableIndex)
+                        }
+                        s.write(elem.offsetExpr)
+                    }
+                    is WasmModule.Element.Passive,
+                    is WasmModule.Element.Declarative -> { /* no table/offset */ }
+                }
+
+                // Forms 1-3: elemkind byte; Forms 4-7: reftype byte
+                when (flags) {
+                    1, 2, 3 -> s.write(refTypeToElemKind(elem.refType))
+                    4, 5, 6, 7 -> s.write(elem.refType.code)
+                }
+
+                if (usesExprs) {
+                    writeU32(s, elem.initExprs.size)
+                    for (expr in elem.initExprs) {
+                        s.write(expr)
+                    }
+                } else {
+                    writeU32(s, elem.funcIndices.size)
+                    for (idx in elem.funcIndices) {
+                        writeU32(s, idx)
+                    }
+                }
             }
+        }
+    }
+
+    private fun computeElementFlags(elem: WasmModule.Element, usesExprs: Boolean): Int {
+        return when (elem) {
+            is WasmModule.Element.Active -> when {
+                !usesExprs && elem.tableIndex == 0 -> 0
+                !usesExprs -> 2
+                elem.tableIndex == 0 -> 4
+                else -> 6
+            }
+            is WasmModule.Element.Passive -> if (usesExprs) 5 else 1
+            is WasmModule.Element.Declarative -> if (usesExprs) 7 else 3
+        }
+    }
+
+    private fun refTypeToElemKind(refType: WasmRefType): Int {
+        return when (refType) {
+            WasmRefType.FUNCREF -> 0x00
+            else -> error("Unsupported elemkind for ref type: $refType")
         }
     }
 

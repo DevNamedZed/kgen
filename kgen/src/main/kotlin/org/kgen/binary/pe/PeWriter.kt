@@ -4,17 +4,36 @@ import org.kgen.binary.*
 import java.io.ByteArrayOutputStream
 
 /**
- * PE32+ (64-bit) writer supporting both executables and DLLs.
+ * Writes PE32+ (64-bit Portable Executable) binaries for Windows targets.
  *
- * For executables, produces a console executable with .text, optional .rdata, and .idata sections.
- * For DLLs, produces a DLL with .text, optional .rdata, .edata (export directory), and .idata sections.
+ * Supports three output modes:
+ * - **Executable** ([writeExe]): console `.exe` with `.text`, optional `.rdata`, `.idata` (imports),
+ *   and `.didata` (delay-load imports) sections.
+ * - **DLL** ([writeDll]): dynamic library with `.text`, optional `.rdata`, `.edata` (export directory),
+ *   `.idata`, and `.didata` sections.
+ * - **Flat** ([writeFlat]): minimal executable with default kernel32.dll imports
+ *   (`GetStdHandle`, `WriteFile`, `ExitProcess`).
  *
- * Import tables are built from the provided imports — any DLL and any set of functions.
- * The [write] method reads imports from ObjectFile.imports. For direct use, [writeExe] accepts
- * a map of DLL name to function names.
+ * The [write] method (implementing [ObjectFileWriter]) automatically selects DLL mode when the
+ * [ObjectFile] has [ObjectFlag.DLL] set or contains export entries; otherwise it produces an executable.
  *
- * The [write] method automatically selects DLL mode when the ObjectFile has [ObjectFlag.DLL] set or
- * contains export entries. Use [writeDll] directly for explicit DLL output.
+ * Import tables support both standard and delay-load imports. Use [iatEntryMap] to compute IAT
+ * slot virtual addresses for RIP-relative call patching in generated code.
+ *
+ * ```java
+ * // From an ObjectFile
+ * byte[] exe = PeWriter.write(objectFile);
+ *
+ * // Direct: custom imports
+ * byte[] exe = PeWriter.writeExe(code, rodata,
+ *     Map.of("kernel32.dll", List.of("ExitProcess")));
+ *
+ * // DLL with exports
+ * byte[] dll = PeWriter.writeDll(code, rodata,
+ *     List.of("myFunc1", "myFunc2"), "mylib.dll");
+ * ```
+ *
+ * See `spec/roadmap.md` for PE/COFF support details.
  */
 object PeWriter : ObjectFileWriter {
 

@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -34,7 +35,7 @@ class ScalarReplacementExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(3, allocas.size, "Should have 3 scalar allocas")
         assertTrue(allocas.all { it.allocType == Type.I32 })
     }
@@ -53,7 +54,7 @@ class ScalarReplacementExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(3, allocas.size)
         val types = allocas.map { it.allocType }.toSet()
         assertEquals(setOf(Type.I32, Type.I64, Type.F64), types)
@@ -75,7 +76,7 @@ class ScalarReplacementExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(2, allocas.size)
         assertTrue(allocas.all { it.allocType == Type.I64 })
     }
@@ -94,7 +95,7 @@ class ScalarReplacementExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(4, allocas.size)
     }
 
@@ -112,7 +113,7 @@ class ScalarReplacementExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(1, allocas.size, "Array[17] exceeds MAX_ARRAY_SIZE=16")
     }
 
@@ -130,7 +131,7 @@ class ScalarReplacementExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(16, allocas.size)
     }
 
@@ -148,7 +149,7 @@ class ScalarReplacementExtendedTest {
             finalizeFunction()
         }
         val fn = module.functions.find { it.name == "f" }!!
-        val allocas = fn.blocks[0].instructions.filterIsInstance<Instruction.Alloca>()
+        val allocas = fn.blocks[0].instructions.filterIsInstance<Alloca>()
         assertEquals(1, allocas.size)
         assertTrue(allocas[0].allocType is Type.Struct)
     }
@@ -172,9 +173,9 @@ class ScalarReplacementExtendedTest {
         }
         val promoted = Mem2Reg().run(module)
         val insts = promoted.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(0, allocas.size, "All allocas eliminated after SROA + mem2reg")
-        val addInst = insts.first { it is Instruction.Add } as Instruction.Add
+        val addInst = insts.first { it is Add } as Add
         assertEquals(5, (addInst.lhs as Constant.I32).value)
         assertEquals(10, (addInst.rhs as Constant.I32).value)
     }
@@ -193,7 +194,7 @@ class ScalarReplacementExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(2, allocas.size)
         val types = allocas.map { it.allocType }.toSet()
         assertEquals(setOf(Type.I8, Type.I16), types)
@@ -213,7 +214,7 @@ class ScalarReplacementExtendedTest {
             finalizeFunction()
         }
         val promoted = Mem2Reg().run(module)
-        val ret = promoted.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = promoted.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(3.14, (ret.value as Constant.F64).value)
     }
 
@@ -228,7 +229,7 @@ class ScalarReplacementExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(1, allocas.size, "Non-aggregate alloca should not be touched")
     }
 
@@ -251,7 +252,7 @@ class ScalarReplacementExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(4, allocas.size, "2 structs * 2 fields = 4 scalar allocas")
     }
 
@@ -270,7 +271,7 @@ class ScalarReplacementExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         // inner: i32 + i64 = 2, outer field: f32 = 1, total = 3
         assertEquals(3, allocas.size, "Nested struct should flatten to 3 allocas: $allocas")
     }
@@ -306,7 +307,7 @@ class ScalarReplacementExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(1, allocas.size, "Alloca should not be replaced when returned")
     }
 
@@ -323,7 +324,7 @@ class ScalarReplacementExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(1, allocas.size, "Alloca used in comparison should not be replaced")
     }
 
@@ -350,7 +351,7 @@ class ScalarReplacementExtendedTest {
             finalizeFunction()
         }
         for (fn in module.functions) {
-            val allocas = fn.blocks[0].instructions.filterIsInstance<Instruction.Alloca>()
+            val allocas = fn.blocks[0].instructions.filterIsInstance<Alloca>()
             assertEquals(2, allocas.size, "Each function should have 2 scalar allocas")
         }
     }
@@ -367,7 +368,7 @@ class ScalarReplacementExtendedTest {
             finalizeFunction()
         }
         val result = sroa.run(module)
-        val allocas = result.functions[0].blocks[0].instructions.filterIsInstance<Instruction.Alloca>()
+        val allocas = result.functions[0].blocks[0].instructions.filterIsInstance<Alloca>()
         assertEquals(1, allocas.size)
         assertEquals(Type.I32, allocas[0].allocType)
     }
@@ -391,8 +392,8 @@ class ScalarReplacementExtendedTest {
         }
         // After SROA, stores and loads should reference the correct scalar allocas
         val insts = module.functions[0].blocks[0].instructions
-        val stores = insts.filterIsInstance<Instruction.Store>()
-        val loads = insts.filterIsInstance<Instruction.Load>()
+        val stores = insts.filterIsInstance<Store>()
+        val loads = insts.filterIsInstance<Load>()
         assertEquals(2, stores.size)
         assertEquals(2, loads.size)
     }
@@ -413,7 +414,7 @@ class ScalarReplacementExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(2, allocas.size)
         val types = allocas.map { it.allocType }.toSet()
         assertEquals(setOf(Type.I1, Type.I32), types)
@@ -432,7 +433,7 @@ class ScalarReplacementExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         val structAllocas = allocas.filter { it.allocType is Type.Struct }
         assertTrue(structAllocas.isNotEmpty(), "Struct alloca should remain when address stored")
     }
@@ -451,7 +452,7 @@ class ScalarReplacementExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(1, allocas.size)
         assertEquals(Type.I64, allocas[0].allocType)
     }
@@ -470,7 +471,7 @@ class ScalarReplacementExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(1, allocas.size)
         assertEquals(Type.I32, allocas[0].allocType)
     }
@@ -503,7 +504,7 @@ class ScalarReplacementExtendedTest {
         }
         val promoted = Mem2Reg().run(module)
         val insts = promoted.functions[0].blocks[0].instructions
-        val ret = insts.last() as Instruction.Ret
+        val ret = insts.last() as Ret
         assertEquals(20L, (ret.value as Constant.I64).value)
     }
 }

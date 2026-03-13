@@ -1,6 +1,7 @@
 package org.kgen.ir.types
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 
 /** High-level interface definition. */
 data class InterfaceDef(

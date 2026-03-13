@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.kgen.ir.*
 import org.kgen.ir.target.Target
 import org.kgen.target.jvm.*
+import org.kgen.ir.instructions.*
 
 class InstanceMethodTest {
 
@@ -118,8 +119,8 @@ class InstanceMethodTest {
         val fn = module.functions.first { it.name == "org_kgen_test_Counter_getCount" }
         val instructions = fn.blocks.flatMap { it.instructions }
         // Should have GEP (field offset) + Load (read field)
-        assertTrue(instructions.any { it is Instruction.GetElementPtr }, "Expected GEP for field access")
-        assertTrue(instructions.any { it is Instruction.Load }, "Expected Load for field read")
+        assertTrue(instructions.any { it is GetElementPtr }, "Expected GEP for field access")
+        assertTrue(instructions.any { it is Load }, "Expected Load for field read")
     }
 
     @Test
@@ -209,7 +210,7 @@ class InstanceMethodTest {
         val fn = module.functions.first { it.name == "create" }
         assertEquals(Type.OpaquePointer, fn.returnType)
         val instructions = fn.blocks.flatMap { it.instructions }
-        assertTrue(instructions.any { it is Instruction.Call && (it as Instruction.Call).function.let { f -> f is GlobalRef && f.name == "malloc" } },
+        assertTrue(instructions.any { it is Call && (it as Call).function.let { f -> f is GlobalRef && f.name == "malloc" } },
             "Expected malloc call for new")
     }
 }

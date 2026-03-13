@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 import org.kgen.ir.types.*
@@ -31,9 +32,9 @@ class VTableLoweringTest {
         val fn = lowered.functions.find { it.name == "callSpeak" }!!
         val instructions = fn.blocks.flatMap { it.instructions }
 
-        val loads = instructions.filterIsInstance<Instruction.Load>()
-        val geps = instructions.filterIsInstance<Instruction.GetElementPtr>()
-        val calls = instructions.filterIsInstance<Instruction.Call>()
+        val loads = instructions.filterIsInstance<Load>()
+        val geps = instructions.filterIsInstance<GetElementPtr>()
+        val calls = instructions.filterIsInstance<Call>()
 
         assertTrue(loads.size >= 2, "Should have at least 2 loads (vtable + fptr), got: ${loads.size}")
         assertTrue(geps.isNotEmpty(), "Should have GEP for vtable slot indexing")
@@ -69,7 +70,7 @@ class VTableLoweringTest {
         val lowered = VTableLowering().run(module)
 
         val fn = lowered.functions.find { it.name == "compare" }!!
-        val calls = fn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Call>()
+        val calls = fn.blocks.flatMap { it.instructions }.filterIsInstance<Call>()
         assertTrue(calls.isNotEmpty())
         assertTrue(calls.first().function is InstructionRef,
             "Interface call should be lowered to indirect call")
@@ -90,7 +91,7 @@ class VTableLoweringTest {
         val lowered = VTableLowering().run(module)
 
         val fn = lowered.functions.find { it.name == "callUnknown" }!!
-        val calls = fn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Call>()
+        val calls = fn.blocks.flatMap { it.instructions }.filterIsInstance<Call>()
         assertTrue(calls.isNotEmpty())
 
         val call = calls.first()
@@ -122,7 +123,7 @@ class VTableLoweringTest {
         val lowered = VTableLowering().run(module)
 
         val fn = lowered.functions.find { it.name == "test" }!!
-        val geps = fn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.GetElementPtr>()
+        val geps = fn.blocks.flatMap { it.instructions }.filterIsInstance<GetElementPtr>()
 
         assertEquals(2, geps.size, "Should have 2 GEP instructions for 2 vtable slots")
 
@@ -162,7 +163,7 @@ class VTableLoweringTest {
         val lowered = VTableLowering().run(module)
 
         val fn = lowered.functions.find { it.name == "test" }!!
-        val geps = fn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.GetElementPtr>()
+        val geps = fn.blocks.flatMap { it.instructions }.filterIsInstance<GetElementPtr>()
         assertEquals(2, geps.size)
 
         val offsets = geps.map { (it.indices.first() as Constant.I64).value }
@@ -209,7 +210,7 @@ class VTableLoweringTest {
         val lowered = VTableLowering().run(module)
 
         val fn = lowered.functions.find { it.name == "measure" }!!
-        val calls = fn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Call>()
+        val calls = fn.blocks.flatMap { it.instructions }.filterIsInstance<Call>()
         assertEquals(2, calls.size, "Should have 2 indirect calls")
         assertTrue(calls.all { it.function is InstructionRef },
             "Both calls should be indirect")
@@ -237,10 +238,10 @@ class VTableLoweringTest {
         val lowered = VTableLowering().run(module)
 
         val fn = lowered.functions.find { it.name == "test" }!!
-        val calls = fn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Call>()
+        val calls = fn.blocks.flatMap { it.instructions }.filterIsInstance<Call>()
         assertTrue(calls.isNotEmpty())
         // The ret should use the call result
-        val ret = fn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Ret>().first()
+        val ret = fn.blocks.flatMap { it.instructions }.filterIsInstance<Ret>().first()
         assertNotNull(ret.value, "Should return the result of the virtual call")
     }
 
@@ -283,7 +284,7 @@ class VTableLoweringTest {
         val lowered = VTableLowering().run(module)
 
         val fn = lowered.functions.find { it.name == "test" }!!
-        val calls = fn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Call>()
+        val calls = fn.blocks.flatMap { it.instructions }.filterIsInstance<Call>()
         assertEquals(2, calls.size, "Should have 2 virtual calls lowered")
     }
 
@@ -320,7 +321,7 @@ class VTableLoweringTest {
         val lowered = VTableLowering().run(module)
 
         val fn = lowered.functions.find { it.name == "test" }!!
-        val calls = fn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Call>()
+        val calls = fn.blocks.flatMap { it.instructions }.filterIsInstance<Call>()
         assertTrue(calls.isNotEmpty())
         assertEquals(4, calls.first().args.size, "Should preserve all 4 args (this + x + y + z)")
     }
@@ -376,7 +377,7 @@ class VTableLoweringTest {
         val lowered = VTableLowering().run(module)
 
         val fn = lowered.functions.find { it.name == "test" }!!
-        val calls = fn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Call>()
+        val calls = fn.blocks.flatMap { it.instructions }.filterIsInstance<Call>()
         assertTrue(calls.isNotEmpty())
 
         val call = calls.first()

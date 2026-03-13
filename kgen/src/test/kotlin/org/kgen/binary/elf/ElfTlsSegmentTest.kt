@@ -236,4 +236,162 @@ class ElfTlsSegmentTest {
     fun ptTlsTypeCodeIs7() {
         assertEquals(7, ElfSegmentType.TLS.code)
     }
+
+    @Test
+    fun gottpoffRelaxedToLocalExecInStaticLink() {
+        // Build code: REX.W + ADD r11, [rip+disp32] (GOTTPOFF pattern)
+        // 4C 03 1D 00000000 = add r11, [rip+0] with GOTTPOFF relocation at offset 3
+        val code = byteArrayOf(
+            0x64, 0x4C, 0x8B.toByte(), 0x1C, 0x25, 0x00, 0x00, 0x00, 0x00,  // mov r11, fs:[0]
+            0x4C, 0x03, 0x1D, 0x00, 0x00, 0x00, 0x00,  // add r11, [rip+0] @GOTTPOFF
+            0xC3.toByte(), // ret
+        )
+        val tdataBytes = ByteArray(4) { 0x42 }
+        val obj = ObjectFile(
+            format = ObjectFormat.ELF,
+            arch = Architecture(ArchType.X86_64),
+            sections = listOf(
+                Section(".text", SectionKind.TEXT, code, align = 16),
+                Section(".tdata", SectionKind.TDATA, tdataBytes, align = 4),
+            ),
+            symbols = listOf(
+                Symbol("_start", value = 0, size = code.size.toLong(), section = ".text",
+                    binding = SymbolBinding.GLOBAL, kind = SymbolKind.FUNCTION),
+                Symbol("tls_var", value = 0, size = 4, section = ".tdata",
+                    binding = SymbolBinding.LOCAL, kind = SymbolKind.DATA),
+            ),
+            relocations = listOf(
+                Relocation(offset = 12, symbol = "tls_var",
+                    type = RelocationType.X86_64.GOTTPOFF, addend = -4, section = ".text"),
+            ),
+        )
+        val binary = ElfStaticLinker().link(listOf(obj))
+        // Should succeed without error (GOTTPOFF is handled)
+        assertTrue(binary.isNotEmpty())
+        // The GOTTPOFF should have been relaxed: ADD (0x03) → LEA (0x8D)
+        // Find the text section in the binary and check the opcode was rewritten
+        val buf = le(binary)
+        val textStart = findTextSectionOffset(buf, binary)
+        assertTrue(textStart > 0, "Should find .text in binary")
+        // At textStart + 10, we should see 0x8D (LEA) instead of 0x03 (ADD)
+        assertEquals(0x8D.toByte(), binary[textStart + 10], "GOTTPOFF should be relaxed: ADD → LEA")
+    }
+
+    @Test
+    fun gottpoffRelocationProducesValidBinary() {
+        // End-to-end test: use X86CodeGenerator with INITIAL_EXEC, link statically
+        val ir = org.kgen.ir.build.IrBuilder("test", org.kgen.ir.target.Target.x86_64())
+        ir.addGlobal("tls_ie", org.kgen.ir.Type.I32, org.kgen.ir.Constant.I32(99),
+            threadLocal = org.kgen.ir.ThreadLocalMode.INITIAL_EXEC)
+        ir.createFunction("_start", emptyList(), org.kgen.ir.Type.I32)
+        ir.positionAtEnd(ir.appendBlock("entry"))
+        val loaded = ir.load(org.kgen.ir.Type.I32,
+            org.kgen.ir.GlobalRef("tls_ie", org.kgen.ir.Type.Pointer(org.kgen.ir.Type.I32)))
+        ir.ret(loaded)
+        ir.finalizeFunction()
+        val module = ir.build()
+
+        val obj = org.kgen.target.x86.codegen.X86CodeGenerator().generateObjectFile(module)
+        assertTrue(obj.relocations.any { it.type == RelocationType.X86_64.GOTTPOFF },
+            "Object file should have GOTTPOFF relocation")
+
+        val binary = ElfStaticLinker().link(listOf(obj))
+        assertTrue(binary.isNotEmpty(), "Should produce valid binary with GOTTPOFF")
+    }
+
+    @Test
+    fun tlsgdRelaxedToLocalExecInStaticLink() {
+        // Build the standard 16-byte GD sequence:
+        // 66 48 8d 3d 00000000  (data16 lea rdi,[rip+sym@TLSGD])
+        // 66 66 48 e8 00000000  (data16 data16 rex.W call __tls_get_addr@PLT)
+        // C3                    (ret)
+        val code = byteArrayOf(
+            0x66, 0x48, 0x8D.toByte(), 0x3D, 0x00, 0x00, 0x00, 0x00,  // data16 lea rdi,[rip+0]
+            0x66, 0x66, 0x48, 0xE8.toByte(), 0x00, 0x00, 0x00, 0x00,  // data16 data16 rex.W call
+            0xC3.toByte(), // ret
+        )
+        val tdataBytes = ByteArray(4) { 0x55 }
+        val obj = ObjectFile(
+            format = ObjectFormat.ELF,
+            arch = Architecture(ArchType.X86_64),
+            sections = listOf(
+                Section(".text", SectionKind.TEXT, code, align = 16),
+                Section(".tdata", SectionKind.TDATA, tdataBytes, align = 4),
+            ),
+            symbols = listOf(
+                Symbol("_start", value = 0, size = code.size.toLong(), section = ".text",
+                    binding = SymbolBinding.GLOBAL, kind = SymbolKind.FUNCTION),
+                Symbol("tls_gd_var", value = 0, size = 4, section = ".tdata",
+                    binding = SymbolBinding.LOCAL, kind = SymbolKind.DATA),
+            ),
+            relocations = listOf(
+                // TLSGD relocation points at the disp32 in the LEA (offset 4)
+                Relocation(offset = 4, symbol = "tls_gd_var",
+                    type = RelocationType.X86_64.TLSGD, addend = -4, section = ".text"),
+                // PLT32 for __tls_get_addr (offset 12)
+                Relocation(offset = 12, symbol = "__tls_get_addr",
+                    type = RelocationType.X86_64.PLT32, addend = -4, section = ".text"),
+            ),
+        )
+        val binary = ElfStaticLinker().link(listOf(obj))
+        assertTrue(binary.isNotEmpty())
+
+        // Find the text section — should start with 0x64 (FS prefix from relaxation)
+        val textStart = findGdRelaxedTextOffset(binary)
+        assertTrue(textStart >= 0, "Should find relaxed GD sequence in binary")
+        // Relaxed to: 64 48 8b 04 25 00000000 (mov rax, fs:[0])
+        assertEquals(0x64.toByte(), binary[textStart + 0], "Should start with FS prefix")
+        assertEquals(0x48.toByte(), binary[textStart + 1], "Should have REX.W")
+        assertEquals(0x8B.toByte(), binary[textStart + 2], "Should have MOV opcode")
+        // Then: 48 8d 80 XXXXXXXX (lea rax, [rax+tpoff32])
+        assertEquals(0x48.toByte(), binary[textStart + 9], "LEA should have REX.W")
+        assertEquals(0x8D.toByte(), binary[textStart + 10], "Should have LEA opcode")
+        assertEquals(0x80.toByte(), binary[textStart + 11], "ModRM for [rax+disp32]")
+    }
+
+    @Test
+    fun tlsgdEndToEndProducesValidBinary() {
+        val ir = org.kgen.ir.build.IrBuilder("test", org.kgen.ir.target.Target.x86_64())
+        ir.addGlobal("tls_gd", org.kgen.ir.Type.I32, org.kgen.ir.Constant.I32(77),
+            threadLocal = org.kgen.ir.ThreadLocalMode.GENERAL_DYNAMIC)
+        ir.createFunction("_start", emptyList(), org.kgen.ir.Type.I32)
+        ir.positionAtEnd(ir.appendBlock("entry"))
+        val loaded = ir.load(org.kgen.ir.Type.I32,
+            org.kgen.ir.GlobalRef("tls_gd", org.kgen.ir.Type.Pointer(org.kgen.ir.Type.I32)))
+        ir.ret(loaded)
+        ir.finalizeFunction()
+        val module = ir.build()
+
+        val obj = org.kgen.target.x86.codegen.X86CodeGenerator().generateObjectFile(module)
+        assertTrue(obj.relocations.any { it.type == RelocationType.X86_64.TLSGD },
+            "Object file should have TLSGD relocation")
+        assertTrue(obj.relocations.any {
+            it.type == RelocationType.X86_64.PLT32 && it.symbol == "__tls_get_addr"
+        }, "Object file should have PLT32 relocation to __tls_get_addr")
+
+        val binary = ElfStaticLinker().link(listOf(obj))
+        assertTrue(binary.isNotEmpty(), "Should produce valid binary with TLSGD")
+    }
+
+    private fun findGdRelaxedTextOffset(binary: ByteArray): Int {
+        // After GD→LE relaxation: starts with 0x64 0x48 0x8B 0x04 0x25
+        for (i in 0 until binary.size - 16) {
+            if (binary[i] == 0x64.toByte() && binary[i + 1] == 0x48.toByte() &&
+                binary[i + 2] == 0x8B.toByte() && binary[i + 3] == 0x04.toByte() &&
+                binary[i + 4] == 0x25.toByte()) {
+                return i
+            }
+        }
+        return -1
+    }
+
+    private fun findTextSectionOffset(buf: ByteBuffer, binary: ByteArray): Int {
+        // Simple heuristic: look for the FS prefix (0x64) which starts our TLS code
+        for (i in 0 until binary.size - 16) {
+            if (binary[i] == 0x64.toByte() && binary[i + 1] == 0x4C.toByte()) {
+                return i
+            }
+        }
+        return -1
+    }
 }

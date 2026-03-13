@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
+import org.kgen.ir.instructions.*
 
 class JumpThreadingExtendedTest {
 
@@ -34,7 +35,7 @@ class JumpThreadingExtendedTest {
         }
         val blocks = module.functions[0].blocks
         assertEquals(1, blocks.size)
-        assertTrue(blocks[0].instructions.any { it is Instruction.Add })
+        assertTrue(blocks[0].instructions.any { it is Add })
     }
 
     @Test
@@ -61,8 +62,8 @@ class JumpThreadingExtendedTest {
         val blocks = module.functions[0].blocks
         assertEquals(1, blocks.size)
         val last = blocks[0].instructions.last()
-        assertTrue(last is Instruction.Ret)
-        assertEquals(42, ((last as Instruction.Ret).value as Constant.I32).value)
+        assertTrue(last is Ret)
+        assertEquals(42, ((last as Ret).value as Constant.I32).value)
     }
 
     @Test
@@ -198,8 +199,8 @@ class JumpThreadingExtendedTest {
         }
         assertEquals(1, module.functions[0].blocks.size)
         assertEquals(1, module.functions[1].blocks.size)
-        assertEquals(1, ((module.functions[0].blocks[0].instructions.last() as Instruction.Ret).value as Constant.I32).value)
-        assertEquals(4, ((module.functions[1].blocks[0].instructions.last() as Instruction.Ret).value as Constant.I32).value)
+        assertEquals(1, ((module.functions[0].blocks[0].instructions.last() as Ret).value as Constant.I32).value)
+        assertEquals(4, ((module.functions[1].blocks[0].instructions.last() as Ret).value as Constant.I32).value)
     }
 
     @Test
@@ -217,8 +218,8 @@ class JumpThreadingExtendedTest {
         }
         val blocks = module.functions[0].blocks
         assertEquals(1, blocks.size)
-        assertTrue(blocks[0].instructions.any { it is Instruction.Add })
-        assertTrue(blocks[0].instructions.last() is Instruction.Ret)
+        assertTrue(blocks[0].instructions.any { it is Add })
+        assertTrue(blocks[0].instructions.last() is Ret)
     }
 
     @Test
@@ -241,9 +242,9 @@ class JumpThreadingExtendedTest {
         val blocks = module.functions[0].blocks
         assertEquals(1, blocks.size)
         val insts = blocks[0].instructions
-        assertTrue(insts.any { it is Instruction.Add })
-        assertTrue(insts.any { it is Instruction.Mul })
-        assertTrue(insts.last() is Instruction.Ret)
+        assertTrue(insts.any { it is Add })
+        assertTrue(insts.any { it is Mul })
+        assertTrue(insts.last() is Ret)
     }
 
     @Test
@@ -264,7 +265,7 @@ class JumpThreadingExtendedTest {
         }
         val blocks = module.functions[0].blocks
         assertEquals(1, blocks.size)
-        assertTrue(blocks[0].instructions.any { it is Instruction.Add })
+        assertTrue(blocks[0].instructions.any { it is Add })
     }
 
     @Test
@@ -282,7 +283,7 @@ class JumpThreadingExtendedTest {
         }
         val blocks = module.functions[0].blocks
         assertEquals(1, blocks.size)
-        assertTrue(blocks[0].instructions.any { it is Instruction.Add })
+        assertTrue(blocks[0].instructions.any { it is Add })
     }
 
     @Test
@@ -342,7 +343,7 @@ class JumpThreadingExtendedTest {
         }
         val blocks = module.functions[0].blocks
         assertEquals(1, blocks.size)
-        assertEquals(100, ((blocks[0].instructions.last() as Instruction.Ret).value as Constant.I32).value)
+        assertEquals(100, ((blocks[0].instructions.last() as Ret).value as Constant.I32).value)
     }
 
     @Test
@@ -402,7 +403,7 @@ class JumpThreadingExtendedTest {
         }
         val blocks = module.functions[0].blocks
         assertEquals(1, blocks.size)
-        assertTrue(blocks[0].instructions.last() is Instruction.Ret)
+        assertTrue(blocks[0].instructions.last() is Ret)
     }
 
     @Test
@@ -449,7 +450,7 @@ class JumpThreadingExtendedTest {
             finalizeFunction()
         }
         val entry = module.functions[0].blocks[0]
-        assertTrue(entry.instructions.last() is Instruction.Switch)
+        assertTrue(entry.instructions.last() is Switch)
     }
 
     @Test
@@ -503,7 +504,7 @@ class JumpThreadingExtendedTest {
         }
         val blocks = module.functions[0].blocks
         assertEquals(1, blocks.size)
-        assertEquals(42, ((blocks[0].instructions.last() as Instruction.Ret).value as Constant.I32).value)
+        assertEquals(42, ((blocks[0].instructions.last() as Ret).value as Constant.I32).value)
     }
 
     @Test

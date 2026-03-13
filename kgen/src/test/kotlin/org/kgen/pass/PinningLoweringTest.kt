@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -15,8 +16,8 @@ class PinningLoweringTest {
         val instrs = findFunc(result, "f").blocks[0].instructions
 
         // Pin should become a Call to __kgen_rt_pin
-        assertTrue(instrs[0] is Instruction.Call)
-        val call = instrs[0] as Instruction.Call
+        assertTrue(instrs[0] is Call)
+        val call = instrs[0] as Call
         assertEquals(PinningLowering.RT_PIN, (call.function as GlobalRef).name)
     }
 
@@ -27,7 +28,7 @@ class PinningLoweringTest {
         val instrs = findFunc(result, "f").blocks[0].instructions
 
         // Unpin should become a Call to __kgen_rt_unpin
-        val unpinCall = instrs.filterIsInstance<Instruction.Call>()
+        val unpinCall = instrs.filterIsInstance<Call>()
             .find { (it.function as? GlobalRef)?.name == PinningLowering.RT_UNPIN }
         assertNotNull(unpinCall)
     }
@@ -39,7 +40,7 @@ class PinningLoweringTest {
         val instrs = findFunc(result, "f").blocks[0].instructions
 
         // Pin should become a BitCast (identity)
-        assertTrue(instrs[0] is Instruction.BitCast)
+        assertTrue(instrs[0] is BitCast)
     }
 
     @Test
@@ -49,9 +50,9 @@ class PinningLoweringTest {
         val instrs = findFunc(result, "f").blocks[0].instructions
 
         // Unpin should be removed entirely (no-op)
-        assertFalse(instrs.any { it is Instruction.Unpin })
+        assertFalse(instrs.any { it is Unpin })
         // Should still have the pin (as BitCast) and ret
-        assertTrue(instrs.any { it is Instruction.BitCast })
+        assertTrue(instrs.any { it is BitCast })
     }
 
     @Test
@@ -60,10 +61,10 @@ class PinningLoweringTest {
         val result = PinningLowering(movingGC = true).run(module)
         val instrs = findFunc(result, "f").blocks[0].instructions
 
-        val wbCall = instrs.filterIsInstance<Instruction.Call>()
+        val wbCall = instrs.filterIsInstance<Call>()
             .find { (it.function as? GlobalRef)?.name == PinningLowering.RT_WRITE_BARRIER }
         assertNotNull(wbCall)
-        assertFalse(instrs.any { it is Instruction.WriteBarrier })
+        assertFalse(instrs.any { it is WriteBarrier })
     }
 
     @Test
@@ -72,7 +73,7 @@ class PinningLoweringTest {
         val result = PinningLowering(movingGC = true).run(module)
         val instrs = findFunc(result, "f").blocks[0].instructions
 
-        val rbCall = instrs.filterIsInstance<Instruction.Call>()
+        val rbCall = instrs.filterIsInstance<Call>()
             .find { (it.function as? GlobalRef)?.name == PinningLowering.RT_READ_BARRIER }
         assertNotNull(rbCall)
     }
@@ -83,8 +84,8 @@ class PinningLoweringTest {
         val result = PinningLowering(movingGC = false).run(module)
         val instrs = findFunc(result, "f").blocks[0].instructions
 
-        assertTrue(instrs[0] is Instruction.BitCast)
-        assertFalse(instrs.any { it is Instruction.ReadBarrier })
+        assertTrue(instrs[0] is BitCast)
+        assertFalse(instrs.any { it is ReadBarrier })
     }
 
     @Test
@@ -103,7 +104,7 @@ class PinningLoweringTest {
         val instrs = findFunc(result, "f").blocks[0].instructions
 
         // Should still have the return instruction
-        assertTrue(instrs.last() is Instruction.Ret)
+        assertTrue(instrs.last() is Ret)
     }
 
     private fun buildPinModule(): Module {

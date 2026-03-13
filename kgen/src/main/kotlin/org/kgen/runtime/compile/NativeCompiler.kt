@@ -9,18 +9,28 @@ import org.kgen.binary.macho.MachOLinker
 import org.kgen.binary.pe.PeLinker
 import org.kgen.codegen.CodeGenOptions
 import org.kgen.codegen.CodeGenerator
+import org.kgen.codegen.CompiledCode
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.target.Arch
 import org.kgen.ir.target.Target
 import org.kgen.pass.Mem2Reg
 import org.kgen.unmanaged.lib.StdlibProvider
 
 /**
- * Compiles `@KgenRuntime` classfiles to a native executable.
+ * AOT compiler that translates JVM `.class` files into standalone native executables.
  *
- * Takes one or more `.class` file byte arrays, validates them against the
- * Runtime Subset, lowers to kgen IR, runs optimization passes, generates
- * native code, and links into a standalone executable binary.
+ * Implements the full Java-to-native pipeline:
+ * 1. Parse `.class` files and validate against the Runtime Subset
+ * 2. Lower JVM bytecode to kgen IR via [BytecodeToIrLowering][org.kgen.runtime.compile.BytecodeToIrLowering]
+ * 3. Merge modules, inject stdlib (if referenced), and wire up `<clinit>` static initializers
+ * 4. Run optimization passes (Mem2Reg)
+ * 5. Generate native machine code via the appropriate [CodeGenerator]
+ * 6. Link into a standalone executable (ELF, PE, or Mach-O via [ElfStaticLinker], [PeLinker], or [MachOLinker])
+ *
+ * Supports x86-64, ARM64, and RISC-V targets across Linux, Windows, and macOS.
+ * If the `main` method accepts `String[]`, a wrapper is generated that converts
+ * C-style `(argc, argv)` to a Java-style array using stack allocation.
  *
  * ```java
  * var compiler = new NativeCompiler(Target.x86_64(), OutputPlatform.LINUX);
@@ -28,6 +38,8 @@ import org.kgen.unmanaged.lib.StdlibProvider
  * Files.write(Path.of("myapp"), exe);
  * // ./myapp runs natively — no JVM required
  * ```
+ *
+ * See `spec/roadmap.md` for the full list of supported bytecode instructions and features.
  */
 class NativeCompiler(
     private val target: Target,
@@ -83,8 +95,8 @@ class NativeCompiler(
 
         val referencedNames = allFunctions.flatMap { fn ->
             fn.blocks.flatMap { block ->
-                block.instructions.filterIsInstance<org.kgen.ir.Instruction.Call>()
-                    .mapNotNull { (it.function as? org.kgen.ir.GlobalRef)?.name }
+                block.instructions.filterIsInstance<Call>()
+                    .mapNotNull { (it.function as? GlobalRef)?.name }
             }
         }.toSet()
         val stdlib = StdlibProvider.generate(target)
@@ -157,22 +169,22 @@ class NativeCompiler(
 
         // %0 = zext i32 %argc to i64
         val argcExt = ref(Type.I64)
-        instructions.add(Instruction.ZExt(argcExt, argc, Type.I64))
+        instructions.add(ZExt(argcExt, argc, Type.I64))
 
         // %1 = mul i64 %0, ptrSize   (bytes needed for pointer slots)
         val slotBytes = ref(Type.I64)
-        instructions.add(Instruction.Mul(slotBytes, argcExt, Constant.I64(ptrSize.toLong())))
+        instructions.add(Mul(slotBytes, argcExt, Constant.I64(ptrSize.toLong())))
 
         // %2 = add i64 %1, headerSize (total allocation size)
         val totalSize = ref(Type.I64)
-        instructions.add(Instruction.Add(totalSize, slotBytes, Constant.I64(headerSize.toLong())))
+        instructions.add(Add(totalSize, slotBytes, Constant.I64(headerSize.toLong())))
 
         // %3 = alloca i8, %2  (stack-allocate the String[] array)
         val arrayPtr = ref(Type.OpaquePointer)
-        instructions.add(Instruction.Alloca(arrayPtr, Type.I8, totalSize, align = 8))
+        instructions.add(Alloca(arrayPtr, Type.I8, totalSize, align = 8))
 
         // Store length: store i32 %argc, ptr %3
-        instructions.add(Instruction.Store(argc, arrayPtr))
+        instructions.add(Store(argc, arrayPtr))
 
         // Copy argv pointers into the array with a loop.
         //
@@ -183,57 +195,57 @@ class NativeCompiler(
         // done:        call __user_main(arrayPtr), ret
 
         val loopI = InstructionRef("%loop_i", Type.I64)
-        instructions.add(Instruction.Br("loop_header"))
+        instructions.add(Br("loop_header"))
 
         // loop_header block
         val headerInsts = mutableListOf<Instruction>()
-        headerInsts.add(Instruction.Phi(loopI, listOf(
+        headerInsts.add(Phi(loopI, listOf(
             Constant.I64(0) to "entry",
             InstructionRef("%next_i", Type.I64) to "loop_body",
         )))
         val loopCond = ref(Type.I1)
-        headerInsts.add(Instruction.ICmp(loopCond, ICmpPredicate.SLT, loopI, argcExt))
-        headerInsts.add(Instruction.CondBr(loopCond, "loop_body", "done"))
+        headerInsts.add(ICmp(loopCond, ICmpPredicate.SLT, loopI, argcExt))
+        headerInsts.add(CondBr(loopCond, "loop_body", "done"))
 
         // loop_body block
         val bodyInsts = mutableListOf<Instruction>()
         // Load argv[i]: gep ptr, argv, i → load ptr
         val argvSlotPtr = ref(Type.OpaquePointer)
-        bodyInsts.add(Instruction.GetElementPtr(argvSlotPtr, Type.OpaquePointer, argv, listOf(loopI)))
+        bodyInsts.add(GetElementPtr(argvSlotPtr, Type.OpaquePointer, argv, listOf(loopI)))
         val argStr = ref(Type.OpaquePointer)
-        bodyInsts.add(Instruction.Load(argStr, argvSlotPtr, Type.OpaquePointer))
+        bodyInsts.add(Load(argStr, argvSlotPtr, Type.OpaquePointer))
         // Compute array slot: header + i * ptrSize
         val iBytes = ref(Type.I64)
-        bodyInsts.add(Instruction.Mul(iBytes, loopI, Constant.I64(ptrSize.toLong())))
+        bodyInsts.add(Mul(iBytes, loopI, Constant.I64(ptrSize.toLong())))
         val slotOff = ref(Type.I64)
-        bodyInsts.add(Instruction.Add(slotOff, iBytes, Constant.I64(headerSize.toLong())))
+        bodyInsts.add(Add(slotOff, iBytes, Constant.I64(headerSize.toLong())))
         // GEP from arrayPtr by slotOff bytes (i8 GEP)
         val destSlotPtr = ref(Type.OpaquePointer)
-        bodyInsts.add(Instruction.GetElementPtr(destSlotPtr, Type.I8, arrayPtr, listOf(slotOff)))
+        bodyInsts.add(GetElementPtr(destSlotPtr, Type.I8, arrayPtr, listOf(slotOff)))
         // Store the string pointer
-        bodyInsts.add(Instruction.Store(argStr, destSlotPtr))
+        bodyInsts.add(Store(argStr, destSlotPtr))
         // i + 1
         val nextI = InstructionRef("%next_i", Type.I64)
-        bodyInsts.add(Instruction.Add(nextI, loopI, Constant.I64(1)))
-        bodyInsts.add(Instruction.Br("loop_header"))
+        bodyInsts.add(Add(nextI, loopI, Constant.I64(1)))
+        bodyInsts.add(Br("loop_header"))
 
         // done block: call __user_main(arrayPtr) and return
         val doneInsts = mutableListOf<Instruction>()
         val userMainRef = GlobalRef(userMainName, Type.OpaquePointer)
 
         if (mainFn.returnType == Type.Void) {
-            doneInsts.add(Instruction.Call(
+            doneInsts.add(Call(
                 dest = null, function = userMainRef, args = listOf(arrayPtr),
                 returnType = Type.Void,
             ))
-            doneInsts.add(Instruction.Ret(Constant.I32(0)))
+            doneInsts.add(Ret(Constant.I32(0)))
         } else {
             val retVal = ref(mainFn.returnType)
-            doneInsts.add(Instruction.Call(
+            doneInsts.add(Call(
                 dest = retVal, function = userMainRef, args = listOf(arrayPtr),
                 returnType = mainFn.returnType,
             ))
-            doneInsts.add(Instruction.Ret(retVal))
+            doneInsts.add(Ret(retVal))
         }
 
         val wrapperFn = IrFunction(
@@ -259,8 +271,8 @@ class NativeCompiler(
     private fun addStdlib(module: Module): Module {
         val referencedNames = module.functions.flatMap { fn ->
             fn.blocks.flatMap { block ->
-                block.instructions.filterIsInstance<org.kgen.ir.Instruction.Call>()
-                    .mapNotNull { (it.function as? org.kgen.ir.GlobalRef)?.name }
+                block.instructions.filterIsInstance<Call>()
+                    .mapNotNull { (it.function as? GlobalRef)?.name }
             }
         }.toSet()
 
@@ -282,11 +294,11 @@ class NativeCompiler(
 
         // Build call instructions for each clinit
         val clinitCalls = module.globalCtors.map { ctor ->
-            org.kgen.ir.Instruction.Call(
+            Call(
                 dest = null,
-                function = org.kgen.ir.GlobalRef(ctor.function, org.kgen.ir.Type.Pointer(org.kgen.ir.Type.Void)),
+                function = GlobalRef(ctor.function, Type.Pointer(Type.Void)),
                 args = emptyList(),
-                returnType = org.kgen.ir.Type.Void,
+                returnType = Type.Void,
             )
         }
 
@@ -301,11 +313,14 @@ class NativeCompiler(
         )
     }
 
-    internal fun generateObject(module: Module): ObjectFile {
+    internal fun generateCompiledCode(module: Module): CompiledCode {
         val optimized = Mem2Reg().run(module)
         val gen = codeGenerator ?: resolveCodeGenerator()
-        val code = gen.generateCode(optimized)
-        return code.toObjectFile(objectFormat(), architecture())
+        return gen.generateCode(optimized)
+    }
+
+    internal fun generateObject(module: Module): ObjectFile {
+        return generateCompiledCode(module).toObjectFile(objectFormat(), architecture())
     }
 
     internal fun link(objects: List<ObjectFile>): ByteArray {

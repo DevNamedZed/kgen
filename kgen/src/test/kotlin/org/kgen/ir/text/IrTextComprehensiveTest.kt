@@ -1,6 +1,7 @@
 package org.kgen.ir.text
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.*
 import org.kgen.ir.types.*
 import org.junit.jupiter.api.Test
@@ -24,7 +25,7 @@ class IrTextComprehensiveTest {
     }
 
     private fun singleInstrModule(vararg instructions: Instruction): Module {
-        val instList = instructions.toList() + Instruction.Ret(null)
+        val instList = instructions.toList() + Ret(null)
         return Module(name = "test", functions = listOf(
             IrFunction("f", emptyList(), Type.Void, listOf(BasicBlock("entry", instList)))
         ))
@@ -1290,7 +1291,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print new object instruction`() {
         val mod = singleInstrModule(
-            Instruction.NewObject(ref("%0", Type.Reference(Type.ClassRef("Widget"))), "Widget"),
+            NewObject(ref("%0", Type.Reference(Type.ClassRef("Widget"))), "Widget"),
         )
         printContains(mod, "= new Widget")
     }
@@ -1298,7 +1299,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print newarray instruction`() {
         val mod = singleInstrModule(
-            Instruction.NewArray(ref("%0", Type.Reference(Type.Array(Type.I32, 0))), Type.I32, Constant.I32(10)),
+            NewArray(ref("%0", Type.Reference(Type.Array(Type.I32, 0))), Type.I32, Constant.I32(10)),
         )
         printContains(mod, "= newarray i32, i32 10")
     }
@@ -1306,7 +1307,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print getfield instruction`() {
         val mod = singleInstrModule(
-            Instruction.GetField(ref("%0"), Constant.NullRef, "Point", "x", Type.F64),
+            GetField(ref("%0"), Constant.NullRef, "Point", "x", Type.F64),
         )
         printContains(mod, "= getfield Point.x: f64")
     }
@@ -1314,7 +1315,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print putfield instruction`() {
         val mod = singleInstrModule(
-            Instruction.PutField(Constant.NullRef, "Point", "x", Type.F64, Constant.F64(3.14)),
+            PutField(Constant.NullRef, "Point", "x", Type.F64, Constant.F64(3.14)),
         )
         printContains(mod, "putfield Point.x: f64")
     }
@@ -1322,7 +1323,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print getstatic instruction`() {
         val mod = singleInstrModule(
-            Instruction.GetStatic(ref("%0"), "Config", "MAX", Type.I32),
+            GetStatic(ref("%0"), "Config", "MAX", Type.I32),
         )
         printContains(mod, "= getstatic Config.MAX: i32")
     }
@@ -1330,7 +1331,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print instanceof instruction`() {
         val mod = singleInstrModule(
-            Instruction.InstanceOf(ref("%0", Type.I1), Constant.NullRef, Type.ClassRef("Widget")),
+            InstanceOf(ref("%0", Type.I1), Constant.NullRef, Type.ClassRef("Widget")),
         )
         printContains(mod, "= instanceof null, class @Widget")
     }
@@ -1338,7 +1339,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print checkcast instruction`() {
         val mod = singleInstrModule(
-            Instruction.CheckCast(ref("%0", Type.Reference(Type.ClassRef("Widget"))), Constant.NullRef, Type.ClassRef("Widget")),
+            CheckCast(ref("%0", Type.Reference(Type.ClassRef("Widget"))), Constant.NullRef, Type.ClassRef("Widget")),
         )
         printContains(mod, "= checkcast null to class @Widget")
     }
@@ -1346,7 +1347,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print arraylength instruction`() {
         val mod = singleInstrModule(
-            Instruction.ArrayLength(ref("%0"), Constant.NullRef),
+            ArrayLength(ref("%0"), Constant.NullRef),
         )
         printContains(mod, "= arraylength null")
     }
@@ -1354,8 +1355,8 @@ class IrTextComprehensiveTest {
     @Test
     fun `print monitorenter monitorexit`() {
         val mod = singleInstrModule(
-            Instruction.MonitorEnter(Constant.NullRef),
-            Instruction.MonitorExit(Constant.NullRef),
+            MonitorEnter(Constant.NullRef),
+            MonitorExit(Constant.NullRef),
         )
         printContains(mod, "monitorenter null", "monitorexit null")
     }
@@ -1363,7 +1364,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print throw instruction`() {
         val mod = singleInstrModule(
-            Instruction.Throw(Constant.NullRef),
+            Throw(Constant.NullRef),
         )
         printContains(mod, "throw null")
     }
@@ -1371,8 +1372,8 @@ class IrTextComprehensiveTest {
     @Test
     fun `print box unbox instructions`() {
         val mod = singleInstrModule(
-            Instruction.Box(ref("%0", Type.Reference(Type.ClassRef("Integer"))), Constant.I32(42), Type.ClassRef("Integer")),
-            Instruction.Unbox(ref("%1"), Constant.NullRef, Type.I32),
+            Box(ref("%0", Type.Reference(Type.ClassRef("Integer"))), Constant.I32(42), Type.ClassRef("Integer")),
+            Unbox(ref("%1"), Constant.NullRef, Type.I32),
         )
         printContains(mod, "= box i32 42 to class @Integer", "= unbox null to i32")
     }
@@ -1382,14 +1383,14 @@ class IrTextComprehensiveTest {
     @Test
     fun `print gc alloc instruction`() {
         val mod = singleInstrModule(
-            Instruction.GCAlloc(ref("%0", Type.OpaquePointer), Type.Struct("Node", listOf(Type.I32, Type.OpaquePointer))),
+            GCAlloc(ref("%0", Type.OpaquePointer), Type.Struct("Node", listOf(Type.I32, Type.OpaquePointer))),
         )
         printContains(mod, "= gc.alloc %Node")
     }
 
     @Test
     fun `print gc safepoint instruction`() {
-        val mod = singleInstrModule(Instruction.GCSafepoint())
+        val mod = singleInstrModule(GCSafepoint())
         printContains(mod, "gc.safepoint")
     }
 
@@ -1398,7 +1399,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print debug loc instruction`() {
         val mod = singleInstrModule(
-            Instruction.DebugLoc(42, 10, "main.kt"),
+            DebugLoc(42, 10, "main.kt"),
         )
         printContains(mod, "dbg.loc 42:10 scope \"main.kt\"")
     }
@@ -1406,7 +1407,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print debug value instruction`() {
         val mod = singleInstrModule(
-            Instruction.DebugValue("myvar", Constant.I32(42)),
+            DebugValue("myvar", Constant.I32(42)),
         )
         printContains(mod, "dbg.value \"myvar\" = 42")
     }
@@ -1416,7 +1417,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print coro begin instruction`() {
         val mod = singleInstrModule(
-            Instruction.CoroBegin(ref("%0", Type.OpaquePointer), Constant.NullPtr, Constant.NullPtr),
+            CoroBegin(ref("%0", Type.OpaquePointer), Constant.NullPtr, Constant.NullPtr),
         )
         printContains(mod, "= coro.begin null, null")
     }
@@ -1424,7 +1425,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print coro size instruction`() {
         val mod = singleInstrModule(
-            Instruction.CoroSize(ref("%0", Type.I64)),
+            CoroSize(ref("%0", Type.I64)),
         )
         printContains(mod, "= coro.size")
     }
@@ -1434,7 +1435,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print inline asm instruction`() {
         val mod = singleInstrModule(
-            Instruction.InlineAsm(ref("%0"), "nop", "~{memory}", sideEffects = true, args = emptyList()),
+            InlineAsm(ref("%0"), "nop", "~{memory}", sideEffects = true, args = emptyList()),
         )
         printContains(mod, "asm sideeffect \"nop\", \"~{memory}\"()")
     }
@@ -1444,7 +1445,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print intrinsic instruction`() {
         val mod = singleInstrModule(
-            Instruction.Intrinsic(ref("%0"), "llvm.ctlz", listOf(Constant.I32(42)), Type.I32),
+            Intrinsic(ref("%0"), "llvm.ctlz", listOf(Constant.I32(42)), Type.I32),
         )
         printContains(mod, "= intrinsic @llvm.ctlz(i32 42): i32")
     }
@@ -1454,7 +1455,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print assume instruction`() {
         val mod = singleInstrModule(
-            Instruction.Assume(Constant.I1(true)),
+            Assume(Constant.I1(true)),
         )
         printContains(mod, "assume 1")
     }
@@ -1462,7 +1463,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print expect instruction`() {
         val mod = singleInstrModule(
-            Instruction.Expect(ref("%0"), Constant.I32(0), Constant.I32(1)),
+            Expect(ref("%0"), Constant.I32(0), Constant.I32(1)),
         )
         printContains(mod, "= expect i32 0, 1")
     }
@@ -1472,8 +1473,8 @@ class IrTextComprehensiveTest {
     @Test
     fun `print stacksave stackrestore`() {
         val mod = singleInstrModule(
-            Instruction.StackSave(ref("%0", Type.OpaquePointer)),
-            Instruction.StackRestore(Constant.NullPtr),
+            StackSave(ref("%0", Type.OpaquePointer)),
+            StackRestore(Constant.NullPtr),
         )
         printContains(mod, "= stacksave", "stackrestore null")
     }
@@ -1483,8 +1484,8 @@ class IrTextComprehensiveTest {
     @Test
     fun `print lifetime start end`() {
         val mod = singleInstrModule(
-            Instruction.LifetimeStart(Constant.NullPtr, 4),
-            Instruction.LifetimeEnd(Constant.NullPtr, 4),
+            LifetimeStart(Constant.NullPtr, 4),
+            LifetimeEnd(Constant.NullPtr, 4),
         )
         printContains(mod, "lifetime.start ptr null, 4", "lifetime.end ptr null, 4")
     }
@@ -1494,7 +1495,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print memcpy instruction`() {
         val mod = singleInstrModule(
-            Instruction.MemCpy(Constant.NullPtr, Constant.NullPtr, Constant.I32(100)),
+            MemCpy(Constant.NullPtr, Constant.NullPtr, Constant.I32(100)),
         )
         printContains(mod, "memcpy ptr null, ptr null, i32 100")
     }
@@ -1502,7 +1503,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print memset instruction`() {
         val mod = singleInstrModule(
-            Instruction.MemSet(Constant.NullPtr, Constant.I8(0), Constant.I32(100)),
+            MemSet(Constant.NullPtr, Constant.I8(0), Constant.I32(100)),
         )
         printContains(mod, "memset ptr null, i8 0, i32 100")
     }
@@ -1513,7 +1514,7 @@ class IrTextComprehensiveTest {
     fun `print extractvalue instruction`() {
         val structType = Type.Struct(null, listOf(Type.I32, Type.F64))
         val mod = singleInstrModule(
-            Instruction.ExtractValue(ref("%0"), Constant.StructConst(Type.Struct(null, listOf(Type.I32, Type.F64)), listOf(Constant.I32(1), Constant.F64(2.0))), listOf(0)),
+            ExtractValue(ref("%0"), Constant.StructConst(Type.Struct(null, listOf(Type.I32, Type.F64)), listOf(Constant.I32(1), Constant.F64(2.0))), listOf(0)),
         )
         printContains(mod, "extractvalue { i32, f64 }")
     }
@@ -1521,7 +1522,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print insertvalue instruction`() {
         val mod = singleInstrModule(
-            Instruction.InsertValue(ref("%0", Type.Struct(null, listOf(Type.I32, Type.F64))),
+            InsertValue(ref("%0", Type.Struct(null, listOf(Type.I32, Type.F64))),
                 Constant.StructConst(Type.Struct(null, listOf(Type.I32, Type.F64)), listOf(Constant.I32(1), Constant.F64(2.0))),
                 Constant.I32(99), listOf(0)),
         )
@@ -1533,7 +1534,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print freeze instruction`() {
         val mod = singleInstrModule(
-            Instruction.Freeze(ref("%0"), Constant.I32(42)),
+            Freeze(ref("%0"), Constant.I32(42)),
         )
         printContains(mod, "= freeze i32 42")
     }
@@ -1544,7 +1545,7 @@ class IrTextComprehensiveTest {
     fun `print extractelement instruction`() {
         val vec = Constant.VectorConst(Type.Vector(Type.I32, 4), listOf(Constant.I32(1), Constant.I32(2), Constant.I32(3), Constant.I32(4)))
         val mod = singleInstrModule(
-            Instruction.ExtractElement(ref("%0"), vec, Constant.I32(0)),
+            ExtractElement(ref("%0"), vec, Constant.I32(0)),
         )
         printContains(mod, "= extractelement <4 x i32>")
     }
@@ -1553,7 +1554,7 @@ class IrTextComprehensiveTest {
     fun `print insertelement instruction`() {
         val vec = Constant.VectorConst(Type.Vector(Type.I32, 4), listOf(Constant.I32(1), Constant.I32(2), Constant.I32(3), Constant.I32(4)))
         val mod = singleInstrModule(
-            Instruction.InsertElement(ref("%0", Type.Vector(Type.I32, 4)), vec, Constant.I32(99), Constant.I32(0)),
+            InsertElement(ref("%0", Type.Vector(Type.I32, 4)), vec, Constant.I32(99), Constant.I32(0)),
         )
         printContains(mod, "= insertelement <4 x i32>")
     }
@@ -1562,7 +1563,7 @@ class IrTextComprehensiveTest {
     fun `print shufflevector instruction`() {
         val vec = Constant.VectorConst(Type.Vector(Type.I32, 2), listOf(Constant.I32(1), Constant.I32(2)))
         val mod = singleInstrModule(
-            Instruction.ShuffleVector(ref("%0", Type.Vector(Type.I32, 2)), vec, vec, listOf(1, 0)),
+            ShuffleVector(ref("%0", Type.Vector(Type.I32, 2)), vec, vec, listOf(1, 0)),
         )
         printContains(mod, "shufflevector <2 x i32>")
     }
@@ -1570,7 +1571,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print splat instruction`() {
         val mod = singleInstrModule(
-            Instruction.Splat(ref("%0", Type.Vector(Type.I32, 4)), Constant.I32(42), Type.Vector(Type.I32, 4)),
+            Splat(ref("%0", Type.Vector(Type.I32, 4)), Constant.I32(42), Type.Vector(Type.I32, 4)),
         )
         printContains(mod, "= splat i32 42 to <4 x i32>")
     }
@@ -1719,7 +1720,7 @@ class IrTextComprehensiveTest {
     fun `print function with personality`() {
         val mod = Module(name = "test", functions = listOf(
             IrFunction("f", emptyList(), Type.Void,
-                listOf(BasicBlock("entry", listOf(Instruction.Ret(null)))),
+                listOf(BasicBlock("entry", listOf(Ret(null)))),
                 personality = FunctionRef("__gxx_personality_v0", Type.Function(emptyList(), Type.Void)))
         ))
         printContains(mod, "personality @__gxx_personality_v0")
@@ -1729,7 +1730,7 @@ class IrTextComprehensiveTest {
     fun `print function with calling convention`() {
         val mod = Module(name = "test", functions = listOf(
             IrFunction("f", emptyList(), Type.Void,
-                listOf(BasicBlock("entry", listOf(Instruction.Ret(null)))),
+                listOf(BasicBlock("entry", listOf(Ret(null)))),
                 callingConv = CallingConvention.FAST)
         ))
         printContains(mod, "fast")
@@ -1787,7 +1788,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print gettag instruction`() {
         val mod = singleInstrModule(
-            Instruction.GetTag(ref("%0"), Constant.I32(0)),
+            GetTag(ref("%0"), Constant.I32(0)),
         )
         printContains(mod, "= gettag 0")
     }
@@ -1799,7 +1800,7 @@ class IrTextComprehensiveTest {
             TaggedVariant("Err", 1, listOf(Type.OpaquePointer)),
         ))
         val mod = singleInstrModule(
-            Instruction.ConstructVariant(ref("%0", unionType), unionType, "Ok", listOf(Constant.I32(42))),
+            ConstructVariant(ref("%0", unionType), unionType, "Ok", listOf(Constant.I32(42))),
         )
         printContains(mod, "= construct.variant %Result Ok(i32 42)")
     }
@@ -1811,7 +1812,7 @@ class IrTextComprehensiveTest {
         val funcRef = FunctionRef("lambda", Type.Function(listOf(Type.I32), Type.I32))
         val closureType = Type.Function(listOf(Type.I32), Type.I32)
         val mod = singleInstrModule(
-            Instruction.ClosureCreate(ref("%0", closureType), funcRef, listOf(Constant.I32(10)), closureType),
+            ClosureCreate(ref("%0", closureType), funcRef, listOf(Constant.I32(10)), closureType),
         )
         printContains(mod, "= closure.create @lambda, [i32 10]")
     }
@@ -1821,9 +1822,9 @@ class IrTextComprehensiveTest {
     @Test
     fun `print ref retain release count`() {
         val mod = singleInstrModule(
-            Instruction.RefRetain(Constant.NullRef),
-            Instruction.RefRelease(Constant.NullRef),
-            Instruction.RefCount(ref("%0"), Constant.NullRef),
+            RefRetain(Constant.NullRef),
+            RefRelease(Constant.NullRef),
+            RefCount(ref("%0"), Constant.NullRef),
         )
         printContains(mod, "ref.retain null", "ref.release null", "= ref.count null")
     }
@@ -1833,8 +1834,8 @@ class IrTextComprehensiveTest {
     @Test
     fun `print va start end`() {
         val mod = singleInstrModule(
-            Instruction.VAStart(Constant.NullPtr),
-            Instruction.VAEnd(Constant.NullPtr),
+            VAStart(Constant.NullPtr),
+            VAEnd(Constant.NullPtr),
         )
         printContains(mod, "va_start null", "va_end null")
     }
@@ -1844,7 +1845,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print fence instruction`() {
         val mod = singleInstrModule(
-            Instruction.Fence(AtomicOrdering.SEQ_CST),
+            Fence(AtomicOrdering.SEQ_CST),
         )
         printContains(mod, "fence seq_cst")
     }
@@ -1852,7 +1853,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print cmpxchg instruction`() {
         val mod = singleInstrModule(
-            Instruction.CmpXchg(ref("%0", Type.Struct(null, listOf(Type.I32, Type.I1))),
+            CmpXchg(ref("%0", Type.Struct(null, listOf(Type.I32, Type.I1))),
                 Constant.NullPtr, Constant.I32(0), Constant.I32(1),
                 AtomicOrdering.SEQ_CST, AtomicOrdering.ACQUIRE),
         )
@@ -1862,7 +1863,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print atomicrmw instruction`() {
         val mod = singleInstrModule(
-            Instruction.AtomicRMW(ref("%0"), AtomicRMWOp.ADD, Constant.NullPtr, Constant.I32(1), AtomicOrdering.SEQ_CST),
+            AtomicRMW(ref("%0"), AtomicRMWOp.ADD, Constant.NullPtr, Constant.I32(1), AtomicOrdering.SEQ_CST),
         )
         printContains(mod, "= atomicrmw add ptr null, i32 1 seq_cst")
     }
@@ -1872,14 +1873,14 @@ class IrTextComprehensiveTest {
     @Test
     fun `print trap instruction`() {
         val mod = Module(name = "test", functions = listOf(
-            IrFunction("f", emptyList(), Type.Void, listOf(BasicBlock("entry", listOf(Instruction.Trap()))))
+            IrFunction("f", emptyList(), Type.Void, listOf(BasicBlock("entry", listOf(Trap()))))
         ))
         printContains(mod, "trap")
     }
 
     @Test
     fun `print debugtrap instruction`() {
-        val mod = singleInstrModule(Instruction.DebugTrap())
+        val mod = singleInstrModule(DebugTrap())
         printContains(mod, "debugtrap")
     }
 
@@ -1889,7 +1890,7 @@ class IrTextComprehensiveTest {
     fun `print managed call instruction`() {
         val funcRef = FunctionRef("native_fn", Type.Function(emptyList(), Type.I32))
         val mod = singleInstrModule(
-            Instruction.ManagedCall(ref("%0"), funcRef, emptyList(), Type.I32, ManagedCallDirection.MANAGED_TO_NATIVE),
+            ManagedCall(ref("%0"), funcRef, emptyList(), Type.I32, ManagedCallDirection.MANAGED_TO_NATIVE),
         )
         printContains(mod, "managed.call managed_to_native i32 @native_fn()")
     }
@@ -1899,8 +1900,8 @@ class IrTextComprehensiveTest {
     @Test
     fun `print gc pin unpin instructions`() {
         val mod = singleInstrModule(
-            Instruction.Pin(ref("%0", Type.PinnedRef(Type.I32)), Constant.I32(0)),
-            Instruction.Unpin(Constant.I32(0)),
+            Pin(ref("%0", Type.PinnedRef(Type.I32)), Constant.I32(0)),
+            Unpin(Constant.I32(0)),
         )
         printContains(mod, "= gc.pin i32 0", "gc.unpin i32 0")
     }
@@ -1908,7 +1909,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print write barrier instruction`() {
         val mod = singleInstrModule(
-            Instruction.WriteBarrier(Constant.NullRef, Constant.I32(0), Constant.NullRef),
+            WriteBarrier(Constant.NullRef, Constant.I32(0), Constant.NullRef),
         )
         printContains(mod, "gc.write_barrier")
     }
@@ -1916,7 +1917,7 @@ class IrTextComprehensiveTest {
     @Test
     fun `print read barrier instruction`() {
         val mod = singleInstrModule(
-            Instruction.ReadBarrier(ref("%0", Type.Reference(Type.I32)), Constant.NullRef),
+            ReadBarrier(ref("%0", Type.Reference(Type.I32)), Constant.NullRef),
         )
         printContains(mod, "= gc.read_barrier")
     }

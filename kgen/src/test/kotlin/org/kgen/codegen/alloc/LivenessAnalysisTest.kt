@@ -3,6 +3,7 @@ package org.kgen.codegen.alloc
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -127,7 +128,7 @@ class LivenessAnalysisTest {
 
     @Test
     fun operandValuesExtractsAllOperands() {
-        val inst = Instruction.Add(
+        val inst = Add(
             InstructionRef("result", Type.I64),
             Parameter("a", Type.I64, 0),
             Parameter("b", Type.I64, 1)
@@ -140,7 +141,7 @@ class LivenessAnalysisTest {
 
     @Test
     fun operandValuesIgnoresConstants() {
-        val inst = Instruction.Add(
+        val inst = Add(
             InstructionRef("result", Type.I64),
             Parameter("a", Type.I64, 0),
             Constant.I64(42)

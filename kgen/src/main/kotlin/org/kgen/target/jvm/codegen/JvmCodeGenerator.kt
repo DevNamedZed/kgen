@@ -3,6 +3,7 @@ package org.kgen.target.jvm.codegen
 import org.kgen.target.jvm.asm.JvmAssembler
 import org.kgen.target.jvm.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.codegen.CodeGenOptions
 import org.kgen.codegen.CodeGenerator
 
@@ -102,7 +103,7 @@ class JvmCodeGenerator : CodeGenerator {
             if (emitter.exceptionEntries.isEmpty()) return emptyList()
 
             // Find Invoke instructions to map entries back to unwind labels
-            val invokes = fn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Invoke>()
+            val invokes = fn.blocks.flatMap { it.instructions }.filterIsInstance<Invoke>()
             val result = mutableListOf<ExceptionEntry>()
 
             for ((idx, entry) in emitter.exceptionEntries.withIndex()) {
@@ -124,7 +125,7 @@ class JvmCodeGenerator : CodeGenerator {
             // For blocks with phi nodes, collect the phi dest slots
             val blockPhiSlots = mutableMapOf<String, Set<Int>>()
             for (block in fn.blocks) {
-                val phis = block.instructions.filterIsInstance<Instruction.Phi>()
+                val phis = block.instructions.filterIsInstance<Phi>()
                 if (phis.isNotEmpty()) {
                     val slots = mutableSetOf<Int>()
                     for (phi in phis) {
@@ -309,7 +310,7 @@ class JvmCodeGenerator : CodeGenerator {
             // Build phi copy map: for each phi, record which source block stores what value
             for (block in fn.blocks) {
                 for (inst in block.instructions) {
-                    if (inst is Instruction.Phi) {
+                    if (inst is Phi) {
                         for ((value, srcLabel) in inst.incoming) {
                             phiCopies.getOrPut(srcLabel) { mutableListOf() }
                                 .add(Pair(inst.dest, value))
@@ -349,54 +350,54 @@ class JvmCodeGenerator : CodeGenerator {
 
         private fun emitInstruction(inst: Instruction) {
             when (inst) {
-                is Instruction.Add -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
+                is Add -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
                     when (type) { Type.I32 -> assembler.iadd(); Type.I64 -> assembler.ladd(); else -> assembler.iadd() }
                 }
-                is Instruction.Sub -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
+                is Sub -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
                     when (type) { Type.I32 -> assembler.isub(); Type.I64 -> assembler.lsub(); else -> assembler.isub() }
                 }
-                is Instruction.Mul -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
+                is Mul -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
                     when (type) { Type.I32 -> assembler.imul(); Type.I64 -> assembler.lmul(); else -> assembler.imul() }
                 }
-                is Instruction.SDiv -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
+                is SDiv -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
                     when (type) { Type.I32 -> assembler.idiv(); Type.I64 -> assembler.ldiv(); else -> assembler.idiv() }
                 }
-                is Instruction.SRem -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
+                is SRem -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
                     when (type) { Type.I32 -> assembler.irem(); Type.I64 -> assembler.lrem(); else -> assembler.irem() }
                 }
-                is Instruction.And -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
+                is And -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
                     when (type) { Type.I32 -> assembler.iand(); Type.I64 -> assembler.land(); else -> assembler.iand() }
                 }
-                is Instruction.Or -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
+                is Or -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
                     when (type) { Type.I32 -> assembler.ior(); Type.I64 -> assembler.lor(); else -> assembler.ior() }
                 }
-                is Instruction.Xor -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
+                is Xor -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
                     when (type) { Type.I32 -> assembler.ixor(); Type.I64 -> assembler.lxor(); else -> assembler.ixor() }
                 }
-                is Instruction.Shl -> emitShiftOp(inst.dest, inst.lhs, inst.rhs) { type ->
+                is Shl -> emitShiftOp(inst.dest, inst.lhs, inst.rhs) { type ->
                     when (type) { Type.I32 -> assembler.ishl(); Type.I64 -> assembler.lshl(); else -> assembler.ishl() }
                 }
-                is Instruction.LShr -> emitShiftOp(inst.dest, inst.lhs, inst.rhs) { type ->
+                is LShr -> emitShiftOp(inst.dest, inst.lhs, inst.rhs) { type ->
                     when (type) { Type.I32 -> assembler.iushr(); Type.I64 -> assembler.lushr(); else -> assembler.iushr() }
                 }
-                is Instruction.AShr -> emitShiftOp(inst.dest, inst.lhs, inst.rhs) { type ->
+                is AShr -> emitShiftOp(inst.dest, inst.lhs, inst.rhs) { type ->
                     when (type) { Type.I32 -> assembler.ishr(); Type.I64 -> assembler.lshr(); else -> assembler.ishr() }
                 }
 
-                is Instruction.FAdd -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
+                is FAdd -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
                     when (type) { Type.F32 -> assembler.fadd(); Type.F64 -> assembler.dadd(); else -> assembler.fadd() }
                 }
-                is Instruction.FSub -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
+                is FSub -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
                     when (type) { Type.F32 -> assembler.fsub(); Type.F64 -> assembler.dsub(); else -> assembler.fsub() }
                 }
-                is Instruction.FMul -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
+                is FMul -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
                     when (type) { Type.F32 -> assembler.fmul(); Type.F64 -> assembler.dmul(); else -> assembler.fmul() }
                 }
-                is Instruction.FDiv -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
+                is FDiv -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
                     when (type) { Type.F32 -> assembler.fdiv(); Type.F64 -> assembler.ddiv(); else -> assembler.fdiv() }
                 }
 
-                is Instruction.Neg -> {
+                is Neg -> {
                     pushValue(inst.operand)
                     when (inst.operand.type) {
                         Type.I32 -> assembler.ineg()
@@ -406,7 +407,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.FNeg -> {
+                is FNeg -> {
                     pushValue(inst.operand)
                     when (inst.operand.type) {
                         Type.F32 -> assembler.fneg()
@@ -416,7 +417,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.UDiv -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
+                is UDiv -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
                     when (type) {
                         Type.I64 -> assembler.invokestatic(
                             cp.methodRef("java/lang/Long", "divideUnsigned", "(JJ)J"))
@@ -424,7 +425,7 @@ class JvmCodeGenerator : CodeGenerator {
                             cp.methodRef("java/lang/Integer", "divideUnsigned", "(II)I"))
                     }
                 }
-                is Instruction.URem -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
+                is URem -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
                     when (type) {
                         Type.I64 -> assembler.invokestatic(
                             cp.methodRef("java/lang/Long", "remainderUnsigned", "(JJ)J"))
@@ -433,7 +434,7 @@ class JvmCodeGenerator : CodeGenerator {
                     }
                 }
 
-                is Instruction.Not -> {
+                is Not -> {
                     pushValue(inst.operand)
                     when (inst.operand.type) {
                         Type.I64 -> { assembler.ldc2w(cp.long(-1L)); pushStack(2); assembler.lxor(); popStack(2) }
@@ -442,7 +443,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.SIToFP -> {
+                is SIToFP -> {
                     pushValue(inst.value)
                     when {
                         inst.value.type == Type.I64 && inst.toType == Type.F64 -> assembler.l2d() // 2→2
@@ -452,7 +453,7 @@ class JvmCodeGenerator : CodeGenerator {
                     }
                     storeResult(inst.dest)
                 }
-                is Instruction.UIToFP -> {
+                is UIToFP -> {
                     pushValue(inst.value)
                     // For unsigned: convert to long first (zero-extend), then to float
                     when {
@@ -477,7 +478,7 @@ class JvmCodeGenerator : CodeGenerator {
                     }
                     storeResult(inst.dest)
                 }
-                is Instruction.FPToSI -> {
+                is FPToSI -> {
                     pushValue(inst.value)
                     when {
                         inst.value.type == Type.F64 && inst.toType == Type.I64 -> assembler.d2l() // 2→2
@@ -487,7 +488,7 @@ class JvmCodeGenerator : CodeGenerator {
                     }
                     storeResult(inst.dest)
                 }
-                is Instruction.FPToUI -> {
+                is FPToUI -> {
                     pushValue(inst.value)
                     // JVM doesn't have unsigned truncation — use signed and mask
                     when {
@@ -498,25 +499,25 @@ class JvmCodeGenerator : CodeGenerator {
                     }
                     storeResult(inst.dest)
                 }
-                is Instruction.FPExt -> {
+                is FPExt -> {
                     pushValue(inst.value)
                     assembler.f2d()
                     pushStack() // 1→2 slots
                     storeResult(inst.dest)
                 }
-                is Instruction.FPTrunc -> {
+                is FPTrunc -> {
                     pushValue(inst.value)
                     assembler.d2f()
                     popStack() // 2→1 slots
                     storeResult(inst.dest)
                 }
-                is Instruction.FCmp -> emitFCmp(inst)
+                is FCmp -> emitFCmp(inst)
 
-                is Instruction.Switch -> emitSwitch(inst)
+                is Switch -> emitSwitch(inst)
 
-                is Instruction.ICmp -> emitICmp(inst)
+                is ICmp -> emitICmp(inst)
 
-                is Instruction.Ret -> {
+                is Ret -> {
                     val value = inst.value
                     if (value != null) {
                         pushValue(value)
@@ -533,12 +534,12 @@ class JvmCodeGenerator : CodeGenerator {
                     }
                 }
 
-                is Instruction.Br -> {
+                is Br -> {
                     emitPhiCopies(currentBlockLabel)
                     assembler.goto(inst.target)
                 }
 
-                is Instruction.CondBr -> {
+                is CondBr -> {
                     // For CondBr with phi copies, we need to handle both branches
                     // Since phi copies may differ per target, store copies before branching
                     emitPhiCopies(currentBlockLabel)
@@ -548,9 +549,9 @@ class JvmCodeGenerator : CodeGenerator {
                     assembler.goto(inst.falseTarget)
                 }
 
-                is Instruction.Call -> emitCall(inst)
+                is Call -> emitCall(inst)
 
-                is Instruction.SExt -> {
+                is SExt -> {
                     pushValue(inst.value)
                     if (inst.value.type != Type.I64 && inst.dest.type == Type.I64) {
                         assembler.i2l()
@@ -559,7 +560,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.ZExt -> {
+                is ZExt -> {
                     pushValue(inst.value)
                     if (inst.value.type != Type.I64 && inst.dest.type == Type.I64) {
                         assembler.i2l()
@@ -573,7 +574,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Trunc -> {
+                is Trunc -> {
                     pushValue(inst.operand)
                     if (inst.operand.type == Type.I64 && inst.dest.type != Type.I64) {
                         assembler.l2i()
@@ -582,7 +583,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.IntTrunc -> {
+                is IntTrunc -> {
                     pushValue(inst.value)
                     if (inst.value.type == Type.I64 && inst.dest.type != Type.I64) {
                         assembler.l2i()
@@ -591,7 +592,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Select -> {
+                is Select -> {
                     // JVM has no select — use branch
                     pushValue(inst.condition)
                     val elseLabel = "select_else_${assembler.size}"
@@ -610,31 +611,31 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Invoke -> emitInvoke(inst)
+                is Invoke -> emitInvoke(inst)
 
-                is Instruction.LandingPad -> {
+                is LandingPad -> {
                     // Exception is on the stack at handler entry
                     pushStack() // exception reference
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Resume -> {
+                is Resume -> {
                     pushValue(inst.value)
                     assembler.athrow()
                     popStack()
                 }
 
-                is Instruction.PtrToInt -> {
+                is PtrToInt -> {
                     pushValue(inst.value)
                     // Pointer is object ref on JVM; treat as identity for codegen purposes
                     storeResult(inst.dest)
                 }
-                is Instruction.IntToPtr -> {
+                is IntToPtr -> {
                     pushValue(inst.value)
                     storeResult(inst.dest)
                 }
 
-                is Instruction.BitCast -> {
+                is BitCast -> {
                     pushValue(inst.value)
                     val srcType = inst.value.type
                     val dstType = inst.toType
@@ -660,7 +661,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Unreachable -> {
+                is Unreachable -> {
                     assembler.new_(cp.classEntry("java/lang/RuntimeException"))
                     pushStack()
                     assembler.dup()
@@ -672,7 +673,7 @@ class JvmCodeGenerator : CodeGenerator {
                     popStack()
                 }
 
-                is Instruction.Trap -> {
+                is Trap -> {
                     assembler.new_(cp.classEntry("java/lang/RuntimeException"))
                     pushStack()
                     assembler.dup()
@@ -684,7 +685,7 @@ class JvmCodeGenerator : CodeGenerator {
                     popStack()
                 }
 
-                is Instruction.DebugTrap -> {
+                is DebugTrap -> {
                     assembler.new_(cp.classEntry("java/lang/RuntimeException"))
                     pushStack()
                     assembler.dup()
@@ -695,11 +696,11 @@ class JvmCodeGenerator : CodeGenerator {
                     assembler.athrow()
                     popStack()
                 }
-                is Instruction.DebugLoc -> {}
-                is Instruction.DebugValue -> {}
-                is Instruction.DebugDeclare -> {}
+                is DebugLoc -> {}
+                is DebugValue -> {}
+                is DebugDeclare -> {}
 
-                is Instruction.Sqrt -> {
+                is Sqrt -> {
                     pushValue(inst.operand)
                     when (inst.operand.type) {
                         Type.F64 -> {
@@ -722,7 +723,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Ceil -> {
+                is Ceil -> {
                     pushValue(inst.operand)
                     when (inst.operand.type) {
                         Type.F64 -> {
@@ -740,7 +741,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Floor -> {
+                is Floor -> {
                     pushValue(inst.operand)
                     when (inst.operand.type) {
                         Type.F64 -> {
@@ -758,7 +759,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Round -> {
+                is Round -> {
                     pushValue(inst.operand)
                     when (inst.operand.type) {
                         Type.F64 -> {
@@ -776,7 +777,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Ctlz -> {
+                is Ctlz -> {
                     pushValue(inst.operand)
                     when (inst.operand.type) {
                         Type.I64 -> {
@@ -792,7 +793,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Cttz -> {
+                is Cttz -> {
                     pushValue(inst.operand)
                     when (inst.operand.type) {
                         Type.I64 -> {
@@ -808,7 +809,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Ctpop -> {
+                is Ctpop -> {
                     pushValue(inst.operand)
                     when (inst.operand.type) {
                         Type.I64 -> {
@@ -824,7 +825,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.BSwap -> {
+                is BSwap -> {
                     pushValue(inst.operand)
                     when (inst.operand.type) {
                         Type.I64 -> {
@@ -839,7 +840,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.FAbs -> {
+                is FAbs -> {
                     pushValue(inst.operand)
                     when (inst.operand.type) {
                         Type.F64 -> assembler.invokestatic(cp.methodRef("java/lang/Math", "abs", "(D)D"))
@@ -849,7 +850,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.FMin -> {
+                is FMin -> {
                     pushValue(inst.lhs); pushValue(inst.rhs)
                     when (inst.lhs.type) {
                         Type.F64 -> assembler.invokestatic(cp.methodRef("java/lang/Math", "min", "(DD)D"))
@@ -860,7 +861,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.FMax -> {
+                is FMax -> {
                     pushValue(inst.lhs); pushValue(inst.rhs)
                     when (inst.lhs.type) {
                         Type.F64 -> assembler.invokestatic(cp.methodRef("java/lang/Math", "max", "(DD)D"))
@@ -871,7 +872,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.SMin -> {
+                is SMin -> {
                     pushValue(inst.lhs); pushValue(inst.rhs)
                     when (inst.lhs.type) {
                         Type.I64 -> { assembler.invokestatic(cp.methodRef("java/lang/Math", "min", "(JJ)J")); popStack(); popStack() }
@@ -880,7 +881,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.SMax -> {
+                is SMax -> {
                     pushValue(inst.lhs); pushValue(inst.rhs)
                     when (inst.lhs.type) {
                         Type.I64 -> { assembler.invokestatic(cp.methodRef("java/lang/Math", "max", "(JJ)J")); popStack(); popStack() }
@@ -889,7 +890,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.CopySign -> {
+                is CopySign -> {
                     pushValue(inst.magnitude); pushValue(inst.sign)
                     when (inst.magnitude.type) {
                         Type.F64 -> assembler.invokestatic(cp.methodRef("java/lang/Math", "copySign", "(DD)D"))
@@ -900,16 +901,16 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Fence -> {} // no-op on JVM (JMM handles memory ordering)
+                is Fence -> {} // no-op on JVM (JMM handles memory ordering)
 
-                is Instruction.GCSafepoint -> {} // JVM handles GC safepoints
-                is Instruction.GCRoot -> {} // JVM handles GC roots
+                is GCSafepoint -> {} // JVM handles GC safepoints
+                is GCRoot -> {} // JVM handles GC roots
 
-                is Instruction.MemCpy -> {} // no raw memory on JVM
-                is Instruction.MemSet -> {} // no raw memory on JVM
-                is Instruction.MemMove -> {} // no raw memory on JVM
+                is MemCpy -> {} // no raw memory on JVM
+                is MemSet -> {} // no raw memory on JVM
+                is MemMove -> {} // no raw memory on JVM
 
-                is Instruction.Abs -> {
+                is Abs -> {
                     pushValue(inst.operand)
                     when (inst.operand.type) {
                         Type.I64 -> assembler.invokestatic(cp.methodRef("java/lang/Math", "abs", "(J)J"))
@@ -918,7 +919,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.UMin -> {
+                is UMin -> {
                     // TODO: this is signed min, not true unsigned min
                     pushValue(inst.lhs); pushValue(inst.rhs)
                     when (inst.lhs.type) {
@@ -928,7 +929,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.UMax -> {
+                is UMax -> {
                     // TODO: this is signed max, not true unsigned max
                     pushValue(inst.lhs); pushValue(inst.rhs)
                     when (inst.lhs.type) {
@@ -938,7 +939,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.FMA -> {
+                is FMA -> {
                     pushValue(inst.a); pushValue(inst.b); pushValue(inst.c)
                     when (inst.a.type) {
                         Type.F64 -> {
@@ -957,11 +958,11 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.FRem -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
+                is FRem -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { type ->
                     when (type) { Type.F32 -> assembler.frem(); Type.F64 -> assembler.drem(); else -> assembler.frem() }
                 }
 
-                is Instruction.BitReverse -> {
+                is BitReverse -> {
                     pushValue(inst.operand)
                     when (inst.operand.type) {
                         Type.I64 -> assembler.invokestatic(cp.methodRef("java/lang/Long", "reverse", "(J)J"))
@@ -970,7 +971,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Rotl -> {
+                is Rotl -> {
                     pushValue(inst.value); pushValue(inst.amount)
                     when (inst.value.type) {
                         Type.I64 -> {
@@ -986,7 +987,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Rotr -> {
+                is Rotr -> {
                     pushValue(inst.value); pushValue(inst.amount)
                     when (inst.value.type) {
                         Type.I64 -> {
@@ -1002,18 +1003,18 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Prefetch -> {} // no-op on JVM
-                is Instruction.StackSave -> {
+                is Prefetch -> {} // no-op on JVM
+                is StackSave -> {
                     // No raw stack on JVM; push dummy zero value
                     assembler.iconst0(); pushStack()
                     storeResult(inst.dest)
                 }
-                is Instruction.StackRestore -> {} // no-op on JVM
+                is StackRestore -> {} // no-op on JVM
 
-                is Instruction.IndirectBr -> error("IndirectBr is not supported on JVM")
+                is IndirectBr -> error("IndirectBr is not supported on JVM")
 
-                is Instruction.Phi -> {} // copies emitted at Br/CondBr
-                is Instruction.Alloca -> {} // stack allocation not needed on JVM
+                is Phi -> {} // copies emitted at Br/CondBr
+                is Alloca -> {} // stack allocation not needed on JVM
 
                 else -> error("Unsupported IR instruction for JVM: ${inst::class.simpleName}")
             }
@@ -1054,7 +1055,7 @@ class JvmCodeGenerator : CodeGenerator {
             storeResult(dest)
         }
 
-        private fun emitICmp(inst: Instruction.ICmp) {
+        private fun emitICmp(inst: ICmp) {
             val type = inst.lhs.type
             pushValue(inst.lhs)
             pushValue(inst.rhs)
@@ -1113,7 +1114,7 @@ class JvmCodeGenerator : CodeGenerator {
             storeResult(inst.dest)
         }
 
-        private fun emitFCmp(inst: Instruction.FCmp) {
+        private fun emitFCmp(inst: FCmp) {
             val type = inst.lhs.type
             pushValue(inst.lhs)
             pushValue(inst.rhs)
@@ -1180,7 +1181,7 @@ class JvmCodeGenerator : CodeGenerator {
             storeResult(inst.dest)
         }
 
-        private fun emitSwitch(inst: Instruction.Switch) {
+        private fun emitSwitch(inst: Switch) {
             // Emit as chain of if-comparisons (no lookupswitch in assembler yet)
             emitPhiCopies(currentBlockLabel)
             for ((caseVal, target) in inst.cases) {
@@ -1200,7 +1201,7 @@ class JvmCodeGenerator : CodeGenerator {
             assembler.goto(inst.defaultTarget)
         }
 
-        private fun emitCall(inst: Instruction.Call) {
+        private fun emitCall(inst: Call) {
             val funcName = when (val f = inst.function) {
                 is FunctionRef -> f.name
                 is GlobalRef -> f.name
@@ -1231,7 +1232,7 @@ class JvmCodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitInvoke(inst: Instruction.Invoke) {
+        private fun emitInvoke(inst: Invoke) {
             val funcName = when (val f = inst.function) {
                 is FunctionRef -> f.name
                 is GlobalRef -> f.name
@@ -1289,7 +1290,7 @@ class JvmCodeGenerator : CodeGenerator {
 
         private fun resolveCatchType(unwindLabel: String): Int {
             val unwindBlock = fn.blocks.firstOrNull { it.label == unwindLabel } ?: return 0
-            val lp = unwindBlock.instructions.firstOrNull { it is Instruction.LandingPad } as? Instruction.LandingPad
+            val lp = unwindBlock.instructions.firstOrNull { it is LandingPad } as? LandingPad
                 ?: return 0
             if (lp.cleanup) return 0 // catch-all
             val catchClause = lp.clauses.filterIsInstance<LandingPadClause.Catch>().firstOrNull() ?: return 0

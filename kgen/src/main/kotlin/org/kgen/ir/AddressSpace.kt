@@ -1,12 +1,14 @@
 package org.kgen.ir
 
+import org.kgen.ir.instructions.*
+
 /**
  * Well-known address spaces for pointer types.
  *
  * Address space 0 is the default flat/native address space. Non-zero address spaces
  * distinguish managed heap pointers, GPU memory regions, and other target-specific
  * memory areas. Two pointers with different address spaces are distinct types —
- * an explicit [Instruction.AddrSpaceCast] is required to convert between them.
+ * an explicit [AddrSpaceCast] is required to convert between them.
  *
  * ```java
  * // Native pointer (default)

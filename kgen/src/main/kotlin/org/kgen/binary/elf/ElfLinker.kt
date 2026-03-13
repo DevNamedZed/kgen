@@ -440,6 +440,11 @@ class ElfLinker(
                     val patchOffset = (placement.mergedOffset + rel.offset).toInt()
                     val patchVaddr = layout.textVaddr + layout.startStubSize + patchOffset
 
+                    // Skip PLT32 to __tls_get_addr — eliminated by GD→LE relaxation
+                    if (rel.symbol == "__tls_get_addr" && rel.type == RelocationType.X86_64.PLT32) {
+                        continue
+                    }
+
                     val targetVaddr = symVaddrs[rel.symbol] ?: pltVaddrs[rel.symbol]
                         ?: throw IllegalStateException("Undefined symbol: ${rel.symbol}")
 
@@ -518,6 +523,81 @@ class ElfLinker(
                     putI32(text, offset, (existing and mask.inv()) or encoded)
                 }
                 RelocationType.RiscV.RELAX -> { /* no-op */ }
+
+                // x86-64 TLS LOCAL_EXEC: TP points past TLS block
+                RelocationType.X86_64.TPOFF32 -> {
+                    val tpOff = (targetVaddr + rel.addend - (layout.tdataVaddr + layout.tdataFileSize)).toInt()
+                    putI32(text, offset, tpOff)
+                }
+                // x86-64 TLS GENERAL_DYNAMIC → relaxed to LOCAL_EXEC:
+                // Rewrite 16-byte GD sequence to: mov rax,fs:[0]; lea rax,[rax+tpoff32]
+                RelocationType.X86_64.TLSGD -> {
+                    val tpOff = (targetVaddr + rel.addend - (layout.tdataVaddr + layout.tdataFileSize)).toInt()
+                    val seqStart = offset - 4
+                    // mov rax, fs:[0] — 9 bytes
+                    text[seqStart + 0] = 0x64.toByte()
+                    text[seqStart + 1] = 0x48.toByte()
+                    text[seqStart + 2] = 0x8B.toByte()
+                    text[seqStart + 3] = 0x04.toByte()
+                    text[seqStart + 4] = 0x25.toByte()
+                    text[seqStart + 5] = 0x00
+                    text[seqStart + 6] = 0x00
+                    text[seqStart + 7] = 0x00
+                    text[seqStart + 8] = 0x00
+                    // lea rax, [rax+tpoff32] — 7 bytes
+                    text[seqStart + 9] = 0x48.toByte()
+                    text[seqStart + 10] = 0x8D.toByte()
+                    text[seqStart + 11] = 0x80.toByte()
+                    putI32(text, seqStart + 12, tpOff)
+                }
+                // x86-64 TLS INITIAL_EXEC → relaxed to LOCAL_EXEC:
+                // Rewrite: add reg, [rip+disp32] → lea reg, [reg+disp32]
+                RelocationType.X86_64.GOTTPOFF -> {
+                    val tpOff = (targetVaddr + rel.addend - (layout.tdataVaddr + layout.tdataFileSize)).toInt()
+                    text[offset - 2] = 0x8D.toByte()
+                    val modRM = text[offset - 1].toInt() and 0xFF
+                    val reg = (modRM shr 3) and 7
+                    text[offset - 1] = (0x80 or (reg shl 3) or reg).toByte()
+                    putI32(text, offset, tpOff)
+                }
+
+                // ARM64 TLS LOCAL_EXEC
+                RelocationType.AArch64.TLSLE_ADD_TPREL_HI12 -> {
+                    val tpOff = targetVaddr + rel.addend - layout.tdataVaddr
+                    val imm12 = ((tpOff shr 12) and 0xFFF).toInt() shl 10
+                    val insn = readI32(text, offset)
+                    putI32(text, offset, (insn and 0xFFC003FF.toInt()) or imm12)
+                }
+                RelocationType.AArch64.TLSLE_ADD_TPREL_LO12,
+                RelocationType.AArch64.TLSLE_ADD_TPREL_LO12_NC -> {
+                    val tpOff = targetVaddr + rel.addend - layout.tdataVaddr
+                    val imm12 = (tpOff.toInt() and 0xFFF) shl 10
+                    val insn = readI32(text, offset)
+                    putI32(text, offset, (insn and 0xFFC003FF.toInt()) or imm12)
+                }
+
+                // RISC-V TLS LOCAL_EXEC
+                RelocationType.RiscV.TPREL_HI20 -> {
+                    val tpOff = targetVaddr + rel.addend - layout.tdataVaddr
+                    val hi = ((tpOff + 0x800) shr 12).toInt()
+                    val existing = readI32(text, offset)
+                    putI32(text, offset, (existing and 0xFFF) or (hi shl 12))
+                }
+                RelocationType.RiscV.TPREL_LO12_I -> {
+                    val tpOff = (targetVaddr + rel.addend - layout.tdataVaddr).toInt() and 0xFFF
+                    val existing = readI32(text, offset)
+                    putI32(text, offset, (existing and 0x000FFFFF) or (tpOff shl 20))
+                }
+                RelocationType.RiscV.TPREL_LO12_S -> {
+                    val tpOff = (targetVaddr + rel.addend - layout.tdataVaddr).toInt() and 0xFFF
+                    val imm11_5 = (tpOff shr 5) and 0x7F
+                    val imm4_0 = tpOff and 0x1F
+                    val existing = readI32(text, offset)
+                    val mask = (0x7F shl 25) or (0x1F shl 7)
+                    putI32(text, offset, (existing and mask.inv()) or (imm11_5 shl 25) or (imm4_0 shl 7))
+                }
+                RelocationType.RiscV.TPREL_ADD -> { /* no-op */ }
+
                 else -> throw IllegalStateException("Unsupported relocation type: ${rel.type}")
             }
         }

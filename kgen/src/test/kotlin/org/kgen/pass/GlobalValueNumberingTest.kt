@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -29,7 +30,7 @@ class GlobalValueNumberingTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(3, insts.size, "Should have: add, add(a,a), ret: $insts")
-        val sumInst = insts[1] as Instruction.Add
+        val sumInst = insts[1] as Add
         assertEquals(sumInst.lhs.name, sumInst.rhs.name, "Both operands should reference the same value")
     }
 
@@ -62,7 +63,7 @@ class GlobalValueNumberingTest {
         val insts = module.functions[0].blocks[0].instructions
         // b should be eliminated, but since it's not used, DCE would handle it.
         // GVN tracks the replacement though
-        val addCount = insts.count { it is Instruction.ICmp }
+        val addCount = insts.count { it is ICmp }
         assertEquals(1, addCount, "Redundant icmp should be eliminated")
     }
 
@@ -109,7 +110,7 @@ class GlobalValueNumberingTest {
             finalizeFunction()
         }
         val insts = module.functions[1].blocks[0].instructions
-        val callCount = insts.count { it is Instruction.Call }
+        val callCount = insts.count { it is Call }
         assertEquals(2, callCount, "Calls should not be eliminated (side effects)")
     }
 
@@ -178,7 +179,7 @@ class GlobalValueNumberingTest {
         val insts = module.functions[0].blocks[0].instructions
         // a, b, add(b,b), ret
         assertEquals(4, insts.size, "Chained redundancies should be eliminated: $insts")
-        val sumInst = insts[2] as Instruction.Add
+        val sumInst = insts[2] as Add
         assertEquals(sumInst.lhs.name, sumInst.rhs.name, "Both operands should be the same value")
     }
 
@@ -194,7 +195,7 @@ class GlobalValueNumberingTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val zextCount = insts.count { it is Instruction.ZExt }
+        val zextCount = insts.count { it is ZExt }
         assertEquals(1, zextCount, "Redundant zext should be eliminated")
     }
 
@@ -212,7 +213,7 @@ class GlobalValueNumberingTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val loadCount = insts.count { it is Instruction.Load }
+        val loadCount = insts.count { it is Load }
         assertEquals(1, loadCount, "Second load should be eliminated (no intervening store)")
     }
 }

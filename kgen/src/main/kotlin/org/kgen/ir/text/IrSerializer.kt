@@ -1,6 +1,7 @@
 package org.kgen.ir.text
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.types.*
 import java.io.*
 
@@ -313,442 +314,442 @@ class IrSerializer {
     private fun writeInstruction(out: DataOutputStream, inst: Instruction) {
         out.writeShort(instructionTag(inst))
         when (inst) {
-            is Instruction.Add -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); out.writeBoolean(inst.nuw); out.writeBoolean(inst.nsw) }
-            is Instruction.Sub -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); out.writeBoolean(inst.nuw); out.writeBoolean(inst.nsw) }
-            is Instruction.Mul -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); out.writeBoolean(inst.nuw); out.writeBoolean(inst.nsw) }
-            is Instruction.UDiv -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); out.writeBoolean(inst.exact) }
-            is Instruction.SDiv -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); out.writeBoolean(inst.exact) }
-            is Instruction.URem -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
-            is Instruction.SRem -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
-            is Instruction.Neg -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
+            is Add -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); out.writeBoolean(inst.nuw); out.writeBoolean(inst.nsw) }
+            is Sub -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); out.writeBoolean(inst.nuw); out.writeBoolean(inst.nsw) }
+            is Mul -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); out.writeBoolean(inst.nuw); out.writeBoolean(inst.nsw) }
+            is UDiv -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); out.writeBoolean(inst.exact) }
+            is SDiv -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); out.writeBoolean(inst.exact) }
+            is URem -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is SRem -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is Neg -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
 
-            is Instruction.SAddOverflow -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
-            is Instruction.UAddOverflow -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
-            is Instruction.SSubOverflow -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
-            is Instruction.USubOverflow -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
-            is Instruction.SMulOverflow -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
-            is Instruction.UMulOverflow -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is SAddOverflow -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is UAddOverflow -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is SSubOverflow -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is USubOverflow -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is SMulOverflow -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is UMulOverflow -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
 
-            is Instruction.SAddSat -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
-            is Instruction.UAddSat -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
-            is Instruction.SSubSat -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
-            is Instruction.USubSat -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is SAddSat -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is UAddSat -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is SSubSat -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is USubSat -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
 
-            is Instruction.SMin -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
-            is Instruction.SMax -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
-            is Instruction.UMin -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
-            is Instruction.UMax -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
-            is Instruction.Abs -> { writeValue(out, inst.dest); writeValue(out, inst.operand); out.writeBoolean(inst.isIntMin) }
+            is SMin -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is SMax -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is UMin -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is UMax -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is Abs -> { writeValue(out, inst.dest); writeValue(out, inst.operand); out.writeBoolean(inst.isIntMin) }
 
-            is Instruction.FAdd -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); writeFastMath(out, inst.fastMath) }
-            is Instruction.FSub -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); writeFastMath(out, inst.fastMath) }
-            is Instruction.FMul -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); writeFastMath(out, inst.fastMath) }
-            is Instruction.FDiv -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); writeFastMath(out, inst.fastMath) }
-            is Instruction.FRem -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); writeFastMath(out, inst.fastMath) }
-            is Instruction.FNeg -> { writeValue(out, inst.dest); writeValue(out, inst.operand); writeFastMath(out, inst.fastMath) }
-            is Instruction.FAbs -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
-            is Instruction.FMA -> { writeValue(out, inst.dest); writeValue(out, inst.a); writeValue(out, inst.b); writeValue(out, inst.c) }
-            is Instruction.FMin -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
-            is Instruction.FMax -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
-            is Instruction.Sqrt -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
-            is Instruction.Ceil -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
-            is Instruction.Floor -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
-            is Instruction.Round -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
-            is Instruction.Trunc -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
-            is Instruction.CopySign -> { writeValue(out, inst.dest); writeValue(out, inst.magnitude); writeValue(out, inst.sign) }
+            is FAdd -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); writeFastMath(out, inst.fastMath) }
+            is FSub -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); writeFastMath(out, inst.fastMath) }
+            is FMul -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); writeFastMath(out, inst.fastMath) }
+            is FDiv -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); writeFastMath(out, inst.fastMath) }
+            is FRem -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); writeFastMath(out, inst.fastMath) }
+            is FNeg -> { writeValue(out, inst.dest); writeValue(out, inst.operand); writeFastMath(out, inst.fastMath) }
+            is FAbs -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
+            is FMA -> { writeValue(out, inst.dest); writeValue(out, inst.a); writeValue(out, inst.b); writeValue(out, inst.c) }
+            is FMin -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is FMax -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is Sqrt -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
+            is Ceil -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
+            is Floor -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
+            is Round -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
+            is Trunc -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
+            is CopySign -> { writeValue(out, inst.dest); writeValue(out, inst.magnitude); writeValue(out, inst.sign) }
 
-            is Instruction.And -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
-            is Instruction.Or -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
-            is Instruction.Xor -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
-            is Instruction.Not -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
-            is Instruction.Shl -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); out.writeBoolean(inst.nuw); out.writeBoolean(inst.nsw) }
-            is Instruction.LShr -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); out.writeBoolean(inst.exact) }
-            is Instruction.AShr -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); out.writeBoolean(inst.exact) }
-            is Instruction.RotateLeft -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeValue(out, inst.amount) }
-            is Instruction.RotateRight -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeValue(out, inst.amount) }
-            is Instruction.Rotl -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeValue(out, inst.amount) }
-            is Instruction.Rotr -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeValue(out, inst.amount) }
+            is And -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is Or -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is Xor -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is Not -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
+            is Shl -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); out.writeBoolean(inst.nuw); out.writeBoolean(inst.nsw) }
+            is LShr -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); out.writeBoolean(inst.exact) }
+            is AShr -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); out.writeBoolean(inst.exact) }
+            is RotateLeft -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeValue(out, inst.amount) }
+            is RotateRight -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeValue(out, inst.amount) }
+            is Rotl -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeValue(out, inst.amount) }
+            is Rotr -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeValue(out, inst.amount) }
 
-            is Instruction.Ctlz -> { writeValue(out, inst.dest); writeValue(out, inst.operand); out.writeBoolean(inst.isZeroPoison) }
-            is Instruction.Cttz -> { writeValue(out, inst.dest); writeValue(out, inst.operand); out.writeBoolean(inst.isZeroPoison) }
-            is Instruction.Ctpop -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
-            is Instruction.BSwap -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
-            is Instruction.BitReverse -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
+            is Ctlz -> { writeValue(out, inst.dest); writeValue(out, inst.operand); out.writeBoolean(inst.isZeroPoison) }
+            is Cttz -> { writeValue(out, inst.dest); writeValue(out, inst.operand); out.writeBoolean(inst.isZeroPoison) }
+            is Ctpop -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
+            is BSwap -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
+            is BitReverse -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
 
-            is Instruction.ICmp -> { writeValue(out, inst.dest); out.writeInt(inst.predicate.ordinal); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
-            is Instruction.FCmp -> { writeValue(out, inst.dest); out.writeInt(inst.predicate.ordinal); writeValue(out, inst.lhs); writeValue(out, inst.rhs); writeFastMath(out, inst.fastMath) }
+            is ICmp -> { writeValue(out, inst.dest); out.writeInt(inst.predicate.ordinal); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
+            is FCmp -> { writeValue(out, inst.dest); out.writeInt(inst.predicate.ordinal); writeValue(out, inst.lhs); writeValue(out, inst.rhs); writeFastMath(out, inst.fastMath) }
 
-            is Instruction.Alloca -> { writeValue(out, inst.dest); writeType(out, inst.allocType); writeNullableValue(out, inst.numElements); writeNullableInt(out, inst.align) }
-            is Instruction.Load -> { writeValue(out, inst.dest); writeValue(out, inst.ptr); writeType(out, inst.loadType); writeNullableInt(out, inst.align); out.writeBoolean(inst.volatile); writeNullableOrdering(out, inst.ordering) }
-            is Instruction.Store -> { writeValue(out, inst.value); writeValue(out, inst.ptr); writeNullableInt(out, inst.align); out.writeBoolean(inst.volatile); writeNullableOrdering(out, inst.ordering) }
-            is Instruction.GetElementPtr -> { writeValue(out, inst.dest); writeType(out, inst.baseType); writeValue(out, inst.ptr); writeList(out, inst.indices) { writeValue(out, it) }; out.writeBoolean(inst.inBounds) }
-            is Instruction.Fence -> { out.writeInt(inst.ordering.ordinal); writeNullableString(out, inst.syncScope) }
-            is Instruction.CmpXchg -> { writeValue(out, inst.dest); writeValue(out, inst.ptr); writeValue(out, inst.cmp); writeValue(out, inst.new); out.writeInt(inst.successOrdering.ordinal); out.writeInt(inst.failureOrdering.ordinal); out.writeBoolean(inst.weak); out.writeBoolean(inst.volatile) }
-            is Instruction.AtomicRMW -> { writeValue(out, inst.dest); out.writeInt(inst.op.ordinal); writeValue(out, inst.ptr); writeValue(out, inst.value); out.writeInt(inst.ordering.ordinal); out.writeBoolean(inst.volatile) }
-            is Instruction.MemCpy -> { writeValue(out, inst.dst); writeValue(out, inst.src); writeValue(out, inst.len); out.writeBoolean(inst.volatile) }
-            is Instruction.MemSet -> { writeValue(out, inst.dst); writeValue(out, inst.value); writeValue(out, inst.len); out.writeBoolean(inst.volatile) }
-            is Instruction.MemMove -> { writeValue(out, inst.dst); writeValue(out, inst.src); writeValue(out, inst.len); out.writeBoolean(inst.volatile) }
-            is Instruction.Prefetch -> { writeValue(out, inst.address); out.writeInt(inst.rw); out.writeInt(inst.locality); out.writeInt(inst.cacheType) }
+            is Alloca -> { writeValue(out, inst.dest); writeType(out, inst.allocType); writeNullableValue(out, inst.numElements); writeNullableInt(out, inst.align) }
+            is Load -> { writeValue(out, inst.dest); writeValue(out, inst.ptr); writeType(out, inst.loadType); writeNullableInt(out, inst.align); out.writeBoolean(inst.volatile); writeNullableOrdering(out, inst.ordering) }
+            is Store -> { writeValue(out, inst.value); writeValue(out, inst.ptr); writeNullableInt(out, inst.align); out.writeBoolean(inst.volatile); writeNullableOrdering(out, inst.ordering) }
+            is GetElementPtr -> { writeValue(out, inst.dest); writeType(out, inst.baseType); writeValue(out, inst.ptr); writeList(out, inst.indices) { writeValue(out, it) }; out.writeBoolean(inst.inBounds) }
+            is Fence -> { out.writeInt(inst.ordering.ordinal); writeNullableString(out, inst.syncScope) }
+            is CmpXchg -> { writeValue(out, inst.dest); writeValue(out, inst.ptr); writeValue(out, inst.cmp); writeValue(out, inst.new); out.writeInt(inst.successOrdering.ordinal); out.writeInt(inst.failureOrdering.ordinal); out.writeBoolean(inst.weak); out.writeBoolean(inst.volatile) }
+            is AtomicRMW -> { writeValue(out, inst.dest); out.writeInt(inst.op.ordinal); writeValue(out, inst.ptr); writeValue(out, inst.value); out.writeInt(inst.ordering.ordinal); out.writeBoolean(inst.volatile) }
+            is MemCpy -> { writeValue(out, inst.dst); writeValue(out, inst.src); writeValue(out, inst.len); out.writeBoolean(inst.volatile) }
+            is MemSet -> { writeValue(out, inst.dst); writeValue(out, inst.value); writeValue(out, inst.len); out.writeBoolean(inst.volatile) }
+            is MemMove -> { writeValue(out, inst.dst); writeValue(out, inst.src); writeValue(out, inst.len); out.writeBoolean(inst.volatile) }
+            is Prefetch -> { writeValue(out, inst.address); out.writeInt(inst.rw); out.writeInt(inst.locality); out.writeInt(inst.cacheType) }
 
-            is Instruction.StackSave -> writeValue(out, inst.dest)
-            is Instruction.StackRestore -> writeValue(out, inst.ptr)
-            is Instruction.LifetimeStart -> { writeValue(out, inst.ptr); out.writeLong(inst.size) }
-            is Instruction.LifetimeEnd -> { writeValue(out, inst.ptr); out.writeLong(inst.size) }
+            is StackSave -> writeValue(out, inst.dest)
+            is StackRestore -> writeValue(out, inst.ptr)
+            is LifetimeStart -> { writeValue(out, inst.ptr); out.writeLong(inst.size) }
+            is LifetimeEnd -> { writeValue(out, inst.ptr); out.writeLong(inst.size) }
 
-            is Instruction.IntTrunc -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
-            is Instruction.ZExt -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
-            is Instruction.SExt -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
-            is Instruction.FPTrunc -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
-            is Instruction.FPExt -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
-            is Instruction.FPToUI -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
-            is Instruction.FPToSI -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
-            is Instruction.UIToFP -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
-            is Instruction.SIToFP -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
-            is Instruction.PtrToInt -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
-            is Instruction.IntToPtr -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
-            is Instruction.BitCast -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
-            is Instruction.AddrSpaceCast -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
+            is IntTrunc -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
+            is ZExt -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
+            is SExt -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
+            is FPTrunc -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
+            is FPExt -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
+            is FPToUI -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
+            is FPToSI -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
+            is UIToFP -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
+            is SIToFP -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
+            is PtrToInt -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
+            is IntToPtr -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
+            is BitCast -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
+            is AddrSpaceCast -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
 
-            is Instruction.Ret -> writeNullableValue(out, inst.value)
-            is Instruction.Br -> writeString(out, inst.target)
-            is Instruction.CondBr -> { writeValue(out, inst.condition); writeString(out, inst.trueTarget); writeString(out, inst.falseTarget) }
-            is Instruction.Switch -> { writeValue(out, inst.value); writeString(out, inst.defaultTarget); writeList(out, inst.cases) { writeConstant(out, it.first); writeString(out, it.second) } }
-            is Instruction.IndirectBr -> { writeValue(out, inst.address); writeList(out, inst.targets) { writeString(out, it) } }
-            is Instruction.Unreachable -> {}
-            is Instruction.Trap -> {}
-            is Instruction.DebugTrap -> {}
+            is Ret -> writeNullableValue(out, inst.value)
+            is Br -> writeString(out, inst.target)
+            is CondBr -> { writeValue(out, inst.condition); writeString(out, inst.trueTarget); writeString(out, inst.falseTarget) }
+            is Switch -> { writeValue(out, inst.value); writeString(out, inst.defaultTarget); writeList(out, inst.cases) { writeConstant(out, it.first); writeString(out, it.second) } }
+            is IndirectBr -> { writeValue(out, inst.address); writeList(out, inst.targets) { writeString(out, it) } }
+            is Unreachable -> {}
+            is Trap -> {}
+            is DebugTrap -> {}
 
-            is Instruction.Call -> {
+            is Call -> {
                 writeNullableValue(out, inst.dest); writeValue(out, inst.function); writeList(out, inst.args) { writeValue(out, it) }
                 writeType(out, inst.returnType); out.writeInt(inst.callingConv.ordinal); out.writeInt(inst.tailCall.ordinal)
             }
-            is Instruction.Invoke -> {
+            is Invoke -> {
                 writeNullableValue(out, inst.dest); writeValue(out, inst.function); writeList(out, inst.args) { writeValue(out, it) }
                 writeType(out, inst.returnType); writeString(out, inst.normalDest); writeString(out, inst.unwindDest); out.writeInt(inst.callingConv.ordinal)
             }
-            is Instruction.CallBr -> {
+            is CallBr -> {
                 writeNullableValue(out, inst.dest); writeValue(out, inst.function); writeList(out, inst.args) { writeValue(out, it) }
                 writeType(out, inst.returnType); writeString(out, inst.fallthrough); writeList(out, inst.indirectDests) { writeString(out, it) }
             }
 
-            is Instruction.VAStart -> writeValue(out, inst.argList)
-            is Instruction.VAEnd -> writeValue(out, inst.argList)
-            is Instruction.VACopy -> { writeValue(out, inst.dst); writeValue(out, inst.src) }
-            is Instruction.VAArg -> { writeValue(out, inst.dest); writeValue(out, inst.argList); writeType(out, inst.argType) }
+            is VAStart -> writeValue(out, inst.argList)
+            is VAEnd -> writeValue(out, inst.argList)
+            is VACopy -> { writeValue(out, inst.dst); writeValue(out, inst.src) }
+            is VAArg -> { writeValue(out, inst.dest); writeValue(out, inst.argList); writeType(out, inst.argType) }
 
-            is Instruction.LandingPad -> { writeValue(out, inst.dest); writeType(out, inst.resultType); writeList(out, inst.clauses) { writeLandingPadClause(out, it) }; out.writeBoolean(inst.cleanup) }
-            is Instruction.Resume -> writeValue(out, inst.value)
-            is Instruction.CatchSwitch -> { writeValue(out, inst.dest); writeNullableValue(out, inst.parentPad); writeList(out, inst.handlers) { writeString(out, it) }; writeNullableString(out, inst.unwindDest) }
-            is Instruction.CatchPad -> { writeValue(out, inst.dest); writeValue(out, inst.catchSwitch); writeList(out, inst.args) { writeValue(out, it) } }
-            is Instruction.CleanupPad -> { writeValue(out, inst.dest); writeNullableValue(out, inst.parentPad); writeList(out, inst.args) { writeValue(out, it) } }
-            is Instruction.CatchRet -> { writeValue(out, inst.catchPad); writeString(out, inst.dest) }
-            is Instruction.CleanupRet -> { writeValue(out, inst.cleanupPad); writeNullableString(out, inst.unwindDest) }
+            is LandingPad -> { writeValue(out, inst.dest); writeType(out, inst.resultType); writeList(out, inst.clauses) { writeLandingPadClause(out, it) }; out.writeBoolean(inst.cleanup) }
+            is Resume -> writeValue(out, inst.value)
+            is CatchSwitch -> { writeValue(out, inst.dest); writeNullableValue(out, inst.parentPad); writeList(out, inst.handlers) { writeString(out, it) }; writeNullableString(out, inst.unwindDest) }
+            is CatchPad -> { writeValue(out, inst.dest); writeValue(out, inst.catchSwitch); writeList(out, inst.args) { writeValue(out, it) } }
+            is CleanupPad -> { writeValue(out, inst.dest); writeNullableValue(out, inst.parentPad); writeList(out, inst.args) { writeValue(out, it) } }
+            is CatchRet -> { writeValue(out, inst.catchPad); writeString(out, inst.dest) }
+            is CleanupRet -> { writeValue(out, inst.cleanupPad); writeNullableString(out, inst.unwindDest) }
 
-            is Instruction.Phi -> { writeValue(out, inst.dest); writeList(out, inst.incoming) { writeValue(out, it.first); writeString(out, it.second) } }
-            is Instruction.Select -> { writeValue(out, inst.dest); writeValue(out, inst.condition); writeValue(out, inst.trueValue); writeValue(out, inst.falseValue) }
-            is Instruction.Freeze -> { writeValue(out, inst.dest); writeValue(out, inst.value) }
+            is Phi -> { writeValue(out, inst.dest); writeList(out, inst.incoming) { writeValue(out, it.first); writeString(out, it.second) } }
+            is Select -> { writeValue(out, inst.dest); writeValue(out, inst.condition); writeValue(out, inst.trueValue); writeValue(out, inst.falseValue) }
+            is Freeze -> { writeValue(out, inst.dest); writeValue(out, inst.value) }
 
-            is Instruction.ExtractElement -> { writeValue(out, inst.dest); writeValue(out, inst.vector); writeValue(out, inst.index) }
-            is Instruction.InsertElement -> { writeValue(out, inst.dest); writeValue(out, inst.vector); writeValue(out, inst.element); writeValue(out, inst.index) }
-            is Instruction.ShuffleVector -> { writeValue(out, inst.dest); writeValue(out, inst.v1); writeValue(out, inst.v2); writeList(out, inst.mask) { out.writeInt(it) } }
-            is Instruction.Splat -> { writeValue(out, inst.dest); writeValue(out, inst.scalar); writeType(out, inst.vectorType) }
-            is Instruction.VectorReduce -> { writeValue(out, inst.dest); out.writeInt(inst.op.ordinal); writeValue(out, inst.vector) }
+            is ExtractElement -> { writeValue(out, inst.dest); writeValue(out, inst.vector); writeValue(out, inst.index) }
+            is InsertElement -> { writeValue(out, inst.dest); writeValue(out, inst.vector); writeValue(out, inst.element); writeValue(out, inst.index) }
+            is ShuffleVector -> { writeValue(out, inst.dest); writeValue(out, inst.v1); writeValue(out, inst.v2); writeList(out, inst.mask) { out.writeInt(it) } }
+            is Splat -> { writeValue(out, inst.dest); writeValue(out, inst.scalar); writeType(out, inst.vectorType) }
+            is VectorReduce -> { writeValue(out, inst.dest); out.writeInt(inst.op.ordinal); writeValue(out, inst.vector) }
 
-            is Instruction.ExtractValue -> { writeValue(out, inst.dest); writeValue(out, inst.aggregate); writeList(out, inst.indices) { out.writeInt(it) } }
-            is Instruction.InsertValue -> { writeValue(out, inst.dest); writeValue(out, inst.aggregate); writeValue(out, inst.element); writeList(out, inst.indices) { out.writeInt(it) } }
+            is ExtractValue -> { writeValue(out, inst.dest); writeValue(out, inst.aggregate); writeList(out, inst.indices) { out.writeInt(it) } }
+            is InsertValue -> { writeValue(out, inst.dest); writeValue(out, inst.aggregate); writeValue(out, inst.element); writeList(out, inst.indices) { out.writeInt(it) } }
 
             // High-level
-            is Instruction.NewObject -> { writeValue(out, inst.dest); writeString(out, inst.className); writeList(out, inst.typeArgs) { writeType(out, it) } }
-            is Instruction.NewArray -> { writeValue(out, inst.dest); writeType(out, inst.elementType); writeValue(out, inst.size) }
-            is Instruction.NewMultiArray -> { writeValue(out, inst.dest); writeType(out, inst.elementType); writeList(out, inst.dimensions) { writeValue(out, it) } }
+            is NewObject -> { writeValue(out, inst.dest); writeString(out, inst.className); writeList(out, inst.typeArgs) { writeType(out, it) } }
+            is NewArray -> { writeValue(out, inst.dest); writeType(out, inst.elementType); writeValue(out, inst.size) }
+            is NewMultiArray -> { writeValue(out, inst.dest); writeType(out, inst.elementType); writeList(out, inst.dimensions) { writeValue(out, it) } }
 
-            is Instruction.GetField -> { writeValue(out, inst.dest); writeValue(out, inst.obj); writeString(out, inst.className); writeString(out, inst.fieldName); writeType(out, inst.fieldType) }
-            is Instruction.PutField -> { writeValue(out, inst.obj); writeString(out, inst.className); writeString(out, inst.fieldName); writeType(out, inst.fieldType); writeValue(out, inst.value) }
-            is Instruction.GetStatic -> { writeValue(out, inst.dest); writeString(out, inst.className); writeString(out, inst.fieldName); writeType(out, inst.fieldType) }
-            is Instruction.PutStatic -> { writeString(out, inst.className); writeString(out, inst.fieldName); writeType(out, inst.fieldType); writeValue(out, inst.value) }
+            is GetField -> { writeValue(out, inst.dest); writeValue(out, inst.obj); writeString(out, inst.className); writeString(out, inst.fieldName); writeType(out, inst.fieldType) }
+            is PutField -> { writeValue(out, inst.obj); writeString(out, inst.className); writeString(out, inst.fieldName); writeType(out, inst.fieldType); writeValue(out, inst.value) }
+            is GetStatic -> { writeValue(out, inst.dest); writeString(out, inst.className); writeString(out, inst.fieldName); writeType(out, inst.fieldType) }
+            is PutStatic -> { writeString(out, inst.className); writeString(out, inst.fieldName); writeType(out, inst.fieldType); writeValue(out, inst.value) }
 
-            is Instruction.VirtualCall -> { writeNullableValue(out, inst.dest); writeValue(out, inst.obj); writeString(out, inst.className); writeString(out, inst.methodName); writeType(out, inst.methodType); writeList(out, inst.args) { writeValue(out, it) } }
-            is Instruction.InterfaceCall -> { writeNullableValue(out, inst.dest); writeValue(out, inst.obj); writeString(out, inst.interfaceName); writeString(out, inst.methodName); writeType(out, inst.methodType); writeList(out, inst.args) { writeValue(out, it) } }
-            is Instruction.SpecialCall -> { writeNullableValue(out, inst.dest); writeValue(out, inst.obj); writeString(out, inst.className); writeString(out, inst.methodName); writeType(out, inst.methodType); writeList(out, inst.args) { writeValue(out, it) } }
-            is Instruction.StaticCall -> { writeNullableValue(out, inst.dest); writeString(out, inst.className); writeString(out, inst.methodName); writeType(out, inst.methodType); writeList(out, inst.args) { writeValue(out, it) } }
-            is Instruction.DynamicCall -> { writeNullableValue(out, inst.dest); writeBootstrapMethod(out, inst.bootstrapMethod); writeString(out, inst.name); writeType(out, inst.methodType); writeList(out, inst.args) { writeValue(out, it) } }
-            is Instruction.ConstructorCall -> { writeValue(out, inst.obj); writeString(out, inst.className); writeType(out, inst.constructorType); writeList(out, inst.args) { writeValue(out, it) } }
+            is VirtualCall -> { writeNullableValue(out, inst.dest); writeValue(out, inst.obj); writeString(out, inst.className); writeString(out, inst.methodName); writeType(out, inst.methodType); writeList(out, inst.args) { writeValue(out, it) } }
+            is InterfaceCall -> { writeNullableValue(out, inst.dest); writeValue(out, inst.obj); writeString(out, inst.interfaceName); writeString(out, inst.methodName); writeType(out, inst.methodType); writeList(out, inst.args) { writeValue(out, it) } }
+            is SpecialCall -> { writeNullableValue(out, inst.dest); writeValue(out, inst.obj); writeString(out, inst.className); writeString(out, inst.methodName); writeType(out, inst.methodType); writeList(out, inst.args) { writeValue(out, it) } }
+            is StaticCall -> { writeNullableValue(out, inst.dest); writeString(out, inst.className); writeString(out, inst.methodName); writeType(out, inst.methodType); writeList(out, inst.args) { writeValue(out, it) } }
+            is DynamicCall -> { writeNullableValue(out, inst.dest); writeBootstrapMethod(out, inst.bootstrapMethod); writeString(out, inst.name); writeType(out, inst.methodType); writeList(out, inst.args) { writeValue(out, it) } }
+            is ConstructorCall -> { writeValue(out, inst.obj); writeString(out, inst.className); writeType(out, inst.constructorType); writeList(out, inst.args) { writeValue(out, it) } }
 
-            is Instruction.InstanceOf -> { writeValue(out, inst.dest); writeValue(out, inst.obj); writeType(out, inst.checkType) }
-            is Instruction.CheckCast -> { writeValue(out, inst.dest); writeValue(out, inst.obj); writeType(out, inst.castType) }
-            is Instruction.TypeId -> { writeValue(out, inst.dest); writeValue(out, inst.obj) }
+            is InstanceOf -> { writeValue(out, inst.dest); writeValue(out, inst.obj); writeType(out, inst.checkType) }
+            is CheckCast -> { writeValue(out, inst.dest); writeValue(out, inst.obj); writeType(out, inst.castType) }
+            is TypeId -> { writeValue(out, inst.dest); writeValue(out, inst.obj) }
 
-            is Instruction.ArrayGet -> { writeValue(out, inst.dest); writeValue(out, inst.array); writeValue(out, inst.index); writeType(out, inst.elementType) }
-            is Instruction.ArraySet -> { writeValue(out, inst.array); writeValue(out, inst.index); writeValue(out, inst.value); writeType(out, inst.elementType) }
-            is Instruction.ArrayLength -> { writeValue(out, inst.dest); writeValue(out, inst.array) }
+            is ArrayGet -> { writeValue(out, inst.dest); writeValue(out, inst.array); writeValue(out, inst.index); writeType(out, inst.elementType) }
+            is ArraySet -> { writeValue(out, inst.array); writeValue(out, inst.index); writeValue(out, inst.value); writeType(out, inst.elementType) }
+            is ArrayLength -> { writeValue(out, inst.dest); writeValue(out, inst.array) }
 
-            is Instruction.MonitorEnter -> writeValue(out, inst.obj)
-            is Instruction.MonitorExit -> writeValue(out, inst.obj)
+            is MonitorEnter -> writeValue(out, inst.obj)
+            is MonitorExit -> writeValue(out, inst.obj)
 
-            is Instruction.Throw -> writeValue(out, inst.exception)
-            is Instruction.TryCatchRegion -> { writeString(out, inst.tryBlock); writeList(out, inst.catches) { writeCatchHandler(out, it) }; writeNullableString(out, inst.finallyBlock) }
+            is Throw -> writeValue(out, inst.exception)
+            is TryCatchRegion -> { writeString(out, inst.tryBlock); writeList(out, inst.catches) { writeCatchHandler(out, it) }; writeNullableString(out, inst.finallyBlock) }
 
-            is Instruction.Box -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.boxType) }
-            is Instruction.Unbox -> { writeValue(out, inst.dest); writeValue(out, inst.obj); writeType(out, inst.unboxType) }
+            is Box -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.boxType) }
+            is Unbox -> { writeValue(out, inst.dest); writeValue(out, inst.obj); writeType(out, inst.unboxType) }
 
-            is Instruction.CatchValue -> { writeValue(out, inst.dest); writeType(out, inst.exceptionType) }
-            is Instruction.MakeWeakRef -> { writeValue(out, inst.dest); writeValue(out, inst.obj) }
-            is Instruction.ReadWeakRef -> { writeValue(out, inst.dest); writeValue(out, inst.weakRef) }
-            is Instruction.ClearWeakRef -> writeValue(out, inst.weakRef)
+            is CatchValue -> { writeValue(out, inst.dest); writeType(out, inst.exceptionType) }
+            is MakeWeakRef -> { writeValue(out, inst.dest); writeValue(out, inst.obj) }
+            is ReadWeakRef -> { writeValue(out, inst.dest); writeValue(out, inst.weakRef) }
+            is ClearWeakRef -> writeValue(out, inst.weakRef)
 
-            is Instruction.ClosureCreate -> { writeValue(out, inst.dest); writeValue(out, inst.function); writeList(out, inst.captures) { writeValue(out, it) }; writeType(out, inst.closureType) }
-            is Instruction.ClosureInvoke -> { writeNullableValue(out, inst.dest); writeValue(out, inst.closure); writeList(out, inst.args) { writeValue(out, it) }; writeType(out, inst.returnType) }
+            is ClosureCreate -> { writeValue(out, inst.dest); writeValue(out, inst.function); writeList(out, inst.captures) { writeValue(out, it) }; writeType(out, inst.closureType) }
+            is ClosureInvoke -> { writeNullableValue(out, inst.dest); writeValue(out, inst.closure); writeList(out, inst.args) { writeValue(out, it) }; writeType(out, inst.returnType) }
 
-            is Instruction.ConstructVariant -> { writeValue(out, inst.dest); writeType(out, inst.unionType); writeString(out, inst.variantName); writeList(out, inst.fields) { writeValue(out, it) } }
-            is Instruction.GetTag -> { writeValue(out, inst.dest); writeValue(out, inst.union) }
-            is Instruction.GetVariantField -> { writeValue(out, inst.dest); writeValue(out, inst.union); writeString(out, inst.variantName); out.writeInt(inst.fieldIndex) }
-            is Instruction.TagSwitch -> { writeValue(out, inst.union); writeList(out, inst.cases) { writeString(out, it.first); writeString(out, it.second) }; writeNullableString(out, inst.defaultTarget) }
+            is ConstructVariant -> { writeValue(out, inst.dest); writeType(out, inst.unionType); writeString(out, inst.variantName); writeList(out, inst.fields) { writeValue(out, it) } }
+            is GetTag -> { writeValue(out, inst.dest); writeValue(out, inst.union) }
+            is GetVariantField -> { writeValue(out, inst.dest); writeValue(out, inst.union); writeString(out, inst.variantName); out.writeInt(inst.fieldIndex) }
+            is TagSwitch -> { writeValue(out, inst.union); writeList(out, inst.cases) { writeString(out, it.first); writeString(out, it.second) }; writeNullableString(out, inst.defaultTarget) }
 
-            is Instruction.GCAlloc -> { writeValue(out, inst.dest); writeType(out, inst.allocType); writeNullableValue(out, inst.size) }
-            is Instruction.GCSafepoint -> {}
-            is Instruction.GCRoot -> { writeValue(out, inst.ptr); writeNullableValue(out, inst.metadata) }
-            is Instruction.Pin -> { writeValue(out, inst.dest); writeValue(out, inst.ref) }
-            is Instruction.Unpin -> writeValue(out, inst.ref)
-            is Instruction.InteriorPtr -> { writeValue(out, inst.dest); writeValue(out, inst.ref); writeValue(out, inst.index); writeType(out, inst.pointeeType) }
-            is Instruction.WriteBarrier -> { writeValue(out, inst.obj); writeValue(out, inst.fieldIndex); writeValue(out, inst.value) }
-            is Instruction.ReadBarrier -> { writeValue(out, inst.dest); writeValue(out, inst.ref) }
-            is Instruction.ManagedCall -> { writeNullableValue(out, inst.dest); writeValue(out, inst.function); writeList(out, inst.args) { writeValue(out, it) }; writeType(out, inst.returnType); out.writeInt(inst.direction.ordinal) }
+            is GCAlloc -> { writeValue(out, inst.dest); writeType(out, inst.allocType); writeNullableValue(out, inst.size) }
+            is GCSafepoint -> {}
+            is GCRoot -> { writeValue(out, inst.ptr); writeNullableValue(out, inst.metadata) }
+            is Pin -> { writeValue(out, inst.dest); writeValue(out, inst.ref) }
+            is Unpin -> writeValue(out, inst.ref)
+            is InteriorPtr -> { writeValue(out, inst.dest); writeValue(out, inst.ref); writeValue(out, inst.index); writeType(out, inst.pointeeType) }
+            is WriteBarrier -> { writeValue(out, inst.obj); writeValue(out, inst.fieldIndex); writeValue(out, inst.value) }
+            is ReadBarrier -> { writeValue(out, inst.dest); writeValue(out, inst.ref) }
+            is ManagedCall -> { writeNullableValue(out, inst.dest); writeValue(out, inst.function); writeList(out, inst.args) { writeValue(out, it) }; writeType(out, inst.returnType); out.writeInt(inst.direction.ordinal) }
 
-            is Instruction.RefRetain -> writeValue(out, inst.obj)
-            is Instruction.RefRelease -> writeValue(out, inst.obj)
-            is Instruction.RefCount -> { writeValue(out, inst.dest); writeValue(out, inst.obj) }
+            is RefRetain -> writeValue(out, inst.obj)
+            is RefRelease -> writeValue(out, inst.obj)
+            is RefCount -> { writeValue(out, inst.dest); writeValue(out, inst.obj) }
 
-            is Instruction.CoroBegin -> { writeValue(out, inst.dest); writeValue(out, inst.id); writeValue(out, inst.mem) }
-            is Instruction.CoroEnd -> { writeValue(out, inst.handle); out.writeBoolean(inst.unwind) }
-            is Instruction.CoroSuspend -> { writeValue(out, inst.dest); writeNullableValue(out, inst.save); out.writeBoolean(inst.isFinal) }
-            is Instruction.CoroResume -> writeValue(out, inst.handle)
-            is Instruction.CoroDestroy -> writeValue(out, inst.handle)
-            is Instruction.CoroSize -> writeValue(out, inst.dest)
+            is CoroBegin -> { writeValue(out, inst.dest); writeValue(out, inst.id); writeValue(out, inst.mem) }
+            is CoroEnd -> { writeValue(out, inst.handle); out.writeBoolean(inst.unwind) }
+            is CoroSuspend -> { writeValue(out, inst.dest); writeNullableValue(out, inst.save); out.writeBoolean(inst.isFinal) }
+            is CoroResume -> writeValue(out, inst.handle)
+            is CoroDestroy -> writeValue(out, inst.handle)
+            is CoroSize -> writeValue(out, inst.dest)
 
-            is Instruction.Intrinsic -> { writeNullableValue(out, inst.dest); writeString(out, inst.name); writeList(out, inst.args) { writeValue(out, it) }; writeType(out, inst.returnType) }
-            is Instruction.InlineAsm -> { writeNullableValue(out, inst.dest); writeString(out, inst.assembly); writeString(out, inst.constraints); out.writeBoolean(inst.sideEffects); out.writeBoolean(inst.alignStack); out.writeInt(inst.dialect.ordinal); writeList(out, inst.args) { writeValue(out, it) }; writeType(out, inst.returnType) }
+            is Intrinsic -> { writeNullableValue(out, inst.dest); writeString(out, inst.name); writeList(out, inst.args) { writeValue(out, it) }; writeType(out, inst.returnType) }
+            is InlineAsm -> { writeNullableValue(out, inst.dest); writeString(out, inst.assembly); writeString(out, inst.constraints); out.writeBoolean(inst.sideEffects); out.writeBoolean(inst.alignStack); out.writeInt(inst.dialect.ordinal); writeList(out, inst.args) { writeValue(out, it) }; writeType(out, inst.returnType) }
 
-            is Instruction.DebugLoc -> { out.writeInt(inst.line); out.writeInt(inst.col); writeString(out, inst.scope); writeNullableString(out, inst.inlinedAt) }
-            is Instruction.DebugValue -> { writeString(out, inst.variable); writeValue(out, inst.value); writeNullableString(out, inst.expression) }
-            is Instruction.DebugDeclare -> { writeString(out, inst.variable); writeValue(out, inst.address); writeNullableString(out, inst.expression) }
+            is DebugLoc -> { out.writeInt(inst.line); out.writeInt(inst.col); writeString(out, inst.scope); writeNullableString(out, inst.inlinedAt) }
+            is DebugValue -> { writeString(out, inst.variable); writeValue(out, inst.value); writeNullableString(out, inst.expression) }
+            is DebugDeclare -> { writeString(out, inst.variable); writeValue(out, inst.address); writeNullableString(out, inst.expression) }
 
-            is Instruction.Assume -> writeValue(out, inst.condition)
-            is Instruction.Expect -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeConstant(out, inst.expected) }
+            is Assume -> writeValue(out, inst.condition)
+            is Expect -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeConstant(out, inst.expected) }
         }
     }
 
     private fun readInstruction(inp: DataInputStream): Instruction = when (val tag = inp.readShort().toInt()) {
-        I_ADD -> Instruction.Add(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), inp.readBoolean(), inp.readBoolean())
-        I_SUB -> Instruction.Sub(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), inp.readBoolean(), inp.readBoolean())
-        I_MUL -> Instruction.Mul(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), inp.readBoolean(), inp.readBoolean())
-        I_UDIV -> Instruction.UDiv(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), inp.readBoolean())
-        I_SDIV -> Instruction.SDiv(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), inp.readBoolean())
-        I_UREM -> Instruction.URem(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_SREM -> Instruction.SRem(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_NEG -> Instruction.Neg(readValue(inp) as InstructionRef, readValue(inp))
+        I_ADD -> Add(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), inp.readBoolean(), inp.readBoolean())
+        I_SUB -> Sub(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), inp.readBoolean(), inp.readBoolean())
+        I_MUL -> Mul(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), inp.readBoolean(), inp.readBoolean())
+        I_UDIV -> UDiv(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), inp.readBoolean())
+        I_SDIV -> SDiv(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), inp.readBoolean())
+        I_UREM -> URem(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_SREM -> SRem(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_NEG -> Neg(readValue(inp) as InstructionRef, readValue(inp))
 
-        I_SADD_OVF -> Instruction.SAddOverflow(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_UADD_OVF -> Instruction.UAddOverflow(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_SSUB_OVF -> Instruction.SSubOverflow(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_USUB_OVF -> Instruction.USubOverflow(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_SMUL_OVF -> Instruction.SMulOverflow(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_UMUL_OVF -> Instruction.UMulOverflow(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_SADD_OVF -> SAddOverflow(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_UADD_OVF -> UAddOverflow(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_SSUB_OVF -> SSubOverflow(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_USUB_OVF -> USubOverflow(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_SMUL_OVF -> SMulOverflow(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_UMUL_OVF -> UMulOverflow(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
 
-        I_SADD_SAT -> Instruction.SAddSat(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_UADD_SAT -> Instruction.UAddSat(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_SSUB_SAT -> Instruction.SSubSat(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_USUB_SAT -> Instruction.USubSat(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_SADD_SAT -> SAddSat(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_UADD_SAT -> UAddSat(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_SSUB_SAT -> SSubSat(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_USUB_SAT -> USubSat(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
 
-        I_SMIN -> Instruction.SMin(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_SMAX -> Instruction.SMax(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_UMIN -> Instruction.UMin(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_UMAX -> Instruction.UMax(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_ABS -> Instruction.Abs(readValue(inp) as InstructionRef, readValue(inp), inp.readBoolean())
+        I_SMIN -> SMin(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_SMAX -> SMax(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_UMIN -> UMin(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_UMAX -> UMax(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_ABS -> Abs(readValue(inp) as InstructionRef, readValue(inp), inp.readBoolean())
 
-        I_FADD -> Instruction.FAdd(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readFastMath(inp))
-        I_FSUB -> Instruction.FSub(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readFastMath(inp))
-        I_FMUL -> Instruction.FMul(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readFastMath(inp))
-        I_FDIV -> Instruction.FDiv(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readFastMath(inp))
-        I_FREM -> Instruction.FRem(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readFastMath(inp))
-        I_FNEG -> Instruction.FNeg(readValue(inp) as InstructionRef, readValue(inp), readFastMath(inp))
-        I_FABS -> Instruction.FAbs(readValue(inp) as InstructionRef, readValue(inp))
-        I_FMA -> Instruction.FMA(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readValue(inp))
-        I_FMIN -> Instruction.FMin(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_FMAX -> Instruction.FMax(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_SQRT -> Instruction.Sqrt(readValue(inp) as InstructionRef, readValue(inp))
-        I_CEIL -> Instruction.Ceil(readValue(inp) as InstructionRef, readValue(inp))
-        I_FLOOR -> Instruction.Floor(readValue(inp) as InstructionRef, readValue(inp))
-        I_ROUND -> Instruction.Round(readValue(inp) as InstructionRef, readValue(inp))
-        I_FTRUNC -> Instruction.Trunc(readValue(inp) as InstructionRef, readValue(inp))
-        I_COPYSIGN -> Instruction.CopySign(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_FADD -> FAdd(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readFastMath(inp))
+        I_FSUB -> FSub(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readFastMath(inp))
+        I_FMUL -> FMul(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readFastMath(inp))
+        I_FDIV -> FDiv(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readFastMath(inp))
+        I_FREM -> FRem(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readFastMath(inp))
+        I_FNEG -> FNeg(readValue(inp) as InstructionRef, readValue(inp), readFastMath(inp))
+        I_FABS -> FAbs(readValue(inp) as InstructionRef, readValue(inp))
+        I_FMA -> FMA(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readValue(inp))
+        I_FMIN -> FMin(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_FMAX -> FMax(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_SQRT -> Sqrt(readValue(inp) as InstructionRef, readValue(inp))
+        I_CEIL -> Ceil(readValue(inp) as InstructionRef, readValue(inp))
+        I_FLOOR -> Floor(readValue(inp) as InstructionRef, readValue(inp))
+        I_ROUND -> Round(readValue(inp) as InstructionRef, readValue(inp))
+        I_FTRUNC -> Trunc(readValue(inp) as InstructionRef, readValue(inp))
+        I_COPYSIGN -> CopySign(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
 
-        I_AND -> Instruction.And(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_OR -> Instruction.Or(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_XOR -> Instruction.Xor(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_NOT -> Instruction.Not(readValue(inp) as InstructionRef, readValue(inp))
-        I_SHL -> Instruction.Shl(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), inp.readBoolean(), inp.readBoolean())
-        I_LSHR -> Instruction.LShr(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), inp.readBoolean())
-        I_ASHR -> Instruction.AShr(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), inp.readBoolean())
-        I_ROTL -> Instruction.RotateLeft(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_ROTR -> Instruction.RotateRight(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_ROTL2 -> Instruction.Rotl(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_ROTR2 -> Instruction.Rotr(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_AND -> And(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_OR -> Or(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_XOR -> Xor(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_NOT -> Not(readValue(inp) as InstructionRef, readValue(inp))
+        I_SHL -> Shl(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), inp.readBoolean(), inp.readBoolean())
+        I_LSHR -> LShr(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), inp.readBoolean())
+        I_ASHR -> AShr(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), inp.readBoolean())
+        I_ROTL -> RotateLeft(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_ROTR -> RotateRight(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_ROTL2 -> Rotl(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_ROTR2 -> Rotr(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
 
-        I_CTLZ -> Instruction.Ctlz(readValue(inp) as InstructionRef, readValue(inp), inp.readBoolean())
-        I_CTTZ -> Instruction.Cttz(readValue(inp) as InstructionRef, readValue(inp), inp.readBoolean())
-        I_CTPOP -> Instruction.Ctpop(readValue(inp) as InstructionRef, readValue(inp))
-        I_BSWAP -> Instruction.BSwap(readValue(inp) as InstructionRef, readValue(inp))
-        I_BITREVERSE -> Instruction.BitReverse(readValue(inp) as InstructionRef, readValue(inp))
+        I_CTLZ -> Ctlz(readValue(inp) as InstructionRef, readValue(inp), inp.readBoolean())
+        I_CTTZ -> Cttz(readValue(inp) as InstructionRef, readValue(inp), inp.readBoolean())
+        I_CTPOP -> Ctpop(readValue(inp) as InstructionRef, readValue(inp))
+        I_BSWAP -> BSwap(readValue(inp) as InstructionRef, readValue(inp))
+        I_BITREVERSE -> BitReverse(readValue(inp) as InstructionRef, readValue(inp))
 
-        I_ICMP -> Instruction.ICmp(readValue(inp) as InstructionRef, ICmpPredicate.entries[inp.readInt()], readValue(inp), readValue(inp))
-        I_FCMP -> Instruction.FCmp(readValue(inp) as InstructionRef, FCmpPredicate.entries[inp.readInt()], readValue(inp), readValue(inp), readFastMath(inp))
+        I_ICMP -> ICmp(readValue(inp) as InstructionRef, ICmpPredicate.entries[inp.readInt()], readValue(inp), readValue(inp))
+        I_FCMP -> FCmp(readValue(inp) as InstructionRef, FCmpPredicate.entries[inp.readInt()], readValue(inp), readValue(inp), readFastMath(inp))
 
-        I_ALLOCA -> Instruction.Alloca(readValue(inp) as InstructionRef, readType(inp), readNullableValue(inp), readNullableInt(inp))
-        I_LOAD -> Instruction.Load(readValue(inp) as InstructionRef, readValue(inp), readType(inp), readNullableInt(inp), inp.readBoolean(), readNullableOrdering(inp))
-        I_STORE -> Instruction.Store(readValue(inp), readValue(inp), readNullableInt(inp), inp.readBoolean(), readNullableOrdering(inp))
-        I_GEP -> Instruction.GetElementPtr(readValue(inp) as InstructionRef, readType(inp), readValue(inp), readList(inp) { readValue(inp) }, inp.readBoolean())
-        I_FENCE -> Instruction.Fence(AtomicOrdering.entries[inp.readInt()], readNullableString(inp))
-        I_CMPXCHG -> Instruction.CmpXchg(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readValue(inp), AtomicOrdering.entries[inp.readInt()], AtomicOrdering.entries[inp.readInt()], inp.readBoolean(), inp.readBoolean())
-        I_ATOMICRMW -> Instruction.AtomicRMW(readValue(inp) as InstructionRef, AtomicRMWOp.entries[inp.readInt()], readValue(inp), readValue(inp), AtomicOrdering.entries[inp.readInt()], inp.readBoolean())
-        I_MEMCPY -> Instruction.MemCpy(readValue(inp), readValue(inp), readValue(inp), inp.readBoolean())
-        I_MEMSET -> Instruction.MemSet(readValue(inp), readValue(inp), readValue(inp), inp.readBoolean())
-        I_MEMMOVE -> Instruction.MemMove(readValue(inp), readValue(inp), readValue(inp), inp.readBoolean())
-        I_PREFETCH -> Instruction.Prefetch(readValue(inp), inp.readInt(), inp.readInt(), inp.readInt())
+        I_ALLOCA -> Alloca(readValue(inp) as InstructionRef, readType(inp), readNullableValue(inp), readNullableInt(inp))
+        I_LOAD -> Load(readValue(inp) as InstructionRef, readValue(inp), readType(inp), readNullableInt(inp), inp.readBoolean(), readNullableOrdering(inp))
+        I_STORE -> Store(readValue(inp), readValue(inp), readNullableInt(inp), inp.readBoolean(), readNullableOrdering(inp))
+        I_GEP -> GetElementPtr(readValue(inp) as InstructionRef, readType(inp), readValue(inp), readList(inp) { readValue(inp) }, inp.readBoolean())
+        I_FENCE -> Fence(AtomicOrdering.entries[inp.readInt()], readNullableString(inp))
+        I_CMPXCHG -> CmpXchg(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readValue(inp), AtomicOrdering.entries[inp.readInt()], AtomicOrdering.entries[inp.readInt()], inp.readBoolean(), inp.readBoolean())
+        I_ATOMICRMW -> AtomicRMW(readValue(inp) as InstructionRef, AtomicRMWOp.entries[inp.readInt()], readValue(inp), readValue(inp), AtomicOrdering.entries[inp.readInt()], inp.readBoolean())
+        I_MEMCPY -> MemCpy(readValue(inp), readValue(inp), readValue(inp), inp.readBoolean())
+        I_MEMSET -> MemSet(readValue(inp), readValue(inp), readValue(inp), inp.readBoolean())
+        I_MEMMOVE -> MemMove(readValue(inp), readValue(inp), readValue(inp), inp.readBoolean())
+        I_PREFETCH -> Prefetch(readValue(inp), inp.readInt(), inp.readInt(), inp.readInt())
 
-        I_STACKSAVE -> Instruction.StackSave(readValue(inp) as InstructionRef)
-        I_STACKRESTORE -> Instruction.StackRestore(readValue(inp))
-        I_LIFETIME_START -> Instruction.LifetimeStart(readValue(inp), inp.readLong())
-        I_LIFETIME_END -> Instruction.LifetimeEnd(readValue(inp), inp.readLong())
+        I_STACKSAVE -> StackSave(readValue(inp) as InstructionRef)
+        I_STACKRESTORE -> StackRestore(readValue(inp))
+        I_LIFETIME_START -> LifetimeStart(readValue(inp), inp.readLong())
+        I_LIFETIME_END -> LifetimeEnd(readValue(inp), inp.readLong())
 
-        I_INTTRUNC -> Instruction.IntTrunc(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
-        I_ZEXT -> Instruction.ZExt(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
-        I_SEXT -> Instruction.SExt(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
-        I_FPTRUNC -> Instruction.FPTrunc(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
-        I_FPEXT -> Instruction.FPExt(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
-        I_FPTOUI -> Instruction.FPToUI(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
-        I_FPTOSI -> Instruction.FPToSI(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
-        I_UITOFP -> Instruction.UIToFP(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
-        I_SITOFP -> Instruction.SIToFP(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
-        I_PTRTOINT -> Instruction.PtrToInt(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
-        I_INTTOPTR -> Instruction.IntToPtr(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
-        I_BITCAST -> Instruction.BitCast(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
-        I_ADDRSPACECAST -> Instruction.AddrSpaceCast(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
+        I_INTTRUNC -> IntTrunc(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
+        I_ZEXT -> ZExt(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
+        I_SEXT -> SExt(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
+        I_FPTRUNC -> FPTrunc(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
+        I_FPEXT -> FPExt(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
+        I_FPTOUI -> FPToUI(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
+        I_FPTOSI -> FPToSI(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
+        I_UITOFP -> UIToFP(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
+        I_SITOFP -> SIToFP(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
+        I_PTRTOINT -> PtrToInt(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
+        I_INTTOPTR -> IntToPtr(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
+        I_BITCAST -> BitCast(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
+        I_ADDRSPACECAST -> AddrSpaceCast(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
 
-        I_RET -> Instruction.Ret(readNullableValue(inp))
-        I_BR -> Instruction.Br(readString(inp))
-        I_CONDBR -> Instruction.CondBr(readValue(inp), readString(inp), readString(inp))
-        I_SWITCH -> Instruction.Switch(readValue(inp), readString(inp), readList(inp) { readConstant(inp) to readString(inp) })
-        I_INDIRECTBR -> Instruction.IndirectBr(readValue(inp), readList(inp) { readString(inp) })
-        I_UNREACHABLE -> Instruction.Unreachable()
-        I_TRAP -> Instruction.Trap()
-        I_DEBUGTRAP -> Instruction.DebugTrap()
+        I_RET -> Ret(readNullableValue(inp))
+        I_BR -> Br(readString(inp))
+        I_CONDBR -> CondBr(readValue(inp), readString(inp), readString(inp))
+        I_SWITCH -> Switch(readValue(inp), readString(inp), readList(inp) { readConstant(inp) to readString(inp) })
+        I_INDIRECTBR -> IndirectBr(readValue(inp), readList(inp) { readString(inp) })
+        I_UNREACHABLE -> Unreachable()
+        I_TRAP -> Trap()
+        I_DEBUGTRAP -> DebugTrap()
 
-        I_CALL -> Instruction.Call(readNullableValue(inp) as InstructionRef?, readValue(inp), readList(inp) { readValue(inp) }, readType(inp), CallingConvention.entries[inp.readInt()], TailCallKind.entries[inp.readInt()])
-        I_INVOKE -> { val d = readNullableValue(inp) as InstructionRef?; val f = readValue(inp); val a = readList(inp) { readValue(inp) }; val rt = readType(inp); Instruction.Invoke(d, f, a, rt, readString(inp), readString(inp), CallingConvention.entries[inp.readInt()]) }
-        I_CALLBR -> { val d = readNullableValue(inp) as InstructionRef?; val f = readValue(inp); val a = readList(inp) { readValue(inp) }; val rt = readType(inp); Instruction.CallBr(d, f, a, rt, readString(inp), readList(inp) { readString(inp) }) }
+        I_CALL -> Call(readNullableValue(inp) as InstructionRef?, readValue(inp), readList(inp) { readValue(inp) }, readType(inp), CallingConvention.entries[inp.readInt()], TailCallKind.entries[inp.readInt()])
+        I_INVOKE -> { val d = readNullableValue(inp) as InstructionRef?; val f = readValue(inp); val a = readList(inp) { readValue(inp) }; val rt = readType(inp); Invoke(d, f, a, rt, readString(inp), readString(inp), CallingConvention.entries[inp.readInt()]) }
+        I_CALLBR -> { val d = readNullableValue(inp) as InstructionRef?; val f = readValue(inp); val a = readList(inp) { readValue(inp) }; val rt = readType(inp); CallBr(d, f, a, rt, readString(inp), readList(inp) { readString(inp) }) }
 
-        I_VASTART -> Instruction.VAStart(readValue(inp))
-        I_VAEND -> Instruction.VAEnd(readValue(inp))
-        I_VACOPY -> Instruction.VACopy(readValue(inp), readValue(inp))
-        I_VAARG -> Instruction.VAArg(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
+        I_VASTART -> VAStart(readValue(inp))
+        I_VAEND -> VAEnd(readValue(inp))
+        I_VACOPY -> VACopy(readValue(inp), readValue(inp))
+        I_VAARG -> VAArg(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
 
-        I_LANDINGPAD -> { val d = readValue(inp) as InstructionRef; val rt = readType(inp); Instruction.LandingPad(d, rt, readList(inp) { readLandingPadClause(inp) }, inp.readBoolean()) }
-        I_RESUME -> Instruction.Resume(readValue(inp))
-        I_CATCHSWITCH -> Instruction.CatchSwitch(readValue(inp) as InstructionRef, readNullableValue(inp), readList(inp) { readString(inp) }, readNullableString(inp))
-        I_CATCHPAD -> Instruction.CatchPad(readValue(inp) as InstructionRef, readValue(inp), readList(inp) { readValue(inp) })
-        I_CLEANUPPAD -> Instruction.CleanupPad(readValue(inp) as InstructionRef, readNullableValue(inp), readList(inp) { readValue(inp) })
-        I_CATCHRET -> Instruction.CatchRet(readValue(inp), readString(inp))
-        I_CLEANUPRET -> Instruction.CleanupRet(readValue(inp), readNullableString(inp))
+        I_LANDINGPAD -> { val d = readValue(inp) as InstructionRef; val rt = readType(inp); LandingPad(d, rt, readList(inp) { readLandingPadClause(inp) }, inp.readBoolean()) }
+        I_RESUME -> Resume(readValue(inp))
+        I_CATCHSWITCH -> CatchSwitch(readValue(inp) as InstructionRef, readNullableValue(inp), readList(inp) { readString(inp) }, readNullableString(inp))
+        I_CATCHPAD -> CatchPad(readValue(inp) as InstructionRef, readValue(inp), readList(inp) { readValue(inp) })
+        I_CLEANUPPAD -> CleanupPad(readValue(inp) as InstructionRef, readNullableValue(inp), readList(inp) { readValue(inp) })
+        I_CATCHRET -> CatchRet(readValue(inp), readString(inp))
+        I_CLEANUPRET -> CleanupRet(readValue(inp), readNullableString(inp))
 
-        I_PHI -> Instruction.Phi(readValue(inp) as InstructionRef, readList(inp) { readValue(inp) to readString(inp) })
-        I_SELECT -> Instruction.Select(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readValue(inp))
-        I_FREEZE -> Instruction.Freeze(readValue(inp) as InstructionRef, readValue(inp))
+        I_PHI -> Phi(readValue(inp) as InstructionRef, readList(inp) { readValue(inp) to readString(inp) })
+        I_SELECT -> Select(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readValue(inp))
+        I_FREEZE -> Freeze(readValue(inp) as InstructionRef, readValue(inp))
 
-        I_EXTRACTELEMENT -> Instruction.ExtractElement(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_INSERTELEMENT -> Instruction.InsertElement(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readValue(inp))
-        I_SHUFFLEVECTOR -> Instruction.ShuffleVector(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readList(inp) { inp.readInt() })
-        I_SPLAT -> Instruction.Splat(readValue(inp) as InstructionRef, readValue(inp), readType(inp) as Type.Vector)
-        I_VECTORREDUCE -> Instruction.VectorReduce(readValue(inp) as InstructionRef, VectorReduceOp.entries[inp.readInt()], readValue(inp))
+        I_EXTRACTELEMENT -> ExtractElement(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_INSERTELEMENT -> InsertElement(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readValue(inp))
+        I_SHUFFLEVECTOR -> ShuffleVector(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readList(inp) { inp.readInt() })
+        I_SPLAT -> Splat(readValue(inp) as InstructionRef, readValue(inp), readType(inp) as Type.Vector)
+        I_VECTORREDUCE -> VectorReduce(readValue(inp) as InstructionRef, VectorReduceOp.entries[inp.readInt()], readValue(inp))
 
-        I_EXTRACTVALUE -> Instruction.ExtractValue(readValue(inp) as InstructionRef, readValue(inp), readList(inp) { inp.readInt() })
-        I_INSERTVALUE -> Instruction.InsertValue(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readList(inp) { inp.readInt() })
+        I_EXTRACTVALUE -> ExtractValue(readValue(inp) as InstructionRef, readValue(inp), readList(inp) { inp.readInt() })
+        I_INSERTVALUE -> InsertValue(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readList(inp) { inp.readInt() })
 
-        I_NEWOBJECT -> Instruction.NewObject(readValue(inp) as InstructionRef, readString(inp), readList(inp) { readType(inp) })
-        I_NEWARRAY -> Instruction.NewArray(readValue(inp) as InstructionRef, readType(inp), readValue(inp))
-        I_NEWMULTIARRAY -> Instruction.NewMultiArray(readValue(inp) as InstructionRef, readType(inp), readList(inp) { readValue(inp) })
+        I_NEWOBJECT -> NewObject(readValue(inp) as InstructionRef, readString(inp), readList(inp) { readType(inp) })
+        I_NEWARRAY -> NewArray(readValue(inp) as InstructionRef, readType(inp), readValue(inp))
+        I_NEWMULTIARRAY -> NewMultiArray(readValue(inp) as InstructionRef, readType(inp), readList(inp) { readValue(inp) })
 
-        I_GETFIELD -> Instruction.GetField(readValue(inp) as InstructionRef, readValue(inp), readString(inp), readString(inp), readType(inp))
-        I_PUTFIELD -> Instruction.PutField(readValue(inp), readString(inp), readString(inp), readType(inp), readValue(inp))
-        I_GETSTATIC -> Instruction.GetStatic(readValue(inp) as InstructionRef, readString(inp), readString(inp), readType(inp))
-        I_PUTSTATIC -> Instruction.PutStatic(readString(inp), readString(inp), readType(inp), readValue(inp))
+        I_GETFIELD -> GetField(readValue(inp) as InstructionRef, readValue(inp), readString(inp), readString(inp), readType(inp))
+        I_PUTFIELD -> PutField(readValue(inp), readString(inp), readString(inp), readType(inp), readValue(inp))
+        I_GETSTATIC -> GetStatic(readValue(inp) as InstructionRef, readString(inp), readString(inp), readType(inp))
+        I_PUTSTATIC -> PutStatic(readString(inp), readString(inp), readType(inp), readValue(inp))
 
-        I_VIRTUALCALL -> { val d = readNullableValue(inp) as InstructionRef?; val o = readValue(inp); Instruction.VirtualCall(d, o, readString(inp), readString(inp), readType(inp) as Type.Function, readList(inp) { readValue(inp) }) }
-        I_INTERFACECALL -> { val d = readNullableValue(inp) as InstructionRef?; val o = readValue(inp); Instruction.InterfaceCall(d, o, readString(inp), readString(inp), readType(inp) as Type.Function, readList(inp) { readValue(inp) }) }
-        I_SPECIALCALL -> { val d = readNullableValue(inp) as InstructionRef?; val o = readValue(inp); Instruction.SpecialCall(d, o, readString(inp), readString(inp), readType(inp) as Type.Function, readList(inp) { readValue(inp) }) }
-        I_STATICCALL -> Instruction.StaticCall(readNullableValue(inp) as InstructionRef?, readString(inp), readString(inp), readType(inp) as Type.Function, readList(inp) { readValue(inp) })
-        I_DYNAMICCALL -> Instruction.DynamicCall(readNullableValue(inp) as InstructionRef?, readBootstrapMethod(inp), readString(inp), readType(inp) as Type.Function, readList(inp) { readValue(inp) })
-        I_CONSTRUCTORCALL -> Instruction.ConstructorCall(readValue(inp), readString(inp), readType(inp) as Type.Function, readList(inp) { readValue(inp) })
+        I_VIRTUALCALL -> { val d = readNullableValue(inp) as InstructionRef?; val o = readValue(inp); VirtualCall(d, o, readString(inp), readString(inp), readType(inp) as Type.Function, readList(inp) { readValue(inp) }) }
+        I_INTERFACECALL -> { val d = readNullableValue(inp) as InstructionRef?; val o = readValue(inp); InterfaceCall(d, o, readString(inp), readString(inp), readType(inp) as Type.Function, readList(inp) { readValue(inp) }) }
+        I_SPECIALCALL -> { val d = readNullableValue(inp) as InstructionRef?; val o = readValue(inp); SpecialCall(d, o, readString(inp), readString(inp), readType(inp) as Type.Function, readList(inp) { readValue(inp) }) }
+        I_STATICCALL -> StaticCall(readNullableValue(inp) as InstructionRef?, readString(inp), readString(inp), readType(inp) as Type.Function, readList(inp) { readValue(inp) })
+        I_DYNAMICCALL -> DynamicCall(readNullableValue(inp) as InstructionRef?, readBootstrapMethod(inp), readString(inp), readType(inp) as Type.Function, readList(inp) { readValue(inp) })
+        I_CONSTRUCTORCALL -> ConstructorCall(readValue(inp), readString(inp), readType(inp) as Type.Function, readList(inp) { readValue(inp) })
 
-        I_INSTANCEOF -> Instruction.InstanceOf(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
-        I_CHECKCAST -> Instruction.CheckCast(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
-        I_TYPEID -> Instruction.TypeId(readValue(inp) as InstructionRef, readValue(inp))
+        I_INSTANCEOF -> InstanceOf(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
+        I_CHECKCAST -> CheckCast(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
+        I_TYPEID -> TypeId(readValue(inp) as InstructionRef, readValue(inp))
 
-        I_ARRAYGET -> Instruction.ArrayGet(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readType(inp))
-        I_ARRAYSET -> Instruction.ArraySet(readValue(inp), readValue(inp), readValue(inp), readType(inp))
-        I_ARRAYLENGTH -> Instruction.ArrayLength(readValue(inp) as InstructionRef, readValue(inp))
+        I_ARRAYGET -> ArrayGet(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readType(inp))
+        I_ARRAYSET -> ArraySet(readValue(inp), readValue(inp), readValue(inp), readType(inp))
+        I_ARRAYLENGTH -> ArrayLength(readValue(inp) as InstructionRef, readValue(inp))
 
-        I_MONITORENTER -> Instruction.MonitorEnter(readValue(inp))
-        I_MONITOREXIT -> Instruction.MonitorExit(readValue(inp))
+        I_MONITORENTER -> MonitorEnter(readValue(inp))
+        I_MONITOREXIT -> MonitorExit(readValue(inp))
 
-        I_THROW -> Instruction.Throw(readValue(inp))
-        I_TRYCATCH -> Instruction.TryCatchRegion(readString(inp), readList(inp) { readCatchHandler(inp) }, readNullableString(inp))
+        I_THROW -> Throw(readValue(inp))
+        I_TRYCATCH -> TryCatchRegion(readString(inp), readList(inp) { readCatchHandler(inp) }, readNullableString(inp))
 
-        I_BOX -> Instruction.Box(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
-        I_UNBOX -> Instruction.Unbox(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
+        I_BOX -> Box(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
+        I_UNBOX -> Unbox(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
 
-        I_CATCHVALUE -> Instruction.CatchValue(readValue(inp) as InstructionRef, readType(inp))
-        I_MAKEWEAKREF -> Instruction.MakeWeakRef(readValue(inp) as InstructionRef, readValue(inp))
-        I_READWEAKREF -> Instruction.ReadWeakRef(readValue(inp) as InstructionRef, readValue(inp))
-        I_CLEARWEAKREF -> Instruction.ClearWeakRef(readValue(inp))
+        I_CATCHVALUE -> CatchValue(readValue(inp) as InstructionRef, readType(inp))
+        I_MAKEWEAKREF -> MakeWeakRef(readValue(inp) as InstructionRef, readValue(inp))
+        I_READWEAKREF -> ReadWeakRef(readValue(inp) as InstructionRef, readValue(inp))
+        I_CLEARWEAKREF -> ClearWeakRef(readValue(inp))
 
-        I_CLOSURE_CREATE -> Instruction.ClosureCreate(readValue(inp) as InstructionRef, readValue(inp), readList(inp) { readValue(inp) }, readType(inp) as Type.Function)
-        I_CLOSURE_INVOKE -> Instruction.ClosureInvoke(readNullableValue(inp) as InstructionRef?, readValue(inp), readList(inp) { readValue(inp) }, readType(inp))
+        I_CLOSURE_CREATE -> ClosureCreate(readValue(inp) as InstructionRef, readValue(inp), readList(inp) { readValue(inp) }, readType(inp) as Type.Function)
+        I_CLOSURE_INVOKE -> ClosureInvoke(readNullableValue(inp) as InstructionRef?, readValue(inp), readList(inp) { readValue(inp) }, readType(inp))
 
-        I_CONSTRUCT_VARIANT -> Instruction.ConstructVariant(readValue(inp) as InstructionRef, readType(inp) as Type.TaggedUnion, readString(inp), readList(inp) { readValue(inp) })
-        I_GETTAG -> Instruction.GetTag(readValue(inp) as InstructionRef, readValue(inp))
-        I_GETVARIANTFIELD -> Instruction.GetVariantField(readValue(inp) as InstructionRef, readValue(inp), readString(inp), inp.readInt())
-        I_TAGSWITCH -> Instruction.TagSwitch(readValue(inp), readList(inp) { readString(inp) to readString(inp) }, readNullableString(inp))
+        I_CONSTRUCT_VARIANT -> ConstructVariant(readValue(inp) as InstructionRef, readType(inp) as Type.TaggedUnion, readString(inp), readList(inp) { readValue(inp) })
+        I_GETTAG -> GetTag(readValue(inp) as InstructionRef, readValue(inp))
+        I_GETVARIANTFIELD -> GetVariantField(readValue(inp) as InstructionRef, readValue(inp), readString(inp), inp.readInt())
+        I_TAGSWITCH -> TagSwitch(readValue(inp), readList(inp) { readString(inp) to readString(inp) }, readNullableString(inp))
 
-        I_GCALLOC -> Instruction.GCAlloc(readValue(inp) as InstructionRef, readType(inp), readNullableValue(inp))
-        I_GCSAFEPOINT -> Instruction.GCSafepoint()
-        I_GCROOT -> Instruction.GCRoot(readValue(inp), readNullableValue(inp))
-        I_PIN -> Instruction.Pin(readValue(inp) as InstructionRef, readValue(inp))
-        I_UNPIN -> Instruction.Unpin(readValue(inp))
-        I_INTERIOR_PTR -> Instruction.InteriorPtr(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readType(inp))
-        I_WRITE_BARRIER -> Instruction.WriteBarrier(readValue(inp), readValue(inp), readValue(inp))
-        I_READ_BARRIER -> Instruction.ReadBarrier(readValue(inp) as InstructionRef, readValue(inp))
-        I_MANAGED_CALL -> Instruction.ManagedCall(readNullableValue(inp) as InstructionRef?, readValue(inp), readList(inp) { readValue(inp) }, readType(inp), ManagedCallDirection.entries[inp.readInt()])
+        I_GCALLOC -> GCAlloc(readValue(inp) as InstructionRef, readType(inp), readNullableValue(inp))
+        I_GCSAFEPOINT -> GCSafepoint()
+        I_GCROOT -> GCRoot(readValue(inp), readNullableValue(inp))
+        I_PIN -> Pin(readValue(inp) as InstructionRef, readValue(inp))
+        I_UNPIN -> Unpin(readValue(inp))
+        I_INTERIOR_PTR -> InteriorPtr(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readType(inp))
+        I_WRITE_BARRIER -> WriteBarrier(readValue(inp), readValue(inp), readValue(inp))
+        I_READ_BARRIER -> ReadBarrier(readValue(inp) as InstructionRef, readValue(inp))
+        I_MANAGED_CALL -> ManagedCall(readNullableValue(inp) as InstructionRef?, readValue(inp), readList(inp) { readValue(inp) }, readType(inp), ManagedCallDirection.entries[inp.readInt()])
 
-        I_REFRETAIN -> Instruction.RefRetain(readValue(inp))
-        I_REFRELEASE -> Instruction.RefRelease(readValue(inp))
-        I_REFCOUNT -> Instruction.RefCount(readValue(inp) as InstructionRef, readValue(inp))
+        I_REFRETAIN -> RefRetain(readValue(inp))
+        I_REFRELEASE -> RefRelease(readValue(inp))
+        I_REFCOUNT -> RefCount(readValue(inp) as InstructionRef, readValue(inp))
 
-        I_COROBEGIN -> Instruction.CoroBegin(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_COROEND -> Instruction.CoroEnd(readValue(inp), inp.readBoolean())
-        I_COROSUSPEND -> Instruction.CoroSuspend(readValue(inp) as InstructionRef, readNullableValue(inp), inp.readBoolean())
-        I_CORORESUME -> Instruction.CoroResume(readValue(inp))
-        I_CORODESTROY -> Instruction.CoroDestroy(readValue(inp))
-        I_COROSIZE -> Instruction.CoroSize(readValue(inp) as InstructionRef)
+        I_COROBEGIN -> CoroBegin(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_COROEND -> CoroEnd(readValue(inp), inp.readBoolean())
+        I_COROSUSPEND -> CoroSuspend(readValue(inp) as InstructionRef, readNullableValue(inp), inp.readBoolean())
+        I_CORORESUME -> CoroResume(readValue(inp))
+        I_CORODESTROY -> CoroDestroy(readValue(inp))
+        I_COROSIZE -> CoroSize(readValue(inp) as InstructionRef)
 
-        I_INTRINSIC -> Instruction.Intrinsic(readNullableValue(inp) as InstructionRef?, readString(inp), readList(inp) { readValue(inp) }, readType(inp))
-        I_INLINEASM -> Instruction.InlineAsm(readNullableValue(inp) as InstructionRef?, readString(inp), readString(inp), inp.readBoolean(), inp.readBoolean(), AsmDialect.entries[inp.readInt()], readList(inp) { readValue(inp) }, readType(inp))
+        I_INTRINSIC -> Intrinsic(readNullableValue(inp) as InstructionRef?, readString(inp), readList(inp) { readValue(inp) }, readType(inp))
+        I_INLINEASM -> InlineAsm(readNullableValue(inp) as InstructionRef?, readString(inp), readString(inp), inp.readBoolean(), inp.readBoolean(), AsmDialect.entries[inp.readInt()], readList(inp) { readValue(inp) }, readType(inp))
 
-        I_DEBUGLOC -> Instruction.DebugLoc(inp.readInt(), inp.readInt(), readString(inp), readNullableString(inp))
-        I_DEBUGVALUE -> Instruction.DebugValue(readString(inp), readValue(inp), readNullableString(inp))
-        I_DEBUGDECLARE -> Instruction.DebugDeclare(readString(inp), readValue(inp), readNullableString(inp))
+        I_DEBUGLOC -> DebugLoc(inp.readInt(), inp.readInt(), readString(inp), readNullableString(inp))
+        I_DEBUGVALUE -> DebugValue(readString(inp), readValue(inp), readNullableString(inp))
+        I_DEBUGDECLARE -> DebugDeclare(readString(inp), readValue(inp), readNullableString(inp))
 
-        I_ASSUME -> Instruction.Assume(readValue(inp))
-        I_EXPECT -> Instruction.Expect(readValue(inp) as InstructionRef, readValue(inp), readConstant(inp))
+        I_ASSUME -> Assume(readValue(inp))
+        I_EXPECT -> Expect(readValue(inp) as InstructionRef, readValue(inp), readConstant(inp))
 
         else -> throw IllegalArgumentException("Unknown instruction tag: $tag")
     }
@@ -1010,82 +1011,82 @@ class IrSerializer {
     }
 
     private fun instructionTag(inst: Instruction): Int = when (inst) {
-        is Instruction.Add -> I_ADD; is Instruction.Sub -> I_SUB; is Instruction.Mul -> I_MUL
-        is Instruction.UDiv -> I_UDIV; is Instruction.SDiv -> I_SDIV
-        is Instruction.URem -> I_UREM; is Instruction.SRem -> I_SREM; is Instruction.Neg -> I_NEG
-        is Instruction.SAddOverflow -> I_SADD_OVF; is Instruction.UAddOverflow -> I_UADD_OVF
-        is Instruction.SSubOverflow -> I_SSUB_OVF; is Instruction.USubOverflow -> I_USUB_OVF
-        is Instruction.SMulOverflow -> I_SMUL_OVF; is Instruction.UMulOverflow -> I_UMUL_OVF
-        is Instruction.SAddSat -> I_SADD_SAT; is Instruction.UAddSat -> I_UADD_SAT
-        is Instruction.SSubSat -> I_SSUB_SAT; is Instruction.USubSat -> I_USUB_SAT
-        is Instruction.SMin -> I_SMIN; is Instruction.SMax -> I_SMAX
-        is Instruction.UMin -> I_UMIN; is Instruction.UMax -> I_UMAX; is Instruction.Abs -> I_ABS
-        is Instruction.FAdd -> I_FADD; is Instruction.FSub -> I_FSUB; is Instruction.FMul -> I_FMUL
-        is Instruction.FDiv -> I_FDIV; is Instruction.FRem -> I_FREM; is Instruction.FNeg -> I_FNEG
-        is Instruction.FAbs -> I_FABS; is Instruction.FMA -> I_FMA
-        is Instruction.FMin -> I_FMIN; is Instruction.FMax -> I_FMAX
-        is Instruction.Sqrt -> I_SQRT; is Instruction.Ceil -> I_CEIL; is Instruction.Floor -> I_FLOOR
-        is Instruction.Round -> I_ROUND; is Instruction.Trunc -> I_FTRUNC; is Instruction.CopySign -> I_COPYSIGN
-        is Instruction.And -> I_AND; is Instruction.Or -> I_OR; is Instruction.Xor -> I_XOR; is Instruction.Not -> I_NOT
-        is Instruction.Shl -> I_SHL; is Instruction.LShr -> I_LSHR; is Instruction.AShr -> I_ASHR
-        is Instruction.RotateLeft -> I_ROTL; is Instruction.RotateRight -> I_ROTR
-        is Instruction.Rotl -> I_ROTL2; is Instruction.Rotr -> I_ROTR2
-        is Instruction.Ctlz -> I_CTLZ; is Instruction.Cttz -> I_CTTZ; is Instruction.Ctpop -> I_CTPOP
-        is Instruction.BSwap -> I_BSWAP; is Instruction.BitReverse -> I_BITREVERSE
-        is Instruction.ICmp -> I_ICMP; is Instruction.FCmp -> I_FCMP
-        is Instruction.Alloca -> I_ALLOCA; is Instruction.Load -> I_LOAD; is Instruction.Store -> I_STORE
-        is Instruction.GetElementPtr -> I_GEP; is Instruction.Fence -> I_FENCE
-        is Instruction.CmpXchg -> I_CMPXCHG; is Instruction.AtomicRMW -> I_ATOMICRMW
-        is Instruction.MemCpy -> I_MEMCPY; is Instruction.MemSet -> I_MEMSET; is Instruction.MemMove -> I_MEMMOVE
-        is Instruction.Prefetch -> I_PREFETCH
-        is Instruction.StackSave -> I_STACKSAVE; is Instruction.StackRestore -> I_STACKRESTORE
-        is Instruction.LifetimeStart -> I_LIFETIME_START; is Instruction.LifetimeEnd -> I_LIFETIME_END
-        is Instruction.IntTrunc -> I_INTTRUNC; is Instruction.ZExt -> I_ZEXT; is Instruction.SExt -> I_SEXT
-        is Instruction.FPTrunc -> I_FPTRUNC; is Instruction.FPExt -> I_FPEXT
-        is Instruction.FPToUI -> I_FPTOUI; is Instruction.FPToSI -> I_FPTOSI
-        is Instruction.UIToFP -> I_UITOFP; is Instruction.SIToFP -> I_SITOFP
-        is Instruction.PtrToInt -> I_PTRTOINT; is Instruction.IntToPtr -> I_INTTOPTR
-        is Instruction.BitCast -> I_BITCAST; is Instruction.AddrSpaceCast -> I_ADDRSPACECAST
-        is Instruction.Ret -> I_RET; is Instruction.Br -> I_BR; is Instruction.CondBr -> I_CONDBR
-        is Instruction.Switch -> I_SWITCH; is Instruction.IndirectBr -> I_INDIRECTBR
-        is Instruction.Unreachable -> I_UNREACHABLE; is Instruction.Trap -> I_TRAP; is Instruction.DebugTrap -> I_DEBUGTRAP
-        is Instruction.Call -> I_CALL; is Instruction.Invoke -> I_INVOKE; is Instruction.CallBr -> I_CALLBR
-        is Instruction.VAStart -> I_VASTART; is Instruction.VAEnd -> I_VAEND
-        is Instruction.VACopy -> I_VACOPY; is Instruction.VAArg -> I_VAARG
-        is Instruction.LandingPad -> I_LANDINGPAD; is Instruction.Resume -> I_RESUME
-        is Instruction.CatchSwitch -> I_CATCHSWITCH; is Instruction.CatchPad -> I_CATCHPAD
-        is Instruction.CleanupPad -> I_CLEANUPPAD; is Instruction.CatchRet -> I_CATCHRET; is Instruction.CleanupRet -> I_CLEANUPRET
-        is Instruction.Phi -> I_PHI; is Instruction.Select -> I_SELECT; is Instruction.Freeze -> I_FREEZE
-        is Instruction.ExtractElement -> I_EXTRACTELEMENT; is Instruction.InsertElement -> I_INSERTELEMENT
-        is Instruction.ShuffleVector -> I_SHUFFLEVECTOR; is Instruction.Splat -> I_SPLAT
-        is Instruction.VectorReduce -> I_VECTORREDUCE
-        is Instruction.ExtractValue -> I_EXTRACTVALUE; is Instruction.InsertValue -> I_INSERTVALUE
-        is Instruction.NewObject -> I_NEWOBJECT; is Instruction.NewArray -> I_NEWARRAY; is Instruction.NewMultiArray -> I_NEWMULTIARRAY
-        is Instruction.GetField -> I_GETFIELD; is Instruction.PutField -> I_PUTFIELD
-        is Instruction.GetStatic -> I_GETSTATIC; is Instruction.PutStatic -> I_PUTSTATIC
-        is Instruction.VirtualCall -> I_VIRTUALCALL; is Instruction.InterfaceCall -> I_INTERFACECALL
-        is Instruction.SpecialCall -> I_SPECIALCALL; is Instruction.StaticCall -> I_STATICCALL
-        is Instruction.DynamicCall -> I_DYNAMICCALL; is Instruction.ConstructorCall -> I_CONSTRUCTORCALL
-        is Instruction.InstanceOf -> I_INSTANCEOF; is Instruction.CheckCast -> I_CHECKCAST; is Instruction.TypeId -> I_TYPEID
-        is Instruction.ArrayGet -> I_ARRAYGET; is Instruction.ArraySet -> I_ARRAYSET; is Instruction.ArrayLength -> I_ARRAYLENGTH
-        is Instruction.MonitorEnter -> I_MONITORENTER; is Instruction.MonitorExit -> I_MONITOREXIT
-        is Instruction.Throw -> I_THROW; is Instruction.TryCatchRegion -> I_TRYCATCH
-        is Instruction.Box -> I_BOX; is Instruction.Unbox -> I_UNBOX
-        is Instruction.CatchValue -> I_CATCHVALUE; is Instruction.MakeWeakRef -> I_MAKEWEAKREF
-        is Instruction.ReadWeakRef -> I_READWEAKREF; is Instruction.ClearWeakRef -> I_CLEARWEAKREF
-        is Instruction.ClosureCreate -> I_CLOSURE_CREATE; is Instruction.ClosureInvoke -> I_CLOSURE_INVOKE
-        is Instruction.ConstructVariant -> I_CONSTRUCT_VARIANT; is Instruction.GetTag -> I_GETTAG
-        is Instruction.GetVariantField -> I_GETVARIANTFIELD; is Instruction.TagSwitch -> I_TAGSWITCH
-        is Instruction.GCAlloc -> I_GCALLOC; is Instruction.GCSafepoint -> I_GCSAFEPOINT; is Instruction.GCRoot -> I_GCROOT
-        is Instruction.Pin -> I_PIN; is Instruction.Unpin -> I_UNPIN; is Instruction.InteriorPtr -> I_INTERIOR_PTR
-        is Instruction.WriteBarrier -> I_WRITE_BARRIER; is Instruction.ReadBarrier -> I_READ_BARRIER; is Instruction.ManagedCall -> I_MANAGED_CALL
-        is Instruction.RefRetain -> I_REFRETAIN; is Instruction.RefRelease -> I_REFRELEASE; is Instruction.RefCount -> I_REFCOUNT
-        is Instruction.CoroBegin -> I_COROBEGIN; is Instruction.CoroEnd -> I_COROEND
-        is Instruction.CoroSuspend -> I_COROSUSPEND; is Instruction.CoroResume -> I_CORORESUME
-        is Instruction.CoroDestroy -> I_CORODESTROY; is Instruction.CoroSize -> I_COROSIZE
-        is Instruction.Intrinsic -> I_INTRINSIC; is Instruction.InlineAsm -> I_INLINEASM
-        is Instruction.DebugLoc -> I_DEBUGLOC; is Instruction.DebugValue -> I_DEBUGVALUE; is Instruction.DebugDeclare -> I_DEBUGDECLARE
-        is Instruction.Assume -> I_ASSUME; is Instruction.Expect -> I_EXPECT
+        is Add -> I_ADD; is Sub -> I_SUB; is Mul -> I_MUL
+        is UDiv -> I_UDIV; is SDiv -> I_SDIV
+        is URem -> I_UREM; is SRem -> I_SREM; is Neg -> I_NEG
+        is SAddOverflow -> I_SADD_OVF; is UAddOverflow -> I_UADD_OVF
+        is SSubOverflow -> I_SSUB_OVF; is USubOverflow -> I_USUB_OVF
+        is SMulOverflow -> I_SMUL_OVF; is UMulOverflow -> I_UMUL_OVF
+        is SAddSat -> I_SADD_SAT; is UAddSat -> I_UADD_SAT
+        is SSubSat -> I_SSUB_SAT; is USubSat -> I_USUB_SAT
+        is SMin -> I_SMIN; is SMax -> I_SMAX
+        is UMin -> I_UMIN; is UMax -> I_UMAX; is Abs -> I_ABS
+        is FAdd -> I_FADD; is FSub -> I_FSUB; is FMul -> I_FMUL
+        is FDiv -> I_FDIV; is FRem -> I_FREM; is FNeg -> I_FNEG
+        is FAbs -> I_FABS; is FMA -> I_FMA
+        is FMin -> I_FMIN; is FMax -> I_FMAX
+        is Sqrt -> I_SQRT; is Ceil -> I_CEIL; is Floor -> I_FLOOR
+        is Round -> I_ROUND; is Trunc -> I_FTRUNC; is CopySign -> I_COPYSIGN
+        is And -> I_AND; is Or -> I_OR; is Xor -> I_XOR; is Not -> I_NOT
+        is Shl -> I_SHL; is LShr -> I_LSHR; is AShr -> I_ASHR
+        is RotateLeft -> I_ROTL; is RotateRight -> I_ROTR
+        is Rotl -> I_ROTL2; is Rotr -> I_ROTR2
+        is Ctlz -> I_CTLZ; is Cttz -> I_CTTZ; is Ctpop -> I_CTPOP
+        is BSwap -> I_BSWAP; is BitReverse -> I_BITREVERSE
+        is ICmp -> I_ICMP; is FCmp -> I_FCMP
+        is Alloca -> I_ALLOCA; is Load -> I_LOAD; is Store -> I_STORE
+        is GetElementPtr -> I_GEP; is Fence -> I_FENCE
+        is CmpXchg -> I_CMPXCHG; is AtomicRMW -> I_ATOMICRMW
+        is MemCpy -> I_MEMCPY; is MemSet -> I_MEMSET; is MemMove -> I_MEMMOVE
+        is Prefetch -> I_PREFETCH
+        is StackSave -> I_STACKSAVE; is StackRestore -> I_STACKRESTORE
+        is LifetimeStart -> I_LIFETIME_START; is LifetimeEnd -> I_LIFETIME_END
+        is IntTrunc -> I_INTTRUNC; is ZExt -> I_ZEXT; is SExt -> I_SEXT
+        is FPTrunc -> I_FPTRUNC; is FPExt -> I_FPEXT
+        is FPToUI -> I_FPTOUI; is FPToSI -> I_FPTOSI
+        is UIToFP -> I_UITOFP; is SIToFP -> I_SITOFP
+        is PtrToInt -> I_PTRTOINT; is IntToPtr -> I_INTTOPTR
+        is BitCast -> I_BITCAST; is AddrSpaceCast -> I_ADDRSPACECAST
+        is Ret -> I_RET; is Br -> I_BR; is CondBr -> I_CONDBR
+        is Switch -> I_SWITCH; is IndirectBr -> I_INDIRECTBR
+        is Unreachable -> I_UNREACHABLE; is Trap -> I_TRAP; is DebugTrap -> I_DEBUGTRAP
+        is Call -> I_CALL; is Invoke -> I_INVOKE; is CallBr -> I_CALLBR
+        is VAStart -> I_VASTART; is VAEnd -> I_VAEND
+        is VACopy -> I_VACOPY; is VAArg -> I_VAARG
+        is LandingPad -> I_LANDINGPAD; is Resume -> I_RESUME
+        is CatchSwitch -> I_CATCHSWITCH; is CatchPad -> I_CATCHPAD
+        is CleanupPad -> I_CLEANUPPAD; is CatchRet -> I_CATCHRET; is CleanupRet -> I_CLEANUPRET
+        is Phi -> I_PHI; is Select -> I_SELECT; is Freeze -> I_FREEZE
+        is ExtractElement -> I_EXTRACTELEMENT; is InsertElement -> I_INSERTELEMENT
+        is ShuffleVector -> I_SHUFFLEVECTOR; is Splat -> I_SPLAT
+        is VectorReduce -> I_VECTORREDUCE
+        is ExtractValue -> I_EXTRACTVALUE; is InsertValue -> I_INSERTVALUE
+        is NewObject -> I_NEWOBJECT; is NewArray -> I_NEWARRAY; is NewMultiArray -> I_NEWMULTIARRAY
+        is GetField -> I_GETFIELD; is PutField -> I_PUTFIELD
+        is GetStatic -> I_GETSTATIC; is PutStatic -> I_PUTSTATIC
+        is VirtualCall -> I_VIRTUALCALL; is InterfaceCall -> I_INTERFACECALL
+        is SpecialCall -> I_SPECIALCALL; is StaticCall -> I_STATICCALL
+        is DynamicCall -> I_DYNAMICCALL; is ConstructorCall -> I_CONSTRUCTORCALL
+        is InstanceOf -> I_INSTANCEOF; is CheckCast -> I_CHECKCAST; is TypeId -> I_TYPEID
+        is ArrayGet -> I_ARRAYGET; is ArraySet -> I_ARRAYSET; is ArrayLength -> I_ARRAYLENGTH
+        is MonitorEnter -> I_MONITORENTER; is MonitorExit -> I_MONITOREXIT
+        is Throw -> I_THROW; is TryCatchRegion -> I_TRYCATCH
+        is Box -> I_BOX; is Unbox -> I_UNBOX
+        is CatchValue -> I_CATCHVALUE; is MakeWeakRef -> I_MAKEWEAKREF
+        is ReadWeakRef -> I_READWEAKREF; is ClearWeakRef -> I_CLEARWEAKREF
+        is ClosureCreate -> I_CLOSURE_CREATE; is ClosureInvoke -> I_CLOSURE_INVOKE
+        is ConstructVariant -> I_CONSTRUCT_VARIANT; is GetTag -> I_GETTAG
+        is GetVariantField -> I_GETVARIANTFIELD; is TagSwitch -> I_TAGSWITCH
+        is GCAlloc -> I_GCALLOC; is GCSafepoint -> I_GCSAFEPOINT; is GCRoot -> I_GCROOT
+        is Pin -> I_PIN; is Unpin -> I_UNPIN; is InteriorPtr -> I_INTERIOR_PTR
+        is WriteBarrier -> I_WRITE_BARRIER; is ReadBarrier -> I_READ_BARRIER; is ManagedCall -> I_MANAGED_CALL
+        is RefRetain -> I_REFRETAIN; is RefRelease -> I_REFRELEASE; is RefCount -> I_REFCOUNT
+        is CoroBegin -> I_COROBEGIN; is CoroEnd -> I_COROEND
+        is CoroSuspend -> I_COROSUSPEND; is CoroResume -> I_CORORESUME
+        is CoroDestroy -> I_CORODESTROY; is CoroSize -> I_COROSIZE
+        is Intrinsic -> I_INTRINSIC; is InlineAsm -> I_INLINEASM
+        is DebugLoc -> I_DEBUGLOC; is DebugValue -> I_DEBUGVALUE; is DebugDeclare -> I_DEBUGDECLARE
+        is Assume -> I_ASSUME; is Expect -> I_EXPECT
     }
 
     companion object {

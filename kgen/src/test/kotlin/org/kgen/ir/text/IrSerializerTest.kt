@@ -1,6 +1,7 @@
 package org.kgen.ir.text
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.*
 import org.kgen.ir.types.*
 import org.junit.jupiter.api.Test
@@ -188,7 +189,7 @@ class IrSerializerTest {
             name = "constrained",
             constraints = IrConstraints.NATIVE,
             functions = listOf(
-                IrFunction("f", emptyList(), Type.Void, listOf(BasicBlock("entry", listOf(Instruction.Ret(null))))),
+                IrFunction("f", emptyList(), Type.Void, listOf(BasicBlock("entry", listOf(Ret(null))))),
             ),
         )
 
@@ -212,8 +213,8 @@ class IrSerializerTest {
         val mod = Module(
             name = "with_submodules",
             functions = listOf(
-                IrFunction("native_fn", emptyList(), Type.Void, listOf(BasicBlock("entry", listOf(Instruction.Ret(null))))),
-                IrFunction("managed_fn", emptyList(), Type.Void, listOf(BasicBlock("entry", listOf(Instruction.Ret(null))))),
+                IrFunction("native_fn", emptyList(), Type.Void, listOf(BasicBlock("entry", listOf(Ret(null))))),
+                IrFunction("managed_fn", emptyList(), Type.Void, listOf(BasicBlock("entry", listOf(Ret(null))))),
             ),
             globals = listOf(Global("g", Type.I32)),
             submodules = listOf(
@@ -244,7 +245,7 @@ class IrSerializerTest {
             name = "full",
             constraints = IrConstraints.MIXED,
             functions = listOf(
-                IrFunction("f", emptyList(), Type.Void, listOf(BasicBlock("entry", listOf(Instruction.Ret(null))))),
+                IrFunction("f", emptyList(), Type.Void, listOf(BasicBlock("entry", listOf(Ret(null))))),
             ),
             submodules = listOf(
                 Submodule("sub", IrConstraints.NATIVE, listOf("f"), emptyList()),

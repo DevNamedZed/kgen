@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -24,8 +25,8 @@ class OptimizationPassComprehensiveTest {
         return ir.build()
     }
 
-    private fun retVal(module: Module, fnIndex: Int = 0): Instruction.Ret {
-        return module.functions[fnIndex].blocks.last().instructions.last() as Instruction.Ret
+    private fun retVal(module: Module, fnIndex: Int = 0): Ret {
+        return module.functions[fnIndex].blocks.last().instructions.last() as Ret
     }
 
     private fun instCount(module: Module, fnIndex: Int = 0, blockIndex: Int = 0): Int {
@@ -123,7 +124,7 @@ class OptimizationPassComprehensiveTest {
             ret(sdiv(Constant.I32(10), Constant.I32(0)))
             finalizeFunction()
         })
-        assertTrue(m.functions[0].blocks[0].instructions.any { it is Instruction.SDiv })
+        assertTrue(m.functions[0].blocks[0].instructions.any { it is SDiv })
     }
 
     @Test
@@ -134,7 +135,7 @@ class OptimizationPassComprehensiveTest {
             ret(udiv(Constant.I32(10), Constant.I32(0)))
             finalizeFunction()
         })
-        assertTrue(m.functions[0].blocks[0].instructions.any { it is Instruction.UDiv })
+        assertTrue(m.functions[0].blocks[0].instructions.any { it is UDiv })
     }
 
     @Test
@@ -695,7 +696,7 @@ class OptimizationPassComprehensiveTest {
             ret(add(params[0], Constant.I32(1)))
             finalizeFunction()
         })
-        assertTrue(m.functions[0].blocks[0].instructions[0] is Instruction.Add)
+        assertTrue(m.functions[0].blocks[0].instructions[0] is Add)
     }
 
     @Test
@@ -707,7 +708,7 @@ class OptimizationPassComprehensiveTest {
             ret(call("ext", listOf(Constant.I32(42)), Type.I32)!!)
             finalizeFunction()
         })
-        assertTrue(m.functions[1].blocks[0].instructions.any { it is Instruction.Call })
+        assertTrue(m.functions[1].blocks[0].instructions.any { it is Call })
     }
 
     // Dead Code Elimination
@@ -774,7 +775,7 @@ class OptimizationPassComprehensiveTest {
             ret(null)
             finalizeFunction()
         })
-        assertTrue(m.functions[1].blocks[0].instructions.any { it is Instruction.Call })
+        assertTrue(m.functions[1].blocks[0].instructions.any { it is Call })
     }
 
     @Test
@@ -786,7 +787,7 @@ class OptimizationPassComprehensiveTest {
             ret(null)
             finalizeFunction()
         })
-        assertTrue(m.functions[0].blocks[0].instructions.any { it is Instruction.Store })
+        assertTrue(m.functions[0].blocks[0].instructions.any { it is Store })
     }
 
     @Test
@@ -801,7 +802,7 @@ class OptimizationPassComprehensiveTest {
             ret(Constant.I32(0))
             finalizeFunction()
         })
-        assertTrue(m.functions[0].blocks[0].instructions.any { it is Instruction.CondBr })
+        assertTrue(m.functions[0].blocks[0].instructions.any { it is CondBr })
     }
 
     @Test
@@ -815,7 +816,7 @@ class OptimizationPassComprehensiveTest {
             finalizeFunction()
         })
         assertEquals(2, instCount(m))
-        assertTrue(m.functions[0].blocks[0].instructions[0] is Instruction.Add)
+        assertTrue(m.functions[0].blocks[0].instructions[0] is Add)
     }
 
     @Test
@@ -846,7 +847,7 @@ class OptimizationPassComprehensiveTest {
             ret(call("addOne", listOf(Constant.I32(5)), Type.I32)!!)
             finalizeFunction()
         })
-        assertFalse(m.functions[1].blocks[0].instructions.any { it is Instruction.Call })
+        assertFalse(m.functions[1].blocks[0].instructions.any { it is Call })
     }
 
     @Test
@@ -862,7 +863,7 @@ class OptimizationPassComprehensiveTest {
             ret(call("rec", listOf(Constant.I32(5)), Type.I32)!!)
             finalizeFunction()
         })
-        assertTrue(m.functions[1].blocks[0].instructions.any { it is Instruction.Call })
+        assertTrue(m.functions[1].blocks[0].instructions.any { it is Call })
     }
 
     @Test
@@ -874,7 +875,7 @@ class OptimizationPassComprehensiveTest {
             ret(call("ext", listOf(Constant.I32(5)), Type.I32)!!)
             finalizeFunction()
         })
-        assertTrue(m.functions[1].blocks[0].instructions.any { it is Instruction.Call })
+        assertTrue(m.functions[1].blocks[0].instructions.any { it is Call })
     }
 
     @Test
@@ -894,7 +895,7 @@ class OptimizationPassComprehensiveTest {
             ret(call("big", listOf(Constant.I32(0)), Type.I32)!!)
             finalizeFunction()
         })
-        assertTrue(m.functions[1].blocks[0].instructions.any { it is Instruction.Call })
+        assertTrue(m.functions[1].blocks[0].instructions.any { it is Call })
     }
 
     @Test
@@ -913,8 +914,8 @@ class OptimizationPassComprehensiveTest {
             finalizeFunction()
         })
         val mainInsts = m.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
-        assertEquals(2, mainInsts.filterIsInstance<Instruction.Add>().size)
+        assertFalse(mainInsts.any { it is Call })
+        assertEquals(2, mainInsts.filterIsInstance<Add>().size)
     }
 
     @Test
@@ -931,7 +932,7 @@ class OptimizationPassComprehensiveTest {
             ret(Constant.I32(0))
             finalizeFunction()
         })
-        assertFalse(m.functions[1].blocks[0].instructions.any { it is Instruction.Call })
+        assertFalse(m.functions[1].blocks[0].instructions.any { it is Call })
     }
 
     @Test
@@ -963,7 +964,7 @@ class OptimizationPassComprehensiveTest {
             ret(call("double", listOf(Constant.I32(21)), Type.I32)!!)
             finalizeFunction()
         })
-        val addInst = m.functions[1].blocks[0].instructions.filterIsInstance<Instruction.Add>().first()
+        val addInst = m.functions[1].blocks[0].instructions.filterIsInstance<Add>().first()
         assertEquals("21", addInst.lhs.name)
         assertEquals("21", addInst.rhs.name)
     }
@@ -982,8 +983,8 @@ class OptimizationPassComprehensiveTest {
             ret(add(r, Constant.I32(1)))
             finalizeFunction()
         })
-        assertFalse(m.functions[1].blocks[0].instructions.any { it is Instruction.Call })
-        assertTrue(m.functions[1].blocks[0].instructions.any { it is Instruction.Mul })
+        assertFalse(m.functions[1].blocks[0].instructions.any { it is Call })
+        assertTrue(m.functions[1].blocks[0].instructions.any { it is Mul })
     }
 
     // Mem2Reg
@@ -1029,7 +1030,7 @@ class OptimizationPassComprehensiveTest {
             finalizeFunction()
         })
         assertEquals(2, instCount(m))
-        val addInst = m.functions[0].blocks[0].instructions[0] as Instruction.Add
+        val addInst = m.functions[0].blocks[0].instructions[0] as Add
         assertEquals(10, (addInst.lhs as Constant.I32).value)
         assertEquals(20, (addInst.rhs as Constant.I32).value)
     }
@@ -1071,9 +1072,9 @@ class OptimizationPassComprehensiveTest {
             finalizeFunction()
         })
         val mergeBlock = m.functions[0].blocks[3]
-        assertTrue(mergeBlock.instructions.any { it is Instruction.Phi })
-        assertFalse(mergeBlock.instructions.any { it is Instruction.Load })
-        val phi = mergeBlock.instructions.first { it is Instruction.Phi } as Instruction.Phi
+        assertTrue(mergeBlock.instructions.any { it is Phi })
+        assertFalse(mergeBlock.instructions.any { it is Load })
+        val phi = mergeBlock.instructions.first { it is Phi } as Phi
         val values = phi.incoming.map { (v, _) -> (v as Constant.I32).value }.toSet()
         assertEquals(setOf(10, 20), values)
     }
@@ -1103,8 +1104,8 @@ class OptimizationPassComprehensiveTest {
             finalizeFunction()
         })
         val insts = m.functions[1].blocks[0].instructions
-        assertTrue(insts.any { it is Instruction.Alloca })
-        assertTrue(insts.any { it is Instruction.Load })
+        assertTrue(insts.any { it is Alloca })
+        assertTrue(insts.any { it is Load })
     }
 
     @Test
@@ -1117,7 +1118,7 @@ class OptimizationPassComprehensiveTest {
             ret(load(Type.I32, ptr, volatile = true))
             finalizeFunction()
         })
-        assertTrue(m.functions[0].blocks[0].instructions.any { it is Instruction.Alloca })
+        assertTrue(m.functions[0].blocks[0].instructions.any { it is Alloca })
     }
 
     @Test
@@ -1157,7 +1158,7 @@ class OptimizationPassComprehensiveTest {
             finalizeFunction()
         })
         assertEquals(2, instCount(m))
-        val addInst = m.functions[0].blocks[0].instructions[0] as Instruction.Add
+        val addInst = m.functions[0].blocks[0].instructions[0] as Add
         assertEquals(10, (addInst.lhs as Constant.I32).value)
     }
 
@@ -1175,7 +1176,7 @@ class OptimizationPassComprehensiveTest {
         })
         // One add replaced with the other, so 3 -> 2 adds (a, a+a)
         val insts = m.functions[0].blocks[0].instructions
-        val adds = insts.filterIsInstance<Instruction.Add>()
+        val adds = insts.filterIsInstance<Add>()
         assertEquals(2, adds.size, "Should eliminate one redundant add: $insts")
     }
 
@@ -1189,7 +1190,7 @@ class OptimizationPassComprehensiveTest {
             ret(add(a, b))
             finalizeFunction()
         })
-        val muls = m.functions[0].blocks[0].instructions.filterIsInstance<Instruction.Mul>()
+        val muls = m.functions[0].blocks[0].instructions.filterIsInstance<Mul>()
         assertEquals(1, muls.size)
     }
 
@@ -1203,7 +1204,7 @@ class OptimizationPassComprehensiveTest {
             ret(add(a, b))
             finalizeFunction()
         })
-        val subs = m.functions[0].blocks[0].instructions.filterIsInstance<Instruction.Sub>()
+        val subs = m.functions[0].blocks[0].instructions.filterIsInstance<Sub>()
         assertEquals(1, subs.size)
     }
 
@@ -1218,7 +1219,7 @@ class OptimizationPassComprehensiveTest {
             finalizeFunction()
         })
         val insts = m.functions[0].blocks[0].instructions
-        assertTrue(insts.any { it is Instruction.Sub })
+        assertTrue(insts.any { it is Sub })
     }
 
     @Test
@@ -1232,7 +1233,7 @@ class OptimizationPassComprehensiveTest {
             finalizeFunction()
         })
         // add(x,y) != add(y,x) for GVN (no commutativity)
-        val adds = m.functions[0].blocks[0].instructions.filterIsInstance<Instruction.Add>()
+        val adds = m.functions[0].blocks[0].instructions.filterIsInstance<Add>()
         assertEquals(3, adds.size)
     }
 
@@ -1246,7 +1247,7 @@ class OptimizationPassComprehensiveTest {
             ret(or(a, b))
             finalizeFunction()
         })
-        val ands = m.functions[0].blocks[0].instructions.filterIsInstance<Instruction.And>()
+        val ands = m.functions[0].blocks[0].instructions.filterIsInstance<And>()
         assertEquals(1, ands.size)
     }
 
@@ -1262,7 +1263,7 @@ class OptimizationPassComprehensiveTest {
             ret(add(za, zb))
             finalizeFunction()
         })
-        val cmps = m.functions[0].blocks[0].instructions.filterIsInstance<Instruction.ICmp>()
+        val cmps = m.functions[0].blocks[0].instructions.filterIsInstance<ICmp>()
         assertEquals(1, cmps.size)
     }
 
@@ -1277,7 +1278,7 @@ class OptimizationPassComprehensiveTest {
             ret(add(a, b))
             finalizeFunction()
         })
-        val calls = m.functions[1].blocks[0].instructions.filterIsInstance<Instruction.Call>()
+        val calls = m.functions[1].blocks[0].instructions.filterIsInstance<Call>()
         assertEquals(2, calls.size)
     }
 
@@ -1291,7 +1292,7 @@ class OptimizationPassComprehensiveTest {
             ret(add(a, b))
             finalizeFunction()
         })
-        val exts = m.functions[0].blocks[0].instructions.filterIsInstance<Instruction.ZExt>()
+        val exts = m.functions[0].blocks[0].instructions.filterIsInstance<ZExt>()
         assertEquals(1, exts.size)
     }
 
@@ -1319,7 +1320,7 @@ class OptimizationPassComprehensiveTest {
         })
         // invariant add should be in the preheader, not in "body"
         val bodyBlock = m.functions[0].blocks.find { it.label == "body" }!!
-        assertFalse(bodyBlock.instructions.any { it is Instruction.Add },
+        assertFalse(bodyBlock.instructions.any { it is Add },
             "Invariant add should be hoisted from body: ${bodyBlock.instructions}")
     }
 
@@ -1344,7 +1345,7 @@ class OptimizationPassComprehensiveTest {
             finalizeFunction()
         })
         val bodyBlock = m.functions[0].blocks.find { it.label == "body" }!!
-        assertTrue(bodyBlock.instructions.any { it is Instruction.Add },
+        assertTrue(bodyBlock.instructions.any { it is Add },
             "Non-invariant add should stay in body")
     }
 
@@ -1369,7 +1370,7 @@ class OptimizationPassComprehensiveTest {
             finalizeFunction()
         })
         val bodyBlock = m.functions[0].blocks.find { it.label == "body" }!!
-        assertTrue(bodyBlock.instructions.any { it is Instruction.Store },
+        assertTrue(bodyBlock.instructions.any { it is Store },
             "Stores should not be hoisted")
     }
 
@@ -1395,7 +1396,7 @@ class OptimizationPassComprehensiveTest {
             finalizeFunction()
         })
         val bodyBlock = m.functions[1].blocks.find { it.label == "body" }!!
-        assertTrue(bodyBlock.instructions.any { it is Instruction.Call },
+        assertTrue(bodyBlock.instructions.any { it is Call },
             "Calls should not be hoisted")
     }
 
@@ -1421,9 +1422,9 @@ class OptimizationPassComprehensiveTest {
             finalizeFunction()
         })
         val bodyBlock = m.functions[0].blocks.find { it.label == "body" }!!
-        assertFalse(bodyBlock.instructions.any { it is Instruction.Add },
+        assertFalse(bodyBlock.instructions.any { it is Add },
             "Invariant add should be hoisted")
-        assertFalse(bodyBlock.instructions.any { it is Instruction.Mul },
+        assertFalse(bodyBlock.instructions.any { it is Mul },
             "Invariant mul should be hoisted")
     }
 
@@ -1861,7 +1862,7 @@ class OptimizationPassComprehensiveTest {
         })
         val insts = m.functions[0].blocks[0].instructions
         // The struct alloca should be decomposed into scalar allocas
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertTrue(allocas.all { !isAggregate(it.allocType) },
             "All remaining allocas should be scalar: $allocas")
     }
@@ -1880,7 +1881,7 @@ class OptimizationPassComprehensiveTest {
             finalizeFunction()
         })
         val insts = m.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertTrue(allocas.all { it.allocType !is Type.Array },
             "Array alloca should be decomposed: $allocas")
     }
@@ -1895,7 +1896,7 @@ class OptimizationPassComprehensiveTest {
             ret(load(Type.I32, ptr))
             finalizeFunction()
         })
-        val allocas = m.functions[0].blocks[0].instructions.filterIsInstance<Instruction.Alloca>()
+        val allocas = m.functions[0].blocks[0].instructions.filterIsInstance<Alloca>()
         assertEquals(1, allocas.size)
         assertEquals(Type.I32, allocas[0].allocType)
     }
@@ -1912,7 +1913,7 @@ class OptimizationPassComprehensiveTest {
             ret(Constant.I32(0))
             finalizeFunction()
         })
-        val allocas = m.functions[1].blocks[0].instructions.filterIsInstance<Instruction.Alloca>()
+        val allocas = m.functions[1].blocks[0].instructions.filterIsInstance<Alloca>()
         assertTrue(allocas.any { it.allocType == structType },
             "Escaped alloca should be preserved: $allocas")
     }
@@ -1935,8 +1936,8 @@ class OptimizationPassComprehensiveTest {
             .add(Mem2Reg())
             .execute(module)
         val insts = result.functions[0].blocks[0].instructions
-        assertFalse(insts.any { it is Instruction.Alloca }, "All allocas should be promoted: $insts")
-        assertFalse(insts.any { it is Instruction.Load }, "All loads should be promoted: $insts")
+        assertFalse(insts.any { it is Alloca }, "All allocas should be promoted: $insts")
+        assertFalse(insts.any { it is Load }, "All loads should be promoted: $insts")
     }
 
     // Pass Pipeline: ordering effects
@@ -2016,7 +2017,7 @@ class OptimizationPassComprehensiveTest {
                 finalizeFunction()
             })
         val mainInsts = m.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call })
+        assertFalse(mainInsts.any { it is Call })
     }
 
     @Test
@@ -2066,7 +2067,7 @@ class OptimizationPassComprehensiveTest {
             finalizeFunction()
         })
         assertEquals(2, instCount(m))
-        assertTrue(m.functions[0].blocks[0].instructions[0] is Instruction.Add)
+        assertTrue(m.functions[0].blocks[0].instructions[0] is Add)
     }
 
     @Test
@@ -2277,7 +2278,7 @@ class OptimizationPassComprehensiveTest {
                 finalizeFunction()
             })
         assertEquals(1, instCount(m))
-        assertTrue(m.functions[0].blocks[0].instructions[0] is Instruction.Ret)
+        assertTrue(m.functions[0].blocks[0].instructions[0] is Ret)
     }
 
     // Floating point constant folding: f32

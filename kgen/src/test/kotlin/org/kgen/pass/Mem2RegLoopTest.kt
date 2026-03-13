@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -16,14 +17,14 @@ class Mem2RegLoopTest {
         return mem2reg.run(ir.build())
     }
 
-    private fun findPhis(fn: IrFunction): List<Pair<String, Instruction.Phi>> {
+    private fun findPhis(fn: IrFunction): List<Pair<String, Phi>> {
         return fn.blocks.flatMap { block ->
-            block.instructions.filterIsInstance<Instruction.Phi>().map { block.label to it }
+            block.instructions.filterIsInstance<Phi>().map { block.label to it }
         }
     }
 
-    private fun findPhisInBlock(fn: IrFunction, label: String): List<Instruction.Phi> {
-        return fn.blocks.first { it.label == label }.instructions.filterIsInstance<Instruction.Phi>()
+    private fun findPhisInBlock(fn: IrFunction, label: String): List<Phi> {
+        return fn.blocks.first { it.label == label }.instructions.filterIsInstance<Phi>()
     }
 
     @Test
@@ -79,9 +80,9 @@ class Mem2RegLoopTest {
         // No alloca, load, or store instructions should remain
         for (block in fn.blocks) {
             for (inst in block.instructions) {
-                assertFalse(inst is Instruction.Alloca, "Alloca should be removed: $inst")
-                assertFalse(inst is Instruction.Load, "Load should be removed: $inst in ${block.label}")
-                assertFalse(inst is Instruction.Store, "Store should be removed: $inst in ${block.label}")
+                assertFalse(inst is Alloca, "Alloca should be removed: $inst")
+                assertFalse(inst is Load, "Load should be removed: $inst in ${block.label}")
+                assertFalse(inst is Store, "Store should be removed: $inst in ${block.label}")
             }
         }
     }
@@ -112,7 +113,7 @@ class Mem2RegLoopTest {
         val fn = module.functions[0]
         val insts = fn.blocks[0].instructions
         assertEquals(1, insts.size, "Only ret should remain: $insts")
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         val retVal = ret.value
         assertTrue(retVal is Constant.I32 && retVal.value == 42,
             "Return should be transitively resolved to 42, got: $retVal")
@@ -162,15 +163,15 @@ class Mem2RegLoopTest {
         // No loads or stores should remain
         for (block in fn.blocks) {
             for (inst in block.instructions) {
-                assertFalse(inst is Instruction.Alloca, "Alloca should be removed in ${block.label}: $inst")
-                assertFalse(inst is Instruction.Load, "Load should be removed in ${block.label}: $inst")
-                assertFalse(inst is Instruction.Store, "Store should be removed in ${block.label}: $inst")
+                assertFalse(inst is Alloca, "Alloca should be removed in ${block.label}: $inst")
+                assertFalse(inst is Load, "Load should be removed in ${block.label}: $inst")
+                assertFalse(inst is Store, "Store should be removed in ${block.label}: $inst")
             }
         }
 
         // The ret value should not be a dangling InstructionRef to a removed load
         val exitBlock = fn.blocks.first { it.label == "exit" }
-        val ret = exitBlock.instructions.last() as Instruction.Ret
+        val ret = exitBlock.instructions.last() as Ret
         val retVal = ret.value
         if (retVal is InstructionRef) {
             // It should reference a phi or an add, not a removed load
@@ -236,9 +237,9 @@ class Mem2RegLoopTest {
         // No alloca/load/store should remain
         for (block in fn.blocks) {
             for (inst in block.instructions) {
-                assertFalse(inst is Instruction.Alloca, "Alloca should be removed")
-                assertFalse(inst is Instruction.Load, "Load should be removed in ${block.label}")
-                assertFalse(inst is Instruction.Store, "Store should be removed in ${block.label}")
+                assertFalse(inst is Alloca, "Alloca should be removed")
+                assertFalse(inst is Load, "Load should be removed in ${block.label}")
+                assertFalse(inst is Store, "Store should be removed in ${block.label}")
             }
         }
     }
@@ -298,9 +299,9 @@ class Mem2RegLoopTest {
 
         for (block in fn.blocks) {
             for (inst in block.instructions) {
-                assertFalse(inst is Instruction.Alloca, "Alloca should be removed")
-                assertFalse(inst is Instruction.Load, "Load should be removed in ${block.label}")
-                assertFalse(inst is Instruction.Store, "Store should be removed in ${block.label}")
+                assertFalse(inst is Alloca, "Alloca should be removed")
+                assertFalse(inst is Load, "Load should be removed in ${block.label}")
+                assertFalse(inst is Store, "Store should be removed in ${block.label}")
             }
         }
     }
@@ -327,10 +328,10 @@ class Mem2RegLoopTest {
         // Should simplify to: add 1, 2 → ret result
         val insts = fn.blocks[0].instructions
         assertEquals(2, insts.size, "Should have add + ret: $insts")
-        assertTrue(insts[0] is Instruction.Add)
-        assertTrue(insts[1] is Instruction.Ret)
+        assertTrue(insts[0] is Add)
+        assertTrue(insts[1] is Ret)
 
-        val ret = insts[1] as Instruction.Ret
+        val ret = insts[1] as Ret
         assertEquals(insts[0].result, ret.value, "Ret should use the add result")
     }
 }

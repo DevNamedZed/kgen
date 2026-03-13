@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
 import org.kgen.ir.build.*
 import org.kgen.ir.target.Target
+import org.kgen.target.arm64.codegen.Arm64CodeGenerator
+import org.kgen.target.riscv.codegen.RiscVCodeGenerator
 import org.kgen.target.x86.codegen.X86CodeGenerator
 
 class ExceptionHandlingCodegenTest {
@@ -218,5 +220,40 @@ class ExceptionHandlingCodegenTest {
         ir.finalizeFunction()
         val code = X86CodeGenerator().generateCode(ir.build())
         assertTrue(code.relocations.any { it.symbol == "process" })
+    }
+
+    // ── Throw instruction codegen ────────────────────────────────────
+
+    private fun buildThrowModule(target: Target): Module {
+        val ir = IrBuilder("test", target)
+        ir.declareFunction("kgen_throw", listOf(Param("exception", Type.OpaquePointer)), Type.Void)
+
+        val params = ir.createFunction("throwIt", listOf(Param("exn", Type.OpaquePointer)), Type.Void)
+        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.throwException(params[0])
+        ir.finalizeFunction()
+        return ir.build()
+    }
+
+    @Test
+    fun `throw generates kgen_throw relocation x86`() {
+        val module = buildThrowModule(Target.x86_64())
+        val code = X86CodeGenerator().generateCode(module)
+        assertTrue(code.relocations.any { it.symbol == "kgen_throw" },
+            "Expected kgen_throw relocation, got: ${code.relocations.map { it.symbol }}")
+    }
+
+    @Test
+    fun `throw generates code on arm64`() {
+        val module = buildThrowModule(Target.arm64())
+        val code = Arm64CodeGenerator().generateCode(module)
+        assertTrue(code.textBytes.isNotEmpty())
+    }
+
+    @Test
+    fun `throw generates code on riscv`() {
+        val module = buildThrowModule(Target.riscv64())
+        val code = RiscVCodeGenerator().generateCode(module)
+        assertTrue(code.textBytes.isNotEmpty())
     }
 }

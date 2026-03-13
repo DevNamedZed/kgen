@@ -1,17 +1,26 @@
 package org.kgen.codegen
 
 /**
- * Low-level instruction assembler for a specific target.
+ * Low-level instruction assembler for a specific target architecture.
  *
- * Assemblers turn structured instruction objects into raw bytes.
- * Each backend provides its own instruction type [I].
+ * Part of the three-layer code generation API: [CodeGenerator] (IR to binary),
+ * [Assembler] (structured instructions to raw bytes), and [Disassembler] (raw bytes to instructions).
+ * Each backend provides its own concrete assembler (e.g., `X86Assembler`, `Arm64Assembler`,
+ * `RiscVAssembler`, `WasmAssembler`, `JvmAssembler`, `CilAssembler`) parameterized by
+ * a backend-specific instruction type [I].
  *
- * ```kotlin
- * val asm: Assembler<X86Instruction> = ...
- * asm.emit(X86Instruction.MOV(RAX, RBX))
- * asm.label("loop")
- * val bytes = asm.assemble()
+ * Assemblers are stateful: emit instructions and labels in order, then call [assemble]
+ * to produce the final byte sequence. Labels are resolved during assembly, so forward
+ * references (e.g., branch targets not yet emitted) are handled automatically.
+ *
+ * ```java
+ * Assembler<X86Instruction> asm = new X86Assembler();
+ * asm.emit(X86Instruction.MOV(RAX, RBX));
+ * asm.label("loop");
+ * byte[] bytes = asm.assemble();
  * ```
+ *
+ * See `spec/roadmap.md` for the full list of supported targets and instruction coverage.
  */
 interface Assembler<I> {
     /** Target identifier (e.g., "x86_64", "aarch64"). */

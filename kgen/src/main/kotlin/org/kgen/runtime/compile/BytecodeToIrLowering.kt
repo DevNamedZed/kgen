@@ -2,6 +2,7 @@ package org.kgen.runtime.compile
 
 import org.kgen.ir.*
 import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.instructions.*
 import org.kgen.target.jvm.*
 import org.kgen.target.jvm.JvmOpCode.*
 import org.kgen.target.jvm.AttributeParser
@@ -26,6 +27,7 @@ class BytecodeToIrLowering(
     private val isInstance: Boolean = false,
     private val classLayout: ClassLayout? = null,
     private val importMap: Map<String, String> = emptyMap(),
+    private val callingConv: CallingConvention = CallingConvention.C,
 ) {
     private val cp = cf.constantPool
     private val code = codeAttr.code
@@ -112,7 +114,7 @@ class BytecodeToIrLowering(
             if (isInstance && i == 0) Param("this", type)
             else Param("p${if (isInstance) i - 1 else i}", type)
         }
-        val paramValues = builder.createFunction(methodName, irParams, returnType, linkage = linkage, attributes = fnAttributes)
+        val paramValues = builder.createFunction(methodName, irParams, returnType, linkage = linkage, callingConv = callingConv, attributes = fnAttributes)
 
         val branchTargets = findBranchTargets()
         findMutatedLocals(params, irParams)
@@ -577,8 +579,10 @@ class BytecodeToIrLowering(
             pc + 3
         }
         ATHROW -> {
-            pop() // exception object
-            builder.trap() // abort — full athrow→unwind requires runtime support
+            val exception = pop()
+            ensureExternalFunction("kgen_throw", listOf(Param("exception", Type.OpaquePointer)), Type.Void)
+            builder.call("kgen_throw", listOf(exception), Type.Void)
+            builder.unreachable()
             pc + 1
         }
         CHECKCAST -> pc + 3  // no-op in subset (no type hierarchy checks)

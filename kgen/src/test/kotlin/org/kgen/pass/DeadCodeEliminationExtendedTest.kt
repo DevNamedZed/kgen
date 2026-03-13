@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
+import org.kgen.ir.instructions.*
 
 class DeadCodeEliminationExtendedTest {
 
@@ -27,7 +28,7 @@ class DeadCodeEliminationExtendedTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size)
-        assertTrue(insts[0] is Instruction.Ret)
+        assertTrue(insts[0] is Ret)
     }
 
     @Test
@@ -56,7 +57,7 @@ class DeadCodeEliminationExtendedTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size)
-        assertTrue(insts[0] is Instruction.Ret)
+        assertTrue(insts[0] is Ret)
     }
 
     @Test
@@ -221,7 +222,7 @@ class DeadCodeEliminationExtendedTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(2, insts.size)
-        assertTrue(insts[0] is Instruction.Store)
+        assertTrue(insts[0] is Store)
     }
 
     @Test
@@ -259,7 +260,7 @@ class DeadCodeEliminationExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        assertTrue(insts.any { it is Instruction.Alloca })
+        assertTrue(insts.any { it is Alloca })
     }
 
     @Test
@@ -306,7 +307,7 @@ class DeadCodeEliminationExtendedTest {
         }
         val insts = module.functions[1].blocks[0].instructions
         assertEquals(2, insts.size)
-        assertTrue(insts[0] is Instruction.Call)
+        assertTrue(insts[0] is Call)
     }
 
     @Test
@@ -328,7 +329,7 @@ class DeadCodeEliminationExtendedTest {
         }
         val loopInsts = module.functions[0].blocks[1].instructions
         assertEquals(1, loopInsts.size)
-        assertTrue(loopInsts[0] is Instruction.CondBr)
+        assertTrue(loopInsts[0] is CondBr)
     }
 
     @Test
@@ -350,7 +351,7 @@ class DeadCodeEliminationExtendedTest {
             finalizeFunction()
         }
         val entryInsts = module.functions[0].blocks[0].instructions
-        assertTrue(entryInsts[0] is Instruction.Switch)
+        assertTrue(entryInsts[0] is Switch)
     }
 
     @Test
@@ -411,7 +412,7 @@ class DeadCodeEliminationExtendedTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size)
-        assertTrue(insts[0] is Instruction.Unreachable)
+        assertTrue(insts[0] is Unreachable)
     }
 
     @Test
@@ -446,7 +447,7 @@ class DeadCodeEliminationExtendedTest {
         }
         val entryInsts = module.functions[0].blocks[0].instructions
         assertEquals(2, entryInsts.size)
-        assertTrue(entryInsts[0] is Instruction.ICmp)
+        assertTrue(entryInsts[0] is ICmp)
     }
 
     @Test
@@ -483,6 +484,6 @@ class DeadCodeEliminationExtendedTest {
         }
         val mergeInsts = module.functions[0].blocks[3].instructions
         assertEquals(1, mergeInsts.size)
-        assertTrue(mergeInsts[0] is Instruction.Ret)
+        assertTrue(mergeInsts[0] is Ret)
     }
 }

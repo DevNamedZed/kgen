@@ -1,6 +1,7 @@
 package org.kgen.codegen.alloc
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 
 /**
  * A live interval for an SSA value.
@@ -57,7 +58,7 @@ class LivenessAnalysis(private val fn: IrFunction) {
             val blockFirst = instIdx + 1
             for (inst in block.instructions) {
                 instIdx++
-                if (inst is Instruction.Call) {
+                if (inst is Call) {
                     callPositions.add(instIdx)
                 }
                 val result = inst.result
@@ -84,7 +85,7 @@ class LivenessAnalysis(private val fn: IrFunction) {
         // be reassigned before the copy writes.
         for ((blockIdx, block) in fn.blocks.withIndex()) {
             for (inst in block.instructions) {
-                if (inst !is Instruction.Phi) break
+                if (inst !is Phi) break
                 val destName = inst.dest.name
                 for ((value, predLabel) in inst.incoming) {
                     val predIdx = blockLabelToIndex[predLabel] ?: continue
@@ -114,8 +115,8 @@ class LivenessAnalysis(private val fn: IrFunction) {
         for ((blockIdx, block) in fn.blocks.withIndex()) {
             val lastInst = block.instructions.lastOrNull() ?: continue
             val targets: List<String> = when (lastInst) {
-                is Instruction.Br -> listOf(lastInst.target)
-                is Instruction.CondBr -> listOf(lastInst.trueTarget, lastInst.falseTarget)
+                is Br -> listOf(lastInst.target)
+                is CondBr -> listOf(lastInst.trueTarget, lastInst.falseTarget)
                 else -> emptyList()
             }
             for (target in targets) {
@@ -161,11 +162,11 @@ class LivenessAnalysis(private val fn: IrFunction) {
             for (inst in block.instructions) {
                 instIdx++
                 val kind = when (inst) {
-                    is Instruction.SDiv, is Instruction.UDiv,
-                    is Instruction.SRem, is Instruction.URem -> InstructionClobber.INT_DIV
-                    is Instruction.Shl, is Instruction.LShr,
-                    is Instruction.AShr -> InstructionClobber.VARIABLE_SHIFT
-                    is Instruction.Call -> InstructionClobber.CALL
+                    is SDiv, is UDiv,
+                    is SRem, is URem -> InstructionClobber.INT_DIV
+                    is Shl, is LShr,
+                    is AShr -> InstructionClobber.VARIABLE_SHIFT
+                    is Call -> InstructionClobber.CALL
                     else -> null
                 }
                 if (kind != null) {
@@ -197,9 +198,9 @@ class LivenessAnalysis(private val fn: IrFunction) {
             fun successors(block: BasicBlock): List<String> {
                 val last = block.instructions.lastOrNull() ?: return emptyList()
                 return when (last) {
-                    is Instruction.Br -> listOf(last.target)
-                    is Instruction.CondBr -> listOf(last.trueTarget, last.falseTarget)
-                    is Instruction.Switch -> listOf(last.defaultTarget) + last.cases.map { it.second }
+                    is Br -> listOf(last.target)
+                    is CondBr -> listOf(last.trueTarget, last.falseTarget)
+                    is Switch -> listOf(last.defaultTarget) + last.cases.map { it.second }
                     else -> emptyList()
                 }
             }
@@ -234,58 +235,58 @@ class LivenessAnalysis(private val fn: IrFunction) {
                 if (v is Parameter || v is InstructionRef) values.add(v)
             }
             when (inst) {
-                is Instruction.Add -> { add(inst.lhs); add(inst.rhs) }
-                is Instruction.Sub -> { add(inst.lhs); add(inst.rhs) }
-                is Instruction.Mul -> { add(inst.lhs); add(inst.rhs) }
-                is Instruction.And -> { add(inst.lhs); add(inst.rhs) }
-                is Instruction.Or -> { add(inst.lhs); add(inst.rhs) }
-                is Instruction.Xor -> { add(inst.lhs); add(inst.rhs) }
-                is Instruction.ICmp -> { add(inst.lhs); add(inst.rhs) }
-                is Instruction.Ret -> inst.value?.let { add(it) }
-                is Instruction.Call -> inst.args.forEach { add(it) }
-                is Instruction.GetElementPtr -> { add(inst.ptr); inst.indices.forEach { add(it) } }
-                is Instruction.Neg -> add(inst.operand)
-                is Instruction.Not -> add(inst.operand)
-                is Instruction.Shl -> { add(inst.lhs); add(inst.rhs) }
-                is Instruction.LShr -> { add(inst.lhs); add(inst.rhs) }
-                is Instruction.AShr -> { add(inst.lhs); add(inst.rhs) }
-                is Instruction.UDiv -> { add(inst.lhs); add(inst.rhs) }
-                is Instruction.SDiv -> { add(inst.lhs); add(inst.rhs) }
-                is Instruction.URem -> { add(inst.lhs); add(inst.rhs) }
-                is Instruction.SRem -> { add(inst.lhs); add(inst.rhs) }
-                is Instruction.ZExt -> add(inst.value)
-                is Instruction.SExt -> add(inst.value)
-                is Instruction.Trunc -> add(inst.operand)
-                is Instruction.IntTrunc -> add(inst.value)
-                is Instruction.PtrToInt -> add(inst.value)
-                is Instruction.IntToPtr -> add(inst.value)
-                is Instruction.BitCast -> add(inst.value)
-                is Instruction.Alloca -> inst.numElements?.let { add(it) }
-                is Instruction.Load -> add(inst.ptr)
-                is Instruction.Store -> { add(inst.value); add(inst.ptr) }
-                is Instruction.Select -> { add(inst.condition); add(inst.trueValue); add(inst.falseValue) }
-                is Instruction.Phi -> inst.incoming.forEach { add(it.first) }
-                is Instruction.CondBr -> add(inst.condition)
-                is Instruction.Switch -> add(inst.value)
-                is Instruction.Br -> {}
-                is Instruction.FAdd -> { add(inst.lhs); add(inst.rhs) }
-                is Instruction.FSub -> { add(inst.lhs); add(inst.rhs) }
-                is Instruction.FMul -> { add(inst.lhs); add(inst.rhs) }
-                is Instruction.FDiv -> { add(inst.lhs); add(inst.rhs) }
-                is Instruction.FNeg -> add(inst.operand)
-                is Instruction.FCmp -> { add(inst.lhs); add(inst.rhs) }
-                is Instruction.SIToFP -> add(inst.value)
-                is Instruction.UIToFP -> add(inst.value)
-                is Instruction.FPToUI -> add(inst.value)
-                is Instruction.FPToSI -> add(inst.value)
-                is Instruction.FPTrunc -> add(inst.value)
-                is Instruction.FPExt -> add(inst.value)
-                is Instruction.ExtractValue -> add(inst.aggregate)
-                is Instruction.InsertValue -> { add(inst.aggregate); add(inst.element) }
-                is Instruction.VAStart -> add(inst.argList)
-                is Instruction.VAEnd -> add(inst.argList)
-                is Instruction.VACopy -> { add(inst.dst); add(inst.src) }
-                is Instruction.VAArg -> add(inst.argList)
+                is Add -> { add(inst.lhs); add(inst.rhs) }
+                is Sub -> { add(inst.lhs); add(inst.rhs) }
+                is Mul -> { add(inst.lhs); add(inst.rhs) }
+                is And -> { add(inst.lhs); add(inst.rhs) }
+                is Or -> { add(inst.lhs); add(inst.rhs) }
+                is Xor -> { add(inst.lhs); add(inst.rhs) }
+                is ICmp -> { add(inst.lhs); add(inst.rhs) }
+                is Ret -> inst.value?.let { add(it) }
+                is Call -> inst.args.forEach { add(it) }
+                is GetElementPtr -> { add(inst.ptr); inst.indices.forEach { add(it) } }
+                is Neg -> add(inst.operand)
+                is Not -> add(inst.operand)
+                is Shl -> { add(inst.lhs); add(inst.rhs) }
+                is LShr -> { add(inst.lhs); add(inst.rhs) }
+                is AShr -> { add(inst.lhs); add(inst.rhs) }
+                is UDiv -> { add(inst.lhs); add(inst.rhs) }
+                is SDiv -> { add(inst.lhs); add(inst.rhs) }
+                is URem -> { add(inst.lhs); add(inst.rhs) }
+                is SRem -> { add(inst.lhs); add(inst.rhs) }
+                is ZExt -> add(inst.value)
+                is SExt -> add(inst.value)
+                is Trunc -> add(inst.operand)
+                is IntTrunc -> add(inst.value)
+                is PtrToInt -> add(inst.value)
+                is IntToPtr -> add(inst.value)
+                is BitCast -> add(inst.value)
+                is Alloca -> inst.numElements?.let { add(it) }
+                is Load -> add(inst.ptr)
+                is Store -> { add(inst.value); add(inst.ptr) }
+                is Select -> { add(inst.condition); add(inst.trueValue); add(inst.falseValue) }
+                is Phi -> inst.incoming.forEach { add(it.first) }
+                is CondBr -> add(inst.condition)
+                is Switch -> add(inst.value)
+                is Br -> {}
+                is FAdd -> { add(inst.lhs); add(inst.rhs) }
+                is FSub -> { add(inst.lhs); add(inst.rhs) }
+                is FMul -> { add(inst.lhs); add(inst.rhs) }
+                is FDiv -> { add(inst.lhs); add(inst.rhs) }
+                is FNeg -> add(inst.operand)
+                is FCmp -> { add(inst.lhs); add(inst.rhs) }
+                is SIToFP -> add(inst.value)
+                is UIToFP -> add(inst.value)
+                is FPToUI -> add(inst.value)
+                is FPToSI -> add(inst.value)
+                is FPTrunc -> add(inst.value)
+                is FPExt -> add(inst.value)
+                is ExtractValue -> add(inst.aggregate)
+                is InsertValue -> { add(inst.aggregate); add(inst.element) }
+                is VAStart -> add(inst.argList)
+                is VAEnd -> add(inst.argList)
+                is VACopy -> { add(inst.dst); add(inst.src) }
+                is VAArg -> add(inst.argList)
                 else -> {}
             }
             return values

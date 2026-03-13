@@ -7,6 +7,7 @@ import org.kgen.binary.*
 import org.kgen.binary.elf.ElfObjectType
 import org.kgen.binary.pe.PeConstants
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.*
 import org.kgen.codegen.*
 import org.kgen.ir.target.Target
@@ -1030,7 +1031,7 @@ class X86CodeGeneratorTest {
         // Verify phi was inserted
         val mergeBlock = optimized.functions[0].blocks.find { it.label == "done" }
         assertNotNull(mergeBlock, "done block should exist")
-        assertTrue(mergeBlock!!.instructions.any { it is Instruction.Phi },
+        assertTrue(mergeBlock!!.instructions.any { it is Phi },
             "Mem2reg should insert phi: ${mergeBlock.instructions}")
 
         // Compile the optimized IR
@@ -1315,7 +1316,7 @@ class X86CodeGeneratorTest {
 
         // Verify no allocas remain
         val insts = optimized.functions[0].blocks[0].instructions
-        assertTrue(insts.none { it is Instruction.Alloca },
+        assertTrue(insts.none { it is Alloca },
             "SROA+Mem2Reg should eliminate all allocas: $insts")
 
         // Should compile cleanly

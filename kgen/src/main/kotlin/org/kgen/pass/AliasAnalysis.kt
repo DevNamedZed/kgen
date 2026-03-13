@@ -1,6 +1,7 @@
 package org.kgen.pass
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 
 /**
  * Result of querying whether two memory locations alias.
@@ -44,11 +45,11 @@ interface AliasAnalysis {
      * Returns true if [inst] may read from memory.
      */
     fun readsMemory(inst: Instruction): Boolean = when (inst) {
-        is Instruction.Load -> true
-        is Instruction.MemCpy -> true
-        is Instruction.MemMove -> true
-        is Instruction.Call -> true
-        is Instruction.Invoke -> true
+        is Load -> true
+        is MemCpy -> true
+        is MemMove -> true
+        is Call -> true
+        is Invoke -> true
         else -> false
     }
 
@@ -56,12 +57,12 @@ interface AliasAnalysis {
      * Returns true if [inst] may write to memory.
      */
     fun writesMemory(inst: Instruction): Boolean = when (inst) {
-        is Instruction.Store -> true
-        is Instruction.MemCpy -> true
-        is Instruction.MemSet -> true
-        is Instruction.MemMove -> true
-        is Instruction.Call -> true
-        is Instruction.Invoke -> true
+        is Store -> true
+        is MemCpy -> true
+        is MemSet -> true
+        is MemMove -> true
+        is Call -> true
+        is Invoke -> true
         else -> false
     }
 
@@ -69,8 +70,8 @@ interface AliasAnalysis {
      * Returns the pointer operand for a memory instruction, or null.
      */
     fun memoryPointer(inst: Instruction): Value? = when (inst) {
-        is Instruction.Load -> inst.ptr
-        is Instruction.Store -> inst.ptr
+        is Load -> inst.ptr
+        is Store -> inst.ptr
         else -> null
     }
 }

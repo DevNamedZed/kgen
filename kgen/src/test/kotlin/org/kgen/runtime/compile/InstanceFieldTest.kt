@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.kgen.ir.*
 import org.kgen.ir.target.Target
 import org.kgen.target.jvm.*
+import org.kgen.ir.instructions.*
 
 class InstanceFieldTest {
 
@@ -76,8 +77,8 @@ class InstanceFieldTest {
         val instructions = fn.blocks.flatMap { it.instructions }
 
         // Should have GEP (for field offset) + Load
-        assertTrue(instructions.any { it is Instruction.GetElementPtr }, "Expected GEP for field access")
-        assertTrue(instructions.any { it is Instruction.Load }, "Expected Load for field read")
+        assertTrue(instructions.any { it is GetElementPtr }, "Expected GEP for field access")
+        assertTrue(instructions.any { it is Load }, "Expected Load for field read")
         assertEquals(Type.I32, fn.returnType)
     }
 
@@ -102,8 +103,8 @@ class InstanceFieldTest {
         val fn = module.functions.first { it.name == "setX" }
         val instructions = fn.blocks.flatMap { it.instructions }
 
-        assertTrue(instructions.any { it is Instruction.GetElementPtr }, "Expected GEP for field access")
-        assertTrue(instructions.any { it is Instruction.Store }, "Expected Store for field write")
+        assertTrue(instructions.any { it is GetElementPtr }, "Expected GEP for field access")
+        assertTrue(instructions.any { it is Store }, "Expected Store for field write")
     }
 
     @Test
@@ -132,9 +133,9 @@ class InstanceFieldTest {
         val instructions = fn.blocks.flatMap { it.instructions }
 
         // Should have 2 GEPs (one for each field) + 2 Loads + Add
-        val geps = instructions.filterIsInstance<Instruction.GetElementPtr>()
+        val geps = instructions.filterIsInstance<GetElementPtr>()
         assertEquals(2, geps.size, "Expected 2 GEPs for 2 field accesses")
-        assertTrue(instructions.any { it is Instruction.Add }, "Expected Add")
+        assertTrue(instructions.any { it is Add }, "Expected Add")
     }
 
     @Test
@@ -162,8 +163,8 @@ class InstanceFieldTest {
         val fn = module.functions.first { it.name == "setThenGet" }
         val instructions = fn.blocks.flatMap { it.instructions }
 
-        val stores = instructions.filterIsInstance<Instruction.Store>()
-        val loads = instructions.filterIsInstance<Instruction.Load>()
+        val stores = instructions.filterIsInstance<Store>()
+        val loads = instructions.filterIsInstance<Load>()
         assertTrue(stores.isNotEmpty(), "Expected Store for putfield")
         assertTrue(loads.isNotEmpty(), "Expected Load for getfield")
     }

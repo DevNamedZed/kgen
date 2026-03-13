@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.kgen.ir.*
 import org.kgen.ir.target.Target
 import org.kgen.target.jvm.*
+import org.kgen.ir.instructions.*
 
 class InvokeDynamicTest {
 
@@ -117,7 +118,7 @@ class InvokeDynamicTest {
 
         // Should have calls to string concat helpers
         val calls = fn!!.blocks.flatMap { it.instructions }
-            .filterIsInstance<Instruction.Call>()
+            .filterIsInstance<Call>()
         assertTrue(calls.any { (it.function as? GlobalRef)?.name == "kgen_strconcat_begin" },
             "Should call kgen_strconcat_begin")
         assertTrue(calls.any { (it.function as? GlobalRef)?.name == "kgen_strconcat_str" },
@@ -192,7 +193,7 @@ class InvokeDynamicTest {
 
         // Should call kgen_strconcat_int for the int argument
         val calls = fn!!.blocks.flatMap { it.instructions }
-            .filterIsInstance<Instruction.Call>()
+            .filterIsInstance<Call>()
         assertTrue(calls.any { (it.function as? GlobalRef)?.name == "kgen_strconcat_int" },
             "Should call kgen_strconcat_int for int argument")
     }
@@ -254,7 +255,7 @@ class InvokeDynamicTest {
         assertNotNull(fn)
 
         val calls = fn!!.blocks.flatMap { it.instructions }
-            .filterIsInstance<Instruction.Call>()
+            .filterIsInstance<Call>()
         assertTrue(calls.any { (it.function as? GlobalRef)?.name == "kgen_strconcat_long" },
             "Should call kgen_strconcat_long for long argument")
     }
@@ -326,7 +327,7 @@ class InvokeDynamicTest {
 
         // The return value should be a GlobalRef to the target method "doWork"
         val ret = fn!!.blocks.flatMap { it.instructions }
-            .filterIsInstance<Instruction.Ret>()
+            .filterIsInstance<Ret>()
             .firstOrNull()
         assertNotNull(ret, "Should have a return instruction")
         // The returned value should reference the target function
@@ -398,7 +399,7 @@ class InvokeDynamicTest {
         val fn = module.functions.find { it.name == "captureLambda" }
         assertNotNull(fn, "Expected function 'captureLambda'")
         // Should produce a return value (the captured value, since single capture)
-        assertTrue(fn!!.blocks.flatMap { it.instructions }.any { it is Instruction.Ret })
+        assertTrue(fn!!.blocks.flatMap { it.instructions }.any { it is Ret })
     }
 
     @Test
@@ -513,7 +514,7 @@ class InvokeDynamicTest {
 
         // Should have 2 str concat calls (for the 2 dynamic args)
         val calls = fn!!.blocks.flatMap { it.instructions }
-            .filterIsInstance<Instruction.Call>()
+            .filterIsInstance<Call>()
         val strConcatCalls = calls.filter { (it.function as? GlobalRef)?.name == "kgen_strconcat_str" }
         // 3 literal parts + 2 dynamic args = 5 str calls
         assertEquals(5, strConcatCalls.size,
@@ -640,7 +641,7 @@ class InvokeDynamicTest {
         val fn = module.functions.find { it.name == "doubleToStr" }
         assertNotNull(fn, "Expected function 'doubleToStr'")
         val calls = fn!!.blocks.flatMap { it.instructions }
-            .filterIsInstance<Instruction.Call>()
+            .filterIsInstance<Call>()
         assertTrue(calls.any {
             val name = (it.function as? GlobalRef)?.name
             name == "kgen_strconcat_double" || name == "kgen_strconcat_str"
@@ -704,7 +705,7 @@ class InvokeDynamicTest {
         val fn = module.functions.find { it.name == "boolToStr" }
         assertNotNull(fn, "Expected function 'boolToStr'")
         // Should compile without error; boolean is treated as int
-        assertTrue(fn!!.blocks.flatMap { it.instructions }.any { it is Instruction.Ret })
+        assertTrue(fn!!.blocks.flatMap { it.instructions }.any { it is Ret })
     }
 
     @Test
@@ -765,7 +766,7 @@ class InvokeDynamicTest {
         val fn = module.functions.find { it.name == "makeFn" }
         assertNotNull(fn, "Expected function 'makeFn'")
         val ret = fn!!.blocks.flatMap { it.instructions }
-            .filterIsInstance<Instruction.Ret>().firstOrNull()
+            .filterIsInstance<Ret>().firstOrNull()
         assertNotNull(ret)
         // Should return a GlobalRef to the lambda target
         assertTrue(ret!!.value is GlobalRef,

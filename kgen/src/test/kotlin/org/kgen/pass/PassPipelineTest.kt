@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -30,7 +31,7 @@ class PassPipelineTest {
         val result = pipeline.execute(module)
         val insts = result.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "Only ret should remain: $insts")
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertEquals(30, (ret.value as Constant.I32).value)
     }
 
@@ -52,7 +53,7 @@ class PassPipelineTest {
             .execute(module)
         val instsFF = foldFirst.functions[0].blocks[0].instructions
         assertEquals(1, instsFF.size, "Fold+DCE: only ret should remain")
-        assertEquals(20, ((instsFF[0] as Instruction.Ret).value as Constant.I32).value)
+        assertEquals(20, ((instsFF[0] as Ret).value as Constant.I32).value)
 
         // DCE first, then fold: DCE cannot remove anything (all used), fold still works
         val dceFirst = PassPipeline()
@@ -61,7 +62,7 @@ class PassPipelineTest {
             .execute(module)
         val instsDF = dceFirst.functions[0].blocks[0].instructions
         assertEquals(1, instsDF.size, "DCE+Fold: only ret should remain")
-        assertEquals(20, ((instsDF[0] as Instruction.Ret).value as Constant.I32).value)
+        assertEquals(20, ((instsDF[0] as Ret).value as Constant.I32).value)
     }
 
     @Test
@@ -80,8 +81,8 @@ class PassPipelineTest {
         val instsOnce = once.functions[0].blocks[0].instructions
         val instsTwice = twice.functions[0].blocks[0].instructions
         assertEquals(instsOnce.size, instsTwice.size, "Second pass should not change anything")
-        val retOnce = instsOnce.last() as Instruction.Ret
-        val retTwice = instsTwice.last() as Instruction.Ret
+        val retOnce = instsOnce.last() as Ret
+        val retTwice = instsTwice.last() as Ret
         assertEquals(
             (retOnce.value as Constant.I32).value,
             (retTwice.value as Constant.I32).value
@@ -145,7 +146,7 @@ class PassPipelineTest {
         val result = pipeline.execute(module)
         val insts = result.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "Only ret should remain: $insts")
-        assertEquals(10, ((insts[0] as Instruction.Ret).value as Constant.I32).value)
+        assertEquals(10, ((insts[0] as Ret).value as Constant.I32).value)
     }
 
     @Test
@@ -171,7 +172,7 @@ class PassPipelineTest {
         val result = pipeline.execute(module)
         val blocks = result.functions[0].blocks
         assertEquals(1, blocks.size, "Should merge to single block: ${blocks.map { it.label }}")
-        val ret = blocks[0].instructions.last() as Instruction.Ret
+        val ret = blocks[0].instructions.last() as Ret
         assertEquals(42, (ret.value as Constant.I32).value)
     }
 
@@ -217,8 +218,8 @@ class PassPipelineTest {
         val result = pipeline.execute(module)
         val mainInsts = result.functions[1].blocks[0].instructions
         // After inlining, the call is replaced with add(10, 20) which constant folding evaluates
-        assertFalse(mainInsts.any { it is Instruction.Call }, "Call should be inlined: $mainInsts")
-        val ret = mainInsts.last() as Instruction.Ret
+        assertFalse(mainInsts.any { it is Call }, "Call should be inlined: $mainInsts")
+        val ret = mainInsts.last() as Ret
         assertNotNull(ret.value, "Return should have a value: $mainInsts")
     }
 
@@ -238,7 +239,7 @@ class PassPipelineTest {
         val result = pipeline.execute(module)
         val insts = result.functions[0].blocks[0].instructions
         assertEquals(1, insts.size)
-        assertTrue(insts[0] is Instruction.Ret)
+        assertTrue(insts[0] is Ret)
     }
 
     @Test
@@ -293,7 +294,7 @@ class PassPipelineTest {
         val result = OptLevel.O0.pipeline().execute(module)
         val insts = result.functions[0].blocks[0].instructions
         assertEquals(2, insts.size, "O0 should not optimize: $insts")
-        assertTrue(insts[0] is Instruction.Add)
+        assertTrue(insts[0] is Add)
     }
 
     @Test
@@ -309,7 +310,7 @@ class PassPipelineTest {
         val result = OptLevel.O1.pipeline().execute(module)
         val insts = result.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "O1 should fold+DCE: $insts")
-        assertEquals(30, ((insts[0] as Instruction.Ret).value as Constant.I32).value)
+        assertEquals(30, ((insts[0] as Ret).value as Constant.I32).value)
     }
 
     @Test
@@ -333,7 +334,7 @@ class PassPipelineTest {
         val blocks = result.functions[0].blocks
         // 5+5=10, 10>0 is true, so only the "then" path should remain
         assertEquals(1, blocks.size, "O2 should collapse to single block: ${blocks.map { it.label }}")
-        val ret = blocks[0].instructions.last() as Instruction.Ret
+        val ret = blocks[0].instructions.last() as Ret
         assertEquals(1, (ret.value as Constant.I32).value)
     }
 
@@ -391,10 +392,10 @@ class PassPipelineTest {
 
         val f1Insts = result.functions[0].blocks[0].instructions
         assertEquals(1, f1Insts.size)
-        assertEquals(3, ((f1Insts[0] as Instruction.Ret).value as Constant.I32).value)
+        assertEquals(3, ((f1Insts[0] as Ret).value as Constant.I32).value)
 
         val f2Insts = result.functions[1].blocks[0].instructions
         assertEquals(1, f2Insts.size)
-        assertEquals(12, ((f2Insts[0] as Instruction.Ret).value as Constant.I32).value)
+        assertEquals(12, ((f2Insts[0] as Ret).value as Constant.I32).value)
     }
 }

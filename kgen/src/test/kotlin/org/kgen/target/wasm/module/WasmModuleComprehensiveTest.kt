@@ -1055,7 +1055,7 @@ class WasmModuleComprehensiveTest {
             globals = emptyList(),
             exports = emptyList(),
             start = null,
-            elements = listOf(WasmModule.Element(0, byteArrayOf(0x41, 0x00, 0x0B), listOf(0))),
+            elements = listOf(WasmModule.Element.Active(0, byteArrayOf(0x41, 0x00, 0x0B), WasmRefType.FUNCREF, funcIndices = listOf(0))),
             dataSegments = emptyList(),
             customSections = emptyList(),
         )
@@ -1082,8 +1082,8 @@ class WasmModuleComprehensiveTest {
             exports = emptyList(),
             start = null,
             elements = listOf(
-                WasmModule.Element(0, byteArrayOf(0x41, 0x00, 0x0B), listOf(0, 1)),
-                WasmModule.Element(0, byteArrayOf(0x41, 0x02, 0x0B), listOf(1, 0)),
+                WasmModule.Element.Active(0, byteArrayOf(0x41, 0x00, 0x0B), WasmRefType.FUNCREF, funcIndices = listOf(0, 1)),
+                WasmModule.Element.Active(0, byteArrayOf(0x41, 0x02, 0x0B), WasmRefType.FUNCREF, funcIndices = listOf(1, 0)),
             ),
             dataSegments = emptyList(),
             customSections = emptyList(),
@@ -1092,6 +1092,194 @@ class WasmModuleComprehensiveTest {
         assertValidWasm(bytes)
         val read = WasmModuleReader.read(bytes)
         assertEquals(2, read.elements.size)
+    }
+
+    @Test
+    fun `element segment form 1 passive with func indices`() {
+        val module = buildElementModule(
+            listOf(WasmModule.Element.Passive(WasmRefType.FUNCREF, funcIndices = listOf(0, 1)))
+        )
+        val bytes = WasmModuleWriter.write(module)
+        val read = WasmModuleReader.read(bytes)
+        assertEquals(1, read.elements.size)
+        val elem = read.elements[0]
+        assertTrue(elem is WasmModule.Element.Passive)
+        assertEquals(WasmRefType.FUNCREF, elem.refType)
+        assertEquals(listOf(0, 1), elem.funcIndices)
+    }
+
+    @Test
+    fun `element segment form 2 active with explicit table index`() {
+        val module = buildElementModule(
+            listOf(WasmModule.Element.Active(1, byteArrayOf(0x41, 0x00, 0x0B), WasmRefType.FUNCREF, funcIndices = listOf(0))),
+            tableCount = 2
+        )
+        val bytes = WasmModuleWriter.write(module)
+        val read = WasmModuleReader.read(bytes)
+        assertEquals(1, read.elements.size)
+        val elem = read.elements[0] as WasmModule.Element.Active
+        assertEquals(1, elem.tableIndex)
+        assertEquals(listOf(0), elem.funcIndices)
+    }
+
+    @Test
+    fun `element segment form 3 declarative with func indices`() {
+        val module = buildElementModule(
+            listOf(WasmModule.Element.Declarative(WasmRefType.FUNCREF, funcIndices = listOf(0)))
+        )
+        val bytes = WasmModuleWriter.write(module)
+        val read = WasmModuleReader.read(bytes)
+        assertEquals(1, read.elements.size)
+        val elem = read.elements[0]
+        assertTrue(elem is WasmModule.Element.Declarative)
+        assertEquals(listOf(0), elem.funcIndices)
+    }
+
+    @Test
+    fun `element segment form 4 active with expressions`() {
+        // ref.func 0 + end
+        val expr0 = byteArrayOf(0xD2.toByte(), 0x00, 0x0B)
+        val module = buildElementModule(
+            listOf(WasmModule.Element.Active(0, byteArrayOf(0x41, 0x00, 0x0B), WasmRefType.FUNCREF, initExprs = listOf(expr0)))
+        )
+        val bytes = WasmModuleWriter.write(module)
+        val read = WasmModuleReader.read(bytes)
+        assertEquals(1, read.elements.size)
+        val elem = read.elements[0] as WasmModule.Element.Active
+        assertEquals(0, elem.tableIndex)
+        assertEquals(1, elem.initExprs.size)
+        assertArrayEquals(expr0, elem.initExprs[0])
+    }
+
+    @Test
+    fun `element segment form 5 passive with expressions`() {
+        val expr0 = byteArrayOf(0xD2.toByte(), 0x00, 0x0B) // ref.func 0
+        val expr1 = byteArrayOf(0xD0.toByte(), 0x70, 0x0B) // ref.null funcref
+        val module = buildElementModule(
+            listOf(WasmModule.Element.Passive(WasmRefType.FUNCREF, initExprs = listOf(expr0, expr1)))
+        )
+        val bytes = WasmModuleWriter.write(module)
+        val read = WasmModuleReader.read(bytes)
+        assertEquals(1, read.elements.size)
+        val elem = read.elements[0] as WasmModule.Element.Passive
+        assertEquals(WasmRefType.FUNCREF, elem.refType)
+        assertEquals(2, elem.initExprs.size)
+        assertArrayEquals(expr0, elem.initExprs[0])
+        assertArrayEquals(expr1, elem.initExprs[1])
+    }
+
+    @Test
+    fun `element segment form 6 active with table index and expressions`() {
+        val expr0 = byteArrayOf(0xD2.toByte(), 0x00, 0x0B)
+        val module = buildElementModule(
+            listOf(WasmModule.Element.Active(1, byteArrayOf(0x41, 0x00, 0x0B), WasmRefType.FUNCREF, initExprs = listOf(expr0))),
+            tableCount = 2
+        )
+        val bytes = WasmModuleWriter.write(module)
+        val read = WasmModuleReader.read(bytes)
+        assertEquals(1, read.elements.size)
+        val elem = read.elements[0] as WasmModule.Element.Active
+        assertEquals(1, elem.tableIndex)
+        assertEquals(1, elem.initExprs.size)
+    }
+
+    @Test
+    fun `element segment form 7 declarative with expressions`() {
+        val expr0 = byteArrayOf(0xD2.toByte(), 0x00, 0x0B)
+        val module = buildElementModule(
+            listOf(WasmModule.Element.Declarative(WasmRefType.FUNCREF, initExprs = listOf(expr0)))
+        )
+        val bytes = WasmModuleWriter.write(module)
+        val read = WasmModuleReader.read(bytes)
+        assertEquals(1, read.elements.size)
+        val elem = read.elements[0]
+        assertTrue(elem is WasmModule.Element.Declarative)
+        assertEquals(1, elem.initExprs.size)
+    }
+
+    @Test
+    fun `element segment round trip all forms`() {
+        val refFuncExpr = byteArrayOf(0xD2.toByte(), 0x00, 0x0B) // ref.func 0
+        val elements = listOf(
+            WasmModule.Element.Active(0, byteArrayOf(0x41, 0x00, 0x0B), WasmRefType.FUNCREF, funcIndices = listOf(0)),
+            WasmModule.Element.Passive(WasmRefType.FUNCREF, funcIndices = listOf(0, 1)),
+            WasmModule.Element.Active(1, byteArrayOf(0x41, 0x01, 0x0B), WasmRefType.FUNCREF, funcIndices = listOf(1)),
+            WasmModule.Element.Declarative(WasmRefType.FUNCREF, funcIndices = listOf(0)),
+            WasmModule.Element.Active(0, byteArrayOf(0x41, 0x00, 0x0B), WasmRefType.FUNCREF, initExprs = listOf(refFuncExpr)),
+            WasmModule.Element.Passive(WasmRefType.FUNCREF, initExprs = listOf(refFuncExpr)),
+            WasmModule.Element.Active(1, byteArrayOf(0x41, 0x00, 0x0B), WasmRefType.FUNCREF, initExprs = listOf(refFuncExpr)),
+            WasmModule.Element.Declarative(WasmRefType.FUNCREF, initExprs = listOf(refFuncExpr)),
+        )
+        val module = buildElementModule(elements, tableCount = 2, funcCount = 2)
+        val bytes = WasmModuleWriter.write(module)
+        val read = WasmModuleReader.read(bytes)
+
+        assertEquals(8, read.elements.size)
+        assertTrue(read.elements[0] is WasmModule.Element.Active)
+        assertTrue(read.elements[1] is WasmModule.Element.Passive)
+        assertTrue(read.elements[2] is WasmModule.Element.Active)
+        assertTrue(read.elements[3] is WasmModule.Element.Declarative)
+        assertTrue(read.elements[4] is WasmModule.Element.Active)
+        assertTrue(read.elements[5] is WasmModule.Element.Passive)
+        assertTrue(read.elements[6] is WasmModule.Element.Active)
+        assertTrue(read.elements[7] is WasmModule.Element.Declarative)
+
+        // Verify form 2 round-tripped correctly
+        val form2 = read.elements[2] as WasmModule.Element.Active
+        assertEquals(1, form2.tableIndex)
+        assertEquals(listOf(1), form2.funcIndices)
+
+        // Verify form 5 round-tripped correctly
+        val form5 = read.elements[5] as WasmModule.Element.Passive
+        assertEquals(1, form5.initExprs.size)
+    }
+
+    @Test
+    fun `element segment with externref type`() {
+        val refNullExpr = byteArrayOf(0xD0.toByte(), 0x6F, 0x0B) // ref.null externref
+        val module = WasmModule(
+            version = 1,
+            types = listOf(WasmModule.FuncType(emptyList(), emptyList())),
+            imports = emptyList(),
+            functions = listOf(WasmModule.Function(null, 0, emptyList(), byteArrayOf(0x0B))),
+            tables = listOf(WasmModule.Table(WasmRefType.EXTERNREF, 10, null)),
+            memories = emptyList(),
+            globals = emptyList(),
+            exports = emptyList(),
+            start = null,
+            elements = listOf(
+                WasmModule.Element.Passive(WasmRefType.EXTERNREF, initExprs = listOf(refNullExpr))
+            ),
+            dataSegments = emptyList(),
+            customSections = emptyList(),
+        )
+        val bytes = WasmModuleWriter.write(module)
+        val read = WasmModuleReader.read(bytes)
+        assertEquals(1, read.elements.size)
+        val elem = read.elements[0] as WasmModule.Element.Passive
+        assertEquals(WasmRefType.EXTERNREF, elem.refType)
+        assertEquals(1, elem.initExprs.size)
+    }
+
+    private fun buildElementModule(
+        elements: List<WasmModule.Element>,
+        tableCount: Int = 1,
+        funcCount: Int = 2,
+    ): WasmModule {
+        return WasmModule(
+            version = 1,
+            types = listOf(WasmModule.FuncType(emptyList(), emptyList())),
+            imports = emptyList(),
+            functions = (0 until funcCount).map { WasmModule.Function(null, 0, emptyList(), byteArrayOf(0x0B)) },
+            tables = (0 until tableCount).map { WasmModule.Table(WasmRefType.FUNCREF, 10, null) },
+            memories = emptyList(),
+            globals = emptyList(),
+            exports = emptyList(),
+            start = null,
+            elements = elements,
+            dataSegments = emptyList(),
+            customSections = emptyList(),
+        )
     }
 
     @Test

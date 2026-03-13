@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -230,9 +231,9 @@ class AliasAnalysisTest {
             finalizeFunction()
         }
         val aa = BasicAliasAnalysis(fn)
-        val loadInst = Instruction.Load(InstructionRef("%0", Type.I32), Parameter("p", Type.OpaquePointer, 0), Type.I32)
-        val storeInst = Instruction.Store(Constant.I32(1), Parameter("p", Type.OpaquePointer, 0))
-        val addInst = Instruction.Add(InstructionRef("%1", Type.I32), Constant.I32(1), Constant.I32(2))
+        val loadInst = Load(InstructionRef("%0", Type.I32), Parameter("p", Type.OpaquePointer, 0), Type.I32)
+        val storeInst = Store(Constant.I32(1), Parameter("p", Type.OpaquePointer, 0))
+        val addInst = Add(InstructionRef("%1", Type.I32), Constant.I32(1), Constant.I32(2))
 
         assertTrue(aa.readsMemory(loadInst))
         assertFalse(aa.readsMemory(storeInst))
@@ -248,8 +249,8 @@ class AliasAnalysisTest {
             finalizeFunction()
         }
         val aa = BasicAliasAnalysis(fn)
-        val loadInst = Instruction.Load(InstructionRef("%0", Type.I32), Parameter("p", Type.OpaquePointer, 0), Type.I32)
-        val storeInst = Instruction.Store(Constant.I32(1), Parameter("p", Type.OpaquePointer, 0))
+        val loadInst = Load(InstructionRef("%0", Type.I32), Parameter("p", Type.OpaquePointer, 0), Type.I32)
+        val storeInst = Store(Constant.I32(1), Parameter("p", Type.OpaquePointer, 0))
 
         assertFalse(aa.writesMemory(loadInst))
         assertTrue(aa.writesMemory(storeInst))

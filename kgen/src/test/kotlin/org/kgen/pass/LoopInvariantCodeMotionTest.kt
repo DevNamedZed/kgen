@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -51,7 +52,7 @@ class LoopInvariantCodeMotionTest {
         val beforeLicm = module.functions[0]
         val loopBlock = beforeLicm.blocks.find { it.label == "loop" }
         assertNotNull(loopBlock, "Loop block should exist")
-        assertTrue(loopBlock!!.instructions.any { it is Instruction.Add },
+        assertTrue(loopBlock!!.instructions.any { it is Add },
             "Loop should contain add before LICM")
 
         val hoisted = licm.run(module)
@@ -60,7 +61,7 @@ class LoopInvariantCodeMotionTest {
         assertNotNull(preheader, "Preheader should be created: ${fn.blocks.map { it.label }}")
 
         // The invariant add(a, b) should be in the preheader
-        val preheaderAdds = preheader!!.instructions.filterIsInstance<Instruction.Add>()
+        val preheaderAdds = preheader!!.instructions.filterIsInstance<Add>()
         assertTrue(preheaderAdds.isNotEmpty(), "Preheader should contain hoisted add: ${preheader.instructions}")
     }
 
@@ -91,7 +92,7 @@ class LoopInvariantCodeMotionTest {
         val loopBlock = fn.blocks.find { it.label == "loop" }
         assertNotNull(loopBlock)
         // i + 1 depends on i (loop-variant via phi) — should stay in loop
-        assertTrue(loopBlock!!.instructions.any { it is Instruction.Add },
+        assertTrue(loopBlock!!.instructions.any { it is Add },
             "Loop-variant add should stay in loop: ${loopBlock.instructions}")
     }
 
@@ -123,7 +124,7 @@ class LoopInvariantCodeMotionTest {
         val fn = hoisted.functions[0]
         val preheader = fn.blocks.find { it.label == "loop_preheader" }
         assertNotNull(preheader, "Preheader should exist: ${fn.blocks.map { it.label }}")
-        assertTrue(preheader!!.instructions.any { it is Instruction.Mul },
+        assertTrue(preheader!!.instructions.any { it is Mul },
             "Hoisted mul should be in preheader: ${preheader.instructions}")
     }
 
@@ -181,9 +182,9 @@ class LoopInvariantCodeMotionTest {
         val fn = hoisted.functions[0]
         val preheader = fn.blocks.find { it.label == "loop_preheader" }
         assertNotNull(preheader, "Preheader should exist: ${fn.blocks.map { it.label }}")
-        assertTrue(preheader!!.instructions.any { it is Instruction.Add },
+        assertTrue(preheader!!.instructions.any { it is Add },
             "Hoisted add: ${preheader.instructions}")
-        assertTrue(preheader.instructions.any { it is Instruction.Mul },
+        assertTrue(preheader.instructions.any { it is Mul },
             "Hoisted mul: ${preheader.instructions}")
     }
 
@@ -215,7 +216,7 @@ class LoopInvariantCodeMotionTest {
         val fn = hoisted.functions.find { !it.isExternal }!!
         val loopBlock = fn.blocks.find { it.label == "loop" }
         assertNotNull(loopBlock)
-        assertTrue(loopBlock!!.instructions.any { it is Instruction.Call },
+        assertTrue(loopBlock!!.instructions.any { it is Call },
             "Call should stay in loop: ${loopBlock.instructions}")
     }
 
@@ -250,7 +251,7 @@ class LoopInvariantCodeMotionTest {
         val fn = hoisted.functions[0]
         val preheader = fn.blocks.find { it.label.contains("preheader") }
         assertNotNull(preheader, "Preheader should exist: ${fn.blocks.map { it.label }}")
-        val preheaderLoads = preheader!!.instructions.filterIsInstance<Instruction.Load>()
+        val preheaderLoads = preheader!!.instructions.filterIsInstance<Load>()
         assertTrue(preheaderLoads.isNotEmpty(),
             "Load from param should be hoisted when loop has no aliasing stores")
     }

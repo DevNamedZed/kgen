@@ -3,6 +3,8 @@ package org.kgen.reflect.process
 import org.kgen.binary.ArchType
 import org.kgen.binary.Architecture
 import java.io.RandomAccessFile
+import java.lang.foreign.*
+import java.lang.foreign.ValueLayout.*
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -36,7 +38,8 @@ import java.nio.file.Path
 class RemoteProcess private constructor(
     private val pid: Long,
     private val processArch: Architecture,
-) {
+    private val windowsHandle: MemorySegment? = null,
+) : AutoCloseable {
     /** Process ID. */
     fun pid(): Long = pid
 
@@ -81,6 +84,9 @@ class RemoteProcess private constructor(
         if (isLinux) {
             return readLinuxMemory(address, length)
         }
+        if (isWindows && windowsHandle != null) {
+            return WindowsProcessApi.readMemory(windowsHandle, address, length)
+        }
         throw UnsupportedOperationException("Remote memory read not supported on this platform")
     }
 
@@ -88,11 +94,15 @@ class RemoteProcess private constructor(
      * Write memory to the remote process.
      *
      * On Linux, writes to `/proc/<pid>/mem`.
-     * Requires appropriate permissions (ptrace or same user).
+     * On Windows, uses WriteProcessMemory.
      */
     fun writeMemory(address: Long, data: ByteArray) {
         if (isLinux) {
             writeLinuxMemory(address, data)
+            return
+        }
+        if (isWindows && windowsHandle != null) {
+            WindowsProcessApi.writeMemory(windowsHandle, address, data)
             return
         }
         throw UnsupportedOperationException("Remote memory write not supported on this platform")
@@ -104,6 +114,7 @@ class RemoteProcess private constructor(
      */
     fun modules(): List<MemoryMapping> {
         if (isLinux) return enumerateLinuxModules()
+        if (isWindows && windowsHandle != null) return WindowsProcessApi.enumerateModules(windowsHandle)
         return emptyList()
     }
 
@@ -140,6 +151,12 @@ class RemoteProcess private constructor(
      * Get the memory map entries for the process.
      */
     fun memoryMap(): List<MemoryMapping> = modules()
+
+    override fun close() {
+        if (windowsHandle != null && isWindows) {
+            WindowsProcessApi.closeHandle(windowsHandle)
+        }
+    }
 
     override fun toString(): String = "RemoteProcess(pid=$pid, name=${name()}, alive=${isAlive()})"
 
@@ -216,7 +233,8 @@ class RemoteProcess private constructor(
         fun open(pid: Long): RemoteProcess {
             val handle = ProcessHandle.of(pid)
             if (handle.isEmpty) throw IllegalArgumentException("No process with PID $pid")
-            return RemoteProcess(pid, detectArch())
+            val winHandle = if (isWindows) WindowsProcessApi.openProcess(pid) else null
+            return RemoteProcess(pid, detectArch(), winHandle)
         }
 
         /**
@@ -226,7 +244,8 @@ class RemoteProcess private constructor(
         fun tryOpen(pid: Long): RemoteProcess? {
             val handle = ProcessHandle.of(pid)
             if (handle.isEmpty) return null
-            return RemoteProcess(pid, detectArch())
+            val winHandle = if (isWindows) WindowsProcessApi.openProcess(pid) else null
+            return RemoteProcess(pid, detectArch(), winHandle)
         }
 
         /**
@@ -298,4 +317,180 @@ class RemoteProcess private constructor(
         val name: String,
         val isAlive: Boolean,
     )
+}
+
+/**
+ * Windows kernel32 FFM bindings for remote process operations.
+ */
+private object WindowsProcessApi {
+    private val linker = Linker.nativeLinker()
+    private val kernel32 by lazy { SymbolLookup.libraryLookup("kernel32", Arena.global()) }
+
+    private val openProcessFn by lazy {
+        linker.downcallHandle(
+            kernel32.find("OpenProcess").orElseThrow(),
+            FunctionDescriptor.of(ADDRESS, JAVA_INT, JAVA_INT, JAVA_INT)
+        )
+    }
+
+    private val closeHandleFn by lazy {
+        linker.downcallHandle(
+            kernel32.find("CloseHandle").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS)
+        )
+    }
+
+    private val readProcessMemoryFn by lazy {
+        linker.downcallHandle(
+            kernel32.find("ReadProcessMemory").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, ADDRESS, JAVA_LONG, ADDRESS)
+        )
+    }
+
+    private val writeProcessMemoryFn by lazy {
+        linker.downcallHandle(
+            kernel32.find("WriteProcessMemory").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, ADDRESS, JAVA_LONG, ADDRESS)
+        )
+    }
+
+    private val enumProcessModulesFn by lazy {
+        linker.downcallHandle(
+            kernel32.find("K32EnumProcessModules").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT, ADDRESS)
+        )
+    }
+
+    private val getModuleFileNameExWFn by lazy {
+        linker.downcallHandle(
+            kernel32.find("K32GetModuleFileNameExW").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, ADDRESS, JAVA_INT)
+        )
+    }
+
+    private val getModuleInformationFn by lazy {
+        linker.downcallHandle(
+            kernel32.find("K32GetModuleInformation").orElseThrow(),
+            FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, ADDRESS, JAVA_INT)
+        )
+    }
+
+    private const val PROCESS_VM_READ = 0x0010
+    private const val PROCESS_VM_WRITE = 0x0020
+    private const val PROCESS_VM_OPERATION = 0x0008
+    private const val PROCESS_QUERY_INFORMATION = 0x0400
+
+    fun openProcess(pid: Long): MemorySegment? {
+        val access = PROCESS_VM_READ or PROCESS_VM_WRITE or PROCESS_VM_OPERATION or PROCESS_QUERY_INFORMATION
+        val handle = openProcessFn.invoke(access, 0, pid.toInt()) as MemorySegment
+        if (handle.address() == 0L) return null
+        return handle
+    }
+
+    fun closeHandle(handle: MemorySegment) {
+        closeHandleFn.invoke(handle)
+    }
+
+    fun readMemory(handle: MemorySegment, address: Long, length: Int): ByteArray {
+        Arena.ofConfined().use { arena ->
+            val buffer = arena.allocate(length.toLong())
+            val bytesRead = arena.allocate(JAVA_LONG)
+            val ok = readProcessMemoryFn.invoke(
+                handle,
+                MemorySegment.ofAddress(address),
+                buffer,
+                length.toLong(),
+                bytesRead
+            ) as Int
+            if (ok == 0) {
+                throw IllegalStateException("ReadProcessMemory failed for address 0x${address.toString(16)}")
+            }
+            val read = bytesRead.get(JAVA_LONG, 0).toInt()
+            return buffer.asSlice(0, read.toLong()).toArray(JAVA_BYTE)
+        }
+    }
+
+    fun writeMemory(handle: MemorySegment, address: Long, data: ByteArray) {
+        Arena.ofConfined().use { arena ->
+            val buffer = arena.allocate(data.size.toLong())
+            buffer.copyFrom(MemorySegment.ofArray(data))
+            val bytesWritten = arena.allocate(JAVA_LONG)
+            val ok = writeProcessMemoryFn.invoke(
+                handle,
+                MemorySegment.ofAddress(address),
+                buffer,
+                data.size.toLong(),
+                bytesWritten
+            ) as Int
+            if (ok == 0) {
+                throw IllegalStateException("WriteProcessMemory failed for address 0x${address.toString(16)}")
+            }
+        }
+    }
+
+    fun enumerateModules(handle: MemorySegment): List<RemoteProcess.MemoryMapping> {
+        Arena.ofConfined().use { arena ->
+            val cbNeeded = arena.allocate(JAVA_INT)
+            val initialSlots = 256
+            var hModArray = arena.allocate(ADDRESS, initialSlots.toLong())
+            var ok = enumProcessModulesFn.invoke(
+                handle, hModArray, (initialSlots * ADDRESS.byteSize()).toInt(), cbNeeded
+            ) as Int
+            if (ok == 0) return emptyList()
+
+            val needed = cbNeeded.get(JAVA_INT, 0)
+            val count = needed / ADDRESS.byteSize().toInt()
+
+            if (needed > initialSlots * ADDRESS.byteSize().toInt()) {
+                hModArray = arena.allocate(ADDRESS, count.toLong())
+                ok = enumProcessModulesFn.invoke(handle, hModArray, needed, cbNeeded) as Int
+                if (ok == 0) return emptyList()
+            }
+
+            val result = mutableListOf<RemoteProcess.MemoryMapping>()
+            for (i in 0 until count) {
+                val hModule = hModArray.getAtIndex(ADDRESS, i.toLong())
+                val mapping = buildMapping(handle, hModule, arena)
+                if (mapping != null) {
+                    result.add(mapping)
+                }
+            }
+            return result
+        }
+    }
+
+    private fun buildMapping(
+        handle: MemorySegment, hModule: MemorySegment, arena: Arena
+    ): RemoteProcess.MemoryMapping? {
+        // Get module path
+        val maxPath = 260
+        val pathBuf = arena.allocate(JAVA_CHAR, maxPath.toLong())
+        val pathLen = getModuleFileNameExWFn.invoke(handle, hModule, pathBuf, maxPath) as Int
+        val path = if (pathLen > 0) {
+            val bytes = pathBuf.asSlice(0, pathLen.toLong() * 2).toArray(JAVA_BYTE)
+            String(bytes, java.nio.charset.StandardCharsets.UTF_16LE)
+        } else {
+            null
+        }
+
+        // Get module info (base address + size): MODULEINFO struct = 3 pointers (24 bytes on 64-bit)
+        val moduleInfoSize = 3 * ADDRESS.byteSize().toInt()
+        val moduleInfo = arena.allocate(moduleInfoSize.toLong())
+        val ok = getModuleInformationFn.invoke(handle, hModule, moduleInfo, moduleInfoSize) as Int
+        if (ok == 0) return null
+
+        val baseAddress = moduleInfo.get(ADDRESS, 0).address()
+        // MODULEINFO: lpBaseOfDll (ptr), SizeOfImage (DWORD at offset 8), EntryPoint (ptr)
+        val sizeOfImage = moduleInfo.get(JAVA_INT, 8).toLong() and 0xFFFFFFFFL
+
+        return RemoteProcess.MemoryMapping(
+            startAddress = baseAddress,
+            endAddress = baseAddress + sizeOfImage,
+            permissions = "r-xp",
+            offset = 0,
+            device = "00:00",
+            inode = 0,
+            path = path,
+        )
+    }
 }

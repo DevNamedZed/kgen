@@ -6,7 +6,7 @@ and **high-level** operations for managed backends (JVM, WASM). A single `Module
 can contain both; lowering passes convert high-level ops to low-level equivalents
 before native code generation.
 
-**Instruction count**: 165 instruction types across both tiers, plus a generic
+**Instruction count**: 177 instruction types across both tiers, plus a generic
 `Intrinsic` escape hatch and `InlineAsm` for target-specific needs. For
 comparison, LLVM IR has ~67 core opcodes but offloads much of its functionality
 to hundreds of intrinsics (`llvm.sadd.with.overflow`, `llvm.memcpy`, etc.).
@@ -37,7 +37,7 @@ kgen folds these directly into the instruction set.
 import org.kgen.ir.*
 
 val mod = module("example") {
-    function("add", listOf("a" to Type.I32, "b" to Type.I32), Type.I32) {
+    function("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32) {
         block("entry") {
             val result = add(param(0), param(1))
             ret(result)
@@ -73,7 +73,7 @@ The DSL is great when you know the structure of the IR upfront:
 
 ```kotlin
 val mod = module("test") {
-    function("add", listOf("a" to Type.I32, "b" to Type.I32), Type.I32) {
+    function("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32) {
         block("entry") {
             val result = add(param(0), param(1))
             ret(result)
@@ -95,7 +95,7 @@ class MyCompiler(val ast: ProgramNode) {
         ir.targetTriple = "x86_64-unknown-linux-gnu"
 
         // Declare external functions
-        ir.declareFunction("printf", listOf("fmt" to Type.OpaquePointer), Type.I32, isVarArg = true)
+        ir.declareFunction("printf", listOf(Param("fmt", Type.OpaquePointer)), Type.I32, isVarArg = true)
 
         // Translate each function
         for (func in ast.functions) {
@@ -231,13 +231,13 @@ val cls = classDef("Point") {
 
     constructor(MethodDef(
         name = "<init>",
-        params = listOf("x" to Type.F64, "y" to Type.F64),
+        params = listOf(Param("x", Type.F64), Param("y", Type.F64)),
         returnType = Type.Void,
     ))
 
     method(MethodDef(
         name = "distanceTo",
-        params = listOf("other" to Type.ClassRef("Point")),
+        params = listOf(Param("other", Type.ClassRef("Point"))),
         returnType = Type.F64,
     ))
 }
@@ -1417,7 +1417,7 @@ va_copy  ptr %dst, ptr %src
 ```
 
 ```kotlin
-function("variadic", listOf("n" to Type.I32), Type.Void, isVarArg = true) {
+function("variadic", listOf(Param("n", Type.I32)), Type.Void, isVarArg = true) {
     block("entry") {
         val ap = alloca(Type.OpaquePointer)
         vaStart(ap)
@@ -2071,14 +2071,14 @@ val mod = module("my_module") {
     sourceFile("main.c")
     targetFeature("+sse4.2")
 
-    struct("Point", listOf("x" to Type.F64, "y" to Type.F64))
+    struct("Point", listOf(Param("x", Type.F64), Param("y", Type.F64)))
     global("counter", Type.I32, i32(0))
     global("pi", Type.F64, f64(3.14159), isConstant = true)
 
     function("main", emptyList(), Type.I32) {
         block("entry") { ret(i32(0)) }
     }
-    function("puts", listOf("s" to Type.OpaquePointer), Type.I32, isExternal = true)
+    function("puts", listOf(Param("s", Type.OpaquePointer)), Type.I32, isExternal = true)
 }
 ```
 
@@ -2098,7 +2098,7 @@ val cls = classDef("Point") {
 
 ```kotlin
 val iface = interfaceDef("Drawable") {
-    method(MethodDef("draw", listOf("canvas" to Type.ClassRef("Canvas")), Type.Void, isAbstract = true))
+    method(MethodDef("draw", listOf(Param("canvas", Type.ClassRef("Canvas"))), Type.Void, isAbstract = true))
     constant("MAX_Z", Type.I32, i32(1000))
 }
 ```
@@ -2108,7 +2108,7 @@ val iface = interfaceDef("Drawable") {
 `FunctionBuilder` also supports imperative block creation within the DSL:
 
 ```kotlin
-function("flexible", listOf("x" to Type.I32), Type.I32) {
+function("flexible", listOf(Param("x", Type.I32)), Type.I32) {
     val entry = createBlock("entry")
     val thenBb = createBlock("then")
     val elseBb = createBlock("else")
@@ -2136,13 +2136,13 @@ val ir = IrBuilder("my_module")
 ir.targetTriple = "x86_64-unknown-linux-gnu"
 
 // Declare external functions
-ir.declareFunction("printf", listOf("fmt" to Type.OpaquePointer), Type.I32, isVarArg = true)
+ir.declareFunction("printf", listOf(Param("fmt", Type.OpaquePointer)), Type.I32, isVarArg = true)
 
 // Add globals
 val counter = ir.addGlobal("counter", Type.I32, i32(0))
 
 // Create a function
-val params = ir.createFunction("main", listOf("argc" to Type.I32), Type.I32)
+val params = ir.createFunction("main", listOf(Param("argc", Type.I32)), Type.I32)
 
 // Create and position at blocks
 val entry = ir.appendBlock("entry")

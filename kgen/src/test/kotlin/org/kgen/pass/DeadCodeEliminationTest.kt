@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
+import org.kgen.ir.instructions.*
 
 class DeadCodeEliminationTest {
 
@@ -28,7 +29,7 @@ class DeadCodeEliminationTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "Only ret should remain: $insts")
-        assertTrue(insts[0] is Instruction.Ret)
+        assertTrue(insts[0] is Ret)
     }
 
     @Test
@@ -56,7 +57,7 @@ class DeadCodeEliminationTest {
         }
         val insts = module.functions[1].blocks[0].instructions
         assertEquals(2, insts.size) // call + ret
-        assertTrue(insts[0] is Instruction.Call)
+        assertTrue(insts[0] is Call)
     }
 
     @Test
@@ -69,7 +70,7 @@ class DeadCodeEliminationTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        assertTrue(insts.any { it is Instruction.Store })
+        assertTrue(insts.any { it is Store })
     }
 
     @Test
@@ -104,7 +105,7 @@ class DeadCodeEliminationTest {
             finalizeFunction()
         }
         val entryInsts = module.functions[0].blocks[0].instructions
-        assertTrue(entryInsts.any { it is Instruction.CondBr })
+        assertTrue(entryInsts.any { it is CondBr })
     }
 
     @Test

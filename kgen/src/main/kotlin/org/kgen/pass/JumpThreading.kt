@@ -1,6 +1,7 @@
 package org.kgen.pass
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 
 /**
  * Jump threading — eliminates redundant conditional branches.
@@ -33,15 +34,15 @@ class JumpThreading : ModulePass {
             // Pass 1: Fold constant conditional branches
             blocks = blocks.map { block ->
                 val last = block.instructions.lastOrNull()
-                if (last is Instruction.CondBr) {
+                if (last is CondBr) {
                     val cond = last.condition
                     if (cond is Constant.I1) {
                         val target = if (cond.value) last.trueTarget else last.falseTarget
-                        val newInsts = block.instructions.dropLast(1) + Instruction.Br(target)
+                        val newInsts = block.instructions.dropLast(1) + Br(target)
                         changed = true
                         BasicBlock(block.label, newInsts)
                     } else if (last.trueTarget == last.falseTarget) {
-                        val newInsts = block.instructions.dropLast(1) + Instruction.Br(last.trueTarget)
+                        val newInsts = block.instructions.dropLast(1) + Br(last.trueTarget)
                         changed = true
                         BasicBlock(block.label, newInsts)
                     } else {
@@ -55,11 +56,11 @@ class JumpThreading : ModulePass {
             // Pass 2: Thread through phi nodes with constant condition
             blocks = blocks.map { block ->
                 val last = block.instructions.lastOrNull()
-                if (last is Instruction.CondBr) {
+                if (last is CondBr) {
                     val condRef = last.condition
                     if (condRef is InstructionRef) {
                         val condInst = block.instructions.find { it.result?.name == condRef.name }
-                        if (condInst is Instruction.Phi) {
+                        if (condInst is Phi) {
                             val allConstant = condInst.incoming.all { it.first is Constant.I1 }
                             if (allConstant && condInst.incoming.isNotEmpty()) {
                                 // All incoming values are constant — we can thread each predecessor
@@ -68,11 +69,11 @@ class JumpThreading : ModulePass {
                                 val allTrue = condInst.incoming.all { (it.first as Constant.I1).value }
                                 val allFalse = condInst.incoming.all { !(it.first as Constant.I1).value }
                                 if (allTrue) {
-                                    val newInsts = block.instructions.dropLast(1) + Instruction.Br(last.trueTarget)
+                                    val newInsts = block.instructions.dropLast(1) + Br(last.trueTarget)
                                     changed = true
                                     BasicBlock(block.label, newInsts)
                                 } else if (allFalse) {
-                                    val newInsts = block.instructions.dropLast(1) + Instruction.Br(last.falseTarget)
+                                    val newInsts = block.instructions.dropLast(1) + Br(last.falseTarget)
                                     changed = true
                                     BasicBlock(block.label, newInsts)
                                 } else block
@@ -94,7 +95,7 @@ class JumpThreading : ModulePass {
                 var current = block
                 while (true) {
                     val last = current.instructions.lastOrNull()
-                    if (last !is Instruction.Br) break
+                    if (last !is Br) break
                     val target = last.target
                     if ((predCounts[target] ?: 0) != 1) break
                     val successor = blockMap[target] ?: break
@@ -147,10 +148,10 @@ class JumpThreading : ModulePass {
     }
 
     private fun terminatorTargets(inst: Instruction): List<String> = when (inst) {
-        is Instruction.Br -> listOf(inst.target)
-        is Instruction.CondBr -> listOf(inst.trueTarget, inst.falseTarget)
-        is Instruction.Switch -> listOf(inst.defaultTarget) + inst.cases.map { it.second }
-        is Instruction.IndirectBr -> inst.targets
+        is Br -> listOf(inst.target)
+        is CondBr -> listOf(inst.trueTarget, inst.falseTarget)
+        is Switch -> listOf(inst.defaultTarget) + inst.cases.map { it.second }
+        is IndirectBr -> inst.targets
         else -> emptyList()
     }
 }

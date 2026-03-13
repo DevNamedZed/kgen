@@ -1,6 +1,7 @@
 package org.kgen.pass
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 
 /**
  * Basic alias analysis using local reasoning rules.
@@ -48,18 +49,18 @@ class BasicAliasAnalysis(private val fn: IrFunction) : AliasAnalysis {
         // Rule 2: distinct allocas
         val defA = defs[baseA.name]
         val defB = defs[baseB.name]
-        if (defA is Instruction.Alloca && defB is Instruction.Alloca) return AliasResult.NoAlias
+        if (defA is Alloca && defB is Alloca) return AliasResult.NoAlias
 
         // Rule 3: global vs alloca
-        if (baseA is GlobalRef && defB is Instruction.Alloca) return AliasResult.NoAlias
-        if (defA is Instruction.Alloca && baseB is GlobalRef) return AliasResult.NoAlias
+        if (baseA is GlobalRef && defB is Alloca) return AliasResult.NoAlias
+        if (defA is Alloca && baseB is GlobalRef) return AliasResult.NoAlias
 
         // Rule 4: distinct globals
         if (baseA is GlobalRef && baseB is GlobalRef && baseA.name != baseB.name) return AliasResult.NoAlias
 
         // Rule 3 extended: function param (caller memory) vs alloca (callee stack)
-        if (baseA is Parameter && defB is Instruction.Alloca) return AliasResult.NoAlias
-        if (defA is Instruction.Alloca && baseB is Parameter) return AliasResult.NoAlias
+        if (baseA is Parameter && defB is Alloca) return AliasResult.NoAlias
+        if (defA is Alloca && baseB is Parameter) return AliasResult.NoAlias
 
         return AliasResult.MayAlias
     }
@@ -74,9 +75,9 @@ class BasicAliasAnalysis(private val fn: IrFunction) : AliasAnalysis {
             visited.add(current.name)
             val def = defs[current.name] ?: break
             current = when (def) {
-                is Instruction.GetElementPtr -> def.ptr
-                is Instruction.BitCast -> def.value
-                is Instruction.AddrSpaceCast -> def.value
+                is GetElementPtr -> def.ptr
+                is BitCast -> def.value
+                is AddrSpaceCast -> def.value
                 else -> break
             }
         }
@@ -91,7 +92,7 @@ class BasicAliasAnalysis(private val fn: IrFunction) : AliasAnalysis {
         val gepA = defs[a.name]
         val gepB = defs[b.name]
 
-        if (gepA is Instruction.GetElementPtr && gepB is Instruction.GetElementPtr) {
+        if (gepA is GetElementPtr && gepB is GetElementPtr) {
             // Same base pointer — compare constant indices
             if (gepA.ptr.name == gepB.ptr.name && gepA.indices.size == gepB.indices.size) {
                 for (i in gepA.indices.indices) {
@@ -111,8 +112,8 @@ class BasicAliasAnalysis(private val fn: IrFunction) : AliasAnalysis {
         }
 
         // One is GEP, other is the base itself → PartialAlias (field within object)
-        if (gepA is Instruction.GetElementPtr && gepA.ptr.name == b.name) return AliasResult.PartialAlias
-        if (gepB is Instruction.GetElementPtr && gepB.ptr.name == a.name) return AliasResult.PartialAlias
+        if (gepA is GetElementPtr && gepA.ptr.name == b.name) return AliasResult.PartialAlias
+        if (gepB is GetElementPtr && gepB.ptr.name == a.name) return AliasResult.PartialAlias
 
         return AliasResult.MayAlias
     }

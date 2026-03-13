@@ -3,6 +3,7 @@ package org.kgen.target.wasm.codegen
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.*
 import org.kgen.ir.target.Target
 
@@ -129,19 +130,19 @@ class WasmControlFlowTest {
         val cond = InstructionRef("%cond", Type.I32)
 
         val module = buildLoopModule("sumTo", listOf(n), Type.I32, listOf(
-            BasicBlock("entry", listOf(Instruction.Br("loop"))),
+            BasicBlock("entry", listOf(Br("loop"))),
             BasicBlock("loop", listOf(
-                Instruction.Phi(i, listOf(Constant.I32(0) to "entry", iNext to "body")),
-                Instruction.Phi(sum, listOf(Constant.I32(0) to "entry", sumNext to "body")),
-                Instruction.ICmp(cond, ICmpPredicate.SLT, i, n),
-                Instruction.CondBr(cond, "body", "exit"),
+                Phi(i, listOf(Constant.I32(0) to "entry", iNext to "body")),
+                Phi(sum, listOf(Constant.I32(0) to "entry", sumNext to "body")),
+                ICmp(cond, ICmpPredicate.SLT, i, n),
+                CondBr(cond, "body", "exit"),
             )),
             BasicBlock("body", listOf(
-                Instruction.Add(sumNext, sum, i),
-                Instruction.Add(iNext, i, Constant.I32(1)),
-                Instruction.Br("loop"),
+                Add(sumNext, sum, i),
+                Add(iNext, i, Constant.I32(1)),
+                Br("loop"),
             )),
-            BasicBlock("exit", listOf(Instruction.Ret(sum))),
+            BasicBlock("exit", listOf(Ret(sum))),
         ))
         assertValidWasm(gen.generate(module))
     }
@@ -154,17 +155,17 @@ class WasmControlFlowTest {
         val done = InstructionRef("%done", Type.I32)
 
         val module = buildLoopModule("countdown", listOf(n), Type.I32, listOf(
-            BasicBlock("entry", listOf(Instruction.Br("header"))),
+            BasicBlock("entry", listOf(Br("header"))),
             BasicBlock("header", listOf(
-                Instruction.Phi(count, listOf(n to "entry", next to "body")),
-                Instruction.ICmp(done, ICmpPredicate.SLE, count, Constant.I32(0)),
-                Instruction.CondBr(done, "exit", "body"),
+                Phi(count, listOf(n to "entry", next to "body")),
+                ICmp(done, ICmpPredicate.SLE, count, Constant.I32(0)),
+                CondBr(done, "exit", "body"),
             )),
             BasicBlock("body", listOf(
-                Instruction.Sub(next, count, Constant.I32(1)),
-                Instruction.Br("header"),
+                Sub(next, count, Constant.I32(1)),
+                Br("header"),
             )),
-            BasicBlock("exit", listOf(Instruction.Ret(count))),
+            BasicBlock("exit", listOf(Ret(count))),
         ))
         assertValidWasm(gen.generate(module))
     }
@@ -177,17 +178,17 @@ class WasmControlFlowTest {
         val isZero = InstructionRef("%isZero", Type.I32)
 
         val module = buildLoopModule("findZero", listOf(start), Type.I32, listOf(
-            BasicBlock("entry", listOf(Instruction.Br("loop"))),
+            BasicBlock("entry", listOf(Br("loop"))),
             BasicBlock("loop", listOf(
-                Instruction.Phi(v, listOf(start to "entry", dec to "continue")),
-                Instruction.ICmp(isZero, ICmpPredicate.EQ, v, Constant.I32(0)),
-                Instruction.CondBr(isZero, "done", "continue"),
+                Phi(v, listOf(start to "entry", dec to "continue")),
+                ICmp(isZero, ICmpPredicate.EQ, v, Constant.I32(0)),
+                CondBr(isZero, "done", "continue"),
             )),
             BasicBlock("continue", listOf(
-                Instruction.Sub(dec, v, Constant.I32(1)),
-                Instruction.Br("loop"),
+                Sub(dec, v, Constant.I32(1)),
+                Br("loop"),
             )),
-            BasicBlock("done", listOf(Instruction.Ret(v))),
+            BasicBlock("done", listOf(Ret(v))),
         ))
         assertValidWasm(gen.generate(module))
     }
@@ -275,14 +276,14 @@ class WasmControlFlowTest {
         val done = InstructionRef("%done", Type.I32)
 
         val module = buildLoopModule("loopPhi", emptyList(), Type.I32, listOf(
-            BasicBlock("entry", listOf(Instruction.Br("loop"))),
+            BasicBlock("entry", listOf(Br("loop"))),
             BasicBlock("loop", listOf(
-                Instruction.Phi(acc, listOf(Constant.I32(0) to "entry", next to "loop")),
-                Instruction.Add(next, acc, Constant.I32(1)),
-                Instruction.ICmp(done, ICmpPredicate.SGE, next, Constant.I32(10)),
-                Instruction.CondBr(done, "exit", "loop"),
+                Phi(acc, listOf(Constant.I32(0) to "entry", next to "loop")),
+                Add(next, acc, Constant.I32(1)),
+                ICmp(done, ICmpPredicate.SGE, next, Constant.I32(10)),
+                CondBr(done, "exit", "loop"),
             )),
-            BasicBlock("exit", listOf(Instruction.Ret(acc))),
+            BasicBlock("exit", listOf(Ret(acc))),
         ))
         assertValidWasm(gen.generate(module))
     }
@@ -370,28 +371,28 @@ class WasmControlFlowTest {
         val added = InstructionRef("%added", Type.I32)
 
         val module = buildLoopModule("sumPositive", listOf(n), Type.I32, listOf(
-            BasicBlock("entry", listOf(Instruction.Br("header"))),
+            BasicBlock("entry", listOf(Br("header"))),
             BasicBlock("header", listOf(
-                Instruction.Phi(i, listOf(Constant.I32(0) to "entry", iNext to "inc")),
-                Instruction.Phi(sum, listOf(Constant.I32(0) to "entry", sumNext to "inc")),
-                Instruction.ICmp(loopCond, ICmpPredicate.SLT, i, n),
-                Instruction.CondBr(loopCond, "body", "exit"),
+                Phi(i, listOf(Constant.I32(0) to "entry", iNext to "inc")),
+                Phi(sum, listOf(Constant.I32(0) to "entry", sumNext to "inc")),
+                ICmp(loopCond, ICmpPredicate.SLT, i, n),
+                CondBr(loopCond, "body", "exit"),
             )),
             BasicBlock("body", listOf(
-                Instruction.ICmp(isPos, ICmpPredicate.SGT, i, Constant.I32(0)),
-                Instruction.CondBr(isPos, "add", "skip"),
+                ICmp(isPos, ICmpPredicate.SGT, i, Constant.I32(0)),
+                CondBr(isPos, "add", "skip"),
             )),
             BasicBlock("add", listOf(
-                Instruction.Add(added, sum, i),
-                Instruction.Br("inc"),
+                Add(added, sum, i),
+                Br("inc"),
             )),
-            BasicBlock("skip", listOf(Instruction.Br("inc"))),
+            BasicBlock("skip", listOf(Br("inc"))),
             BasicBlock("inc", listOf(
-                Instruction.Phi(sumNext, listOf(added to "add", sum to "skip")),
-                Instruction.Add(iNext, i, Constant.I32(1)),
-                Instruction.Br("header"),
+                Phi(sumNext, listOf(added to "add", sum to "skip")),
+                Add(iNext, i, Constant.I32(1)),
+                Br("header"),
             )),
-            BasicBlock("exit", listOf(Instruction.Ret(sum))),
+            BasicBlock("exit", listOf(Ret(sum))),
         ))
         assertValidWasm(gen.generate(module))
     }
@@ -432,21 +433,21 @@ class WasmControlFlowTest {
         val cond = InstructionRef("%cond", Type.I32)
 
         val module = buildLoopModule("fib", listOf(n), Type.I32, listOf(
-            BasicBlock("entry", listOf(Instruction.Br("loop"))),
+            BasicBlock("entry", listOf(Br("loop"))),
             BasicBlock("loop", listOf(
-                Instruction.Phi(a, listOf(Constant.I32(0) to "entry", bVal to "body")),
-                Instruction.Phi(b, listOf(Constant.I32(1) to "entry", sum to "body")),
-                Instruction.Phi(i, listOf(Constant.I32(0) to "entry", iNext to "body")),
-                Instruction.ICmp(cond, ICmpPredicate.SLT, i, n),
-                Instruction.CondBr(cond, "body", "done"),
+                Phi(a, listOf(Constant.I32(0) to "entry", bVal to "body")),
+                Phi(b, listOf(Constant.I32(1) to "entry", sum to "body")),
+                Phi(i, listOf(Constant.I32(0) to "entry", iNext to "body")),
+                ICmp(cond, ICmpPredicate.SLT, i, n),
+                CondBr(cond, "body", "done"),
             )),
             BasicBlock("body", listOf(
-                Instruction.Add(sum, a, b),
-                Instruction.Add(bVal, b, Constant.I32(0)),
-                Instruction.Add(iNext, i, Constant.I32(1)),
-                Instruction.Br("loop"),
+                Add(sum, a, b),
+                Add(bVal, b, Constant.I32(0)),
+                Add(iNext, i, Constant.I32(1)),
+                Br("loop"),
             )),
-            BasicBlock("done", listOf(Instruction.Ret(a))),
+            BasicBlock("done", listOf(Ret(a))),
         ))
         assertValidWasm(gen.generate(module))
     }

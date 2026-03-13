@@ -12,6 +12,7 @@ import org.kgen.jit.JitEngine
 import org.kgen.pass.OptLevel
 import org.kgen.target.x86.codegen.X86CodeGenerator
 import org.kgen.target.x86.disasm.X86Disassembler
+import org.kgen.ir.instructions.*
 
 /**
  * Optimization pipeline end-to-end: IR → O2 passes → codegen → verify correctness.
@@ -44,7 +45,7 @@ class OptimizationEndToEndTest {
         val optimized = OptLevel.O2.pipeline().execute(module)
 
         val fn = optimized.functions[0]
-        val hasAlloca = fn.blocks.any { b -> b.instructions.any { it is Instruction.Alloca } }
+        val hasAlloca = fn.blocks.any { b -> b.instructions.any { it is Alloca } }
         assertFalse(hasAlloca, "Mem2reg should eliminate allocas")
 
         // Verify the optimized code still compiles
@@ -59,7 +60,7 @@ class OptimizationEndToEndTest {
         val optimized = OptLevel.O2.pipeline().execute(module)
 
         val fn = optimized.functions[0]
-        val hasPhi = fn.blocks.any { b -> b.instructions.any { it is Instruction.Phi } }
+        val hasPhi = fn.blocks.any { b -> b.instructions.any { it is Phi } }
         assertTrue(hasPhi, "Mem2reg should produce phi nodes for branching stores")
     }
 
@@ -109,7 +110,7 @@ class OptimizationEndToEndTest {
 
         // The dead mul instruction should be eliminated
         val hasMul = fn.blocks.any { b ->
-            b.instructions.any { it is Instruction.Mul }
+            b.instructions.any { it is Mul }
         }
         assertFalse(hasMul, "Dead mul should be eliminated")
     }

@@ -7,6 +7,7 @@ import org.kgen.binary.macho.MachO
 import org.kgen.binary.pe.PeDllLinker
 import org.kgen.codegen.CodeGenerator
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.target.Arch
 import org.kgen.ir.target.Target
 import org.kgen.pass.Mem2Reg

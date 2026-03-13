@@ -1,6 +1,7 @@
 package org.kgen.pass
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.types.*
 
 /**
@@ -142,7 +143,7 @@ class LinkTimeOptimization(
             for (fn in module.functions) {
                 for (block in fn.blocks) {
                     for (inst in block.instructions) {
-                        if (inst is Instruction.Call) {
+                        if (inst is Call) {
                             called.add(inst.function.name)
                         }
                     }
@@ -170,7 +171,7 @@ class LinkTimeOptimization(
             for (fn in module.functions) {
                 for (block in fn.blocks) {
                     for (inst in block.instructions) {
-                        if (inst is Instruction.Call) {
+                        if (inst is Call) {
                             called.add(inst.function.name)
                         }
                     }

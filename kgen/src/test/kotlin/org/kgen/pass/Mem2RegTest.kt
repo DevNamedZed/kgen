@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -29,7 +30,7 @@ class Mem2RegTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "Only ret should remain: $insts")
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertEquals(42, (ret.value as Constant.I32).value)
     }
 
@@ -46,7 +47,7 @@ class Mem2RegTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "Only ret should remain: $insts")
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertTrue(ret.value is Parameter, "Should return the parameter directly: ${ret.value}")
     }
 
@@ -67,7 +68,7 @@ class Mem2RegTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(2, insts.size, "add + ret should remain: $insts")
-        val addInst = insts[0] as Instruction.Add
+        val addInst = insts[0] as Add
         assertEquals(10, (addInst.lhs as Constant.I32).value)
         assertEquals(20, (addInst.rhs as Constant.I32).value)
     }
@@ -86,9 +87,9 @@ class Mem2RegTest {
             finalizeFunction()
         }
         val insts = module.functions[1].blocks[0].instructions
-        assertTrue(insts.any { it is Instruction.Alloca }, "Alloca should remain when address escapes: $insts")
-        assertTrue(insts.any { it is Instruction.Store }, "Store should remain: $insts")
-        assertTrue(insts.any { it is Instruction.Load }, "Load should remain: $insts")
+        assertTrue(insts.any { it is Alloca }, "Alloca should remain when address escapes: $insts")
+        assertTrue(insts.any { it is Store }, "Store should remain: $insts")
+        assertTrue(insts.any { it is Load }, "Load should remain: $insts")
     }
 
     @Test
@@ -115,11 +116,11 @@ class Mem2RegTest {
         }
         val mergeBlock = module.functions[0].blocks[3]
         val insts = mergeBlock.instructions
-        assertTrue(insts.any { it is Instruction.Phi }, "Should have phi in merge block: $insts")
-        assertFalse(insts.any { it is Instruction.Load }, "Load should be removed: $insts")
-        assertFalse(insts.any { it is Instruction.Alloca }, "Alloca should be removed")
+        assertTrue(insts.any { it is Phi }, "Should have phi in merge block: $insts")
+        assertFalse(insts.any { it is Load }, "Load should be removed: $insts")
+        assertFalse(insts.any { it is Alloca }, "Alloca should be removed")
 
-        val phi = insts.first { it is Instruction.Phi } as Instruction.Phi
+        val phi = insts.first { it is Phi } as Phi
         val values = phi.incoming.map { (v, _) -> (v as Constant.I32).value }.toSet()
         assertEquals(setOf(1, 2), values, "Phi should have values from both branches")
     }
@@ -139,7 +140,7 @@ class Mem2RegTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "Only ret should remain: $insts")
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertEquals(3, (ret.value as Constant.I32).value, "Should use last stored value")
     }
 
@@ -155,7 +156,7 @@ class Mem2RegTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "Only ret should remain: $insts")
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertEquals(0, (ret.value as Constant.I32).value, "Uninitialized should be zero")
     }
 
@@ -172,7 +173,7 @@ class Mem2RegTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "Only ret should remain: $insts")
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertEquals(999L, (ret.value as Constant.I64).value)
     }
 
@@ -189,7 +190,7 @@ class Mem2RegTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "Only ret should remain: $insts")
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertEquals(3.14, (ret.value as Constant.F64).value)
     }
 
@@ -205,7 +206,7 @@ class Mem2RegTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        assertTrue(insts.any { it is Instruction.Alloca }, "Volatile load should prevent promotion")
+        assertTrue(insts.any { it is Alloca }, "Volatile load should prevent promotion")
     }
 
     @Test
@@ -238,7 +239,7 @@ class Mem2RegTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(2, insts.size, "add + ret should remain: $insts")
-        val addInst = insts[0] as Instruction.Add
+        val addInst = insts[0] as Add
         assertEquals(10, (addInst.lhs as Constant.I32).value, "Load should be replaced with constant")
     }
 }

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.kgen.ir.*
 import org.kgen.ir.target.Target
 import org.kgen.target.jvm.*
+import org.kgen.ir.instructions.*
 
 /**
  * End-to-end tests for Java code using Kgen intrinsics compiled to native.
@@ -52,8 +53,8 @@ class JavaIntrinsicsEndToEndTest {
         val module = compile(classBytes2)
         val fn = module.functions.first { it.name == "copyBytes" }
         val instructions = fn.blocks.flatMap { it.instructions }
-        assertTrue(instructions.any { it is Instruction.Load })
-        assertTrue(instructions.any { it is Instruction.Store })
+        assertTrue(instructions.any { it is Load })
+        assertTrue(instructions.any { it is Store })
     }
 
     @Test
@@ -98,8 +99,8 @@ class JavaIntrinsicsEndToEndTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "hash" }
         val instructions = fn.blocks.flatMap { it.instructions }
-        assertTrue(instructions.any { it is Instruction.Load }, "Expected Load from loadByte")
-        assertTrue(instructions.any { it is Instruction.Mul }, "Expected Mul for 31*h")
+        assertTrue(instructions.any { it is Load }, "Expected Load from loadByte")
+        assertTrue(instructions.any { it is Mul }, "Expected Mul for 31*h")
     }
 
     @Test
@@ -123,9 +124,9 @@ class JavaIntrinsicsEndToEndTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "readAtOffset" }
         val instructions = fn.blocks.flatMap { it.instructions }
-        assertTrue(instructions.any { it is Instruction.Load })
-        assertTrue(instructions.any { it is Instruction.Mul })
-        assertTrue(instructions.any { it is Instruction.Add })
+        assertTrue(instructions.any { it is Load })
+        assertTrue(instructions.any { it is Mul })
+        assertTrue(instructions.any { it is Add })
     }
 
     @Test
@@ -155,10 +156,10 @@ class JavaIntrinsicsEndToEndTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "allocAndUse" }
         val instructions = fn.blocks.flatMap { it.instructions }
-        assertTrue(instructions.any { it is Instruction.Alloca })
-        assertTrue(instructions.any { it is Instruction.GCSafepoint })
-        assertTrue(instructions.any { it is Instruction.Store })
-        assertTrue(instructions.any { it is Instruction.Load })
+        assertTrue(instructions.any { it is Alloca })
+        assertTrue(instructions.any { it is GCSafepoint })
+        assertTrue(instructions.any { it is Store })
+        assertTrue(instructions.any { it is Load })
     }
 
     @Test
@@ -245,7 +246,7 @@ class JavaIntrinsicsEndToEndTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "writeRef" }
         val instructions = fn.blocks.flatMap { it.instructions }
-        assertTrue(instructions.any { it is Instruction.WriteBarrier })
+        assertTrue(instructions.any { it is WriteBarrier })
     }
 
     @Test

@@ -20,8 +20,16 @@ import java.lang.foreign.ValueLayout.*
 import java.lang.invoke.MethodHandle
 
 /**
- * Generic JIT compilation engine — compiles IR modules to native code,
- * loads them into executable memory, resolves symbols, and patches relocations.
+ * JIT compilation engine -- compiles IR modules to native code, loads them into
+ * executable memory, resolves symbols, and patches relocations at runtime.
+ *
+ * Supports lazy compilation (stubs that compile on first call), tiered compilation
+ * (baseline to optimized), a code cache, GC integration, and safepoint management.
+ * Symbol resolution is extensible via [SymbolResolver] (host process, other JIT modules,
+ * or custom resolvers).
+ *
+ * Uses Java's Foreign Function & Memory API (FFM) for executable memory allocation
+ * and native call dispatch via [MethodHandle].
  *
  * ```java
  * var jit = new JitEngine(codeGenerator);
@@ -37,6 +45,8 @@ import java.lang.invoke.MethodHandle
  *
  * jit.close();
  * ```
+ *
+ * See `spec/api-design.md` for the JIT API design.
  */
 class JitEngine(
     private val codeGenerator: CodeGenerator,
@@ -527,7 +537,8 @@ class JitEngine(
 
         val trampolineSize = code.externalSymbols.size * TRAMPOLINE_ENTRY_SIZE
         val rodataSize = code.rodataBytes.size.toLong()
-        val totalSize = textBytes.size.toLong() + rodataSize + trampolineSize
+        val tdataSize = code.tdataBytes.size.toLong()
+        val totalSize = textBytes.size.toLong() + rodataSize + tdataSize + trampolineSize
         val mem = NativeMemory.allocateExecutable(maxOf(totalSize, 4096))
 
         mem.write(0, textBytes)
@@ -537,9 +548,17 @@ class JitEngine(
             mem.write(rodataOffset, code.rodataBytes)
         }
 
+        val tdataOffset = rodataOffset + rodataSize
+        if (code.tdataBytes.isNotEmpty()) {
+            mem.write(tdataOffset, code.tdataBytes)
+        }
+
         val symbolMap = mutableMapOf<String, JitSymbol>()
+        val tdataBaseAddr = mem.address + tdataOffset
         for (sym in code.symbols) {
-            val addr = if (sym.rodataOffset >= 0) {
+            val addr = if (sym.tdataOffset >= 0) {
+                tdataBaseAddr + sym.tdataOffset
+            } else if (sym.rodataOffset >= 0) {
                 mem.address + rodataOffset + sym.rodataOffset
             } else {
                 mem.address + sym.offset
@@ -547,10 +566,10 @@ class JitEngine(
             symbolMap[sym.name] = JitSymbol(sym.name, addr, source = JitSymbol.SymbolSource.JIT)
         }
 
-        val trampolineBase = textBytes.size.toLong() + rodataSize
+        val trampolineBase = textBytes.size.toLong() + rodataSize + tdataSize
         val trampolineAddrs = buildTrampolines(mem, trampolineBase, code.externalSymbols, symbolMap)
 
-        applyRelocationsFromList(code.relocations, mem, symbolMap, rodataOffset, trampolineAddrs)
+        applyRelocationsFromList(code.relocations, mem, symbolMap, rodataOffset, trampolineAddrs, tdataBaseAddr)
 
         // Register stack maps with the GC
         val collector = gc
@@ -610,12 +629,12 @@ class JitEngine(
         rodataOffset: Long,
         trampolines: Map<String, Long> = emptyMap(),
     ) {
-        applyRelocationsFromList(obj.relocations, mem, localSymbols, rodataOffset, trampolines)
+        applyRelocationsFromList(obj.relocations, mem, localSymbols, rodataOffset, trampolines, 0L)
 
         // Also apply section-level relocations
         for (section in obj.sections) {
             if (section.kind != SectionKind.TEXT) continue
-            applyRelocationsFromList(section.relocations, mem, localSymbols, rodataOffset, trampolines)
+            applyRelocationsFromList(section.relocations, mem, localSymbols, rodataOffset, trampolines, 0L)
         }
     }
 
@@ -625,8 +644,13 @@ class JitEngine(
         localSymbols: Map<String, JitSymbol>,
         rodataOffset: Long,
         trampolines: Map<String, Long> = emptyMap(),
+        tdataBaseAddr: Long = 0L,
     ) {
         for (rel in relocations) {
+            // Skip PLT32 to __tls_get_addr — eliminated by GD→LE relaxation
+            if (rel.symbol == "__tls_get_addr" && rel.type == RelocationType.X86_64.PLT32) {
+                continue
+            }
             val targetAddr = when (rel.type) {
                 RelocationType.X86_64.PC32, RelocationType.X86_64.PLT32,
                 RelocationType.RiscV.CALL, RelocationType.RiscV.CALL_PLT ->
@@ -883,6 +907,88 @@ class JitEngine(
                 RelocationType.RiscV.RELAX -> {
                     // Linker relaxation marker, no patching needed
                 }
+
+                // x86-64 TLS: local-exec model — TPOFF32 is an absolute 32-bit offset from TP
+                RelocationType.X86_64.TPOFF32 -> {
+                    // In JIT mode, TLS data is at tdataBaseAddr; compute offset from thread pointer.
+                    // For local-exec, the linker resolves symbol to a TP-relative offset.
+                    // In JIT, we store the absolute address and let the codegen's FS:[0] + offset work.
+                    val tlsOffset = (targetAddr - tdataBaseAddr + rel.addend).toInt()
+                    mem.writeInt(rel.offset, tlsOffset)
+                }
+                // x86-64 TLS: general-dynamic model — relax to local-exec in JIT
+                // Rewrite 16-byte GD sequence to: mov rax,fs:[0]; lea rax,[rax+tpoff32]
+                RelocationType.X86_64.TLSGD -> {
+                    val tlsOffset = (targetAddr - tdataBaseAddr + rel.addend).toInt()
+                    val seqStart = rel.offset - 4
+                    // mov rax, fs:[0] — 9 bytes
+                    mem.writeByte(seqStart + 0, 0x64.toByte())
+                    mem.writeByte(seqStart + 1, 0x48.toByte())
+                    mem.writeByte(seqStart + 2, 0x8B.toByte())
+                    mem.writeByte(seqStart + 3, 0x04.toByte())
+                    mem.writeByte(seqStart + 4, 0x25.toByte())
+                    mem.writeInt(seqStart + 5, 0)
+                    // lea rax, [rax+tpoff32] — 7 bytes
+                    mem.writeByte(seqStart + 9, 0x48.toByte())
+                    mem.writeByte(seqStart + 10, 0x8D.toByte())
+                    mem.writeByte(seqStart + 11, 0x80.toByte())
+                    mem.writeInt(seqStart + 12, tlsOffset)
+                }
+                // x86-64 TLS: initial-exec model — relax to local-exec in JIT
+                // Rewrite: add reg, [rip+disp32] → lea reg, [reg+disp32]
+                RelocationType.X86_64.GOTTPOFF -> {
+                    val tlsOffset = (targetAddr - tdataBaseAddr + rel.addend).toInt()
+                    mem.writeByte(rel.offset - 2, 0x8D.toByte())
+                    val modRM = mem.readByte(rel.offset - 1).toInt() and 0xFF
+                    val reg = (modRM shr 3) and 7
+                    mem.writeByte(rel.offset - 1, (0x80 or (reg shl 3) or reg).toByte())
+                    mem.writeInt(rel.offset, tlsOffset)
+                }
+
+                // ARM64 TLS: local-exec model
+                RelocationType.AArch64.TLSLE_ADD_TPREL_HI12 -> {
+                    // ADD instruction: imm12 field in bits [21:10], shifted left 12
+                    val tlsOffset = targetAddr - tdataBaseAddr + rel.addend
+                    val imm12 = ((tlsOffset shr 12) and 0xFFFL).toInt()
+                    val existing = mem.readInt(rel.offset)
+                    mem.writeInt(rel.offset, (existing and 0xFFC003FF.toInt()) or (imm12 shl 10))
+                }
+                RelocationType.AArch64.TLSLE_ADD_TPREL_LO12,
+                RelocationType.AArch64.TLSLE_ADD_TPREL_LO12_NC -> {
+                    // ADD instruction: imm12 field in bits [21:10]
+                    val tlsOffset = targetAddr - tdataBaseAddr + rel.addend
+                    val imm12 = (tlsOffset and 0xFFFL).toInt()
+                    val existing = mem.readInt(rel.offset)
+                    mem.writeInt(rel.offset, (existing and 0xFFC003FF.toInt()) or (imm12 shl 10))
+                }
+
+                // RISC-V TLS: local-exec model
+                RelocationType.RiscV.TPREL_HI20 -> {
+                    // U-type: upper 20 bits of TP-relative offset into imm[31:12]
+                    val tlsOffset = targetAddr - tdataBaseAddr + rel.addend
+                    val hi = ((tlsOffset + 0x800) shr 12).toInt()
+                    val existing = mem.readInt(rel.offset)
+                    mem.writeInt(rel.offset, (existing and 0xFFF) or (hi shl 12))
+                }
+                RelocationType.RiscV.TPREL_LO12_I -> {
+                    // I-type: lower 12 bits of TP-relative offset into imm[31:20]
+                    val tlsOffset = (targetAddr - tdataBaseAddr + rel.addend).toInt() and 0xFFF
+                    val existing = mem.readInt(rel.offset)
+                    mem.writeInt(rel.offset, (existing and 0x000FFFFF) or (tlsOffset shl 20))
+                }
+                RelocationType.RiscV.TPREL_LO12_S -> {
+                    // S-type: lower 12 bits of TP-relative offset, split
+                    val tlsOffset = (targetAddr - tdataBaseAddr + rel.addend).toInt() and 0xFFF
+                    val imm11_5 = (tlsOffset shr 5) and 0x7F
+                    val imm4_0 = tlsOffset and 0x1F
+                    val existing = mem.readInt(rel.offset)
+                    val mask = (0x7F shl 25) or (0x1F shl 7)
+                    mem.writeInt(rel.offset, (existing and mask.inv()) or (imm11_5 shl 25) or (imm4_0 shl 7))
+                }
+                RelocationType.RiscV.TPREL_ADD -> {
+                    // Marker relocation for linker relaxation, no patching needed
+                }
+
                 else -> {}
             }
         }

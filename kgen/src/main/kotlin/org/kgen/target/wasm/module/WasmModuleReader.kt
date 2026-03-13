@@ -177,31 +177,78 @@ class WasmModuleReader private constructor(private val buf: ByteBuffer) {
         repeat(count) {
             val flags = readU32()
             when (flags) {
+                // Form 0: active, table 0, offset expr, vec(funcidx)
                 0 -> {
                     val offsetExpr = readConstExpr()
-                    val funcCount = readU32()
-                    val indices = (0 until funcCount).map { readU32() }
-                    elements.add(WasmModule.Element(flags, offsetExpr, indices))
+                    val indices = readFuncIndices()
+                    elements.add(WasmModule.Element.Active(0, offsetExpr, WasmRefType.FUNCREF, funcIndices = indices))
                 }
+                // Form 1: passive, elemkind, vec(funcidx)
                 1 -> {
-                    val elemKind = readU8()
-                    val funcCount = readU32()
-                    val indices = (0 until funcCount).map { readU32() }
-                    elements.add(WasmModule.Element(flags, null, indices))
+                    val refType = elemKindToRefType(readU8())
+                    val indices = readFuncIndices()
+                    elements.add(WasmModule.Element.Passive(refType, funcIndices = indices))
                 }
+                // Form 2: active, tableidx, offset expr, elemkind, vec(funcidx)
                 2 -> {
                     val tableIdx = readU32()
                     val offsetExpr = readConstExpr()
-                    val elemKind = readU8()
-                    val funcCount = readU32()
-                    val indices = (0 until funcCount).map { readU32() }
-                    elements.add(WasmModule.Element(flags, offsetExpr, indices))
+                    val refType = elemKindToRefType(readU8())
+                    val indices = readFuncIndices()
+                    elements.add(WasmModule.Element.Active(tableIdx, offsetExpr, refType, funcIndices = indices))
                 }
-                else -> {
-                    // Simplified: skip complex element segment forms
-                    elements.add(WasmModule.Element(flags, null, emptyList()))
+                // Form 3: declarative, elemkind, vec(funcidx)
+                3 -> {
+                    val refType = elemKindToRefType(readU8())
+                    val indices = readFuncIndices()
+                    elements.add(WasmModule.Element.Declarative(refType, funcIndices = indices))
                 }
+                // Form 4: active, table 0, offset expr, reftype, vec(expr)
+                4 -> {
+                    val offsetExpr = readConstExpr()
+                    val refType = readRefType()
+                    val exprs = readInitExprs()
+                    elements.add(WasmModule.Element.Active(0, offsetExpr, refType, initExprs = exprs))
+                }
+                // Form 5: passive, reftype, vec(expr)
+                5 -> {
+                    val refType = readRefType()
+                    val exprs = readInitExprs()
+                    elements.add(WasmModule.Element.Passive(refType, initExprs = exprs))
+                }
+                // Form 6: active, tableidx, offset expr, reftype, vec(expr)
+                6 -> {
+                    val tableIdx = readU32()
+                    val offsetExpr = readConstExpr()
+                    val refType = readRefType()
+                    val exprs = readInitExprs()
+                    elements.add(WasmModule.Element.Active(tableIdx, offsetExpr, refType, initExprs = exprs))
+                }
+                // Form 7: declarative, reftype, vec(expr)
+                7 -> {
+                    val refType = readRefType()
+                    val exprs = readInitExprs()
+                    elements.add(WasmModule.Element.Declarative(refType, initExprs = exprs))
+                }
+                else -> error("Unknown element segment form: $flags")
             }
+        }
+    }
+
+    private fun readFuncIndices(): List<Int> {
+        val count = readU32()
+        return (0 until count).map { readU32() }
+    }
+
+    private fun readInitExprs(): List<ByteArray> {
+        val count = readU32()
+        return (0 until count).map { readConstExpr() }
+    }
+
+    private fun elemKindToRefType(elemKind: Int): WasmRefType {
+        return when (elemKind) {
+            0x00 -> WasmRefType.FUNCREF
+            else -> error("Unknown elemkind: 0x${elemKind.toString(16)}")
         }
     }
 

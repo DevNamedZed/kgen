@@ -1,6 +1,7 @@
 package org.kgen.pass
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 
 /**
  * Inlines small function calls.
@@ -70,7 +71,7 @@ class Inlining(private val maxInstructionCount: Int = 20) : ModulePass {
 
             for ((instIdx, inst) in block.instructions.withIndex()) {
                 val remapped = remapThroughResults(inst)
-                if (remapped is Instruction.Call && shouldInline(remapped, funcMap)) {
+                if (remapped is Call && shouldInline(remapped, funcMap)) {
                     val callee = funcMap[calleeName(remapped)]!!
                     val inlined = inlineCall(remapped, callee, nextId, inlineSiteId)
                     if (inlined != null) {
@@ -134,7 +135,7 @@ class Inlining(private val maxInstructionCount: Int = 20) : ModulePass {
     }
 
 
-    private fun calleeName(call: Instruction.Call): String {
+    private fun calleeName(call: Call): String {
         return when (val f = call.function) {
             is FunctionRef -> f.name
             is InstructionRef -> f.name
@@ -142,7 +143,7 @@ class Inlining(private val maxInstructionCount: Int = 20) : ModulePass {
         }
     }
 
-    private fun shouldInline(call: Instruction.Call, funcMap: Map<String, IrFunction>): Boolean {
+    private fun shouldInline(call: Call, funcMap: Map<String, IrFunction>): Boolean {
         val name = calleeName(call)
         val callee = funcMap[name] ?: return false
 
@@ -150,7 +151,7 @@ class Inlining(private val maxInstructionCount: Int = 20) : ModulePass {
 
         val isRecursive = callee.blocks.any { block ->
             block.instructions.any { inst ->
-                inst is Instruction.Call && calleeName(inst) == name
+                inst is Call && calleeName(inst) == name
             }
         }
         if (isRecursive) return false
@@ -163,7 +164,7 @@ class Inlining(private val maxInstructionCount: Int = 20) : ModulePass {
 
     private data class InlineResult(val blocks: List<BasicBlock>, val nextId: Int, val returnValue: Value? = null)
 
-    private fun inlineCall(call: Instruction.Call, callee: IrFunction, startId: Int, siteId: Int): InlineResult? {
+    private fun inlineCall(call: Call, callee: IrFunction, startId: Int, siteId: Int): InlineResult? {
         val paramMap = mutableMapOf<String, Value>()
         for (i in callee.params.indices) {
             if (i < call.args.size) {
@@ -193,7 +194,7 @@ class Inlining(private val maxInstructionCount: Int = 20) : ModulePass {
         for (block in callee.blocks) {
             val inlinedInstructions = mutableListOf<Instruction>()
             for (inst in block.instructions) {
-                if (inst is Instruction.Ret) {
+                if (inst is Ret) {
                     val retValue = inst.value
                     if (callDest != null && retValue != null) {
                         val retVal = remapValue(retValue, paramMap, nameMap)
@@ -249,41 +250,41 @@ class Inlining(private val maxInstructionCount: Int = 20) : ModulePass {
             return v
         }
         return when (inst) {
-            is Instruction.Add -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.Sub -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.Mul -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.SDiv -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.UDiv -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.SRem -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.URem -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.And -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.Or -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.Xor -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.Shl -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.LShr -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.AShr -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.ICmp -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.FAdd -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.FSub -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.FMul -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.FDiv -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.FCmp -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.Neg -> inst.copy(operand = rv(inst.operand))
-            is Instruction.Not -> inst.copy(operand = rv(inst.operand))
-            is Instruction.FNeg -> inst.copy(operand = rv(inst.operand))
-            is Instruction.Ret -> inst.copy(value = inst.value?.let { rv(it) })
-            is Instruction.Call -> inst.copy(args = inst.args.map { rv(it) })
-            is Instruction.CondBr -> inst.copy(condition = rv(inst.condition))
-            is Instruction.Switch -> inst.copy(value = rv(inst.value))
-            is Instruction.Select -> inst.copy(condition = rv(inst.condition), trueValue = rv(inst.trueValue), falseValue = rv(inst.falseValue))
-            is Instruction.Load -> inst.copy(ptr = rv(inst.ptr))
-            is Instruction.Store -> inst.copy(value = rv(inst.value), ptr = rv(inst.ptr))
-            is Instruction.ZExt -> inst.copy(value = rv(inst.value))
-            is Instruction.SExt -> inst.copy(value = rv(inst.value))
-            is Instruction.Trunc -> inst.copy(operand = rv(inst.operand))
-            is Instruction.IntTrunc -> inst.copy(value = rv(inst.value))
-            is Instruction.GetElementPtr -> inst.copy(ptr = rv(inst.ptr), indices = inst.indices.map { rv(it) })
-            is Instruction.Phi -> inst.copy(incoming = inst.incoming.map { (v, l) -> rv(v) to l })
+            is Add -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is Sub -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is Mul -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is SDiv -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is UDiv -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is SRem -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is URem -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is And -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is Or -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is Xor -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is Shl -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is LShr -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is AShr -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is ICmp -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is FAdd -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is FSub -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is FMul -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is FDiv -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is FCmp -> inst.copy(lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is Neg -> inst.copy(operand = rv(inst.operand))
+            is Not -> inst.copy(operand = rv(inst.operand))
+            is FNeg -> inst.copy(operand = rv(inst.operand))
+            is Ret -> inst.copy(value = inst.value?.let { rv(it) })
+            is Call -> inst.copy(args = inst.args.map { rv(it) })
+            is CondBr -> inst.copy(condition = rv(inst.condition))
+            is Switch -> inst.copy(value = rv(inst.value))
+            is Select -> inst.copy(condition = rv(inst.condition), trueValue = rv(inst.trueValue), falseValue = rv(inst.falseValue))
+            is Load -> inst.copy(ptr = rv(inst.ptr))
+            is Store -> inst.copy(value = rv(inst.value), ptr = rv(inst.ptr))
+            is ZExt -> inst.copy(value = rv(inst.value))
+            is SExt -> inst.copy(value = rv(inst.value))
+            is Trunc -> inst.copy(operand = rv(inst.operand))
+            is IntTrunc -> inst.copy(value = rv(inst.value))
+            is GetElementPtr -> inst.copy(ptr = rv(inst.ptr), indices = inst.indices.map { rv(it) })
+            is Phi -> inst.copy(incoming = inst.incoming.map { (v, l) -> rv(v) to l })
             else -> inst
         }
     }
@@ -306,53 +307,53 @@ class Inlining(private val maxInstructionCount: Int = 20) : ModulePass {
         }
 
         return when (inst) {
-            is Instruction.Add -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.Sub -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.Mul -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.SDiv -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.UDiv -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.SRem -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.URem -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.And -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.Or -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.Xor -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.Shl -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.LShr -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.AShr -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.Neg -> inst.copy(dest = remapDest(inst.dest), operand = rv(inst.operand))
-            is Instruction.ICmp -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.FCmp -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.FAdd -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.FSub -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.FMul -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.FDiv -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
-            is Instruction.FNeg -> inst.copy(dest = remapDest(inst.dest), operand = rv(inst.operand))
-            is Instruction.ZExt -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
-            is Instruction.SExt -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
-            is Instruction.IntTrunc -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
-            is Instruction.Select -> inst.copy(dest = remapDest(inst.dest), condition = rv(inst.condition), trueValue = rv(inst.trueValue), falseValue = rv(inst.falseValue))
-            is Instruction.Call -> inst.copy(dest = inst.dest?.let { remapDest(it) }, args = inst.args.map { rv(it) })
-            is Instruction.Load -> inst.copy(dest = remapDest(inst.dest), ptr = rv(inst.ptr))
-            is Instruction.Store -> inst.copy(value = rv(inst.value), ptr = rv(inst.ptr))
-            is Instruction.Alloca -> inst.copy(dest = remapDest(inst.dest))
-            is Instruction.SIToFP -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
-            is Instruction.UIToFP -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
-            is Instruction.FPToSI -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
-            is Instruction.FPToUI -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
-            is Instruction.FPExt -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
-            is Instruction.FPTrunc -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
-            is Instruction.GetElementPtr -> inst.copy(dest = remapDest(inst.dest), ptr = rv(inst.ptr), indices = inst.indices.map { rv(it) })
-            is Instruction.BitCast -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
-            is Instruction.PtrToInt -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
-            is Instruction.IntToPtr -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
-            is Instruction.Br -> inst.copy(target = rl(inst.target))
-            is Instruction.CondBr -> inst.copy(condition = rv(inst.condition), trueTarget = rl(inst.trueTarget), falseTarget = rl(inst.falseTarget))
-            is Instruction.Switch -> inst.copy(
+            is Add -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is Sub -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is Mul -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is SDiv -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is UDiv -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is SRem -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is URem -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is And -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is Or -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is Xor -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is Shl -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is LShr -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is AShr -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is Neg -> inst.copy(dest = remapDest(inst.dest), operand = rv(inst.operand))
+            is ICmp -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is FCmp -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is FAdd -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is FSub -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is FMul -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is FDiv -> inst.copy(dest = remapDest(inst.dest), lhs = rv(inst.lhs), rhs = rv(inst.rhs))
+            is FNeg -> inst.copy(dest = remapDest(inst.dest), operand = rv(inst.operand))
+            is ZExt -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
+            is SExt -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
+            is IntTrunc -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
+            is Select -> inst.copy(dest = remapDest(inst.dest), condition = rv(inst.condition), trueValue = rv(inst.trueValue), falseValue = rv(inst.falseValue))
+            is Call -> inst.copy(dest = inst.dest?.let { remapDest(it) }, args = inst.args.map { rv(it) })
+            is Load -> inst.copy(dest = remapDest(inst.dest), ptr = rv(inst.ptr))
+            is Store -> inst.copy(value = rv(inst.value), ptr = rv(inst.ptr))
+            is Alloca -> inst.copy(dest = remapDest(inst.dest))
+            is SIToFP -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
+            is UIToFP -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
+            is FPToSI -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
+            is FPToUI -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
+            is FPExt -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
+            is FPTrunc -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
+            is GetElementPtr -> inst.copy(dest = remapDest(inst.dest), ptr = rv(inst.ptr), indices = inst.indices.map { rv(it) })
+            is BitCast -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
+            is PtrToInt -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
+            is IntToPtr -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
+            is Br -> inst.copy(target = rl(inst.target))
+            is CondBr -> inst.copy(condition = rv(inst.condition), trueTarget = rl(inst.trueTarget), falseTarget = rl(inst.falseTarget))
+            is Switch -> inst.copy(
                 value = rv(inst.value),
                 defaultTarget = rl(inst.defaultTarget),
                 cases = inst.cases.map { (v, label) -> v to rl(label) },
             )
-            is Instruction.Phi -> inst.copy(
+            is Phi -> inst.copy(
                 dest = remapDest(inst.dest),
                 incoming = inst.incoming.map { (v, label) -> rv(v) to rl(label) },
             )

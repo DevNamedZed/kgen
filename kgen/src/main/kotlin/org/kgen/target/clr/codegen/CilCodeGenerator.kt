@@ -4,6 +4,7 @@ import org.kgen.target.clr.asm.CilAssembler
 import org.kgen.target.clr.asm.CilLabel
 import org.kgen.target.clr.asm.CilToken
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.codegen.CodeGenOptions
 import org.kgen.codegen.CodeGenerator
 
@@ -188,47 +189,47 @@ class CilCodeGenerator : CodeGenerator {
 
         private fun emitInstruction(inst: Instruction) {
             when (inst) {
-                is Instruction.Add -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.add() }
-                is Instruction.Sub -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.sub() }
-                is Instruction.Mul -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.mul() }
-                is Instruction.SDiv -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.div() }
-                is Instruction.UDiv -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.divUn() }
-                is Instruction.SRem -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.rem() }
-                is Instruction.URem -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.remUn() }
-                is Instruction.And -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.and() }
-                is Instruction.Or -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.or() }
-                is Instruction.Xor -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.xor() }
-                is Instruction.Shl -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.shl() }
-                is Instruction.LShr -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.shrUn() }
-                is Instruction.AShr -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.shr() }
+                is Add -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.add() }
+                is Sub -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.sub() }
+                is Mul -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.mul() }
+                is SDiv -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.div() }
+                is UDiv -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.divUn() }
+                is SRem -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.rem() }
+                is URem -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.remUn() }
+                is And -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.and() }
+                is Or -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.or() }
+                is Xor -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.xor() }
+                is Shl -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.shl() }
+                is LShr -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.shrUn() }
+                is AShr -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.shr() }
 
-                is Instruction.FAdd -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.add() }
-                is Instruction.FSub -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.sub() }
-                is Instruction.FMul -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.mul() }
-                is Instruction.FDiv -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.div() }
+                is FAdd -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.add() }
+                is FSub -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.sub() }
+                is FMul -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.mul() }
+                is FDiv -> emitBinOp(inst.dest, inst.lhs, inst.rhs) { assembler.div() }
 
-                is Instruction.Neg -> {
+                is Neg -> {
                     pushValue(inst.operand)
                     assembler.neg()
                     storeResult(inst.dest)
                 }
 
-                is Instruction.FNeg -> {
+                is FNeg -> {
                     pushValue(inst.operand)
                     assembler.neg()
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Not -> {
+                is Not -> {
                     pushValue(inst.operand)
                     assembler.not()
                     storeResult(inst.dest)
                 }
 
-                is Instruction.ICmp -> emitICmp(inst)
-                is Instruction.FCmp -> emitFCmp(inst)
+                is ICmp -> emitICmp(inst)
+                is FCmp -> emitFCmp(inst)
 
-                is Instruction.UIToFP -> {
+                is UIToFP -> {
                     pushValue(inst.value)
                     assembler.convRUn()
                     when (inst.dest.type) {
@@ -238,7 +239,7 @@ class CilCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.FPToUI -> {
+                is FPToUI -> {
                     pushValue(inst.value)
                     when (inst.dest.type) {
                         Type.I64 -> assembler.convU8()
@@ -249,7 +250,7 @@ class CilCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Load -> {
+                is Load -> {
                     pushValue(inst.ptr)
                     when (inst.loadType) {
                         Type.I8 -> assembler.ldindI1()
@@ -263,7 +264,7 @@ class CilCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Store -> {
+                is Store -> {
                     pushValue(inst.ptr)
                     pushValue(inst.value)
                     when (inst.value.type) {
@@ -277,7 +278,7 @@ class CilCodeGenerator : CodeGenerator {
                     }
                 }
 
-                is Instruction.Switch -> {
+                is Switch -> {
                     // CIL has no built-in switch in our assembler yet — use if-chain
                     for ((caseVal, target) in inst.cases) {
                         pushValue(inst.value)
@@ -288,10 +289,10 @@ class CilCodeGenerator : CodeGenerator {
                     assembler.br(labelFor(inst.defaultTarget))
                 }
 
-                is Instruction.GCSafepoint -> {} // no-op on managed runtime
-                is Instruction.GCRoot -> {} // no-op on managed runtime
+                is GCSafepoint -> {} // no-op on managed runtime
+                is GCRoot -> {} // no-op on managed runtime
 
-                is Instruction.Ret -> {
+                is Ret -> {
                     val value = inst.value
                     if (value != null) {
                         pushValue(value)
@@ -299,43 +300,43 @@ class CilCodeGenerator : CodeGenerator {
                     assembler.ret()
                 }
 
-                is Instruction.Br -> {
+                is Br -> {
                     assembler.br(labelFor(inst.target))
                 }
 
-                is Instruction.CondBr -> {
+                is CondBr -> {
                     pushValue(inst.condition)
                     assembler.brtrue(labelFor(inst.trueTarget))
                     assembler.br(labelFor(inst.falseTarget))
                 }
 
-                is Instruction.Call -> emitCall(inst)
+                is Call -> emitCall(inst)
 
-                is Instruction.SExt -> {
+                is SExt -> {
                     pushValue(inst.value)
                     emitConversion(inst.value.type, inst.dest.type, signed = true)
                     storeResult(inst.dest)
                 }
 
-                is Instruction.ZExt -> {
+                is ZExt -> {
                     pushValue(inst.value)
                     emitConversion(inst.value.type, inst.dest.type, signed = false)
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Trunc -> {
+                is Trunc -> {
                     pushValue(inst.operand)
                     emitTruncation(inst.operand.type, inst.dest.type)
                     storeResult(inst.dest)
                 }
 
-                is Instruction.IntTrunc -> {
+                is IntTrunc -> {
                     pushValue(inst.value)
                     emitTruncation(inst.value.type, inst.dest.type)
                     storeResult(inst.dest)
                 }
 
-                is Instruction.SIToFP -> {
+                is SIToFP -> {
                     pushValue(inst.value)
                     when (inst.dest.type) {
                         Type.F32 -> assembler.convR4()
@@ -345,7 +346,7 @@ class CilCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.FPToSI -> {
+                is FPToSI -> {
                     pushValue(inst.value)
                     when (inst.dest.type) {
                         Type.I32 -> assembler.convI4()
@@ -357,19 +358,19 @@ class CilCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.FPExt -> {
+                is FPExt -> {
                     pushValue(inst.value)
                     assembler.convR8()
                     storeResult(inst.dest)
                 }
 
-                is Instruction.FPTrunc -> {
+                is FPTrunc -> {
                     pushValue(inst.value)
                     assembler.convR4()
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Select -> {
+                is Select -> {
                     val elseLabel = assembler.defineLabel()
                     val endLabel = assembler.defineLabel()
                     pushValue(inst.condition)
@@ -382,7 +383,7 @@ class CilCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.PtrToInt -> {
+                is PtrToInt -> {
                     pushValue(inst.value)
                     when (inst.toType) {
                         Type.I64 -> assembler.convU8()
@@ -392,36 +393,36 @@ class CilCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.IntToPtr -> {
+                is IntToPtr -> {
                     pushValue(inst.value)
                     assembler.convI()
                     storeResult(inst.dest)
                 }
 
-                is Instruction.BitCast -> {
+                is BitCast -> {
                     // No-op on CIL stack for same-size types
                     pushValue(inst.value)
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Unreachable -> {
+                is Unreachable -> {
                     // Throw a null reference exception
                     assembler.ldnull()
                     assembler.throw_()
                 }
 
-                is Instruction.Trap -> {
+                is Trap -> {
                     assembler.break_()
                 }
 
-                is Instruction.DebugTrap -> {
+                is DebugTrap -> {
                     assembler.break_()
                 }
-                is Instruction.DebugLoc -> {}
-                is Instruction.DebugValue -> {}
-                is Instruction.DebugDeclare -> {}
+                is DebugLoc -> {}
+                is DebugValue -> {}
+                is DebugDeclare -> {}
 
-                is Instruction.Sqrt -> {
+                is Sqrt -> {
                     pushValue(inst.operand)
                     if (inst.operand.type == Type.F32) assembler.convR8()
                     assembler.call(mathMethodToken("Sqrt", Type.F64, listOf(Type.F64)))
@@ -429,7 +430,7 @@ class CilCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Ceil -> {
+                is Ceil -> {
                     pushValue(inst.operand)
                     if (inst.operand.type == Type.F32) assembler.convR8()
                     assembler.call(mathMethodToken("Ceiling", Type.F64, listOf(Type.F64)))
@@ -437,7 +438,7 @@ class CilCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Floor -> {
+                is Floor -> {
                     pushValue(inst.operand)
                     if (inst.operand.type == Type.F32) assembler.convR8()
                     assembler.call(mathMethodToken("Floor", Type.F64, listOf(Type.F64)))
@@ -445,7 +446,7 @@ class CilCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Round -> {
+                is Round -> {
                     pushValue(inst.operand)
                     if (inst.operand.type == Type.F32) assembler.convR8()
                     assembler.call(mathMethodToken("Round", Type.F64, listOf(Type.F64)))
@@ -453,7 +454,7 @@ class CilCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.FAbs -> {
+                is FAbs -> {
                     pushValue(inst.operand)
                     if (inst.operand.type == Type.F32) assembler.convR8()
                     assembler.call(mathMethodToken("Abs", Type.F64, listOf(Type.F64)))
@@ -461,7 +462,7 @@ class CilCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.FMin -> {
+                is FMin -> {
                     pushValue(inst.lhs)
                     pushValue(inst.rhs)
                     if (inst.lhs.type == Type.F32) {
@@ -473,7 +474,7 @@ class CilCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.FMax -> {
+                is FMax -> {
                     pushValue(inst.lhs)
                     pushValue(inst.rhs)
                     assembler.call(mathMethodToken("Max", Type.F64, listOf(Type.F64, Type.F64)))
@@ -481,7 +482,7 @@ class CilCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Ctlz -> {
+                is Ctlz -> {
                     pushValue(inst.operand)
                     if (inst.operand.type == Type.I64) {
                         assembler.call(bitOpsMethodToken("LeadingZeroCount", Type.I32, listOf(Type.I64)))
@@ -491,7 +492,7 @@ class CilCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Cttz -> {
+                is Cttz -> {
                     pushValue(inst.operand)
                     if (inst.operand.type == Type.I64) {
                         assembler.call(bitOpsMethodToken("TrailingZeroCount", Type.I32, listOf(Type.I64)))
@@ -501,7 +502,7 @@ class CilCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Ctpop -> {
+                is Ctpop -> {
                     pushValue(inst.operand)
                     if (inst.operand.type == Type.I64) {
                         assembler.call(bitOpsMethodToken("PopCount", Type.I32, listOf(Type.I64)))
@@ -511,7 +512,7 @@ class CilCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.BSwap -> {
+                is BSwap -> {
                     pushValue(inst.operand)
                     if (inst.operand.type == Type.I64) {
                         assembler.call(bitOpsMethodToken("ReverseEndianness", Type.I64, listOf(Type.I64)))
@@ -521,67 +522,67 @@ class CilCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.MemCpy -> {
+                is MemCpy -> {
                     pushValue(inst.dst)
                     pushValue(inst.src)
                     pushValue(inst.len)
                     assembler.cpblk()
                 }
 
-                is Instruction.MemSet -> {
+                is MemSet -> {
                     pushValue(inst.dst)
                     pushValue(inst.value)
                     pushValue(inst.len)
                     assembler.initblk()
                 }
 
-                is Instruction.SMin -> {
+                is SMin -> {
                     pushValue(inst.lhs); pushValue(inst.rhs)
                     val paramType = if (inst.lhs.type == Type.I64) Type.I64 else Type.I32
                     assembler.call(mathMethodToken("Min", paramType, listOf(paramType, paramType)))
                     storeResult(inst.dest)
                 }
 
-                is Instruction.SMax -> {
+                is SMax -> {
                     pushValue(inst.lhs); pushValue(inst.rhs)
                     val paramType = if (inst.lhs.type == Type.I64) Type.I64 else Type.I32
                     assembler.call(mathMethodToken("Max", paramType, listOf(paramType, paramType)))
                     storeResult(inst.dest)
                 }
 
-                is Instruction.CopySign -> {
+                is CopySign -> {
                     pushValue(inst.magnitude); pushValue(inst.sign)
                     val paramType = if (inst.magnitude.type == Type.F32) Type.F32 else Type.F64
                     assembler.call(mathMethodToken("CopySign", paramType, listOf(paramType, paramType)))
                     storeResult(inst.dest)
                 }
 
-                is Instruction.GetElementPtr -> emitGetElementPtr(inst)
-                is Instruction.ExtractValue -> emitExtractValue(inst)
-                is Instruction.InsertValue -> emitInsertValue(inst)
+                is GetElementPtr -> emitGetElementPtr(inst)
+                is ExtractValue -> emitExtractValue(inst)
+                is InsertValue -> emitInsertValue(inst)
 
-                is Instruction.Abs -> {
+                is Abs -> {
                     pushValue(inst.operand)
                     val paramType = if (inst.operand.type == Type.I64) Type.I64 else Type.I32
                     assembler.call(mathMethodToken("Abs", paramType, listOf(paramType)))
                     storeResult(inst.dest)
                 }
 
-                is Instruction.UMin -> {
+                is UMin -> {
                     pushValue(inst.lhs); pushValue(inst.rhs)
                     val paramType = if (inst.lhs.type == Type.I64) Type.I64 else Type.I32
                     assembler.call(mathMethodToken("Min", paramType, listOf(paramType, paramType)))
                     storeResult(inst.dest)
                 }
 
-                is Instruction.UMax -> {
+                is UMax -> {
                     pushValue(inst.lhs); pushValue(inst.rhs)
                     val paramType = if (inst.lhs.type == Type.I64) Type.I64 else Type.I32
                     assembler.call(mathMethodToken("Max", paramType, listOf(paramType, paramType)))
                     storeResult(inst.dest)
                 }
 
-                is Instruction.FMA -> {
+                is FMA -> {
                     pushValue(inst.a); pushValue(inst.b)
                     assembler.mul()
                     pushValue(inst.c)
@@ -589,47 +590,47 @@ class CilCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Instruction.FRem -> {
+                is FRem -> {
                     pushValue(inst.lhs); pushValue(inst.rhs)
                     assembler.rem()
                     storeResult(inst.dest)
                 }
 
-                is Instruction.MemMove -> {
+                is MemMove -> {
                     pushValue(inst.dst); pushValue(inst.src); pushValue(inst.len)
                     assembler.cpblk()
                 }
 
-                is Instruction.BitReverse -> {
+                is BitReverse -> {
                     error("BitReverse is not supported on CIL (no BCL equivalent)")
                 }
 
-                is Instruction.Rotl -> {
+                is Rotl -> {
                     pushValue(inst.value); pushValue(inst.amount)
                     val paramType = if (inst.value.type == Type.I64) Type.I64 else Type.I32
                     assembler.call(bitOpsMethodToken("RotateLeft", paramType, listOf(paramType, Type.I32)))
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Rotr -> {
+                is Rotr -> {
                     pushValue(inst.value); pushValue(inst.amount)
                     val paramType = if (inst.value.type == Type.I64) Type.I64 else Type.I32
                     assembler.call(bitOpsMethodToken("RotateRight", paramType, listOf(paramType, Type.I32)))
                     storeResult(inst.dest)
                 }
 
-                is Instruction.Prefetch -> {} // no-op on CLR
-                is Instruction.StackSave -> {} // no-op on CLR
-                is Instruction.StackRestore -> {} // no-op on CLR
+                is Prefetch -> {} // no-op on CLR
+                is StackSave -> {} // no-op on CLR
+                is StackRestore -> {} // no-op on CLR
 
-                is Instruction.IndirectBr -> {
+                is IndirectBr -> {
                     error("IndirectBr is not meaningful on CIL")
                 }
 
-                is Instruction.Fence -> {} // no-op on CIL (CLR memory model handles this)
+                is Fence -> {} // no-op on CIL (CLR memory model handles this)
 
-                is Instruction.Phi -> {}
-                is Instruction.Alloca -> {}
+                is Phi -> {}
+                is Alloca -> {}
 
                 else -> error("Unsupported IR instruction for CIL: ${inst::class.simpleName}")
             }
@@ -712,7 +713,7 @@ class CilCodeGenerator : CodeGenerator {
             return currentType
         }
 
-        private fun emitGetElementPtr(inst: Instruction.GetElementPtr) {
+        private fun emitGetElementPtr(inst: GetElementPtr) {
             // Push base pointer
             pushValue(inst.ptr)
             // Compute and add offset
@@ -770,7 +771,7 @@ class CilCodeGenerator : CodeGenerator {
             storeResult(inst.dest)
         }
 
-        private fun emitExtractValue(inst: Instruction.ExtractValue) {
+        private fun emitExtractValue(inst: ExtractValue) {
             val fieldType = aggregateFieldType(inst.aggregate.type, inst.indices)
             val fieldOffset = aggregateFieldOffset(inst.aggregate.type, inst.indices)
 
@@ -791,7 +792,7 @@ class CilCodeGenerator : CodeGenerator {
             storeResult(inst.dest)
         }
 
-        private fun emitInsertValue(inst: Instruction.InsertValue) {
+        private fun emitInsertValue(inst: InsertValue) {
             val fieldType = aggregateFieldType(inst.aggregate.type, inst.indices)
             val fieldOffset = aggregateFieldOffset(inst.aggregate.type, inst.indices)
 
@@ -823,7 +824,7 @@ class CilCodeGenerator : CodeGenerator {
             storeResult(dest)
         }
 
-        private fun emitICmp(inst: Instruction.ICmp) {
+        private fun emitICmp(inst: ICmp) {
             pushValue(inst.lhs)
             pushValue(inst.rhs)
 
@@ -873,7 +874,7 @@ class CilCodeGenerator : CodeGenerator {
             storeResult(inst.dest)
         }
 
-        private fun emitFCmp(inst: Instruction.FCmp) {
+        private fun emitFCmp(inst: FCmp) {
             pushValue(inst.lhs)
             pushValue(inst.rhs)
 
@@ -934,7 +935,7 @@ class CilCodeGenerator : CodeGenerator {
             storeResult(inst.dest)
         }
 
-        private fun emitCall(inst: Instruction.Call) {
+        private fun emitCall(inst: Call) {
             for (arg in inst.args) {
                 pushValue(arg)
             }

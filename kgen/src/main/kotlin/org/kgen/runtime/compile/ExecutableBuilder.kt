@@ -2,6 +2,8 @@ package org.kgen.runtime.compile
 
 import org.kgen.binary.*
 import org.kgen.codegen.CodeGenerator
+import org.kgen.codegen.CompiledCode
+import org.kgen.ir.instructions.*
 import org.kgen.ir.target.Target
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
@@ -99,6 +101,12 @@ class ExecutableBuilder(
             sections.add(Section(".kgen.resources", SectionKind.CUSTOM, resBytes))
         }
 
+        // Add .kgen.debug section (Java source → native code mapping)
+        val debugBytes = buildDebugSection(modules, obj)
+        if (debugBytes.isNotEmpty()) {
+            sections.add(Section(".kgen.debug", SectionKind.CUSTOM, debugBytes))
+        }
+
         // Create modified object file with kgen sections
         val enriched = ObjectFile(
             format = obj.format,
@@ -169,6 +177,68 @@ class ExecutableBuilder(
         return buf.toByteArray()
     }
 
+    private fun buildDebugSection(modules: List<org.kgen.ir.Module>, obj: ObjectFile): ByteArray {
+        // Collect DebugLoc instructions from all IR functions
+        val sourceFiles = mutableListOf<String>()
+        val sourceFileIndex = mutableMapOf<String, Int>()
+        val methods = mutableListOf<KgenDebugMethod>()
+
+        // Build a symbol offset map from the object file
+        val symbolOffsets = obj.symbols
+            .filter { it.kind == SymbolKind.FUNCTION && it.binding == SymbolBinding.GLOBAL }
+            .associate { it.name to it.value }
+
+        for (module in modules) {
+            for (fn in module.functions) {
+                if (fn.blocks.isEmpty()) { continue }
+
+                // Collect DebugLoc instructions from this function
+                val debugLocs = fn.blocks.flatMap { block ->
+                    block.instructions.filterIsInstance<DebugLoc>()
+                }
+                if (debugLocs.isEmpty()) { continue }
+
+                // Determine source file from the scope (format: "ClassName.methodName" or just file)
+                val sourceFile = debugLocs.firstOrNull()?.scope ?: continue
+                val fileIdx = sourceFileIndex.getOrPut(sourceFile) {
+                    sourceFiles.add(sourceFile)
+                    sourceFiles.size - 1
+                }
+
+                val lines = debugLocs.map { it.line }
+                val startLine = lines.min()
+                val endLine = lines.max()
+
+                val nativeOffset = symbolOffsets[fn.name]?.toInt() ?: 0
+                // We don't have per-instruction native offsets from IR alone,
+                // but we can record the line mapping with relative offset 0
+                // (the actual offsets are in the DebugLineMap from codegen)
+                val lineMappings = debugLocs.mapIndexed { idx, loc ->
+                    KgenLineMapping(
+                        nativeOffset = idx * 4, // approximate — actual offsets from codegen
+                        sourceLine = loc.line,
+                        sourceColumn = loc.col,
+                    )
+                }.distinctBy { it.sourceLine } // deduplicate same-line entries
+
+                methods.add(KgenDebugMethod(
+                    name = fn.name.substringAfterLast('_'),
+                    linkageName = fn.name,
+                    sourceFileIndex = fileIdx,
+                    startLine = startLine,
+                    endLine = endLine,
+                    nativeOffset = nativeOffset,
+                    nativeSize = 0, // filled by linker/loader
+                    lineMappings = lineMappings,
+                ))
+            }
+        }
+
+        if (methods.isEmpty()) { return ByteArray(0) }
+
+        return KgenDebugSection.write(KgenDebugSection(sourceFiles, methods))
+    }
+
     private fun buildResourcesSection(): ByteArray {
         val buf = ByteArrayOutputStream()
         writeU32(buf, resources.size)
@@ -202,13 +272,14 @@ class ExecutableBuilder(
 /**
  * Reads kgen metadata from a native executable built by [ExecutableBuilder].
  *
- * Parses the `.kgen.meta`, `.kgen.types`, and `.kgen.resources` sections.
+ * Parses the `.kgen.meta`, `.kgen.types`, `.kgen.resources`, and `.kgen.debug` sections.
  *
  * ```java
  * var meta = ExecutableReader.read(exeBytes);
  * System.out.println(meta.moduleName());
  * System.out.println(meta.exports());
  * byte[] config = meta.resource("config.txt");
+ * var debug = meta.debugInfo();
  * ```
  */
 class ExecutableReader private constructor(
@@ -219,6 +290,7 @@ class ExecutableReader private constructor(
     val metadata: Map<String, String>,
     val types: List<ExportedFunction>,
     val resources: Map<String, ByteArray>,
+    val debugInfo: KgenDebugSection? = null,
 ) {
 
     fun resource(name: String): ByteArray? = resources[name]
@@ -243,6 +315,7 @@ class ExecutableReader private constructor(
             metaSection: ByteArray,
             typesSection: ByteArray? = null,
             resourcesSection: ByteArray? = null,
+            debugSection: ByteArray? = null,
         ): ExecutableReader {
             val buf = ByteBuffer.wrap(metaSection).order(ByteOrder.LITTLE_ENDIAN)
 
@@ -298,7 +371,12 @@ class ExecutableReader private constructor(
                 map
             } else emptyMap()
 
-            return ExecutableReader(moduleName, version, targetTriple, exports, metadata, types, resources)
+            // Debug info
+            val debugInfo = if (debugSection != null && debugSection.isNotEmpty()) {
+                KgenDebugSection.read(debugSection)
+            } else { null }
+
+            return ExecutableReader(moduleName, version, targetTriple, exports, metadata, types, resources, debugInfo)
         }
 
         private fun readString(buf: ByteBuffer): String {

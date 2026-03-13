@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 import org.kgen.ir.types.*
@@ -37,8 +38,8 @@ class DevirtualizationTest {
         val optimized = Devirtualization().run(module)
 
         val callerFn = optimized.functions.first { it.name == "caller" }
-        val calls = callerFn.blocks.flatMap { it.instructions.filterIsInstance<Instruction.Call>() }
-        val vcalls = callerFn.blocks.flatMap { it.instructions.filterIsInstance<Instruction.VirtualCall>() }
+        val calls = callerFn.blocks.flatMap { it.instructions.filterIsInstance<Call>() }
+        val vcalls = callerFn.blocks.flatMap { it.instructions.filterIsInstance<VirtualCall>() }
 
         assertTrue(vcalls.isEmpty(), "VirtualCall should be devirtualized for final class")
         assertTrue(calls.isNotEmpty(), "Should have direct Call instead")
@@ -70,7 +71,7 @@ class DevirtualizationTest {
         val optimized = Devirtualization().run(module)
 
         val callerFn = optimized.functions.first { it.name == "caller" }
-        val calls = callerFn.blocks.flatMap { it.instructions.filterIsInstance<Instruction.Call>() }
+        val calls = callerFn.blocks.flatMap { it.instructions.filterIsInstance<Call>() }
 
         assertTrue(calls.isNotEmpty(), "Should devirtualize to direct call")
         assertEquals("OnlySub.method", (calls[0].function as FunctionRef).name)
@@ -104,7 +105,7 @@ class DevirtualizationTest {
         val optimized = Devirtualization().run(module)
 
         val callerFn = optimized.functions.first { it.name == "caller" }
-        val vcalls = callerFn.blocks.flatMap { it.instructions.filterIsInstance<Instruction.VirtualCall>() }
+        val vcalls = callerFn.blocks.flatMap { it.instructions.filterIsInstance<VirtualCall>() }
 
         assertFalse(vcalls.isEmpty(), "VirtualCall should remain with multiple implementors")
     }
@@ -134,8 +135,8 @@ class DevirtualizationTest {
         val optimized = Devirtualization().run(module)
 
         val callerFn = optimized.functions.first { it.name == "caller" }
-        val calls = callerFn.blocks.flatMap { it.instructions.filterIsInstance<Instruction.Call>() }
-        val icalls = callerFn.blocks.flatMap { it.instructions.filterIsInstance<Instruction.InterfaceCall>() }
+        val calls = callerFn.blocks.flatMap { it.instructions.filterIsInstance<Call>() }
+        val icalls = callerFn.blocks.flatMap { it.instructions.filterIsInstance<InterfaceCall>() }
 
         assertTrue(icalls.isEmpty(), "InterfaceCall should be devirtualized")
         assertTrue(calls.isNotEmpty())
@@ -166,7 +167,7 @@ class DevirtualizationTest {
         val optimized = Devirtualization().run(module)
 
         val callerFn = optimized.functions.first { it.name == "caller" }
-        val calls = callerFn.blocks.flatMap { it.instructions.filterIsInstance<Instruction.Call>() }
+        val calls = callerFn.blocks.flatMap { it.instructions.filterIsInstance<Call>() }
 
         assertTrue(calls.isNotEmpty(), "Should devirtualize when concrete type is known from GCAlloc")
         assertEquals("MyObj.method", (calls[0].function as FunctionRef).name)
@@ -193,7 +194,7 @@ class DevirtualizationTest {
         )
         val functions = listOf(
             IrFunction("Dog.speak", listOf(Parameter("this", Type.ClassRef("Dog"), 0)), Type.Void,
-                blocks = listOf(BasicBlock("entry", listOf(Instruction.Ret(null)))))
+                blocks = listOf(BasicBlock("entry", listOf(Ret(null)))))
         )
         val hierarchy = Devirtualization.ClassHierarchy(classes, emptyList(), functions)
         assertEquals("Dog", hierarchy.singleImplementor("Animal", "speak"))
@@ -208,9 +209,9 @@ class DevirtualizationTest {
         )
         val functions = listOf(
             IrFunction("Dog.speak", listOf(Parameter("this", Type.ClassRef("Dog"), 0)), Type.Void,
-                blocks = listOf(BasicBlock("entry", listOf(Instruction.Ret(null))))),
+                blocks = listOf(BasicBlock("entry", listOf(Ret(null))))),
             IrFunction("Cat.speak", listOf(Parameter("this", Type.ClassRef("Cat"), 0)), Type.Void,
-                blocks = listOf(BasicBlock("entry", listOf(Instruction.Ret(null))))),
+                blocks = listOf(BasicBlock("entry", listOf(Ret(null))))),
         )
         val hierarchy = Devirtualization.ClassHierarchy(classes, emptyList(), functions)
         assertNull(hierarchy.singleImplementor("Animal", "speak"))

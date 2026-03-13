@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -40,7 +41,7 @@ class OptimizationPassExtendedTest {
         })
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "Dead sub should be removed: $insts")
-        assertTrue(insts[0] is Instruction.Ret)
+        assertTrue(insts[0] is Ret)
     }
 
     @Test
@@ -82,7 +83,7 @@ class OptimizationPassExtendedTest {
             finalizeFunction()
         })
         val insts = module.functions[0].blocks[0].instructions
-        assertTrue(insts.any { it is Instruction.Alloca }, "Alloca used by store should remain")
+        assertTrue(insts.any { it is Alloca }, "Alloca used by store should remain")
     }
 
     @Test
@@ -171,7 +172,7 @@ class OptimizationPassExtendedTest {
         val fn = hoisted.functions[0]
         val preheader = fn.blocks.find { it.label == "loop_preheader" }
         assertNotNull(preheader, "Preheader should be created: ${fn.blocks.map { it.label }}")
-        assertTrue(preheader!!.instructions.any { it is Instruction.Sub },
+        assertTrue(preheader!!.instructions.any { it is Sub },
             "Hoisted sub should be in preheader: ${preheader.instructions}")
     }
 
@@ -203,7 +204,7 @@ class OptimizationPassExtendedTest {
         val fn = hoisted.functions[0]
         val loopBlock = fn.blocks.find { it.label == "loop" }
         assertNotNull(loopBlock)
-        assertTrue(loopBlock!!.instructions.any { it is Instruction.Store },
+        assertTrue(loopBlock!!.instructions.any { it is Store },
             "Store should stay in loop: ${loopBlock.instructions}")
     }
 
@@ -236,7 +237,7 @@ class OptimizationPassExtendedTest {
         val fn = hoisted.functions[0]
         val preheader = fn.blocks.find { it.label == "loop_preheader" }
         assertNotNull(preheader, "Preheader should exist: ${fn.blocks.map { it.label }}")
-        assertTrue(preheader!!.instructions.any { it is Instruction.ICmp },
+        assertTrue(preheader!!.instructions.any { it is ICmp },
             "Invariant icmp should be hoisted: ${preheader.instructions}")
     }
 
@@ -280,7 +281,7 @@ class OptimizationPassExtendedTest {
         val fn = hoisted.functions[0]
         val preheader = fn.blocks.find { it.label == "loop_preheader" }
         assertNotNull(preheader, "Preheader should exist: ${fn.blocks.map { it.label }}")
-        assertTrue(preheader!!.instructions.any { it is Instruction.Select },
+        assertTrue(preheader!!.instructions.any { it is Select },
             "Invariant select should be hoisted: ${preheader.instructions}")
     }
 
@@ -305,7 +306,7 @@ class OptimizationPassExtendedTest {
         val module = tinyInliner.run(ir.build())
         val mainInsts = module.functions[1].blocks[0].instructions
         // add2 has 2 instructions (add + ret), threshold is 1, so should NOT inline
-        assertTrue(mainInsts.any { it is Instruction.Call }, "Should not inline: $mainInsts")
+        assertTrue(mainInsts.any { it is Call }, "Should not inline: $mainInsts")
     }
 
     @Test
@@ -326,8 +327,8 @@ class OptimizationPassExtendedTest {
             finalizeFunction()
         })
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call }, "Both calls should be inlined: $mainInsts")
-        val adds = mainInsts.filterIsInstance<Instruction.Add>()
+        assertFalse(mainInsts.any { it is Call }, "Both calls should be inlined: $mainInsts")
+        val adds = mainInsts.filterIsInstance<Add>()
         assertEquals(3, adds.size, "Should have 2 inlined adds + 1 sum add: $mainInsts")
     }
 
@@ -347,8 +348,8 @@ class OptimizationPassExtendedTest {
             finalizeFunction()
         })
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call }, "Call should be inlined: $mainInsts")
-        val subInst = mainInsts.filterIsInstance<Instruction.Sub>().firstOrNull()
+        assertFalse(mainInsts.any { it is Call }, "Call should be inlined: $mainInsts")
+        val subInst = mainInsts.filterIsInstance<Sub>().firstOrNull()
         assertNotNull(subInst, "Should have inlined sub: $mainInsts")
         assertEquals("10", subInst!!.lhs.name)
         assertEquals("3", subInst.rhs.name)
@@ -375,7 +376,7 @@ class OptimizationPassExtendedTest {
             finalizeFunction()
         })
         val mainInsts = module.functions[2].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call }, "All calls should be inlined: $mainInsts")
+        assertFalse(mainInsts.any { it is Call }, "All calls should be inlined: $mainInsts")
     }
 
     @Test
@@ -395,8 +396,8 @@ class OptimizationPassExtendedTest {
             finalizeFunction()
         })
         val mainInsts = module.functions[1].blocks[0].instructions
-        assertFalse(mainInsts.any { it is Instruction.Call }, "Call should be inlined: $mainInsts")
-        val muls = mainInsts.filterIsInstance<Instruction.Mul>()
+        assertFalse(mainInsts.any { it is Call }, "Call should be inlined: $mainInsts")
+        val muls = mainInsts.filterIsInstance<Mul>()
         assertEquals(2, muls.size, "Should have 2 inlined muls: $mainInsts")
     }
 
@@ -419,8 +420,8 @@ class OptimizationPassExtendedTest {
         val blocks = module.functions[0].blocks
         assertEquals(1, blocks.size, "All blocks should merge: ${blocks.map { it.label }}")
         val last = blocks[0].instructions.last()
-        assertTrue(last is Instruction.Ret)
-        assertEquals(42, ((last as Instruction.Ret).value as Constant.I32).value)
+        assertTrue(last is Ret)
+        assertEquals(42, ((last as Ret).value as Constant.I32).value)
     }
 
     @Test
@@ -512,7 +513,7 @@ class OptimizationPassExtendedTest {
         })
         val blocks = module.functions[0].blocks
         assertEquals(1, blocks.size, "All resolved to single path: ${blocks.map { it.label }}")
-        val last = blocks[0].instructions.last() as Instruction.Ret
+        val last = blocks[0].instructions.last() as Ret
         assertEquals(100, (last.value as Constant.I32).value)
     }
 
@@ -531,7 +532,7 @@ class OptimizationPassExtendedTest {
         })
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(3, insts.size, "Redundant sub should be eliminated: $insts")
-        val sumInst = insts[1] as Instruction.Add
+        val sumInst = insts[1] as Add
         assertEquals(sumInst.lhs.name, sumInst.rhs.name)
     }
 
@@ -578,7 +579,7 @@ class OptimizationPassExtendedTest {
             finalizeFunction()
         })
         val insts = module.functions[0].blocks[0].instructions
-        val addCount = insts.count { it is Instruction.Add }
+        val addCount = insts.count { it is Add }
         // a remains, b and c eliminated, then add(b,c) -> add(a,a), add(a, add(a,a)) remains
         assertEquals(3, addCount, "Only 3 adds should remain (original + 2 combining): $insts")
     }
@@ -594,7 +595,7 @@ class OptimizationPassExtendedTest {
             finalizeFunction()
         })
         val insts = module.functions[0].blocks[0].instructions
-        val storeCount = insts.count { it is Instruction.Store }
+        val storeCount = insts.count { it is Store }
         assertEquals(2, storeCount, "Stores should not be eliminated")
     }
 
@@ -619,9 +620,9 @@ class OptimizationPassExtendedTest {
             finalizeFunction()
         })
         val insts = module.functions[0].blocks[0].instructions
-        assertFalse(insts.any { it is Instruction.Alloca }, "All allocas should be promoted: $insts")
-        assertFalse(insts.any { it is Instruction.Store }, "All stores should be removed: $insts")
-        assertFalse(insts.any { it is Instruction.Load }, "All loads should be removed: $insts")
+        assertFalse(insts.any { it is Alloca }, "All allocas should be promoted: $insts")
+        assertFalse(insts.any { it is Store }, "All stores should be removed: $insts")
+        assertFalse(insts.any { it is Load }, "All loads should be removed: $insts")
     }
 
     @Test
@@ -647,9 +648,9 @@ class OptimizationPassExtendedTest {
         })
         val mergeBlock = module.functions[0].blocks.find { it.label == "merge" }
         assertNotNull(mergeBlock)
-        assertTrue(mergeBlock!!.instructions.any { it is Instruction.Phi },
+        assertTrue(mergeBlock!!.instructions.any { it is Phi },
             "Should have phi at merge: ${mergeBlock.instructions}")
-        val phi = mergeBlock.instructions.first { it is Instruction.Phi } as Instruction.Phi
+        val phi = mergeBlock.instructions.first { it is Phi } as Phi
         val vals = phi.incoming.map { (v, _) -> (v as Constant.I32).value }.toSet()
         assertEquals(setOf(10, 20), vals)
     }
@@ -685,9 +686,9 @@ class OptimizationPassExtendedTest {
         })
         val mergeBlock = module.functions[0].blocks.find { it.label == "outer_merge" }
         assertNotNull(mergeBlock)
-        assertTrue(mergeBlock!!.instructions.any { it is Instruction.Phi },
+        assertTrue(mergeBlock!!.instructions.any { it is Phi },
             "Should have phi: ${mergeBlock.instructions}")
-        assertFalse(mergeBlock.instructions.any { it is Instruction.Load },
+        assertFalse(mergeBlock.instructions.any { it is Load },
             "Load should be removed: ${mergeBlock.instructions}")
     }
 
@@ -704,7 +705,7 @@ class OptimizationPassExtendedTest {
             finalizeFunction()
         })
         val insts = module.functions[0].blocks[0].instructions
-        assertFalse(insts.any { it is Instruction.Alloca }, "I1 alloca should be promoted: $insts")
+        assertFalse(insts.any { it is Alloca }, "I1 alloca should be promoted: $insts")
     }
 
     @Test
@@ -731,9 +732,9 @@ class OptimizationPassExtendedTest {
         // After mem2reg, the loop block should have a phi for i
         val loopBlock = module.functions[0].blocks.find { it.label == "loop" }
         assertNotNull(loopBlock)
-        assertTrue(loopBlock!!.instructions.any { it is Instruction.Phi },
+        assertTrue(loopBlock!!.instructions.any { it is Phi },
             "Loop should have phi after mem2reg: ${loopBlock.instructions}")
-        assertFalse(loopBlock.instructions.any { it is Instruction.Load },
+        assertFalse(loopBlock.instructions.any { it is Load },
             "Loads should be removed: ${loopBlock.instructions}")
     }
 
@@ -758,7 +759,7 @@ class OptimizationPassExtendedTest {
         })
         val insts = module.functions[0].blocks[0].instructions
         // Original struct alloca should be gone, replaced by two scalar allocas
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertTrue(allocas.all { it.allocType == Type.I32 },
             "Struct alloca should be split into I32 allocas: $allocas")
         assertEquals(2, allocas.size, "Should have 2 scalar allocas: $allocas")
@@ -782,7 +783,7 @@ class OptimizationPassExtendedTest {
             finalizeFunction()
         })
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(2, allocas.size, "Array[2] should be split into 2 allocas: $allocas")
         assertTrue(allocas.all { it.allocType == Type.I32 })
     }
@@ -802,7 +803,7 @@ class OptimizationPassExtendedTest {
             finalizeFunction()
         })
         val insts = module.functions[1].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertTrue(allocas.any { it.allocType == structType },
             "Struct alloca should remain when address escapes: $allocas")
     }
@@ -825,7 +826,7 @@ class OptimizationPassExtendedTest {
             finalizeFunction()
         })
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         // Should have 3 allocas: I32, I64, I32 for the three fields
         assertEquals(3, allocas.size, "Should have 3 field allocas: $allocas")
     }
@@ -843,7 +844,7 @@ class OptimizationPassExtendedTest {
         })
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "x + 0 should be simplified: $insts")
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertTrue(ret.value is Parameter, "Should return x directly: ${ret.value}")
     }
 
@@ -858,7 +859,7 @@ class OptimizationPassExtendedTest {
         })
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "x * 1 should be simplified: $insts")
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertTrue(ret.value is Parameter, "Should return x directly: ${ret.value}")
     }
 
@@ -873,7 +874,7 @@ class OptimizationPassExtendedTest {
         })
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "x * 0 should be simplified: $insts")
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertTrue(ret.value is Constant.I32, "Should return 0: ${ret.value}")
         assertEquals(0, (ret.value as Constant.I32).value)
     }
@@ -902,7 +903,7 @@ class OptimizationPassExtendedTest {
         })
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "x & 0 should be simplified: $insts")
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertTrue(ret.value is Constant.I32, "Should return 0: ${ret.value}")
         assertEquals(0, (ret.value as Constant.I32).value)
     }
@@ -918,7 +919,7 @@ class OptimizationPassExtendedTest {
         })
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "x | 0 should be simplified: $insts")
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertTrue(ret.value is Parameter, "Should return x directly: ${ret.value}")
     }
 
@@ -959,7 +960,7 @@ class OptimizationPassExtendedTest {
         })
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "select(true, a, b) should simplify to a: $insts")
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertTrue(ret.value is Parameter, "Should return param: ${ret.value}")
         assertEquals("a", (ret.value as Parameter).name.removePrefix("%"))
     }
@@ -975,7 +976,7 @@ class OptimizationPassExtendedTest {
         })
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "select(false, a, b) should simplify to b: $insts")
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertTrue(ret.value is Parameter, "Should return param: ${ret.value}")
         assertEquals("b", (ret.value as Parameter).name.removePrefix("%"))
     }
@@ -1018,7 +1019,7 @@ class OptimizationPassExtendedTest {
         })
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "Chained simplifications should reduce to ret: $insts")
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertTrue(ret.value is Parameter, "Should return x directly: ${ret.value}")
     }
 

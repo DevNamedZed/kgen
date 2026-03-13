@@ -1,6 +1,7 @@
 package org.kgen.pass
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 
 /**
  * Inserts GC safepoints at strategic locations in functions that use a GC strategy.
@@ -36,28 +37,28 @@ class SafepointInsertion : ModulePass {
             val newInstructions = mutableListOf<Instruction>()
             for (inst in block.instructions) {
                 when (inst) {
-                    is Instruction.Call, is Instruction.Invoke, is Instruction.ManagedCall -> {
+                    is Call, is Invoke, is ManagedCall -> {
                         if (!isPrecedingGCSafepoint(newInstructions)) {
-                            newInstructions.add(Instruction.GCSafepoint())
+                            newInstructions.add(GCSafepoint())
                         }
                         newInstructions.add(inst)
                     }
-                    is Instruction.Br -> {
+                    is Br -> {
                         val targetIdx = blockLabels[inst.target]
                         if (targetIdx != null && targetIdx <= blockIdx) {
                             if (!isPrecedingGCSafepoint(newInstructions)) {
-                                newInstructions.add(Instruction.GCSafepoint())
+                                newInstructions.add(GCSafepoint())
                             }
                         }
                         newInstructions.add(inst)
                     }
-                    is Instruction.CondBr -> {
+                    is CondBr -> {
                         val trueIdx = blockLabels[inst.trueTarget]
                         val falseIdx = blockLabels[inst.falseTarget]
                         val isBackEdge = (trueIdx != null && trueIdx <= blockIdx) ||
                                 (falseIdx != null && falseIdx <= blockIdx)
                         if (isBackEdge && !isPrecedingGCSafepoint(newInstructions)) {
-                            newInstructions.add(Instruction.GCSafepoint())
+                            newInstructions.add(GCSafepoint())
                         }
                         newInstructions.add(inst)
                     }
@@ -70,6 +71,6 @@ class SafepointInsertion : ModulePass {
     }
 
     private fun isPrecedingGCSafepoint(instructions: List<Instruction>): Boolean {
-        return instructions.isNotEmpty() && instructions.last() is Instruction.GCSafepoint
+        return instructions.isNotEmpty() && instructions.last() is GCSafepoint
     }
 }

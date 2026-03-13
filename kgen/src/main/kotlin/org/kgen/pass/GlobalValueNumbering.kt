@@ -1,6 +1,7 @@
 package org.kgen.pass
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 
 /**
  * Global Value Numbering (GVN) — eliminates redundant computations.
@@ -59,7 +60,7 @@ class GlobalValueNumbering : ModulePass {
                     } else {
                         val result = rewritten.result
                         if (result != null) {
-                            if (rewritten is Instruction.Load) {
+                            if (rewritten is Load) {
                                 valueTable.insertLoad(key, result, rewritten.ptr)
                             } else {
                                 valueTable.insert(key, result)
@@ -69,11 +70,11 @@ class GlobalValueNumbering : ModulePass {
                 }
 
                 // Stores invalidate load entries for aliasing pointers
-                if (rewritten is Instruction.Store) {
+                if (rewritten is Store) {
                     valueTable.invalidateLoads(rewritten.ptr, aa)
                 }
                 // Calls may write to any memory — invalidate all loads
-                if (rewritten is Instruction.Call || rewritten is Instruction.Invoke) {
+                if (rewritten is Call || rewritten is Invoke) {
                     valueTable.invalidateAllLoads()
                 }
             }
@@ -99,42 +100,42 @@ class GlobalValueNumbering : ModulePass {
     }
 
     private fun computeKey(inst: Instruction, aa: AliasAnalysis): String? = when (inst) {
-        is Instruction.Add -> "add(${vn(inst.lhs)},${vn(inst.rhs)})"
-        is Instruction.Sub -> "sub(${vn(inst.lhs)},${vn(inst.rhs)})"
-        is Instruction.Mul -> "mul(${vn(inst.lhs)},${vn(inst.rhs)})"
-        is Instruction.SDiv -> "sdiv(${vn(inst.lhs)},${vn(inst.rhs)})"
-        is Instruction.UDiv -> "udiv(${vn(inst.lhs)},${vn(inst.rhs)})"
-        is Instruction.SRem -> "srem(${vn(inst.lhs)},${vn(inst.rhs)})"
-        is Instruction.URem -> "urem(${vn(inst.lhs)},${vn(inst.rhs)})"
-        is Instruction.And -> "and(${vn(inst.lhs)},${vn(inst.rhs)})"
-        is Instruction.Or -> "or(${vn(inst.lhs)},${vn(inst.rhs)})"
-        is Instruction.Xor -> "xor(${vn(inst.lhs)},${vn(inst.rhs)})"
-        is Instruction.Shl -> "shl(${vn(inst.lhs)},${vn(inst.rhs)})"
-        is Instruction.LShr -> "lshr(${vn(inst.lhs)},${vn(inst.rhs)})"
-        is Instruction.AShr -> "ashr(${vn(inst.lhs)},${vn(inst.rhs)})"
-        is Instruction.Neg -> "neg(${vn(inst.operand)})"
-        is Instruction.Not -> "not(${vn(inst.operand)})"
-        is Instruction.ICmp -> "icmp.${inst.predicate}(${vn(inst.lhs)},${vn(inst.rhs)})"
-        is Instruction.FCmp -> "fcmp.${inst.predicate}(${vn(inst.lhs)},${vn(inst.rhs)})"
-        is Instruction.FAdd -> "fadd(${vn(inst.lhs)},${vn(inst.rhs)})"
-        is Instruction.FSub -> "fsub(${vn(inst.lhs)},${vn(inst.rhs)})"
-        is Instruction.FMul -> "fmul(${vn(inst.lhs)},${vn(inst.rhs)})"
-        is Instruction.FDiv -> "fdiv(${vn(inst.lhs)},${vn(inst.rhs)})"
-        is Instruction.FNeg -> "fneg(${vn(inst.operand)})"
-        is Instruction.ZExt -> "zext.${inst.dest.type}(${vn(inst.value)})"
-        is Instruction.SExt -> "sext.${inst.dest.type}(${vn(inst.value)})"
-        is Instruction.IntTrunc -> "trunc.${inst.toType}(${vn(inst.value)})"
-        is Instruction.BitCast -> "bitcast.${inst.dest.type}(${vn(inst.value)})"
-        is Instruction.SIToFP -> "sitofp.${inst.dest.type}(${vn(inst.value)})"
-        is Instruction.UIToFP -> "uitofp.${inst.dest.type}(${vn(inst.value)})"
-        is Instruction.FPToSI -> "fptosi.${inst.dest.type}(${vn(inst.value)})"
-        is Instruction.FPToUI -> "fptoui.${inst.dest.type}(${vn(inst.value)})"
-        is Instruction.FPExt -> "fpext.${inst.dest.type}(${vn(inst.value)})"
-        is Instruction.FPTrunc -> "fptrunc.${inst.dest.type}(${vn(inst.value)})"
-        is Instruction.GetElementPtr -> "gep.${inst.baseType}(${vn(inst.ptr)},${inst.indices.joinToString(",") { vn(it) }})"
-        is Instruction.Select -> "select(${vn(inst.condition)},${vn(inst.trueValue)},${vn(inst.falseValue)})"
+        is Add -> "add(${vn(inst.lhs)},${vn(inst.rhs)})"
+        is Sub -> "sub(${vn(inst.lhs)},${vn(inst.rhs)})"
+        is Mul -> "mul(${vn(inst.lhs)},${vn(inst.rhs)})"
+        is SDiv -> "sdiv(${vn(inst.lhs)},${vn(inst.rhs)})"
+        is UDiv -> "udiv(${vn(inst.lhs)},${vn(inst.rhs)})"
+        is SRem -> "srem(${vn(inst.lhs)},${vn(inst.rhs)})"
+        is URem -> "urem(${vn(inst.lhs)},${vn(inst.rhs)})"
+        is And -> "and(${vn(inst.lhs)},${vn(inst.rhs)})"
+        is Or -> "or(${vn(inst.lhs)},${vn(inst.rhs)})"
+        is Xor -> "xor(${vn(inst.lhs)},${vn(inst.rhs)})"
+        is Shl -> "shl(${vn(inst.lhs)},${vn(inst.rhs)})"
+        is LShr -> "lshr(${vn(inst.lhs)},${vn(inst.rhs)})"
+        is AShr -> "ashr(${vn(inst.lhs)},${vn(inst.rhs)})"
+        is Neg -> "neg(${vn(inst.operand)})"
+        is Not -> "not(${vn(inst.operand)})"
+        is ICmp -> "icmp.${inst.predicate}(${vn(inst.lhs)},${vn(inst.rhs)})"
+        is FCmp -> "fcmp.${inst.predicate}(${vn(inst.lhs)},${vn(inst.rhs)})"
+        is FAdd -> "fadd(${vn(inst.lhs)},${vn(inst.rhs)})"
+        is FSub -> "fsub(${vn(inst.lhs)},${vn(inst.rhs)})"
+        is FMul -> "fmul(${vn(inst.lhs)},${vn(inst.rhs)})"
+        is FDiv -> "fdiv(${vn(inst.lhs)},${vn(inst.rhs)})"
+        is FNeg -> "fneg(${vn(inst.operand)})"
+        is ZExt -> "zext.${inst.dest.type}(${vn(inst.value)})"
+        is SExt -> "sext.${inst.dest.type}(${vn(inst.value)})"
+        is IntTrunc -> "trunc.${inst.toType}(${vn(inst.value)})"
+        is BitCast -> "bitcast.${inst.dest.type}(${vn(inst.value)})"
+        is SIToFP -> "sitofp.${inst.dest.type}(${vn(inst.value)})"
+        is UIToFP -> "uitofp.${inst.dest.type}(${vn(inst.value)})"
+        is FPToSI -> "fptosi.${inst.dest.type}(${vn(inst.value)})"
+        is FPToUI -> "fptoui.${inst.dest.type}(${vn(inst.value)})"
+        is FPExt -> "fpext.${inst.dest.type}(${vn(inst.value)})"
+        is FPTrunc -> "fptrunc.${inst.dest.type}(${vn(inst.value)})"
+        is GetElementPtr -> "gep.${inst.baseType}(${vn(inst.ptr)},${inst.indices.joinToString(",") { vn(it) }})"
+        is Select -> "select(${vn(inst.condition)},${vn(inst.trueValue)},${vn(inst.falseValue)})"
         // Loads: two loads from the same pointer with no intervening store produce the same value
-        is Instruction.Load -> if (!inst.volatile) "load.${inst.loadType}(${vn(inst.ptr)})" else null
+        is Load -> if (!inst.volatile) "load.${inst.loadType}(${vn(inst.ptr)})" else null
         else -> null
     }
 
@@ -229,11 +230,11 @@ class GlobalValueNumbering : ModulePass {
     }
 
     private fun terminatorTargets(inst: Instruction): List<String> = when (inst) {
-        is Instruction.Br -> listOf(inst.target)
-        is Instruction.CondBr -> listOf(inst.trueTarget, inst.falseTarget)
-        is Instruction.Switch -> listOf(inst.defaultTarget) + inst.cases.map { it.second }
-        is Instruction.IndirectBr -> inst.targets
-        is Instruction.Invoke -> listOf(inst.normalDest, inst.unwindDest)
+        is Br -> listOf(inst.target)
+        is CondBr -> listOf(inst.trueTarget, inst.falseTarget)
+        is Switch -> listOf(inst.defaultTarget) + inst.cases.map { it.second }
+        is IndirectBr -> inst.targets
+        is Invoke -> listOf(inst.normalDest, inst.unwindDest)
         else -> emptyList()
     }
 
@@ -297,45 +298,45 @@ class GlobalValueNumbering : ModulePass {
         fun rw(v: Value): Value = if (v is InstructionRef || v is Parameter) replacements[v.name] ?: v else v
 
         return when (inst) {
-            is Instruction.Add -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Sub -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Mul -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.SDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.UDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.SRem -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.URem -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.And -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Or -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Xor -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Shl -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.LShr -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.AShr -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.Neg -> inst.copy(operand = rw(inst.operand))
-            is Instruction.ICmp -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.FAdd -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.FSub -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.FMul -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.FDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.FNeg -> inst.copy(operand = rw(inst.operand))
-            is Instruction.FCmp -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
-            is Instruction.ZExt -> inst.copy(value = rw(inst.value))
-            is Instruction.SExt -> inst.copy(value = rw(inst.value))
-            is Instruction.IntTrunc -> inst.copy(value = rw(inst.value))
-            is Instruction.Trunc -> inst.copy(operand = rw(inst.operand))
-            is Instruction.Ret -> inst.copy(value = inst.value?.let { rw(it) })
-            is Instruction.Call -> inst.copy(args = inst.args.map { rw(it) })
-            is Instruction.Select -> inst.copy(condition = rw(inst.condition), trueValue = rw(inst.trueValue), falseValue = rw(inst.falseValue))
-            is Instruction.Store -> inst.copy(value = rw(inst.value), ptr = rw(inst.ptr))
-            is Instruction.Load -> inst.copy(ptr = rw(inst.ptr))
-            is Instruction.CondBr -> inst.copy(condition = rw(inst.condition))
-            is Instruction.SIToFP -> inst.copy(value = rw(inst.value))
-            is Instruction.UIToFP -> inst.copy(value = rw(inst.value))
-            is Instruction.FPToSI -> inst.copy(value = rw(inst.value))
-            is Instruction.FPToUI -> inst.copy(value = rw(inst.value))
-            is Instruction.FPExt -> inst.copy(value = rw(inst.value))
-            is Instruction.FPTrunc -> inst.copy(value = rw(inst.value))
-            is Instruction.GetElementPtr -> inst.copy(ptr = rw(inst.ptr), indices = inst.indices.map { rw(it) })
-            is Instruction.Phi -> inst.copy(incoming = inst.incoming.map { (v, l) -> rw(v) to l })
+            is Add -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Sub -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Mul -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is SDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is UDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is SRem -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is URem -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is And -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Or -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Xor -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Shl -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is LShr -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is AShr -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is Neg -> inst.copy(operand = rw(inst.operand))
+            is ICmp -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is FAdd -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is FSub -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is FMul -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is FDiv -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is FNeg -> inst.copy(operand = rw(inst.operand))
+            is FCmp -> inst.copy(lhs = rw(inst.lhs), rhs = rw(inst.rhs))
+            is ZExt -> inst.copy(value = rw(inst.value))
+            is SExt -> inst.copy(value = rw(inst.value))
+            is IntTrunc -> inst.copy(value = rw(inst.value))
+            is Trunc -> inst.copy(operand = rw(inst.operand))
+            is Ret -> inst.copy(value = inst.value?.let { rw(it) })
+            is Call -> inst.copy(args = inst.args.map { rw(it) })
+            is Select -> inst.copy(condition = rw(inst.condition), trueValue = rw(inst.trueValue), falseValue = rw(inst.falseValue))
+            is Store -> inst.copy(value = rw(inst.value), ptr = rw(inst.ptr))
+            is Load -> inst.copy(ptr = rw(inst.ptr))
+            is CondBr -> inst.copy(condition = rw(inst.condition))
+            is SIToFP -> inst.copy(value = rw(inst.value))
+            is UIToFP -> inst.copy(value = rw(inst.value))
+            is FPToSI -> inst.copy(value = rw(inst.value))
+            is FPToUI -> inst.copy(value = rw(inst.value))
+            is FPExt -> inst.copy(value = rw(inst.value))
+            is FPTrunc -> inst.copy(value = rw(inst.value))
+            is GetElementPtr -> inst.copy(ptr = rw(inst.ptr), indices = inst.indices.map { rw(it) })
+            is Phi -> inst.copy(incoming = inst.incoming.map { (v, l) -> rw(v) to l })
             else -> inst
         }
     }

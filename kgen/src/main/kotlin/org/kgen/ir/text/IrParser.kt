@@ -1,6 +1,7 @@
 package org.kgen.ir.text
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.types.*
 
 /**
@@ -537,110 +538,110 @@ class IrParser private constructor(private val input: String) {
     private fun parseInstructionWithDest(destName: String, params: List<Parameter>): Instruction {
         return when {
             // Integer arithmetic
-            tryConsume("add") -> parseBinaryOp(destName) { dest, lhs, rhs, flags -> Instruction.Add(dest, lhs, rhs, "nuw" in flags, "nsw" in flags) }
-            tryConsume("sub") -> parseBinaryOp(destName) { dest, lhs, rhs, flags -> Instruction.Sub(dest, lhs, rhs, "nuw" in flags, "nsw" in flags) }
-            tryConsume("mul") -> parseBinaryOp(destName) { dest, lhs, rhs, flags -> Instruction.Mul(dest, lhs, rhs, "nuw" in flags, "nsw" in flags) }
-            tryConsume("udiv") -> parseBinaryOp(destName) { dest, lhs, rhs, flags -> Instruction.UDiv(dest, lhs, rhs, "exact" in flags) }
-            tryConsume("sdiv") -> parseBinaryOp(destName) { dest, lhs, rhs, flags -> Instruction.SDiv(dest, lhs, rhs, "exact" in flags) }
-            tryConsume("urem ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Instruction.URem(dest, lhs, rhs) }
-            tryConsume("srem ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Instruction.SRem(dest, lhs, rhs) }
-            tryConsume("neg ") -> parseUnary(destName) { dest, op -> Instruction.Neg(dest, op) }
+            tryConsume("add") -> parseBinaryOp(destName) { dest, lhs, rhs, flags -> Add(dest, lhs, rhs, "nuw" in flags, "nsw" in flags) }
+            tryConsume("sub") -> parseBinaryOp(destName) { dest, lhs, rhs, flags -> Sub(dest, lhs, rhs, "nuw" in flags, "nsw" in flags) }
+            tryConsume("mul") -> parseBinaryOp(destName) { dest, lhs, rhs, flags -> Mul(dest, lhs, rhs, "nuw" in flags, "nsw" in flags) }
+            tryConsume("udiv") -> parseBinaryOp(destName) { dest, lhs, rhs, flags -> UDiv(dest, lhs, rhs, "exact" in flags) }
+            tryConsume("sdiv") -> parseBinaryOp(destName) { dest, lhs, rhs, flags -> SDiv(dest, lhs, rhs, "exact" in flags) }
+            tryConsume("urem ") -> parseBinarySimple(destName) { dest, lhs, rhs -> URem(dest, lhs, rhs) }
+            tryConsume("srem ") -> parseBinarySimple(destName) { dest, lhs, rhs -> SRem(dest, lhs, rhs) }
+            tryConsume("neg ") -> parseUnary(destName) { dest, op -> Neg(dest, op) }
 
             // Overflow-checked
-            tryConsume("sadd.overflow ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Instruction.SAddOverflow(dest, lhs, rhs) }
-            tryConsume("uadd.overflow ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Instruction.UAddOverflow(dest, lhs, rhs) }
-            tryConsume("ssub.overflow ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Instruction.SSubOverflow(dest, lhs, rhs) }
-            tryConsume("usub.overflow ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Instruction.USubOverflow(dest, lhs, rhs) }
-            tryConsume("smul.overflow ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Instruction.SMulOverflow(dest, lhs, rhs) }
-            tryConsume("umul.overflow ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Instruction.UMulOverflow(dest, lhs, rhs) }
+            tryConsume("sadd.overflow ") -> parseBinarySimple(destName) { dest, lhs, rhs -> SAddOverflow(dest, lhs, rhs) }
+            tryConsume("uadd.overflow ") -> parseBinarySimple(destName) { dest, lhs, rhs -> UAddOverflow(dest, lhs, rhs) }
+            tryConsume("ssub.overflow ") -> parseBinarySimple(destName) { dest, lhs, rhs -> SSubOverflow(dest, lhs, rhs) }
+            tryConsume("usub.overflow ") -> parseBinarySimple(destName) { dest, lhs, rhs -> USubOverflow(dest, lhs, rhs) }
+            tryConsume("smul.overflow ") -> parseBinarySimple(destName) { dest, lhs, rhs -> SMulOverflow(dest, lhs, rhs) }
+            tryConsume("umul.overflow ") -> parseBinarySimple(destName) { dest, lhs, rhs -> UMulOverflow(dest, lhs, rhs) }
 
             // Saturating
-            tryConsume("sadd.sat ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Instruction.SAddSat(dest, lhs, rhs) }
-            tryConsume("uadd.sat ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Instruction.UAddSat(dest, lhs, rhs) }
-            tryConsume("ssub.sat ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Instruction.SSubSat(dest, lhs, rhs) }
-            tryConsume("usub.sat ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Instruction.USubSat(dest, lhs, rhs) }
+            tryConsume("sadd.sat ") -> parseBinarySimple(destName) { dest, lhs, rhs -> SAddSat(dest, lhs, rhs) }
+            tryConsume("uadd.sat ") -> parseBinarySimple(destName) { dest, lhs, rhs -> UAddSat(dest, lhs, rhs) }
+            tryConsume("ssub.sat ") -> parseBinarySimple(destName) { dest, lhs, rhs -> SSubSat(dest, lhs, rhs) }
+            tryConsume("usub.sat ") -> parseBinarySimple(destName) { dest, lhs, rhs -> USubSat(dest, lhs, rhs) }
 
             // Min/max
-            tryConsume("smin ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Instruction.SMin(dest, lhs, rhs) }
-            tryConsume("smax ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Instruction.SMax(dest, lhs, rhs) }
-            tryConsume("umin ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Instruction.UMin(dest, lhs, rhs) }
-            tryConsume("umax ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Instruction.UMax(dest, lhs, rhs) }
+            tryConsume("smin ") -> parseBinarySimple(destName) { dest, lhs, rhs -> SMin(dest, lhs, rhs) }
+            tryConsume("smax ") -> parseBinarySimple(destName) { dest, lhs, rhs -> SMax(dest, lhs, rhs) }
+            tryConsume("umin ") -> parseBinarySimple(destName) { dest, lhs, rhs -> UMin(dest, lhs, rhs) }
+            tryConsume("umax ") -> parseBinarySimple(destName) { dest, lhs, rhs -> UMax(dest, lhs, rhs) }
             tryConsume("abs ") -> {
                 val (type, operand) = parseTypedValue(params)
                 val isIntMin = tryConsume(" int_min")
-                Instruction.Abs(InstructionRef(destName, type), operand, isIntMin)
+                Abs(InstructionRef(destName, type), operand, isIntMin)
             }
 
             // Float arithmetic
-            tryConsume("fadd") -> parseFloatBinaryOp(destName, params) { dest, lhs, rhs, fm -> Instruction.FAdd(dest, lhs, rhs, fm) }
-            tryConsume("fsub") -> parseFloatBinaryOp(destName, params) { dest, lhs, rhs, fm -> Instruction.FSub(dest, lhs, rhs, fm) }
-            tryConsume("fmul") -> parseFloatBinaryOp(destName, params) { dest, lhs, rhs, fm -> Instruction.FMul(dest, lhs, rhs, fm) }
-            tryConsume("fdiv") -> parseFloatBinaryOp(destName, params) { dest, lhs, rhs, fm -> Instruction.FDiv(dest, lhs, rhs, fm) }
-            tryConsume("frem") -> parseFloatBinaryOp(destName, params) { dest, lhs, rhs, fm -> Instruction.FRem(dest, lhs, rhs, fm) }
+            tryConsume("fadd") -> parseFloatBinaryOp(destName, params) { dest, lhs, rhs, fm -> FAdd(dest, lhs, rhs, fm) }
+            tryConsume("fsub") -> parseFloatBinaryOp(destName, params) { dest, lhs, rhs, fm -> FSub(dest, lhs, rhs, fm) }
+            tryConsume("fmul") -> parseFloatBinaryOp(destName, params) { dest, lhs, rhs, fm -> FMul(dest, lhs, rhs, fm) }
+            tryConsume("fdiv") -> parseFloatBinaryOp(destName, params) { dest, lhs, rhs, fm -> FDiv(dest, lhs, rhs, fm) }
+            tryConsume("frem") -> parseFloatBinaryOp(destName, params) { dest, lhs, rhs, fm -> FRem(dest, lhs, rhs, fm) }
             tryConsume("fneg") -> {
                 val fm = parseFastMathFlags()
                 expect(" ")
                 val (type, operand) = parseTypedValue(params)
-                Instruction.FNeg(InstructionRef(destName, type), operand, fm)
+                FNeg(InstructionRef(destName, type), operand, fm)
             }
-            tryConsume("fabs ") -> parseUnary(destName) { dest, op -> Instruction.FAbs(dest, op) }
+            tryConsume("fabs ") -> parseUnary(destName) { dest, op -> FAbs(dest, op) }
             tryConsume("fma ") -> {
                 val (aType, a) = parseTypedValue(params)
                 expect(", ")
                 val b = parseValue(aType, params)
                 expect(", ")
                 val c = parseValue(aType, params)
-                Instruction.FMA(InstructionRef(destName, aType), a, b, c)
+                FMA(InstructionRef(destName, aType), a, b, c)
             }
-            tryConsume("fmin ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Instruction.FMin(dest, lhs, rhs) }
-            tryConsume("fmax ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Instruction.FMax(dest, lhs, rhs) }
-            tryConsume("sqrt ") -> parseUnary(destName) { dest, op -> Instruction.Sqrt(dest, op) }
-            tryConsume("ceil ") -> parseUnary(destName) { dest, op -> Instruction.Ceil(dest, op) }
-            tryConsume("floor ") -> parseUnary(destName) { dest, op -> Instruction.Floor(dest, op) }
-            tryConsume("round ") -> parseUnary(destName) { dest, op -> Instruction.Round(dest, op) }
-            tryConsume("trunc ") -> parseUnary(destName) { dest, op -> Instruction.Trunc(dest, op) }
+            tryConsume("fmin ") -> parseBinarySimple(destName) { dest, lhs, rhs -> FMin(dest, lhs, rhs) }
+            tryConsume("fmax ") -> parseBinarySimple(destName) { dest, lhs, rhs -> FMax(dest, lhs, rhs) }
+            tryConsume("sqrt ") -> parseUnary(destName) { dest, op -> Sqrt(dest, op) }
+            tryConsume("ceil ") -> parseUnary(destName) { dest, op -> Ceil(dest, op) }
+            tryConsume("floor ") -> parseUnary(destName) { dest, op -> Floor(dest, op) }
+            tryConsume("round ") -> parseUnary(destName) { dest, op -> Round(dest, op) }
+            tryConsume("trunc ") -> parseUnary(destName) { dest, op -> Trunc(dest, op) }
             tryConsume("copysign ") -> {
                 val (type, mag) = parseTypedValue(params)
                 expect(", ")
                 val sign = parseValue(type, params)
-                Instruction.CopySign(InstructionRef(destName, type), mag, sign)
+                CopySign(InstructionRef(destName, type), mag, sign)
             }
 
             // Bitwise
-            tryConsume("and ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Instruction.And(dest, lhs, rhs) }
-            tryConsume("or ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Instruction.Or(dest, lhs, rhs) }
-            tryConsume("xor ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Instruction.Xor(dest, lhs, rhs) }
-            tryConsume("not ") -> parseUnary(destName) { dest, op -> Instruction.Not(dest, op) }
-            tryConsume("shl") -> parseBinaryOp(destName) { dest, lhs, rhs, flags -> Instruction.Shl(dest, lhs, rhs, "nuw" in flags, "nsw" in flags) }
-            tryConsume("lshr") -> parseBinaryOp(destName) { dest, lhs, rhs, flags -> Instruction.LShr(dest, lhs, rhs, "exact" in flags) }
-            tryConsume("ashr") -> parseBinaryOp(destName) { dest, lhs, rhs, flags -> Instruction.AShr(dest, lhs, rhs, "exact" in flags) }
+            tryConsume("and ") -> parseBinarySimple(destName) { dest, lhs, rhs -> And(dest, lhs, rhs) }
+            tryConsume("or ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Or(dest, lhs, rhs) }
+            tryConsume("xor ") -> parseBinarySimple(destName) { dest, lhs, rhs -> Xor(dest, lhs, rhs) }
+            tryConsume("not ") -> parseUnary(destName) { dest, op -> Not(dest, op) }
+            tryConsume("shl") -> parseBinaryOp(destName) { dest, lhs, rhs, flags -> Shl(dest, lhs, rhs, "nuw" in flags, "nsw" in flags) }
+            tryConsume("lshr") -> parseBinaryOp(destName) { dest, lhs, rhs, flags -> LShr(dest, lhs, rhs, "exact" in flags) }
+            tryConsume("ashr") -> parseBinaryOp(destName) { dest, lhs, rhs, flags -> AShr(dest, lhs, rhs, "exact" in flags) }
             tryConsume("rotl ") -> {
                 val (type, value) = parseTypedValue(params)
                 expect(", ")
                 val amount = parseValue(type, params)
-                Instruction.RotateLeft(InstructionRef(destName, type), value, amount)
+                RotateLeft(InstructionRef(destName, type), value, amount)
             }
             tryConsume("rotr ") -> {
                 val (type, value) = parseTypedValue(params)
                 expect(", ")
                 val amount = parseValue(type, params)
-                Instruction.RotateRight(InstructionRef(destName, type), value, amount)
+                RotateRight(InstructionRef(destName, type), value, amount)
             }
 
             // Bit manipulation
             tryConsume("ctlz ") -> {
                 val (type, operand) = parseTypedValue(params)
                 val zp = tryConsume(" zero_poison")
-                Instruction.Ctlz(InstructionRef(destName, type), operand, zp)
+                Ctlz(InstructionRef(destName, type), operand, zp)
             }
             tryConsume("cttz ") -> {
                 val (type, operand) = parseTypedValue(params)
                 val zp = tryConsume(" zero_poison")
-                Instruction.Cttz(InstructionRef(destName, type), operand, zp)
+                Cttz(InstructionRef(destName, type), operand, zp)
             }
-            tryConsume("ctpop ") -> parseUnary(destName) { dest, op -> Instruction.Ctpop(dest, op) }
-            tryConsume("bswap ") -> parseUnary(destName) { dest, op -> Instruction.BSwap(dest, op) }
-            tryConsume("bitreverse ") -> parseUnary(destName) { dest, op -> Instruction.BitReverse(dest, op) }
+            tryConsume("ctpop ") -> parseUnary(destName) { dest, op -> Ctpop(dest, op) }
+            tryConsume("bswap ") -> parseUnary(destName) { dest, op -> BSwap(dest, op) }
+            tryConsume("bitreverse ") -> parseUnary(destName) { dest, op -> BitReverse(dest, op) }
 
             // Comparison
             tryConsume("icmp ") -> {
@@ -649,7 +650,7 @@ class IrParser private constructor(private val input: String) {
                 val (type, lhs) = parseTypedValue(params)
                 expect(", ")
                 val rhs = parseValue(type, params)
-                Instruction.ICmp(InstructionRef(destName, Type.I1), pred, lhs, rhs)
+                ICmp(InstructionRef(destName, Type.I1), pred, lhs, rhs)
             }
             tryConsume("fcmp") -> {
                 val fm = parseFastMathFlags()
@@ -659,7 +660,7 @@ class IrParser private constructor(private val input: String) {
                 val (type, lhs) = parseTypedValue(params)
                 expect(", ")
                 val rhs = parseValue(type, params)
-                Instruction.FCmp(InstructionRef(destName, Type.I1), pred, lhs, rhs, fm)
+                FCmp(InstructionRef(destName, Type.I1), pred, lhs, rhs, fm)
             }
 
             // Memory
@@ -673,7 +674,7 @@ class IrParser private constructor(private val input: String) {
                     if (tryConsume(", ")) { /* fall through to align */ }
                 }
                 if (tryConsume("align ")) align = parseInt()
-                Instruction.Alloca(InstructionRef(destName, Type.OpaquePointer), allocType, numElements, align)
+                Alloca(InstructionRef(destName, Type.OpaquePointer), allocType, numElements, align)
             }
             tryConsume("load ") -> {
                 val volatile = tryConsume("volatile ")
@@ -684,7 +685,7 @@ class IrParser private constructor(private val input: String) {
                 var ordering: AtomicOrdering? = null
                 if (tryConsume(", align ")) align = parseInt()
                 if (tryConsume(" ")) ordering = tryParseAtomicOrdering()
-                Instruction.Load(InstructionRef(destName, loadType), ptr, loadType, align, volatile, ordering)
+                Load(InstructionRef(destName, loadType), ptr, loadType, align, volatile, ordering)
             }
             tryConsume("getelementptr") -> {
                 val inBounds = tryConsume(" inbounds")
@@ -697,7 +698,7 @@ class IrParser private constructor(private val input: String) {
                     val (_, idx) = parseTypedValue(params)
                     indices.add(idx)
                 }
-                Instruction.GetElementPtr(InstructionRef(destName, Type.OpaquePointer), baseType, ptr, indices, inBounds)
+                GetElementPtr(InstructionRef(destName, Type.OpaquePointer), baseType, ptr, indices, inBounds)
             }
 
             // Atomics
@@ -714,7 +715,7 @@ class IrParser private constructor(private val input: String) {
                 val succOrd = parseEnumValue<AtomicOrdering>()
                 expect(" ")
                 val failOrd = parseEnumValue<AtomicOrdering>()
-                Instruction.CmpXchg(InstructionRef(destName, Type.Struct(null, listOf(cmpType, Type.I1))), ptr, cmp, newVal, succOrd, failOrd, weak, volatile)
+                CmpXchg(InstructionRef(destName, Type.Struct(null, listOf(cmpType, Type.I1))), ptr, cmp, newVal, succOrd, failOrd, weak, volatile)
             }
             tryConsume("atomicrmw") -> {
                 val volatile = tryConsume(" volatile")
@@ -726,36 +727,36 @@ class IrParser private constructor(private val input: String) {
                 val (type, value) = parseTypedValue(params)
                 expect(" ")
                 val ordering = parseEnumValue<AtomicOrdering>()
-                Instruction.AtomicRMW(InstructionRef(destName, type), op, ptr, value, ordering, volatile)
+                AtomicRMW(InstructionRef(destName, type), op, ptr, value, ordering, volatile)
             }
 
             // Stack
-            tryConsume("stacksave") -> Instruction.StackSave(InstructionRef(destName, Type.OpaquePointer))
+            tryConsume("stacksave") -> StackSave(InstructionRef(destName, Type.OpaquePointer))
 
             // Conversions
-            tryConsume("inttrunc ") -> parseConversion(destName, params) { dest, value, toType -> Instruction.IntTrunc(dest, value, toType) }
-            tryConsume("zext ") -> parseConversion(destName, params) { dest, value, toType -> Instruction.ZExt(dest, value, toType) }
-            tryConsume("sext ") -> parseConversion(destName, params) { dest, value, toType -> Instruction.SExt(dest, value, toType) }
-            tryConsume("fptrunc ") -> parseConversion(destName, params) { dest, value, toType -> Instruction.FPTrunc(dest, value, toType) }
-            tryConsume("fpext ") -> parseConversion(destName, params) { dest, value, toType -> Instruction.FPExt(dest, value, toType) }
-            tryConsume("fptoui ") -> parseConversion(destName, params) { dest, value, toType -> Instruction.FPToUI(dest, value, toType) }
-            tryConsume("fptosi ") -> parseConversion(destName, params) { dest, value, toType -> Instruction.FPToSI(dest, value, toType) }
-            tryConsume("uitofp ") -> parseConversion(destName, params) { dest, value, toType -> Instruction.UIToFP(dest, value, toType) }
-            tryConsume("sitofp ") -> parseConversion(destName, params) { dest, value, toType -> Instruction.SIToFP(dest, value, toType) }
+            tryConsume("inttrunc ") -> parseConversion(destName, params) { dest, value, toType -> IntTrunc(dest, value, toType) }
+            tryConsume("zext ") -> parseConversion(destName, params) { dest, value, toType -> ZExt(dest, value, toType) }
+            tryConsume("sext ") -> parseConversion(destName, params) { dest, value, toType -> SExt(dest, value, toType) }
+            tryConsume("fptrunc ") -> parseConversion(destName, params) { dest, value, toType -> FPTrunc(dest, value, toType) }
+            tryConsume("fpext ") -> parseConversion(destName, params) { dest, value, toType -> FPExt(dest, value, toType) }
+            tryConsume("fptoui ") -> parseConversion(destName, params) { dest, value, toType -> FPToUI(dest, value, toType) }
+            tryConsume("fptosi ") -> parseConversion(destName, params) { dest, value, toType -> FPToSI(dest, value, toType) }
+            tryConsume("uitofp ") -> parseConversion(destName, params) { dest, value, toType -> UIToFP(dest, value, toType) }
+            tryConsume("sitofp ") -> parseConversion(destName, params) { dest, value, toType -> SIToFP(dest, value, toType) }
             tryConsume("ptrtoint ") -> {
                 expect("ptr ")
                 val value = parseValue(Type.OpaquePointer, params)
                 expect(" to ")
                 val toType = parseType()
-                Instruction.PtrToInt(InstructionRef(destName, toType), value, toType)
+                PtrToInt(InstructionRef(destName, toType), value, toType)
             }
             tryConsume("inttoptr ") -> {
                 val (fromType, value) = parseTypedValue(params)
                 expect(" to ptr")
-                Instruction.IntToPtr(InstructionRef(destName, Type.OpaquePointer), value, Type.OpaquePointer)
+                IntToPtr(InstructionRef(destName, Type.OpaquePointer), value, Type.OpaquePointer)
             }
-            tryConsume("bitcast ") -> parseConversion(destName, params) { dest, value, toType -> Instruction.BitCast(dest, value, toType) }
-            tryConsume("addrspacecast ") -> parseConversion(destName, params) { dest, value, toType -> Instruction.AddrSpaceCast(dest, value, toType) }
+            tryConsume("bitcast ") -> parseConversion(destName, params) { dest, value, toType -> BitCast(dest, value, toType) }
+            tryConsume("addrspacecast ") -> parseConversion(destName, params) { dest, value, toType -> AddrSpaceCast(dest, value, toType) }
 
             // Calls
             tryConsume("tail call ") || tryConsume("musttail call ") || tryConsume("notail call ") || tryConsume("call ") -> {
@@ -775,7 +776,7 @@ class IrParser private constructor(private val input: String) {
                 val args = parseCallArgs(params)
                 expect(")")
                 val dest = if (retType != Type.Void) InstructionRef(destName, retType) else null
-                Instruction.Call(dest, function, args, retType, cc, tailKind)
+                Call(dest, function, args, retType, cc, tailKind)
             }
             tryConsume("invoke ") -> {
                 val retType = parseType()
@@ -789,7 +790,7 @@ class IrParser private constructor(private val input: String) {
                 expect(" unwind label %")
                 val unwindDest = parseIdent()
                 val dest = if (retType != Type.Void) InstructionRef(destName, retType) else null
-                Instruction.Invoke(dest, function, args, retType, normalDest, unwindDest)
+                Invoke(dest, function, args, retType, normalDest, unwindDest)
             }
             tryConsume("callbr ") -> {
                 val retType = parseType()
@@ -809,7 +810,7 @@ class IrParser private constructor(private val input: String) {
                 }
                 expect("]")
                 val dest = if (retType != Type.Void) InstructionRef(destName, retType) else null
-                Instruction.CallBr(dest, function, args, retType, fallthrough, indirect)
+                CallBr(dest, function, args, retType, fallthrough, indirect)
             }
 
             // Varargs
@@ -817,7 +818,7 @@ class IrParser private constructor(private val input: String) {
                 val argList = parseValue(Type.OpaquePointer, params)
                 expect(", ")
                 val argType = parseType()
-                Instruction.VAArg(InstructionRef(destName, argType), argList, argType)
+                VAArg(InstructionRef(destName, argType), argList, argType)
             }
 
             // Exception handling
@@ -846,7 +847,7 @@ class IrParser private constructor(private val input: String) {
                     }
                     skipWhitespace()
                 }
-                Instruction.LandingPad(InstructionRef(destName, resultType), resultType, clauses, cleanup)
+                LandingPad(InstructionRef(destName, resultType), resultType, clauses, cleanup)
             }
             tryConsume("catchswitch within ") -> {
                 val parentPad = if (tryConsume("none")) null else parseValue(Type.Token, params)
@@ -860,7 +861,7 @@ class IrParser private constructor(private val input: String) {
                 expect("]")
                 val unwindDest = if (tryConsume(" unwind label %")) parseIdent()
                 else { tryConsume(" unwind to caller"); null }
-                Instruction.CatchSwitch(InstructionRef(destName, Type.Token), parentPad, handlers, unwindDest)
+                CatchSwitch(InstructionRef(destName, Type.Token), parentPad, handlers, unwindDest)
             }
             tryConsume("catchpad within ") -> {
                 val catchSwitch = parseValue(Type.Token, params)
@@ -872,7 +873,7 @@ class IrParser private constructor(private val input: String) {
                     args.add(v)
                 }
                 expect("]")
-                Instruction.CatchPad(InstructionRef(destName, Type.Token), catchSwitch, args)
+                CatchPad(InstructionRef(destName, Type.Token), catchSwitch, args)
             }
             tryConsume("cleanuppad within ") -> {
                 val parentPad = if (tryConsume("none")) null else parseValue(Type.Token, params)
@@ -884,7 +885,7 @@ class IrParser private constructor(private val input: String) {
                     args.add(v)
                 }
                 expect("]")
-                Instruction.CleanupPad(InstructionRef(destName, Type.Token), parentPad, args)
+                CleanupPad(InstructionRef(destName, Type.Token), parentPad, args)
             }
 
             // SSA
@@ -900,7 +901,7 @@ class IrParser private constructor(private val input: String) {
                     expect("]")
                     incoming.add(v to block)
                 } while (tryConsume(", "))
-                Instruction.Phi(InstructionRef(destName, type), incoming)
+                Phi(InstructionRef(destName, type), incoming)
             }
             tryConsume("select ") -> {
                 parseType() // i1
@@ -910,11 +911,11 @@ class IrParser private constructor(private val input: String) {
                 val (trueType, trueVal) = parseTypedValue(params)
                 expect(", ")
                 val (_, falseVal) = parseTypedValue(params)
-                Instruction.Select(InstructionRef(destName, trueType), cond, trueVal, falseVal)
+                Select(InstructionRef(destName, trueType), cond, trueVal, falseVal)
             }
             tryConsume("freeze ") -> {
                 val (type, value) = parseTypedValue(params)
-                Instruction.Freeze(InstructionRef(destName, type), value)
+                Freeze(InstructionRef(destName, type), value)
             }
 
             // Vector
@@ -923,7 +924,7 @@ class IrParser private constructor(private val input: String) {
                 expect(", ")
                 val (_, index) = parseTypedValue(params)
                 val elemType = (vecType as Type.Vector).element
-                Instruction.ExtractElement(InstructionRef(destName, elemType), vector, index)
+                ExtractElement(InstructionRef(destName, elemType), vector, index)
             }
             tryConsume("insertelement ") -> {
                 val (vecType, vector) = parseTypedValue(params)
@@ -931,7 +932,7 @@ class IrParser private constructor(private val input: String) {
                 val (_, element) = parseTypedValue(params)
                 expect(", ")
                 val (_, index) = parseTypedValue(params)
-                Instruction.InsertElement(InstructionRef(destName, vecType), vector, element, index)
+                InsertElement(InstructionRef(destName, vecType), vector, element, index)
             }
             tryConsume("shufflevector ") -> {
                 val (v1Type, v1) = parseTypedValue(params)
@@ -944,13 +945,13 @@ class IrParser private constructor(private val input: String) {
                     mask.add(parseInt())
                 }
                 expect(">")
-                Instruction.ShuffleVector(InstructionRef(destName, v1Type), v1, v2, mask)
+                ShuffleVector(InstructionRef(destName, v1Type), v1, v2, mask)
             }
             tryConsume("splat ") -> {
                 val (_, scalar) = parseTypedValue(params)
                 expect(" to ")
                 val vectorType = parseType()
-                Instruction.Splat(InstructionRef(destName, vectorType), scalar, vectorType as Type.Vector)
+                Splat(InstructionRef(destName, vectorType), scalar, vectorType as Type.Vector)
             }
             tryConsume("vector.reduce.") -> {
                 val opName = parseIdent()
@@ -958,7 +959,7 @@ class IrParser private constructor(private val input: String) {
                 expect(" ")
                 val (_, vector) = parseTypedValue(params)
                 val elemType = (vector.type as Type.Vector).element
-                Instruction.VectorReduce(InstructionRef(destName, elemType), op, vector)
+                VectorReduce(InstructionRef(destName, elemType), op, vector)
             }
 
             // Aggregate
@@ -969,7 +970,7 @@ class IrParser private constructor(private val input: String) {
                 do {
                     indices.add(parseInt())
                 } while (tryConsume(", "))
-                Instruction.ExtractValue(InstructionRef(destName, Type.I32), aggregate, indices)
+                ExtractValue(InstructionRef(destName, Type.I32), aggregate, indices)
             }
             tryConsume("insertvalue ") -> {
                 val (aggType, aggregate) = parseTypedValue(params)
@@ -980,7 +981,7 @@ class IrParser private constructor(private val input: String) {
                 do {
                     indices.add(parseInt())
                 } while (tryConsume(", "))
-                Instruction.InsertValue(InstructionRef(destName, aggType), aggregate, element, indices)
+                InsertValue(InstructionRef(destName, aggType), aggregate, element, indices)
             }
 
             // High-level: Objects
@@ -993,13 +994,13 @@ class IrParser private constructor(private val input: String) {
                     } while (tryConsume(", "))
                     expect(">")
                 }
-                Instruction.NewObject(InstructionRef(destName, Type.ClassRef(className)), className, typeArgs)
+                NewObject(InstructionRef(destName, Type.ClassRef(className)), className, typeArgs)
             }
             tryConsume("newarray ") -> {
                 val elemType = parseType()
                 expect(", ")
                 val (_, size) = parseTypedValue(params)
-                Instruction.NewArray(InstructionRef(destName, Type.Array(elemType, 0L)), elemType, size)
+                NewArray(InstructionRef(destName, Type.Array(elemType, 0L)), elemType, size)
             }
             tryConsume("newmultiarray ") -> {
                 val elemType = parseType()
@@ -1011,7 +1012,7 @@ class IrParser private constructor(private val input: String) {
                     dims.add(d)
                 }
                 expect("]")
-                Instruction.NewMultiArray(InstructionRef(destName, Type.Array(elemType, 0L)), elemType, dims)
+                NewMultiArray(InstructionRef(destName, Type.Array(elemType, 0L)), elemType, dims)
             }
 
             // High-level: Fields
@@ -1021,13 +1022,13 @@ class IrParser private constructor(private val input: String) {
                 val fieldType = parseType()
                 expect(", ")
                 val obj = parseValue(Type.ClassRef(className), params)
-                Instruction.GetField(InstructionRef(destName, fieldType), obj, className, fieldName, fieldType)
+                GetField(InstructionRef(destName, fieldType), obj, className, fieldName, fieldType)
             }
             tryConsume("getstatic ") -> {
                 val (className, fieldName) = parseDotted()
                 expect(": ")
                 val fieldType = parseType()
-                Instruction.GetStatic(InstructionRef(destName, fieldType), className, fieldName, fieldType)
+                GetStatic(InstructionRef(destName, fieldType), className, fieldName, fieldType)
             }
 
             // High-level: Dispatch
@@ -1042,17 +1043,17 @@ class IrParser private constructor(private val input: String) {
                 val obj = parseValue(Type.ClassRef(""), params)
                 expect(", ")
                 val checkType = parseType()
-                Instruction.InstanceOf(InstructionRef(destName, Type.I1), obj, checkType)
+                InstanceOf(InstructionRef(destName, Type.I1), obj, checkType)
             }
             tryConsume("checkcast ") -> {
                 val obj = parseValue(Type.ClassRef(""), params)
                 expect(" to ")
                 val castType = parseType()
-                Instruction.CheckCast(InstructionRef(destName, castType), obj, castType)
+                CheckCast(InstructionRef(destName, castType), obj, castType)
             }
             tryConsume("typeid ") -> {
                 val obj = parseValue(Type.ClassRef(""), params)
-                Instruction.TypeId(InstructionRef(destName, Type.I32), obj)
+                TypeId(InstructionRef(destName, Type.I32), obj)
             }
 
             // High-level: Managed arrays
@@ -1062,11 +1063,11 @@ class IrParser private constructor(private val input: String) {
                 val array = parseValue(Type.Array(elemType, 0L), params)
                 expect(", ")
                 val index = parseValue(Type.I32, params)
-                Instruction.ArrayGet(InstructionRef(destName, elemType), array, index, elemType)
+                ArrayGet(InstructionRef(destName, elemType), array, index, elemType)
             }
             tryConsume("arraylength ") -> {
                 val array = parseValue(Type.Array(Type.I32, 0), params)
-                Instruction.ArrayLength(InstructionRef(destName, Type.I32), array)
+                ArrayLength(InstructionRef(destName, Type.I32), array)
             }
 
             // High-level: Box/unbox
@@ -1074,13 +1075,13 @@ class IrParser private constructor(private val input: String) {
                 val (_, value) = parseTypedValue(params)
                 expect(" to ")
                 val boxType = parseType()
-                Instruction.Box(InstructionRef(destName, boxType), value, boxType)
+                Box(InstructionRef(destName, boxType), value, boxType)
             }
             tryConsume("unbox ") -> {
                 val obj = parseValue(Type.ClassRef(""), params)
                 expect(" to ")
                 val unboxType = parseType()
-                Instruction.Unbox(InstructionRef(destName, unboxType), obj, unboxType)
+                Unbox(InstructionRef(destName, unboxType), obj, unboxType)
             }
 
             // High-level: Closures
@@ -1096,7 +1097,7 @@ class IrParser private constructor(private val input: String) {
                 expect("]")
                 expect(": ")
                 val closureType = parseType()
-                Instruction.ClosureCreate(InstructionRef(destName, closureType), function, captures, closureType as Type.Function)
+                ClosureCreate(InstructionRef(destName, closureType), function, captures, closureType as Type.Function)
             }
             tryConsume("closure.invoke ") -> {
                 val closure = parseValue(Type.Void, params)
@@ -1106,7 +1107,7 @@ class IrParser private constructor(private val input: String) {
                 expect(": ")
                 val retType = parseType()
                 val dest = if (retType != Type.Void) InstructionRef(destName, retType) else null
-                Instruction.ClosureInvoke(dest, closure, args, retType)
+                ClosureInvoke(dest, closure, args, retType)
             }
 
             // High-level: Tagged unions
@@ -1122,11 +1123,11 @@ class IrParser private constructor(private val input: String) {
                     fields.add(v)
                 }
                 expect(")")
-                Instruction.ConstructVariant(InstructionRef(destName, unionType), unionType as Type.TaggedUnion, variantName, fields)
+                ConstructVariant(InstructionRef(destName, unionType), unionType as Type.TaggedUnion, variantName, fields)
             }
             tryConsume("gettag ") -> {
                 val union = parseValue(Type.I32, params)
-                Instruction.GetTag(InstructionRef(destName, Type.I32), union)
+                GetTag(InstructionRef(destName, Type.I32), union)
             }
             tryConsume("getvariantfield ") -> {
                 val union = parseValue(Type.I32, params)
@@ -1135,7 +1136,7 @@ class IrParser private constructor(private val input: String) {
                 expect("[")
                 val fieldIndex = parseInt()
                 expect("]")
-                Instruction.GetVariantField(InstructionRef(destName, Type.I32), union, variantName, fieldIndex)
+                GetVariantField(InstructionRef(destName, Type.I32), union, variantName, fieldIndex)
             }
 
             // GC
@@ -1146,14 +1147,14 @@ class IrParser private constructor(private val input: String) {
                     val (_, s) = parseTypedValue(params)
                     size = s
                 }
-                Instruction.GCAlloc(InstructionRef(destName, Type.OpaquePointer), allocType, size)
+                GCAlloc(InstructionRef(destName, Type.OpaquePointer), allocType, size)
             }
             tryConsume("gc.pin ") -> {
                 val refType = parseType()
                 expect(" ")
                 val ref = parseValue(refType, params)
                 val referent = (refType as? Type.Reference)?.referent ?: Type.OpaquePointer
-                Instruction.Pin(InstructionRef(destName, Type.PinnedRef(referent)), ref)
+                Pin(InstructionRef(destName, Type.PinnedRef(referent)), ref)
             }
             tryConsume("gc.interior_ptr ") -> {
                 val refType = parseType()
@@ -1165,13 +1166,13 @@ class IrParser private constructor(private val input: String) {
                 val index = parseValue(idxType, params)
                 expect(", ")
                 val pointeeType = parseType()
-                Instruction.InteriorPtr(InstructionRef(destName, Type.InteriorRef(pointeeType)), ref, index, pointeeType)
+                InteriorPtr(InstructionRef(destName, Type.InteriorRef(pointeeType)), ref, index, pointeeType)
             }
             tryConsume("gc.read_barrier ") -> {
                 val refType = parseType()
                 expect(" ")
                 val ref = parseValue(refType, params)
-                Instruction.ReadBarrier(InstructionRef(destName, refType), ref)
+                ReadBarrier(InstructionRef(destName, refType), ref)
             }
             tryConsume("managed.call ") -> {
                 val direction = if (tryConsume("managed_to_native ")) ManagedCallDirection.MANAGED_TO_NATIVE
@@ -1189,13 +1190,13 @@ class IrParser private constructor(private val input: String) {
                     expect(")")
                 }
                 val dest = if (retType == Type.Void) null else InstructionRef(destName, retType)
-                Instruction.ManagedCall(dest, function, args, retType, direction)
+                ManagedCall(dest, function, args, retType, direction)
             }
 
             // Refcounting
             tryConsume("ref.count ") -> {
                 val obj = parseValue(Type.ClassRef(""), params)
-                Instruction.RefCount(InstructionRef(destName, Type.I32), obj)
+                RefCount(InstructionRef(destName, Type.I32), obj)
             }
 
             // Coroutines
@@ -1203,7 +1204,7 @@ class IrParser private constructor(private val input: String) {
                 val id = parseValue(Type.Token, params)
                 expect(", ")
                 val mem = parseValue(Type.OpaquePointer, params)
-                Instruction.CoroBegin(InstructionRef(destName, Type.OpaquePointer), id, mem)
+                CoroBegin(InstructionRef(destName, Type.OpaquePointer), id, mem)
             }
             tryConsume("coro.suspend") -> {
                 var save: Value? = null
@@ -1212,10 +1213,10 @@ class IrParser private constructor(private val input: String) {
                     save = parseValue(Type.Token, params)
                 }
                 if (tryConsume("final") || tryConsume(" final")) isFinal = true
-                Instruction.CoroSuspend(InstructionRef(destName, Type.I8), save, isFinal)
+                CoroSuspend(InstructionRef(destName, Type.I8), save, isFinal)
             }
             tryConsume("coro.size") -> {
-                Instruction.CoroSize(InstructionRef(destName, Type.I64))
+                CoroSize(InstructionRef(destName, Type.I64))
             }
 
             // Intrinsic
@@ -1227,7 +1228,7 @@ class IrParser private constructor(private val input: String) {
                 expect(": ")
                 val retType = parseType()
                 val dest = if (retType != Type.Void) InstructionRef(destName, retType) else null
-                Instruction.Intrinsic(dest, intrName, args, retType)
+                Intrinsic(dest, intrName, args, retType)
             }
 
             // Inline assembly
@@ -1241,7 +1242,7 @@ class IrParser private constructor(private val input: String) {
                 val args = parseCallArgs(params)
                 expect(")")
                 val dest = InstructionRef(destName, Type.I32)
-                Instruction.InlineAsm(dest, assembly, constraints, sideEffects = sideEffects, args = args)
+                InlineAsm(dest, assembly, constraints, sideEffects = sideEffects, args = args)
             }
 
             // Hints
@@ -1249,7 +1250,7 @@ class IrParser private constructor(private val input: String) {
                 val (type, value) = parseTypedValue(params)
                 expect(", ")
                 val expected = parseConstant(type)
-                Instruction.Expect(InstructionRef(destName, type), value, expected)
+                Expect(InstructionRef(destName, type), value, expected)
             }
 
             else -> error("Unknown instruction at pos $pos: ${input.substring(pos, (pos + 40).coerceAtMost(length))}")
@@ -1258,12 +1259,12 @@ class IrParser private constructor(private val input: String) {
 
     private fun parseInstructionNoDest(params: List<Parameter>): Instruction? {
         return when {
-            tryConsume("ret void") -> Instruction.Ret(null)
+            tryConsume("ret void") -> Ret(null)
             tryConsume("ret ") -> {
                 val (_, value) = parseTypedValue(params)
-                Instruction.Ret(value)
+                Ret(value)
             }
-            tryConsume("br label %") -> Instruction.Br(parseIdent())
+            tryConsume("br label %") -> Br(parseIdent())
             tryConsume("br ") -> {
                 parseType() // i1
                 expect(" ")
@@ -1272,7 +1273,7 @@ class IrParser private constructor(private val input: String) {
                 val trueTarget = parseIdent()
                 expect(", label %")
                 val falseTarget = parseIdent()
-                Instruction.CondBr(cond, trueTarget, falseTarget)
+                CondBr(cond, trueTarget, falseTarget)
             }
             tryConsume("switch ") -> {
                 val (type, value) = parseTypedValue(params)
@@ -1288,7 +1289,7 @@ class IrParser private constructor(private val input: String) {
                     if (!lookingAt("]")) tryConsume(", ")
                 }
                 expect("]")
-                Instruction.Switch(value, defaultTarget, cases)
+                Switch(value, defaultTarget, cases)
             }
             tryConsume("indirectbr ptr ") -> {
                 val address = parseValue(Type.OpaquePointer, params)
@@ -1300,11 +1301,11 @@ class IrParser private constructor(private val input: String) {
                     targets.add(parseIdent())
                 }
                 expect("]")
-                Instruction.IndirectBr(address, targets)
+                IndirectBr(address, targets)
             }
-            tryConsume("unreachable") -> Instruction.Unreachable()
-            tryConsume("trap") -> Instruction.Trap()
-            tryConsume("debugtrap") -> Instruction.DebugTrap()
+            tryConsume("unreachable") -> Unreachable()
+            tryConsume("trap") -> Trap()
+            tryConsume("debugtrap") -> DebugTrap()
 
             tryConsume("store ") -> {
                 val volatile = tryConsume("volatile ")
@@ -1315,7 +1316,7 @@ class IrParser private constructor(private val input: String) {
                 var ordering: AtomicOrdering? = null
                 if (tryConsume(", align ")) align = parseInt()
                 if (tryConsume(" ")) ordering = tryParseAtomicOrdering()
-                Instruction.Store(value, ptr, align, volatile, ordering)
+                Store(value, ptr, align, volatile, ordering)
             }
             tryConsume("fence") -> {
                 var syncScope: String? = null
@@ -1325,7 +1326,7 @@ class IrParser private constructor(private val input: String) {
                 }
                 expect(" ")
                 val ordering = parseEnumValue<AtomicOrdering>()
-                Instruction.Fence(ordering, syncScope)
+                Fence(ordering, syncScope)
             }
             tryConsume("memcpy ptr ") -> {
                 val dst = parseValue(Type.OpaquePointer, params)
@@ -1334,7 +1335,7 @@ class IrParser private constructor(private val input: String) {
                 expect(", ")
                 val (_, len) = parseTypedValue(params)
                 val volatile = tryConsume(" volatile")
-                Instruction.MemCpy(dst, src, len, volatile)
+                MemCpy(dst, src, len, volatile)
             }
             tryConsume("memset ptr ") -> {
                 val dst = parseValue(Type.OpaquePointer, params)
@@ -1343,7 +1344,7 @@ class IrParser private constructor(private val input: String) {
                 expect(", ")
                 val (_, len) = parseTypedValue(params)
                 val volatile = tryConsume(" volatile")
-                Instruction.MemSet(dst, value, len, volatile)
+                MemSet(dst, value, len, volatile)
             }
             tryConsume("memmove ptr ") -> {
                 val dst = parseValue(Type.OpaquePointer, params)
@@ -1352,7 +1353,7 @@ class IrParser private constructor(private val input: String) {
                 expect(", ")
                 val (_, len) = parseTypedValue(params)
                 val volatile = tryConsume(" volatile")
-                Instruction.MemMove(dst, src, len, volatile)
+                MemMove(dst, src, len, volatile)
             }
             tryConsume("prefetch ptr ") -> {
                 val address = parseValue(Type.OpaquePointer, params)
@@ -1362,51 +1363,51 @@ class IrParser private constructor(private val input: String) {
                 val locality = parseInt()
                 expect(", ")
                 val cacheType = parseInt()
-                Instruction.Prefetch(address, rw, locality, cacheType)
+                Prefetch(address, rw, locality, cacheType)
             }
             tryConsume("stackrestore ") -> {
                 val ptr = parseValue(Type.OpaquePointer, params)
-                Instruction.StackRestore(ptr)
+                StackRestore(ptr)
             }
             tryConsume("lifetime.start ptr ") -> {
                 val ptr = parseValue(Type.OpaquePointer, params)
                 expect(", ")
                 val size = parseLong()
-                Instruction.LifetimeStart(ptr, size)
+                LifetimeStart(ptr, size)
             }
             tryConsume("lifetime.end ptr ") -> {
                 val ptr = parseValue(Type.OpaquePointer, params)
                 expect(", ")
                 val size = parseLong()
-                Instruction.LifetimeEnd(ptr, size)
+                LifetimeEnd(ptr, size)
             }
 
             // Varargs
-            tryConsume("va_start ") -> Instruction.VAStart(parseValue(Type.OpaquePointer, params))
-            tryConsume("va_end ") -> Instruction.VAEnd(parseValue(Type.OpaquePointer, params))
+            tryConsume("va_start ") -> VAStart(parseValue(Type.OpaquePointer, params))
+            tryConsume("va_end ") -> VAEnd(parseValue(Type.OpaquePointer, params))
             tryConsume("va_copy ") -> {
                 val dst = parseValue(Type.OpaquePointer, params)
                 expect(", ")
                 val src = parseValue(Type.OpaquePointer, params)
-                Instruction.VACopy(dst, src)
+                VACopy(dst, src)
             }
 
             // Exception handling
             tryConsume("resume ") -> {
                 val (_, value) = parseTypedValue(params)
-                Instruction.Resume(value)
+                Resume(value)
             }
             tryConsume("catchret from ") -> {
                 val catchPad = parseValue(Type.Token, params)
                 expect(" to label %")
                 val dest = parseIdent()
-                Instruction.CatchRet(catchPad, dest)
+                CatchRet(catchPad, dest)
             }
             tryConsume("cleanupret from ") -> {
                 val cleanupPad = parseValue(Type.Token, params)
                 val unwindDest = if (tryConsume(" unwind label %")) parseIdent()
                 else { tryConsume(" unwind to caller"); null }
-                Instruction.CleanupRet(cleanupPad, unwindDest)
+                CleanupRet(cleanupPad, unwindDest)
             }
 
             // Calls without dest
@@ -1426,7 +1427,7 @@ class IrParser private constructor(private val input: String) {
                 expect("(")
                 val args = parseCallArgs(params)
                 expect(")")
-                Instruction.Call(null, function, args, retType, cc, tailKind)
+                Call(null, function, args, retType, cc, tailKind)
             }
             tryConsume("invoke ") -> {
                 val retType = parseType()
@@ -1439,7 +1440,7 @@ class IrParser private constructor(private val input: String) {
                 val normalDest = parseIdent()
                 expect(" unwind label %")
                 val unwindDest = parseIdent()
-                Instruction.Invoke(null, function, args, retType, normalDest, unwindDest)
+                Invoke(null, function, args, retType, normalDest, unwindDest)
             }
 
             // High-level: Fields (no dest)
@@ -1451,7 +1452,7 @@ class IrParser private constructor(private val input: String) {
                 val obj = parseValue(Type.ClassRef(className), params)
                 expect(", ")
                 val value = parseValue(fieldType, params)
-                Instruction.PutField(obj, className, fieldName, fieldType, value)
+                PutField(obj, className, fieldName, fieldType, value)
             }
             tryConsume("putstatic ") -> {
                 val (className, fieldName) = parseDotted()
@@ -1459,7 +1460,7 @@ class IrParser private constructor(private val input: String) {
                 val fieldType = parseType()
                 expect(", ")
                 val value = parseValue(fieldType, params)
-                Instruction.PutStatic(className, fieldName, fieldType, value)
+                PutStatic(className, fieldName, fieldType, value)
             }
 
             // High-level: Dispatch (no dest)
@@ -1479,7 +1480,7 @@ class IrParser private constructor(private val input: String) {
                 }
                 expect(")")
                 val ctorType = Type.Function(args.map { it.type }, Type.Void)
-                Instruction.ConstructorCall(obj, className, ctorType, args)
+                ConstructorCall(obj, className, ctorType, args)
             }
 
             // High-level: Managed arrays (no dest)
@@ -1491,15 +1492,15 @@ class IrParser private constructor(private val input: String) {
                 val index = parseValue(Type.I32, params)
                 expect(", ")
                 val value = parseValue(elemType, params)
-                Instruction.ArraySet(array, index, value, elemType)
+                ArraySet(array, index, value, elemType)
             }
 
             // High-level: Monitors
-            tryConsume("monitorenter ") -> Instruction.MonitorEnter(parseValue(Type.ClassRef(""), params))
-            tryConsume("monitorexit ") -> Instruction.MonitorExit(parseValue(Type.ClassRef(""), params))
+            tryConsume("monitorenter ") -> MonitorEnter(parseValue(Type.ClassRef(""), params))
+            tryConsume("monitorexit ") -> MonitorExit(parseValue(Type.ClassRef(""), params))
 
             // High-level: Exceptions
-            tryConsume("throw ") -> Instruction.Throw(parseValue(Type.ClassRef(""), params))
+            tryConsume("throw ") -> Throw(parseValue(Type.ClassRef(""), params))
             tryConsume("trycatch %") -> {
                 val tryBlock = parseIdent()
                 expect(" [")
@@ -1514,7 +1515,7 @@ class IrParser private constructor(private val input: String) {
                 }
                 expect("]")
                 val finallyBlock = if (tryConsume(" finally %")) parseIdent() else null
-                Instruction.TryCatchRegion(tryBlock, catches, finallyBlock)
+                TryCatchRegion(tryBlock, catches, finallyBlock)
             }
 
             // High-level: Tagged unions
@@ -1535,21 +1536,21 @@ class IrParser private constructor(private val input: String) {
                     }
                 }
                 expect("]")
-                Instruction.TagSwitch(union, cases, defaultTarget)
+                TagSwitch(union, cases, defaultTarget)
             }
 
             // GC
-            tryConsume("gc.safepoint") -> Instruction.GCSafepoint()
+            tryConsume("gc.safepoint") -> GCSafepoint()
             tryConsume("gc.root ") -> {
                 val ptr = parseValue(Type.OpaquePointer, params)
                 val metadata = if (tryConsume(", ")) parseValue(Type.Metadata, params) else null
-                Instruction.GCRoot(ptr, metadata)
+                GCRoot(ptr, metadata)
             }
             tryConsume("gc.unpin ") -> {
                 val refType = parseType()
                 expect(" ")
                 val ref = parseValue(refType, params)
-                Instruction.Unpin(ref)
+                Unpin(ref)
             }
             tryConsume("gc.write_barrier ") -> {
                 val objType = parseType()
@@ -1563,7 +1564,7 @@ class IrParser private constructor(private val input: String) {
                 val valType = parseType()
                 expect(" ")
                 val value = parseValue(valType, params)
-                Instruction.WriteBarrier(obj, fieldIndex, value)
+                WriteBarrier(obj, fieldIndex, value)
             }
 
             tryConsume("managed.call ") -> {
@@ -1581,21 +1582,21 @@ class IrParser private constructor(private val input: String) {
                     } while (tryConsume(", "))
                     expect(")")
                 }
-                Instruction.ManagedCall(null, function, args, retType, direction)
+                ManagedCall(null, function, args, retType, direction)
             }
 
             // Refcounting
-            tryConsume("ref.retain ") -> Instruction.RefRetain(parseValue(Type.ClassRef(""), params))
-            tryConsume("ref.release ") -> Instruction.RefRelease(parseValue(Type.ClassRef(""), params))
+            tryConsume("ref.retain ") -> RefRetain(parseValue(Type.ClassRef(""), params))
+            tryConsume("ref.release ") -> RefRelease(parseValue(Type.ClassRef(""), params))
 
             // Coroutines
             tryConsume("coro.end ") -> {
                 val handle = parseValue(Type.OpaquePointer, params)
                 val unwind = tryConsume(" unwind")
-                Instruction.CoroEnd(handle, unwind)
+                CoroEnd(handle, unwind)
             }
-            tryConsume("coro.resume ") -> Instruction.CoroResume(parseValue(Type.OpaquePointer, params))
-            tryConsume("coro.destroy ") -> Instruction.CoroDestroy(parseValue(Type.OpaquePointer, params))
+            tryConsume("coro.resume ") -> CoroResume(parseValue(Type.OpaquePointer, params))
+            tryConsume("coro.destroy ") -> CoroDestroy(parseValue(Type.OpaquePointer, params))
 
             // Debug
             tryConsume("dbg.loc ") -> {
@@ -1605,25 +1606,25 @@ class IrParser private constructor(private val input: String) {
                 expect(" scope ")
                 val scope = parseString()
                 val inlinedAt = if (tryConsume(" inlined_at ")) parseString() else null
-                Instruction.DebugLoc(line, col, scope, inlinedAt)
+                DebugLoc(line, col, scope, inlinedAt)
             }
             tryConsume("dbg.value ") -> {
                 val variable = parseString()
                 expect(" = ")
                 val value = parseValue(Type.I32, params)
                 val expression = if (tryConsume(" expr ")) parseString() else null
-                Instruction.DebugValue(variable, value, expression)
+                DebugValue(variable, value, expression)
             }
             tryConsume("dbg.declare ") -> {
                 val variable = parseString()
                 expect(" = ")
                 val address = parseValue(Type.OpaquePointer, params)
                 val expression = if (tryConsume(" expr ")) parseString() else null
-                Instruction.DebugDeclare(variable, address, expression)
+                DebugDeclare(variable, address, expression)
             }
 
             // Hints
-            tryConsume("assume ") -> Instruction.Assume(parseValue(Type.I1, params))
+            tryConsume("assume ") -> Assume(parseValue(Type.I1, params))
 
             // Closure invoke without dest
             tryConsume("closure.invoke ") -> {
@@ -1633,7 +1634,7 @@ class IrParser private constructor(private val input: String) {
                 expect(")")
                 expect(": ")
                 val retType = parseType()
-                Instruction.ClosureInvoke(null, closure, args, retType)
+                ClosureInvoke(null, closure, args, retType)
             }
 
             else -> {
@@ -1719,9 +1720,9 @@ class IrParser private constructor(private val input: String) {
         val methodType = Type.Function(args.map { it.type }, retType)
         val dest = if (retType != Type.Void && destName != null) InstructionRef(destName, retType) else null
         return when (kind) {
-            "virtualcall" -> Instruction.VirtualCall(dest, obj, className, methodName, methodType, args)
-            "interfacecall" -> Instruction.InterfaceCall(dest, obj, className, methodName, methodType, args)
-            "specialcall" -> Instruction.SpecialCall(dest, obj, className, methodName, methodType, args)
+            "virtualcall" -> VirtualCall(dest, obj, className, methodName, methodType, args)
+            "interfacecall" -> InterfaceCall(dest, obj, className, methodName, methodType, args)
+            "specialcall" -> SpecialCall(dest, obj, className, methodName, methodType, args)
             else -> error("Unknown call kind: $kind")
         }
     }
@@ -1737,7 +1738,7 @@ class IrParser private constructor(private val input: String) {
         val retType = parseType()
         val methodType = Type.Function(args.map { it.type }, retType)
         val dest = if (retType != Type.Void && destName != null) InstructionRef(destName, retType) else null
-        return Instruction.StaticCall(dest, className, methodName, methodType, args)
+        return StaticCall(dest, className, methodName, methodType, args)
     }
 
     private fun parseDynamicCall(destName: String?, params: List<Parameter>): Instruction {
@@ -1750,7 +1751,7 @@ class IrParser private constructor(private val input: String) {
         val methodType = Type.Function(args.map { it.type }, retType)
         val bootstrap = BootstrapMethod("", name, methodType)
         val dest = if (retType != Type.Void && destName != null) InstructionRef(destName, retType) else null
-        return Instruction.DynamicCall(dest, bootstrap, name, methodType, args)
+        return DynamicCall(dest, bootstrap, name, methodType, args)
     }
 
     // Type parsing

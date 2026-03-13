@@ -2,6 +2,8 @@ package org.kgen.reflect
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.condition.EnabledOnOs
+import org.junit.jupiter.api.condition.OS
 import org.kgen.reflect.process.RemoteProcess
 
 class RemoteProcessTest {
@@ -137,11 +139,11 @@ class RemoteProcessTest {
     @Test
     fun moduleLookup() {
         val pid = ProcessHandle.current().pid()
-        val proc = RemoteProcess.open(pid)
-        val modules = proc.memoryMap()
-        // On Linux, should have some memory mappings
-        if (System.getProperty("os.name").lowercase().contains("linux")) {
-            assertTrue(modules.isNotEmpty())
+        RemoteProcess.open(pid).use { proc ->
+            val modules = proc.memoryMap()
+            if (System.getProperty("os.name").lowercase().contains("linux")) {
+                assertTrue(modules.isNotEmpty())
+            }
         }
     }
 
@@ -155,5 +157,62 @@ class RemoteProcessTest {
         assertEquals(42, info.pid)
         assertEquals("test", info.name)
         assertTrue(info.isAlive)
+    }
+
+    @Test
+    @EnabledOnOs(OS.WINDOWS)
+    fun windowsModulesForCurrentProcess() {
+        val pid = ProcessHandle.current().pid()
+        val proc = RemoteProcess.open(pid)
+        proc.use {
+            val modules = it.modules()
+            assertTrue(modules.isNotEmpty(), "Should have at least one module on Windows")
+            val hasJvmDll = modules.any { m ->
+                m.path?.contains("jvm", ignoreCase = true) == true ||
+                m.path?.contains("java", ignoreCase = true) == true
+            }
+            assertTrue(hasJvmDll, "Should find JVM-related module")
+        }
+    }
+
+    @Test
+    @EnabledOnOs(OS.WINDOWS)
+    fun windowsReadMemoryCurrentProcess() {
+        val pid = ProcessHandle.current().pid()
+        val proc = RemoteProcess.open(pid)
+        proc.use {
+            val modules = it.modules()
+            if (modules.isNotEmpty()) {
+                // Read first few bytes of the first module (should be MZ header for a DLL/EXE)
+                val addr = modules[0].startAddress
+                val data = it.readMemory(addr, 2)
+                assertEquals(2, data.size)
+                // PE files start with 'MZ'
+                assertEquals('M'.code.toByte(), data[0])
+                assertEquals('Z'.code.toByte(), data[1])
+            }
+        }
+    }
+
+    @Test
+    fun autoCloseableWorks() {
+        val pid = ProcessHandle.current().pid()
+        RemoteProcess.open(pid).use { proc ->
+            assertTrue(proc.isAlive())
+        }
+    }
+
+    @Test
+    fun moduleLookupOnWindows() {
+        val pid = ProcessHandle.current().pid()
+        val proc = RemoteProcess.open(pid)
+        proc.use {
+            val modules = it.modules()
+            if (System.getProperty("os.name").lowercase().contains("linux")) {
+                assertTrue(modules.isNotEmpty())
+            } else if (System.getProperty("os.name").lowercase().contains("win")) {
+                assertTrue(modules.isNotEmpty())
+            }
+        }
     }
 }

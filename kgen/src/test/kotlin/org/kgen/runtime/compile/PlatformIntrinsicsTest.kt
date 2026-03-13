@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
 import org.kgen.ir.target.Target
 import org.kgen.target.jvm.*
+import org.kgen.ir.instructions.*
 
 /**
  * Tests for platform-conditional intrinsics: Kgen.isWindows(), Kgen.isLinux(), Kgen.isMacOS().
@@ -52,7 +53,7 @@ class PlatformIntrinsicsTest {
         // x86_64 default triple is x86_64-unknown-windows-msvc on Windows host,
         // but we need to check what the test machine gives. Check the constant value.
         val fn = module.functions.first { it.name == "checkWindows" }
-        val rets = fn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Ret>()
+        val rets = fn.blocks.flatMap { it.instructions }.filterIsInstance<Ret>()
         assertTrue(rets.isNotEmpty(), "Should have a return instruction")
         // The return value should be a Constant.I1
         val retVal = rets.first().value
@@ -68,7 +69,7 @@ class PlatformIntrinsicsTest {
         val expectedLinux = "linux" in triple
 
         val fn = module.functions.first { it.name == "checkLinux" }
-        val rets = fn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Ret>()
+        val rets = fn.blocks.flatMap { it.instructions }.filterIsInstance<Ret>()
         val retVal = rets.first().value as Constant.I1
         assertEquals(expectedLinux, retVal.value, "isLinux() should match target triple ($triple)")
     }
@@ -81,7 +82,7 @@ class PlatformIntrinsicsTest {
         val expectedMacOS = "darwin" in triple
 
         val fn = module.functions.first { it.name == "checkMacOS" }
-        val rets = fn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Ret>()
+        val rets = fn.blocks.flatMap { it.instructions }.filterIsInstance<Ret>()
         val retVal = rets.first().value as Constant.I1
         assertEquals(expectedMacOS, retVal.value, "isMacOS() should match target triple ($triple)")
     }
@@ -91,7 +92,7 @@ class PlatformIntrinsicsTest {
         // All three should produce Constant.I1 — no function calls
         val classBytes = buildPlatformCheckClass()
         val module = compile(classBytes, Target.x86_64())
-        val calls = allInstructions(module).filterIsInstance<Instruction.Call>()
+        val calls = allInstructions(module).filterIsInstance<Call>()
         val platformCalls = calls.filter {
             val fn = it.function
             fn is GlobalRef && fn.name in listOf("isWindows", "isLinux", "isMacOS")
@@ -112,9 +113,9 @@ class PlatformIntrinsicsTest {
             val linFn = module.functions.first { it.name == "checkLinux" }
             val macFn = module.functions.first { it.name == "checkMacOS" }
 
-            val winRet = winFn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Ret>().first().value as Constant.I1
-            val linRet = linFn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Ret>().first().value as Constant.I1
-            val macRet = macFn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Ret>().first().value as Constant.I1
+            val winRet = winFn.blocks.flatMap { it.instructions }.filterIsInstance<Ret>().first().value as Constant.I1
+            val linRet = linFn.blocks.flatMap { it.instructions }.filterIsInstance<Ret>().first().value as Constant.I1
+            val macRet = macFn.blocks.flatMap { it.instructions }.filterIsInstance<Ret>().first().value as Constant.I1
 
             assertTrue(winRet.value, "isWindows() should be true on Windows target")
             assertFalse(linRet.value, "isLinux() should be false on Windows target")
@@ -125,9 +126,9 @@ class PlatformIntrinsicsTest {
             val linFn = module.functions.first { it.name == "checkLinux" }
             val macFn = module.functions.first { it.name == "checkMacOS" }
 
-            val winRet = winFn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Ret>().first().value as Constant.I1
-            val linRet = linFn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Ret>().first().value as Constant.I1
-            val macRet = macFn.blocks.flatMap { it.instructions }.filterIsInstance<Instruction.Ret>().first().value as Constant.I1
+            val winRet = winFn.blocks.flatMap { it.instructions }.filterIsInstance<Ret>().first().value as Constant.I1
+            val linRet = linFn.blocks.flatMap { it.instructions }.filterIsInstance<Ret>().first().value as Constant.I1
+            val macRet = macFn.blocks.flatMap { it.instructions }.filterIsInstance<Ret>().first().value as Constant.I1
 
             assertFalse(winRet.value, "isWindows() should be false on Linux target")
             assertTrue(linRet.value, "isLinux() should be true on Linux target")

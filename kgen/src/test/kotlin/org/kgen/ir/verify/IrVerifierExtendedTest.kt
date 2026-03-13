@@ -1,6 +1,7 @@
 package org.kgen.ir.verify
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.Type
 import org.kgen.ir.Type.Companion.i32
 import org.kgen.ir.Type.Companion.i64
@@ -22,20 +23,20 @@ class IrVerifierExtendedTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.CondBr(Parameter("cond", Type.I1, 0), "left", "right"),
+                            CondBr(Parameter("cond", Type.I1, 0), "left", "right"),
                         )),
                         BasicBlock("left", listOf(
-                            Instruction.Br("merge"),
+                            Br("merge"),
                         )),
                         BasicBlock("right", listOf(
-                            Instruction.Br("merge"),
+                            Br("merge"),
                         )),
                         BasicBlock("merge", listOf(
-                            Instruction.Phi(InstructionRef("%0", Type.I32), listOf(
+                            Phi(InstructionRef("%0", Type.I32), listOf(
                                 Pair(i32(1), "left"),
                                 Pair(i64(2), "right"),
                             )),
-                            Instruction.Ret(InstructionRef("%0", Type.I32)),
+                            Ret(InstructionRef("%0", Type.I32)),
                         )),
                     ),
                 )
@@ -59,9 +60,9 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.CondBr(Parameter("cond", Type.I1, 0), "ghost", "fallback"),
+                            CondBr(Parameter("cond", Type.I1, 0), "ghost", "fallback"),
                         )),
-                        BasicBlock("fallback", listOf(Instruction.Ret(null))),
+                        BasicBlock("fallback", listOf(Ret(null))),
                     ),
                 )
             ),
@@ -84,10 +85,10 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.Add(InstructionRef("%0", Type.I32), i32(1), i32(2)),
+                            Add(InstructionRef("%0", Type.I32), i32(1), i32(2)),
                         )),
                         BasicBlock("next", listOf(
-                            Instruction.Ret(null),
+                            Ret(null),
                         )),
                     ),
                 )
@@ -111,13 +112,13 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.Call(
+                            Call(
                                 dest = null,
                                 function = FunctionRef("target", Type.Function(listOf(Type.I32), Type.Void)),
                                 args = listOf(i32(1), i32(2)),
                                 returnType = Type.Void,
                             ),
-                            Instruction.Ret(null),
+                            Ret(null),
                         )),
                     ),
                 )
@@ -141,7 +142,7 @@ class IrVerifierExtendedTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.Ret(i64(42)),
+                            Ret(i64(42)),
                         )),
                     ),
                 )
@@ -165,8 +166,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.Store(i32(42), i32(0)),
-                            Instruction.Ret(null),
+                            Store(i32(42), i32(0)),
+                            Ret(null),
                         )),
                     ),
                 )
@@ -190,13 +191,13 @@ class IrVerifierExtendedTest {
                     returnType = Type.OpaquePointer,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.GetElementPtr(
+                            GetElementPtr(
                                 InstructionRef("%0", Type.OpaquePointer),
                                 Type.I32,
                                 i32(0),
                                 listOf(i32(0)),
                             ),
-                            Instruction.Ret(InstructionRef("%0", Type.OpaquePointer)),
+                            Ret(InstructionRef("%0", Type.OpaquePointer)),
                         )),
                     ),
                 )
@@ -220,10 +221,10 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.CondBr(Parameter("c", Type.I1, 0), "body", "body"),
+                            CondBr(Parameter("c", Type.I1, 0), "body", "body"),
                         )),
-                        BasicBlock("body", listOf(Instruction.Ret(null))),
-                        BasicBlock("body", listOf(Instruction.Ret(null))),
+                        BasicBlock("body", listOf(Ret(null))),
+                        BasicBlock("body", listOf(Ret(null))),
                     ),
                 )
             ),
@@ -246,8 +247,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.I1,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.ICmp(InstructionRef("%0", Type.I1), ICmpPredicate.EQ, i32(1), i64(2)),
-                            Instruction.Ret(InstructionRef("%0", Type.I1)),
+                            ICmp(InstructionRef("%0", Type.I1), ICmpPredicate.EQ, i32(1), i64(2)),
+                            Ret(InstructionRef("%0", Type.I1)),
                         )),
                     ),
                 )
@@ -271,9 +272,9 @@ class IrVerifierExtendedTest {
                     returnType = Type.I1,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.FCmp(InstructionRef("%0", Type.I1), FCmpPredicate.OEQ,
+                            FCmp(InstructionRef("%0", Type.I1), FCmpPredicate.OEQ,
                                 Parameter("a", Type.F32, 0), Parameter("b", Type.F64, 1)),
-                            Instruction.Ret(InstructionRef("%0", Type.I1)),
+                            Ret(InstructionRef("%0", Type.I1)),
                         )),
                     ),
                 )
@@ -297,8 +298,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.IntTrunc(InstructionRef("%0", Type.I32), f32(1.0f), Type.I32),
-                            Instruction.Ret(InstructionRef("%0", Type.I32)),
+                            IntTrunc(InstructionRef("%0", Type.I32), f32(1.0f), Type.I32),
+                            Ret(InstructionRef("%0", Type.I32)),
                         )),
                     ),
                 )
@@ -322,8 +323,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.F64,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.ZExt(InstructionRef("%0", Type.F64), i32(1), Type.F64),
-                            Instruction.Ret(InstructionRef("%0", Type.F64)),
+                            ZExt(InstructionRef("%0", Type.F64), i32(1), Type.F64),
+                            Ret(InstructionRef("%0", Type.F64)),
                         )),
                     ),
                 )
@@ -347,8 +348,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.I64,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.SExt(InstructionRef("%0", Type.I64), f32(1.0f), Type.I64),
-                            Instruction.Ret(InstructionRef("%0", Type.I64)),
+                            SExt(InstructionRef("%0", Type.I64), f32(1.0f), Type.I64),
+                            Ret(InstructionRef("%0", Type.I64)),
                         )),
                     ),
                 )
@@ -387,13 +388,13 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.Call(
+                            Call(
                                 dest = null,
                                 function = FunctionRef("printf", Type.Function(listOf(Type.OpaquePointer, Type.I32), Type.Void, vararg = true)),
                                 args = listOf(),
                                 returnType = Type.Void,
                             ),
-                            Instruction.Ret(null),
+                            Ret(null),
                         )),
                     ),
                 )
@@ -417,10 +418,10 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.Br("target"),
-                            Instruction.Unreachable(),
+                            Br("target"),
+                            Unreachable(),
                         )),
-                        BasicBlock("target", listOf(Instruction.Ret(null))),
+                        BasicBlock("target", listOf(Ret(null))),
                     ),
                 )
             ),
@@ -443,10 +444,10 @@ class IrVerifierExtendedTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.Phi(InstructionRef("%0", Type.I32), listOf(
+                            Phi(InstructionRef("%0", Type.I32), listOf(
                                 Pair(i32(42), "entry"),
                             )),
-                            Instruction.Ret(InstructionRef("%0", Type.I32)),
+                            Ret(InstructionRef("%0", Type.I32)),
                         )),
                     ),
                 )
@@ -470,12 +471,12 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.Switch(Parameter("x", Type.F32, 0), "default", listOf(
+                            Switch(Parameter("x", Type.F32, 0), "default", listOf(
                                 Pair(Constant.I32(0), "case0"),
                             )),
                         )),
-                        BasicBlock("case0", listOf(Instruction.Ret(null))),
-                        BasicBlock("default", listOf(Instruction.Ret(null))),
+                        BasicBlock("case0", listOf(Ret(null))),
+                        BasicBlock("default", listOf(Ret(null))),
                     ),
                 )
             ),
@@ -498,8 +499,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.ExtractElement(InstructionRef("%0", Type.I32), i32(42), i32(0)),
-                            Instruction.Ret(InstructionRef("%0", Type.I32)),
+                            ExtractElement(InstructionRef("%0", Type.I32), i32(42), i32(0)),
+                            Ret(InstructionRef("%0", Type.I32)),
                         )),
                     ),
                 )
@@ -523,8 +524,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.InsertElement(InstructionRef("%0", Type.I32), i32(0), i32(1), i32(0)),
-                            Instruction.Ret(InstructionRef("%0", Type.I32)),
+                            InsertElement(InstructionRef("%0", Type.I32), i32(0), i32(1), i32(0)),
+                            Ret(InstructionRef("%0", Type.I32)),
                         )),
                     ),
                 )
@@ -548,7 +549,7 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.CmpXchg(
+                            CmpXchg(
                                 InstructionRef("%0", Type.I32),
                                 i32(0),
                                 i32(1),
@@ -556,7 +557,7 @@ class IrVerifierExtendedTest {
                                 AtomicOrdering.SEQ_CST,
                                 AtomicOrdering.ACQUIRE,
                             ),
-                            Instruction.Ret(null),
+                            Ret(null),
                         )),
                     ),
                 )
@@ -580,7 +581,7 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.CmpXchg(
+                            CmpXchg(
                                 InstructionRef("%0", Type.I32),
                                 Parameter("p", Type.OpaquePointer, 0),
                                 i32(1),
@@ -588,7 +589,7 @@ class IrVerifierExtendedTest {
                                 AtomicOrdering.SEQ_CST,
                                 AtomicOrdering.ACQUIRE,
                             ),
-                            Instruction.Ret(null),
+                            Ret(null),
                         )),
                     ),
                 )
@@ -612,14 +613,14 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.AtomicRMW(
+                            AtomicRMW(
                                 InstructionRef("%0", Type.I32),
                                 AtomicRMWOp.ADD,
                                 i32(0),
                                 i32(1),
                                 AtomicOrdering.SEQ_CST,
                             ),
-                            Instruction.Ret(null),
+                            Ret(null),
                         )),
                     ),
                 )
@@ -643,13 +644,13 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.Call(
+                            Call(
                                 dest = null,
                                 function = FunctionRef("target", Type.Function(listOf(Type.I32), Type.Void)),
                                 args = listOf(i64(42)),
                                 returnType = Type.Void,
                             ),
-                            Instruction.Ret(null),
+                            Ret(null),
                         )),
                     ),
                 )
@@ -673,7 +674,7 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.Ret(i32(42)),
+                            Ret(i32(42)),
                         )),
                     ),
                 )
@@ -697,7 +698,7 @@ class IrVerifierExtendedTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.Ret(null),
+                            Ret(null),
                         )),
                     ),
                 )
@@ -721,8 +722,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.MemCpy(i32(0), Parameter("src", Type.OpaquePointer, 0), i32(16)),
-                            Instruction.Ret(null),
+                            MemCpy(i32(0), Parameter("src", Type.OpaquePointer, 0), i32(16)),
+                            Ret(null),
                         )),
                     ),
                 )
@@ -746,8 +747,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.MemSet(i32(0), i32(0), i32(16)),
-                            Instruction.Ret(null),
+                            MemSet(i32(0), i32(0), i32(16)),
+                            Ret(null),
                         )),
                     ),
                 )
@@ -771,8 +772,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.MemMove(Parameter("dst", Type.OpaquePointer, 0), i32(0), i32(16)),
-                            Instruction.Ret(null),
+                            MemMove(Parameter("dst", Type.OpaquePointer, 0), i32(0), i32(16)),
+                            Ret(null),
                         )),
                     ),
                 )
@@ -796,8 +797,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.F32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.FPTrunc(InstructionRef("%0", Type.F32), i64(1), Type.F32),
-                            Instruction.Ret(InstructionRef("%0", Type.F32)),
+                            FPTrunc(InstructionRef("%0", Type.F32), i64(1), Type.F32),
+                            Ret(InstructionRef("%0", Type.F32)),
                         )),
                     ),
                 )
@@ -821,8 +822,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.F64,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.FPExt(InstructionRef("%0", Type.F64), i32(1), Type.F64),
-                            Instruction.Ret(InstructionRef("%0", Type.F64)),
+                            FPExt(InstructionRef("%0", Type.F64), i32(1), Type.F64),
+                            Ret(InstructionRef("%0", Type.F64)),
                         )),
                     ),
                 )
@@ -846,8 +847,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.FPToUI(InstructionRef("%0", Type.I32), i32(1), Type.I32),
-                            Instruction.Ret(InstructionRef("%0", Type.I32)),
+                            FPToUI(InstructionRef("%0", Type.I32), i32(1), Type.I32),
+                            Ret(InstructionRef("%0", Type.I32)),
                         )),
                     ),
                 )
@@ -871,8 +872,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.F64,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.UIToFP(InstructionRef("%0", Type.F64), f32(1.0f), Type.F64),
-                            Instruction.Ret(InstructionRef("%0", Type.F64)),
+                            UIToFP(InstructionRef("%0", Type.F64), f32(1.0f), Type.F64),
+                            Ret(InstructionRef("%0", Type.F64)),
                         )),
                     ),
                 )
@@ -896,8 +897,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.I64,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.PtrToInt(InstructionRef("%0", Type.I64), i32(0), Type.I64),
-                            Instruction.Ret(InstructionRef("%0", Type.I64)),
+                            PtrToInt(InstructionRef("%0", Type.I64), i32(0), Type.I64),
+                            Ret(InstructionRef("%0", Type.I64)),
                         )),
                     ),
                 )
@@ -921,8 +922,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.OpaquePointer,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.IntToPtr(InstructionRef("%0", Type.OpaquePointer), f32(0.0f), Type.OpaquePointer),
-                            Instruction.Ret(InstructionRef("%0", Type.OpaquePointer)),
+                            IntToPtr(InstructionRef("%0", Type.OpaquePointer), f32(0.0f), Type.OpaquePointer),
+                            Ret(InstructionRef("%0", Type.OpaquePointer)),
                         )),
                     ),
                 )
@@ -951,9 +952,9 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.ShuffleVector(InstructionRef("%0", v4i32),
+                            ShuffleVector(InstructionRef("%0", v4i32),
                                 Parameter("v1", v4i32, 0), Parameter("v2", v4i64, 1), listOf(0, 1, 2, 3)),
-                            Instruction.Ret(null),
+                            Ret(null),
                         )),
                     ),
                 )
@@ -977,8 +978,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.VectorReduce(InstructionRef("%0", Type.I32), VectorReduceOp.ADD, i32(42)),
-                            Instruction.Ret(InstructionRef("%0", Type.I32)),
+                            VectorReduce(InstructionRef("%0", Type.I32), VectorReduceOp.ADD, i32(42)),
+                            Ret(InstructionRef("%0", Type.I32)),
                         )),
                     ),
                 )
@@ -1002,7 +1003,7 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.IndirectBr(i32(0), listOf("entry")),
+                            IndirectBr(i32(0), listOf("entry")),
                         )),
                     ),
                 )
@@ -1026,8 +1027,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.OpaquePointer,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.GetElementPtr(InstructionRef("%0", Type.OpaquePointer), Type.I32, Parameter("p", Type.OpaquePointer, 0), emptyList()),
-                            Instruction.Ret(InstructionRef("%0", Type.OpaquePointer)),
+                            GetElementPtr(InstructionRef("%0", Type.OpaquePointer), Type.I32, Parameter("p", Type.OpaquePointer, 0), emptyList()),
+                            Ret(InstructionRef("%0", Type.OpaquePointer)),
                         )),
                     ),
                 )
@@ -1051,8 +1052,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.Select(InstructionRef("%0", Type.I32), Constant.I1(true), i32(1), i64(2)),
-                            Instruction.Ret(InstructionRef("%0", Type.I32)),
+                            Select(InstructionRef("%0", Type.I32), Constant.I1(true), i32(1), i64(2)),
+                            Ret(InstructionRef("%0", Type.I32)),
                         )),
                     ),
                 )
@@ -1076,8 +1077,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.I64,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.Load(InstructionRef("%0", Type.I64), Parameter("p", Type.OpaquePointer, 0), Type.I32),
-                            Instruction.Ret(InstructionRef("%0", Type.I64)),
+                            Load(InstructionRef("%0", Type.I64), Parameter("p", Type.OpaquePointer, 0), Type.I32),
+                            Ret(InstructionRef("%0", Type.I64)),
                         )),
                     ),
                 )
@@ -1101,8 +1102,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.OpaquePointer,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.BitCast(InstructionRef("%0", Type.OpaquePointer), i32(0), Type.OpaquePointer),
-                            Instruction.Ret(InstructionRef("%0", Type.OpaquePointer)),
+                            BitCast(InstructionRef("%0", Type.OpaquePointer), i32(0), Type.OpaquePointer),
+                            Ret(InstructionRef("%0", Type.OpaquePointer)),
                         )),
                     ),
                 )
@@ -1148,13 +1149,13 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.Call(
+                            Call(
                                 dest = null,
                                 function = FunctionRef("target", Type.Function(listOf(Type.I32, Type.I64), Type.Void)),
                                 args = listOf(i32(1)),
                                 returnType = Type.Void,
                             ),
-                            Instruction.Ret(null),
+                            Ret(null),
                         )),
                     ),
                 )
@@ -1178,13 +1179,13 @@ class IrVerifierExtendedTest {
                     returnType = Type.F64,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.FMA(
+                            FMA(
                                 InstructionRef("%0", Type.F64),
                                 Constant.F64(1.0),
                                 Constant.F32(2.0f),
                                 Constant.F64(3.0),
                             ),
-                            Instruction.Ret(InstructionRef("%0", Type.F64)),
+                            Ret(InstructionRef("%0", Type.F64)),
                         )),
                     ),
                 )
@@ -1208,8 +1209,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.OpaquePointer,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.Alloca(InstructionRef("%0", Type.OpaquePointer), Type.I32, f32(1.0f)),
-                            Instruction.Ret(InstructionRef("%0", Type.OpaquePointer)),
+                            Alloca(InstructionRef("%0", Type.OpaquePointer), Type.I32, f32(1.0f)),
+                            Ret(InstructionRef("%0", Type.OpaquePointer)),
                         )),
                     ),
                 )
@@ -1234,8 +1235,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.Splat(InstructionRef("%0", v4i32), i64(1), v4i32),
-                            Instruction.Ret(null),
+                            Splat(InstructionRef("%0", v4i32), i64(1), v4i32),
+                            Ret(null),
                         )),
                     ),
                 )
@@ -1259,8 +1260,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.ICmp(InstructionRef("%0", Type.I32), ICmpPredicate.EQ, i32(1), i32(2)),
-                            Instruction.Ret(InstructionRef("%0", Type.I32)),
+                            ICmp(InstructionRef("%0", Type.I32), ICmpPredicate.EQ, i32(1), i32(2)),
+                            Ret(InstructionRef("%0", Type.I32)),
                         )),
                     ),
                 )
@@ -1284,13 +1285,13 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.Call(
+                            Call(
                                 dest = null,
                                 function = FunctionRef("printf", Type.Function(listOf(Type.OpaquePointer), Type.Void, vararg = true)),
                                 args = listOf(Constant.NullPtr),
                                 returnType = Type.Void,
                             ),
-                            Instruction.Ret(null),
+                            Ret(null),
                         )),
                     ),
                 )
@@ -1313,13 +1314,13 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Instruction.Call(
+                            Call(
                                 dest = null,
                                 function = FunctionRef("printf", Type.Function(listOf(Type.OpaquePointer), Type.Void, vararg = true)),
                                 args = listOf(Constant.NullPtr, i32(42), i64(100)),
                                 returnType = Type.Void,
                             ),
-                            Instruction.Ret(null),
+                            Ret(null),
                         )),
                     ),
                 )

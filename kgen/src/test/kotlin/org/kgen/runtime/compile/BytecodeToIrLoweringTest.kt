@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.kgen.ir.*
 import org.kgen.ir.target.Target
 import org.kgen.target.jvm.*
+import org.kgen.ir.instructions.*
 
 class BytecodeToIrLoweringTest {
 
@@ -64,7 +65,7 @@ class BytecodeToIrLoweringTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "add" }
         val instructions = allInstructions(fn)
-        assertTrue(instructions.any { it is Instruction.Add }, "Expected Add instruction")
+        assertTrue(instructions.any { it is Add }, "Expected Add instruction")
     }
 
     @Test
@@ -77,7 +78,7 @@ class BytecodeToIrLoweringTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "mul" }
         val instructions = allInstructions(fn)
-        assertTrue(instructions.any { it is Instruction.Mul }, "Expected Mul instruction")
+        assertTrue(instructions.any { it is Mul }, "Expected Mul instruction")
     }
 
     @Test
@@ -90,7 +91,7 @@ class BytecodeToIrLoweringTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "sub" }
         val instructions = allInstructions(fn)
-        assertTrue(instructions.any { it is Instruction.Sub }, "Expected Sub instruction")
+        assertTrue(instructions.any { it is Sub }, "Expected Sub instruction")
     }
 
     @Test
@@ -103,7 +104,7 @@ class BytecodeToIrLoweringTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "neg" }
         val instructions = allInstructions(fn)
-        assertTrue(instructions.any { it is Instruction.Neg }, "Expected Neg instruction")
+        assertTrue(instructions.any { it is Neg }, "Expected Neg instruction")
     }
 
     @Test
@@ -116,7 +117,7 @@ class BytecodeToIrLoweringTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "answer" }
         val instructions = allInstructions(fn)
-        val ret = instructions.filterIsInstance<Instruction.Ret>().first()
+        val ret = instructions.filterIsInstance<Ret>().first()
         val retVal = ret.value
         assertTrue(retVal is Constant.I32 && retVal.value == 42,
             "Expected return of constant 42, got $retVal")
@@ -151,7 +152,7 @@ class BytecodeToIrLoweringTest {
         val fn = module.functions.first { it.name == "max" }
         assertTrue(fn.blocks.size >= 2, "Expected multiple blocks, got ${fn.blocks.size}")
         val instructions = allInstructions(fn)
-        assertTrue(instructions.any { it is Instruction.CondBr }, "Expected CondBr instruction")
+        assertTrue(instructions.any { it is CondBr }, "Expected CondBr instruction")
     }
 
     @Test
@@ -179,7 +180,7 @@ class BytecodeToIrLoweringTest {
         val fn = module.functions.first { it.name == "sum" }
         assertTrue(fn.blocks.size >= 3, "Expected at least 3 blocks for loop, got ${fn.blocks.size}")
         val instructions = allInstructions(fn)
-        assertTrue(instructions.any { it is Instruction.Phi }, "Expected Phi nodes after Mem2Reg")
+        assertTrue(instructions.any { it is Phi }, "Expected Phi nodes after Mem2Reg")
     }
 
     @Test
@@ -246,7 +247,7 @@ class BytecodeToIrLoweringTest {
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "inc" }
         val instructions = allInstructions(fn)
-        val adds = instructions.filterIsInstance<Instruction.Add>()
+        val adds = instructions.filterIsInstance<Add>()
         assertTrue(adds.isNotEmpty(), "Expected Add instruction from iinc")
         val hasConstant5 = adds.any { add ->
             (add.rhs is Constant.I32 && (add.rhs as Constant.I32).value == 5) ||
@@ -316,11 +317,11 @@ class BytecodeToIrLoweringTest {
         val instructions = allInstructions(fn)
 
         // Should have Invoke (not just Call) for the try-region call
-        assertTrue(instructions.any { it is Instruction.Invoke },
+        assertTrue(instructions.any { it is Invoke },
             "Expected Invoke instruction for call inside try block")
 
         // Should have a LandingPad in a catch block
-        assertTrue(instructions.any { it is Instruction.LandingPad },
+        assertTrue(instructions.any { it is LandingPad },
             "Expected LandingPad instruction for catch handler")
     }
 
@@ -365,9 +366,9 @@ class BytecodeToIrLoweringTest {
         val instructions = allInstructions(fn)
 
         // Should have Call, NOT Invoke (no exception table)
-        assertTrue(instructions.any { it is Instruction.Call },
+        assertTrue(instructions.any { it is Call },
             "Expected regular Call instruction without try block")
-        assertFalse(instructions.any { it is Instruction.Invoke },
+        assertFalse(instructions.any { it is Invoke },
             "Should NOT have Invoke without try block")
     }
 }

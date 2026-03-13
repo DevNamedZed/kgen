@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -33,7 +34,7 @@ class ScalarReplacementOfAggregatesTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         // Original struct alloca should be gone, replaced by scalar allocas
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertTrue(allocas.all { !isAggregate(it.allocType) }, "All allocas should be scalar: $allocas")
         // Should have 2 scalar allocas (one per field)
         assertEquals(2, allocas.size, "Should have 2 scalar allocas: $allocas")
@@ -56,7 +57,7 @@ class ScalarReplacementOfAggregatesTest {
         val promoted = Mem2Reg().run(module)
         val insts = promoted.functions[0].blocks[0].instructions
         // Should just be ret 42
-        val ret = insts.last() as Instruction.Ret
+        val ret = insts.last() as Ret
         assertEquals(42, (ret.value as Constant.I32).value)
     }
 
@@ -76,7 +77,7 @@ class ScalarReplacementOfAggregatesTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(3, allocas.size, "Should have 3 scalar allocas for array[3]: $allocas")
         assertTrue(allocas.all { it.allocType == Type.I32 })
     }
@@ -96,7 +97,7 @@ class ScalarReplacementOfAggregatesTest {
         }
         val fn = module.functions.first { it.name == "f" }
         val insts = fn.blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(1, allocas.size, "Original alloca should remain")
         assertTrue(isAggregate(allocas[0].allocType), "Should still be aggregate")
     }
@@ -116,7 +117,7 @@ class ScalarReplacementOfAggregatesTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(1, allocas.size)
         assertTrue(isAggregate(allocas[0].allocType))
     }
@@ -133,7 +134,7 @@ class ScalarReplacementOfAggregatesTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(1, allocas.size)
         assertEquals(Type.I32, allocas[0].allocType)
     }
@@ -154,7 +155,7 @@ class ScalarReplacementOfAggregatesTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         // inner struct has 2 fields + 1 i64 = 3 scalar allocas
         assertEquals(3, allocas.size, "Should flatten nested struct: $allocas")
     }
@@ -179,11 +180,11 @@ class ScalarReplacementOfAggregatesTest {
         val promoted = Mem2Reg().run(module)
         val insts = promoted.functions[0].blocks[0].instructions
         // No allocas should remain after SROA + mem2reg
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(0, allocas.size, "All allocas should be eliminated: $insts")
         // Should have add + ret
-        assertTrue(insts.any { it is Instruction.Add })
-        assertTrue(insts.any { it is Instruction.Ret })
+        assertTrue(insts.any { it is Add })
+        assertTrue(insts.any { it is Ret })
     }
 
     @Test
@@ -209,7 +210,7 @@ class ScalarReplacementOfAggregatesTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(1, allocas.size, "Large array should not be replaced")
         assertTrue(isAggregate(allocas[0].allocType))
     }

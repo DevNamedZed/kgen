@@ -1,15 +1,36 @@
 package org.kgen.binary
 
+/**
+ * A relocation entry — an instruction from the compiler to the linker saying
+ * "patch the bytes at [offset] to point to [symbol]".
+ *
+ * Relocations are how compiled code references external functions, global variables,
+ * and other symbols that aren't known until link time.
+ *
+ * @property offset Byte offset within the section where the patch is applied.
+ * @property symbol Name of the target symbol.
+ * @property type Architecture-specific relocation type (determines the patching formula).
+ * @property addend Constant added to the computed address (RELA-style).
+ * @property section Section this relocation applies to (usually ".text").
+ */
 data class Relocation(
-    val offset: Long,                  // offset within section
-    val symbol: String,                // symbol being referenced
+    val offset: Long,
+    val symbol: String,
     val type: RelocationType,
-    val addend: Long = 0,              // addend for RELA-style
-    val section: String? = null,       // section this relocation applies to
+    val addend: Long = 0,
+    val section: String? = null,
 )
 
-// Comprehensive relocation types per architecture
-
+/**
+ * Architecture-specific relocation types. Each architecture has its own enum
+ * implementing this sealed interface.
+ *
+ * Common types:
+ * - [X86_64.PC32] — PC-relative 32-bit (most common for x86 function calls)
+ * - [X86_64.PLT32] — Call through PLT (dynamic linking)
+ * - [AArch64.CALL26] — ARM64 BL instruction
+ * - [RiscV.CALL_PLT] — RISC-V auipc+jalr pair
+ */
 sealed interface RelocationType {
     val relocName: String
     val value: Int

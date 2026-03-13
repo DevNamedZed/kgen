@@ -49,7 +49,7 @@ no alloca/load/store.
 ```kotlin
 val ir = IrBuilder("my_module")
 
-val fn = ir.function("factorial", listOf("n" to Type.I32), Type.I32)
+val fn = ir.function("factorial", listOf(Param("n", Type.I32)), Type.I32)
 val result = fn.variable(i32(1))
 val i = fn.variable(i32(1))
 
@@ -68,7 +68,7 @@ Call `ir.createFunction()` for LLVM IRBuilder-style basic blocks and insertion p
 Use when you need phi nodes, specific block layout, or are porting LLVM-style code.
 
 ```kotlin
-val params = ir.createFunction("max", listOf("a" to Type.I32, "b" to Type.I32), Type.I32)
+val params = ir.createFunction("max", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
 
 ir.positionAtEnd(ir.appendBlock("entry"))
 val cmp = ir.icmp(ICmpPredicate.SGT, params[0], params[1])
@@ -96,7 +96,7 @@ class Compiler(private val ast: Program) {
         ir.targetTriple = "wasm32-unknown-unknown"
 
         // External functions
-        ir.declareFunction("print_int", listOf("n" to Type.I32), Type.Void)
+        ir.declareFunction("print_int", listOf(Param("n", Type.I32)), Type.Void)
 
         // Translate each function
         for (func in ast.functions) translateFunction(func)
@@ -107,7 +107,7 @@ class Compiler(private val ast: Program) {
     private fun translateFunction(node: FuncNode) {
         val fn = ir.function(
             node.name,
-            node.params.map { it.name to mapType(it.type) },
+            node.params.map { Param(it.name, mapType(it.type)) },
             mapType(node.returnType),
         )
 
@@ -148,7 +148,7 @@ class Compiler(private val ast: Program) {
                     for (s in stmt.body) translateStmt(fn, s)
                 }
             }
-            is BreakStmt -> fn.breakLoop()
+            is BreakStmt -> fn.breakOut()
             is ExprStmt -> translateExpr(fn, stmt.expr)
         }
     }
@@ -198,8 +198,8 @@ fn.ifThenElse(cond, thenBody = { ... }, elseBody = { ... })
 fn.whileLoop(condition = { ... }) { ... }
 fn.doWhile(body = { ... }, condition = { ... })
 fn.forLoop(init = { ... }, condition = { ... }, update = { ... }) { ... }
-fn.breakLoop()
-fn.continueLoop()
+fn.breakOut()
+fn.continueOn()
 ```
 
 **Comparisons** — named, no enums:
@@ -265,18 +265,16 @@ Each target backend provides up to three components:
 
 Backends register via `TargetRegistry` + `ServiceLoader`.
 
-## Modules
+## Single Module
 
-| Module | Description |
-|--------|-------------|
-| `kgen-ir` | Types, values, instructions, builders, printer, verifier, serializer |
-| `kgen-pass` | Optimization/transformation passes, pass pipeline |
-| `kgen-object` | Object file readers/writers (ELF, PE, Mach-O, WASM, JVM .class) |
-| `kgen-linker` | Linker interface |
-| `kgen-tools` | Binary utilities (inspector, patcher, diff, demangler, hex dump) |
-| `kgen-backend-*` | Code generators: wasm, jvm, x86_64, arm64, riscv, msil |
+kgen ships as a single Maven artifact — `org.kgen:kgen`. All packages (IR, code generators,
+binary formats, JIT, reflection, runtime) are included. No transitive dependencies.
+
+```kotlin
+implementation("org.kgen:kgen:0.1.0")
+```
 
 ## Next
 
-- [IR Reference](ir.md) — Full instruction set, 165 opcodes
+- [IR Reference](ir.md) — Full instruction set, 177 opcodes
 - [Architecture](architecture.md) — Pipeline, design decisions

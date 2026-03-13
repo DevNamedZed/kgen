@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
+import org.kgen.ir.instructions.*
 
 class GlobalValueNumberingExtendedTest {
 
@@ -29,7 +30,7 @@ class GlobalValueNumberingExtendedTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(3, insts.size)
-        val addInst = insts[1] as Instruction.Add
+        val addInst = insts[1] as Add
         assertEquals(addInst.lhs.name, addInst.rhs.name)
     }
 
@@ -135,7 +136,7 @@ class GlobalValueNumberingExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val sextCount = insts.count { it is Instruction.SExt }
+        val sextCount = insts.count { it is SExt }
         assertEquals(1, sextCount)
     }
 
@@ -151,7 +152,7 @@ class GlobalValueNumberingExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val negCount = insts.count { it is Instruction.Neg }
+        val negCount = insts.count { it is Neg }
         assertEquals(1, negCount)
     }
 
@@ -167,7 +168,7 @@ class GlobalValueNumberingExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val faddCount = insts.count { it is Instruction.FAdd }
+        val faddCount = insts.count { it is FAdd }
         assertEquals(2, faddCount, "Should eliminate one redundant fadd: $insts")
     }
 
@@ -183,7 +184,7 @@ class GlobalValueNumberingExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val fmulCount = insts.count { it is Instruction.FMul }
+        val fmulCount = insts.count { it is FMul }
         assertEquals(1, fmulCount)
     }
 
@@ -199,7 +200,7 @@ class GlobalValueNumberingExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val selectCount = insts.count { it is Instruction.Select }
+        val selectCount = insts.count { it is Select }
         assertEquals(1, selectCount)
     }
 
@@ -215,7 +216,7 @@ class GlobalValueNumberingExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val icmpCount = insts.count { it is Instruction.ICmp }
+        val icmpCount = insts.count { it is ICmp }
         assertEquals(2, icmpCount)
     }
 
@@ -252,7 +253,7 @@ class GlobalValueNumberingExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val gepCount = insts.count { it is Instruction.GetElementPtr }
+        val gepCount = insts.count { it is GetElementPtr }
         assertEquals(1, gepCount, "Redundant GEP should be eliminated")
     }
 
@@ -271,7 +272,7 @@ class GlobalValueNumberingExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val gepCount = insts.count { it is Instruction.GetElementPtr }
+        val gepCount = insts.count { it is GetElementPtr }
         assertEquals(2, gepCount)
     }
 
@@ -307,7 +308,7 @@ class GlobalValueNumberingExtendedTest {
         val fn = module.functions[0]
         for (block in fn.blocks) {
             if (block.label == "entry") continue
-            val addCount = block.instructions.count { it is Instruction.Add }
+            val addCount = block.instructions.count { it is Add }
             assertEquals(0, addCount, "Block ${block.label} should not have adds: ${block.instructions}")
         }
     }
@@ -338,7 +339,7 @@ class GlobalValueNumberingExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val storeCount = insts.count { it is Instruction.Store }
+        val storeCount = insts.count { it is Store }
         assertEquals(2, storeCount, "Stores should not be eliminated")
     }
 
@@ -354,7 +355,7 @@ class GlobalValueNumberingExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val truncCount = insts.count { it is Instruction.IntTrunc }
+        val truncCount = insts.count { it is IntTrunc }
         assertEquals(1, truncCount)
     }
 
@@ -370,7 +371,7 @@ class GlobalValueNumberingExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val convCount = insts.count { it is Instruction.SIToFP }
+        val convCount = insts.count { it is SIToFP }
         assertEquals(1, convCount)
     }
 
@@ -437,7 +438,7 @@ class GlobalValueNumberingExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val divCount = insts.count { it is Instruction.SDiv }
+        val divCount = insts.count { it is SDiv }
         assertEquals(1, divCount)
     }
 
@@ -453,7 +454,7 @@ class GlobalValueNumberingExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val fcmpCount = insts.count { it is Instruction.FCmp }
+        val fcmpCount = insts.count { it is FCmp }
         assertEquals(1, fcmpCount)
     }
 
@@ -469,7 +470,7 @@ class GlobalValueNumberingExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        val fcmpCount = insts.count { it is Instruction.FCmp }
+        val fcmpCount = insts.count { it is FCmp }
         assertEquals(2, fcmpCount)
     }
 }

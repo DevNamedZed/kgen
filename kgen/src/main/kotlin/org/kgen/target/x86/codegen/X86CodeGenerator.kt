@@ -10,6 +10,7 @@ import org.kgen.binary.pe.PeUnwindInfo
 import org.kgen.binary.pe.UnwindCode
 import org.kgen.binary.pe.UnwindOperation
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.codegen.*
 import org.kgen.codegen.alloc.*
 import org.kgen.binary.dwarf.*
@@ -23,18 +24,48 @@ private fun isGcReferenceType(type: Type): Boolean = when (type) {
 }
 
 /**
- * Translates an IR [Module] into x86-64 machine code.
+ * x86-64 code generator: translates an IR [Module] into native machine code.
  *
- * Produces an [ObjectFile] with .text and .rodata sections, symbols, and relocations.
- * The output can be fed to [ElfLinker] for a dynamically-linked executable,
- * or to [ElfObjectWriter] for a .o file.
+ * This is the x86-64 backend of the three-layer code generation API. It takes a fully
+ * constructed IR module and produces relocatable object code with `.text`, `.rodata`,
+ * and optional `.tdata` (TLS) sections, along with symbols, relocations, and exception
+ * handling metadata (`.eh_frame`, `.gcc_except_table` for ELF; `.pdata`/`.xdata` for PE).
  *
- * Uses System V AMD64 ABI calling convention.
+ * The code generation pipeline per function:
+ * 1. **Register allocation** via [LinearScanRegisterAllocator][org.kgen.codegen.alloc.LinearScanRegisterAllocator]
+ * 2. **Alloca offset computation** for stack-allocated variables
+ * 3. **Prologue emission** (frame setup, callee-saved register spills, stack alignment)
+ * 4. **Block-by-block instruction lowering** with ICmp+CondBr fusion optimization
+ * 5. **Phi copy insertion** at block boundaries using topological ordering with cycle-breaking
+ *    via scratch register (R10/XMM14)
+ * 6. **Epilogue emission** (callee-saved register restores, frame teardown)
+ * 7. **Exception handling metadata** (FDE entries for `.eh_frame`, LSDA tables, SEH unwind info)
+ *
+ * Supports both System V AMD64 ABI (Linux/macOS) and Windows x64 ABI (shadow space,
+ * different argument registers). ABI selection is automatic based on the module's target triple.
+ *
+ * The output [CompiledCode] can be converted to an [ObjectFile] and fed to [ElfLinker],
+ * [ElfStaticLinker], or [PeLinker] for linking, or to [ElfObjectWriter] for `.o` file output.
+ *
+ * ```java
+ * var codegen = new X86CodeGenerator();
+ * CompiledCode code = codegen.generateCode(module);
+ * ObjectFile obj = code.toObjectFile(ObjectFormat.ELF, Architecture.X86_64_LINUX);
+ * ```
+ *
+ * See `spec/roadmap.md` for the full list of implemented IR instructions and codegen features.
  */
 class X86CodeGenerator : CodeGenerator {
 
     override val targetName: String = "x86_64"
 
+    /**
+     * Generate a complete binary from an IR module.
+     *
+     * Compiles all functions, applies relocations, and links into the format specified
+     * by [options]. For Windows target triples, automatically derives DLL imports from
+     * external function declarations.
+     */
     override fun generate(module: Module, options: CodeGenOptions): ByteArray {
         val isWindows = module.targetTriple?.contains("windows") == true
         val imports = if (isWindows) deriveWindowsImports(module) else emptyList()
@@ -46,6 +77,13 @@ class X86CodeGenerator : CodeGenerator {
         }
     }
 
+    /**
+     * Compile an IR module to [CompiledCode] without linking.
+     *
+     * Returns machine code bytes, symbols, relocations, and metadata (stack maps,
+     * debug line maps, exception handling tables) that can be assembled into an
+     * [ObjectFile] or used directly by the JIT engine.
+     */
     override fun generateCode(module: Module): CompiledCode {
         val ctx = CodeGenContext(module)
         ctx.emitGlobals()
@@ -64,6 +102,15 @@ class X86CodeGenerator : CodeGenerator {
         return imports
     }
 
+    /**
+     * Compile an IR module directly to a relocatable [ObjectFile].
+     *
+     * Convenience method that calls [generateCode] and wraps the result in an ObjectFile
+     * with the appropriate format (ELF or PE/COFF based on the module's target triple).
+     *
+     * @param module the IR module to compile
+     * @param imports PE import entries for Windows targets; ignored for ELF
+     */
     fun generateObjectFile(module: Module, imports: List<ImportEntry> = emptyList()): ObjectFile {
         val ctx = CodeGenContext(module, imports)
         ctx.emitGlobals()
@@ -142,6 +189,18 @@ class X86CodeGenerator : CodeGenerator {
                 }
             } else emptyList()
 
+            val tdataSymbols = if (tdataBuilder.hasData()) {
+                tdataBuilder.symbols().map { sym ->
+                    CompiledCode.CodeSymbol(
+                        name = sym.name,
+                        offset = 0,
+                        kind = SymbolKind.DATA,
+                        isGlobal = false,
+                        tdataOffset = sym.value,
+                    )
+                }
+            } else emptyList()
+
             val definedNames = definedSymbols.map { it.name }.toSet() +
                 rodataBuilder.symbols().map { it.name }.toSet() +
                 tdataBuilder.symbols().map { it.name }.toSet()
@@ -181,7 +240,7 @@ class X86CodeGenerator : CodeGenerator {
             return CompiledCode(
                 textBytes = textBytes,
                 rodataBytes = if (rodataBuilder.hasData()) rodataBuilder.toByteArray() else ByteArray(0),
-                symbols = codeSymbols + rodataSymbols,
+                symbols = codeSymbols + rodataSymbols + tdataSymbols,
                 relocations = relocations,
                 externalSymbols = externalNames,
                 rodataAlign = if (rodataBuilder.hasData()) rodataBuilder.maxAlign() else 1,
@@ -313,6 +372,14 @@ class X86CodeGenerator : CodeGenerator {
         }
     }
 
+    /**
+     * Lowers a single [IrFunction] to x86-64 machine code.
+     *
+     * Manages the complete per-function pipeline: register allocation, stack layout,
+     * prologue/epilogue, instruction selection, phi copy lowering, and exception
+     * handling metadata generation (FDE entries for DWARF unwinding, LSDA tables
+     * for C++ personality-based EH, and SEH unwind info for Windows).
+     */
     private class FunctionEmitter(
         private val fn: IrFunction,
         private val ctx: CodeGenContext,
@@ -328,7 +395,7 @@ class X86CodeGenerator : CodeGenerator {
         private val callArgRegsXmm = if (isWindows) winCallArgXmm else callArgXmm
 
         private lateinit var alloc: AllocResult
-        private val hasCalls = fn.blocks.any { b -> b.instructions.any { it is Instruction.Call } }
+        private val hasCalls = fn.blocks.any { b -> b.instructions.any { it is Call } }
         // Windows x64 ABI requires 32 bytes of shadow space for every call
         private val shadowSpace = if (isWindows && hasCalls) 32 else 0
         private var currentBlockLabel = ""
@@ -338,7 +405,7 @@ class X86CodeGenerator : CodeGenerator {
             val map = mutableMapOf<Pair<String, String>, MutableList<Pair<InstructionRef, Value>>>()
             for (block in fn.blocks) {
                 for (inst in block.instructions) {
-                    if (inst !is Instruction.Phi) break // phis must be at start of block
+                    if (inst !is Phi) break // phis must be at start of block
                     for ((value, predLabel) in inst.incoming) {
                         map.getOrPut(predLabel to block.label) { mutableListOf() }
                             .add(inst.dest to value)
@@ -389,9 +456,15 @@ class X86CodeGenerator : CodeGenerator {
         private val ehCallSites = mutableListOf<EhCallSite>()
         private val ehTypeNames = mutableListOf<String>()
         private val hasExceptionHandling: Boolean = fn.blocks.any { b ->
-            b.instructions.any { it is Instruction.Invoke || it is Instruction.LandingPad }
+            b.instructions.any { it is Invoke || it is LandingPad }
         }
 
+        /**
+         * Run the full code generation pipeline for this function.
+         *
+         * Executes register allocation, computes stack layout, emits prologue/blocks/epilogue,
+         * and records exception handling metadata (stack maps, FDE, LSDA, SEH unwind).
+         */
         fun emit() {
             funcStartOffset = asm.position()
             runRegisterAllocator()
@@ -542,7 +615,7 @@ class X86CodeGenerator : CodeGenerator {
 
             for (block in fn.blocks) {
                 for (inst in block.instructions) {
-                    if (inst is Instruction.Alloca) {
+                    if (inst is Alloca) {
                         val size = typeSizeBytes(inst.allocType)
                         val count = when (val n = inst.numElements) {
                             is Constant.I32 -> n.value
@@ -606,6 +679,11 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
+        /**
+         * Emit the function prologue: frame pointer setup, callee-saved register spills,
+         * stack reservation (spill slots + alloca + shadow space), and argument register
+         * saves for vararg functions. Ensures 16-byte RSP alignment for calls.
+         */
         private fun emitPrologue() {
             asm.push(rbp64)
             asm.mov(rbp64, rsp64 as X86Operand64)
@@ -698,6 +776,15 @@ class X86CodeGenerator : CodeGenerator {
             if (!omitRet) asm.ret()
         }
 
+        /**
+         * Emit machine code for all basic blocks in the function.
+         *
+         * Iterates blocks in IR order, emitting labels and lowering each instruction.
+         * Applies an ICmp+CondBr fusion optimization: when an ICmp is immediately
+         * followed by a CondBr that consumes its result, the comparison and branch
+         * are emitted as a single fused sequence (cmp + jcc) without materializing
+         * the boolean result to a register.
+         */
         private fun emitBlocks() {
             for ((blockIdx, block) in fn.blocks.withIndex()) {
                 currentBlockLabel = block.label
@@ -705,17 +792,17 @@ class X86CodeGenerator : CodeGenerator {
                 val nextBlockLabel = fn.blocks.getOrNull(blockIdx + 1)?.label
                 for ((instIdx, inst) in block.instructions.withIndex()) {
                     // Skip phi nodes — they are lowered to copies at predecessor terminators
-                    if (inst is Instruction.Phi) continue
+                    if (inst is Phi) continue
                     // Fuse ICmp + CondBr: skip materializing the ICmp result if it's
                     // only used by the immediately following CondBr
-                    if (inst is Instruction.ICmp) {
+                    if (inst is ICmp) {
                         val nextInst = block.instructions.getOrNull(instIdx + 1)
-                        if (nextInst is Instruction.CondBr && nextInst.condition.name == inst.dest.name) {
+                        if (nextInst is CondBr && nextInst.condition.name == inst.dest.name) {
                             emitFusedCmpBranch(inst, nextInst, nextBlockLabel)
                             break // CondBr is a terminator, nothing after it
                         }
                     }
-                    if (inst is Instruction.CondBr) {
+                    if (inst is CondBr) {
                         // Already handled by fusion above; if we get here, the condition
                         // was materialized by a prior instruction (not fused)
                         emitCondBr(inst, nextBlockLabel)
@@ -882,134 +969,134 @@ class X86CodeGenerator : CodeGenerator {
 
         private fun emitInstruction(inst: Instruction) {
             when (inst) {
-                is Instruction.Add -> emitIntBinOp(inst.dest, inst.lhs, inst.rhs,
+                is Add -> emitIntBinOp(inst.dest, inst.lhs, inst.rhs,
                     { d, rhs -> asm.add(d, rhs as X86Operand32) }, { d, imm -> asm.add(d as X86Operand32, imm) },
                     { d, rhs -> asm.add(d, rhs as X86Operand64) }, { d, imm -> asm.add(d as X86Operand64, imm) })
 
-                is Instruction.Sub -> emitIntBinOp(inst.dest, inst.lhs, inst.rhs,
+                is Sub -> emitIntBinOp(inst.dest, inst.lhs, inst.rhs,
                     { d, rhs -> asm.sub(d, rhs as X86Operand32) }, { d, imm -> asm.sub(d as X86Operand32, imm) },
                     { d, rhs -> asm.sub(d, rhs as X86Operand64) }, { d, imm -> asm.sub(d as X86Operand64, imm) })
 
-                is Instruction.Mul -> emitMul(inst)
-                is Instruction.SDiv -> emitDiv(inst.dest, inst.lhs, inst.rhs, signed = true, remainder = false)
-                is Instruction.UDiv -> emitDiv(inst.dest, inst.lhs, inst.rhs, signed = false, remainder = false)
-                is Instruction.SRem -> emitDiv(inst.dest, inst.lhs, inst.rhs, signed = true, remainder = true)
-                is Instruction.URem -> emitDiv(inst.dest, inst.lhs, inst.rhs, signed = false, remainder = true)
+                is Mul -> emitMul(inst)
+                is SDiv -> emitDiv(inst.dest, inst.lhs, inst.rhs, signed = true, remainder = false)
+                is UDiv -> emitDiv(inst.dest, inst.lhs, inst.rhs, signed = false, remainder = false)
+                is SRem -> emitDiv(inst.dest, inst.lhs, inst.rhs, signed = true, remainder = true)
+                is URem -> emitDiv(inst.dest, inst.lhs, inst.rhs, signed = false, remainder = true)
 
-                is Instruction.And -> emitIntBinOp(inst.dest, inst.lhs, inst.rhs,
+                is And -> emitIntBinOp(inst.dest, inst.lhs, inst.rhs,
                     { d, rhs -> asm.and_(d, rhs as X86Operand32) }, { d, imm -> asm.and_(d as X86Operand32, imm) },
                     { d, rhs -> asm.and_(d, rhs as X86Operand64) }, { d, imm -> asm.and_(d as X86Operand64, imm) })
 
-                is Instruction.Or -> emitIntBinOp(inst.dest, inst.lhs, inst.rhs,
+                is Or -> emitIntBinOp(inst.dest, inst.lhs, inst.rhs,
                     { d, rhs -> asm.or_(d, rhs as X86Operand32) }, { d, imm -> asm.or_(d as X86Operand32, imm) },
                     { d, rhs -> asm.or_(d, rhs as X86Operand64) }, { d, imm -> asm.or_(d as X86Operand64, imm) })
 
-                is Instruction.Xor -> emitIntBinOp(inst.dest, inst.lhs, inst.rhs,
+                is Xor -> emitIntBinOp(inst.dest, inst.lhs, inst.rhs,
                     { d, rhs -> asm.xor_(d, rhs as X86Operand32) }, { d, imm -> asm.xor_(d as X86Operand32, imm) },
                     { d, rhs -> asm.xor_(d, rhs as X86Operand64) }, { d, imm -> asm.xor_(d as X86Operand64, imm) })
 
-                is Instruction.Shl -> emitShift(inst.dest, inst.lhs, inst.rhs,
+                is Shl -> emitShift(inst.dest, inst.lhs, inst.rhs,
                     { rm -> asm.shl(rm as X86Operand32, cl8) }, { rm, imm -> asm.shl(rm as X86Operand32, imm) },
                     { rm -> asm.shl(rm as X86Operand64, cl8) }, { rm, imm -> asm.shl(rm as X86Operand64, imm) })
 
-                is Instruction.LShr -> emitShift(inst.dest, inst.lhs, inst.rhs,
+                is LShr -> emitShift(inst.dest, inst.lhs, inst.rhs,
                     { rm -> asm.shr(rm as X86Operand32, cl8) }, { rm, imm -> asm.shr(rm as X86Operand32, imm) },
                     { rm -> asm.shr(rm as X86Operand64, cl8) }, { rm, imm -> asm.shr(rm as X86Operand64, imm) })
 
-                is Instruction.AShr -> emitShift(inst.dest, inst.lhs, inst.rhs,
+                is AShr -> emitShift(inst.dest, inst.lhs, inst.rhs,
                     { rm -> asm.sar(rm as X86Operand32, cl8) }, { rm, imm -> asm.sar(rm as X86Operand32, imm) },
                     { rm -> asm.sar(rm as X86Operand64, cl8) }, { rm, imm -> asm.sar(rm as X86Operand64, imm) })
 
-                is Instruction.Rotl -> emitShift(inst.dest, inst.value, inst.amount,
+                is Rotl -> emitShift(inst.dest, inst.value, inst.amount,
                     { rm -> asm.rol(rm as X86Operand32, cl8) }, { rm, imm -> asm.rol(rm as X86Operand32, imm) },
                     { rm -> asm.rol(rm as X86Operand64, cl8) }, { rm, imm -> asm.rol(rm as X86Operand64, imm) })
 
-                is Instruction.Rotr -> emitShift(inst.dest, inst.value, inst.amount,
+                is Rotr -> emitShift(inst.dest, inst.value, inst.amount,
                     { rm -> asm.ror(rm as X86Operand32, cl8) }, { rm, imm -> asm.ror(rm as X86Operand32, imm) },
                     { rm -> asm.ror(rm as X86Operand64, cl8) }, { rm, imm -> asm.ror(rm as X86Operand64, imm) })
 
-                is Instruction.Neg -> emitNeg(inst)
-                is Instruction.Not -> emitNot(inst)
-                is Instruction.ZExt -> emitZExt(inst)
-                is Instruction.SExt -> emitSExt(inst)
-                is Instruction.Trunc -> emitTrunc(inst.dest, inst.operand, inst.dest.type)
-                is Instruction.IntTrunc -> emitTrunc(inst.dest, inst.value, inst.toType)
-                is Instruction.PtrToInt -> emitCopy64(inst.dest, inst.value)
-                is Instruction.IntToPtr -> emitCopy64(inst.dest, inst.value)
-                is Instruction.BitCast -> emitBitCast(inst)
-                is Instruction.Alloca -> emitAlloca(inst)
-                is Instruction.Load -> emitLoad(inst)
-                is Instruction.Store -> emitStore(inst)
+                is Neg -> emitNeg(inst)
+                is Not -> emitNot(inst)
+                is ZExt -> emitZExt(inst)
+                is SExt -> emitSExt(inst)
+                is Trunc -> emitTrunc(inst.dest, inst.operand, inst.dest.type)
+                is IntTrunc -> emitTrunc(inst.dest, inst.value, inst.toType)
+                is PtrToInt -> emitCopy64(inst.dest, inst.value)
+                is IntToPtr -> emitCopy64(inst.dest, inst.value)
+                is BitCast -> emitBitCast(inst)
+                is Alloca -> emitAlloca(inst)
+                is Load -> emitLoad(inst)
+                is Store -> emitStore(inst)
 
-                is Instruction.FAdd -> emitFBinOp(inst.dest, inst.lhs, inst.rhs) { d, s ->
+                is FAdd -> emitFBinOp(inst.dest, inst.lhs, inst.rhs) { d, s ->
                     if (inst.dest.type == Type.F32) asm.addss(d, s) else asm.addsd(d, s)
                 }
-                is Instruction.FSub -> emitFBinOp(inst.dest, inst.lhs, inst.rhs) { d, s ->
+                is FSub -> emitFBinOp(inst.dest, inst.lhs, inst.rhs) { d, s ->
                     if (inst.dest.type == Type.F32) asm.subss(d, s) else asm.subsd(d, s)
                 }
-                is Instruction.FMul -> emitFBinOp(inst.dest, inst.lhs, inst.rhs) { d, s ->
+                is FMul -> emitFBinOp(inst.dest, inst.lhs, inst.rhs) { d, s ->
                     if (inst.dest.type == Type.F32) asm.mulss(d, s) else asm.mulsd(d, s)
                 }
-                is Instruction.FDiv -> emitFBinOp(inst.dest, inst.lhs, inst.rhs) { d, s ->
+                is FDiv -> emitFBinOp(inst.dest, inst.lhs, inst.rhs) { d, s ->
                     if (inst.dest.type == Type.F32) asm.divss(d, s) else asm.divsd(d, s)
                 }
-                is Instruction.FNeg -> emitFNeg(inst)
-                is Instruction.FCmp -> emitFCmp(inst)
-                is Instruction.SIToFP -> emitSIToFP(inst)
-                is Instruction.UIToFP -> emitUIToFP(inst)
-                is Instruction.FPToSI -> emitFPToSI(inst)
-                is Instruction.FPToUI -> emitFPToUI(inst)
-                is Instruction.FPExt -> emitFPExt(inst)
-                is Instruction.FPTrunc -> emitFPTrunc(inst)
+                is FNeg -> emitFNeg(inst)
+                is FCmp -> emitFCmp(inst)
+                is SIToFP -> emitSIToFP(inst)
+                is UIToFP -> emitUIToFP(inst)
+                is FPToSI -> emitFPToSI(inst)
+                is FPToUI -> emitFPToUI(inst)
+                is FPExt -> emitFPExt(inst)
+                is FPTrunc -> emitFPTrunc(inst)
 
-                is Instruction.Ret -> emitReturn(inst)
-                is Instruction.Call -> emitCall(inst)
-                is Instruction.ICmp -> emitICmp(inst)
-                is Instruction.GetElementPtr -> emitGetElementPtr(inst)
-                is Instruction.ExtractValue -> emitExtractValue(inst)
-                is Instruction.InsertValue -> emitInsertValue(inst)
-                is Instruction.Br -> emitBr(inst)
-                is Instruction.IndirectBr -> emitIndirectBr(inst)
-                is Instruction.Switch -> emitSwitch(inst)
-                is Instruction.Select -> emitSelect(inst)
+                is Ret -> emitReturn(inst)
+                is Call -> emitCall(inst)
+                is ICmp -> emitICmp(inst)
+                is GetElementPtr -> emitGetElementPtr(inst)
+                is ExtractValue -> emitExtractValue(inst)
+                is InsertValue -> emitInsertValue(inst)
+                is Br -> emitBr(inst)
+                is IndirectBr -> emitIndirectBr(inst)
+                is Switch -> emitSwitch(inst)
+                is Select -> emitSelect(inst)
 
-                is Instruction.VAEnd -> {}
-                is Instruction.VAStart -> emitVAStart(inst)
-                is Instruction.VAArg -> emitVAArg(inst)
-                is Instruction.VACopy -> emitVACopy(inst)
+                is VAEnd -> {}
+                is VAStart -> emitVAStart(inst)
+                is VAArg -> emitVAArg(inst)
+                is VACopy -> emitVACopy(inst)
 
-                is Instruction.GCSafepoint -> emitGCSafepoint()
-                is Instruction.GCRoot -> emitGCRoot(inst)
+                is GCSafepoint -> emitGCSafepoint()
+                is GCRoot -> emitGCRoot(inst)
 
-                is Instruction.Ctlz -> emitCtlz(inst)
-                is Instruction.Cttz -> emitCttz(inst)
-                is Instruction.Ctpop -> emitCtpop(inst)
-                is Instruction.BSwap -> emitBSwap(inst)
-                is Instruction.BitReverse -> emitBitReverse(inst)
+                is Ctlz -> emitCtlz(inst)
+                is Cttz -> emitCttz(inst)
+                is Ctpop -> emitCtpop(inst)
+                is BSwap -> emitBSwap(inst)
+                is BitReverse -> emitBitReverse(inst)
 
-                is Instruction.Sqrt -> emitFpUnaryXmm(inst.dest, inst.operand) { d, s -> asm.sqrtsd(d, s) }
-                is Instruction.Ceil -> emitFpUnaryXmm(inst.dest, inst.operand) { d, s -> asm.roundsd(d, s, 0x02) }
-                is Instruction.Floor -> emitFpUnaryXmm(inst.dest, inst.operand) { d, s -> asm.roundsd(d, s, 0x01) }
-                is Instruction.Round -> emitFpUnaryXmm(inst.dest, inst.operand) { d, s -> asm.roundsd(d, s, 0x00) }
-                is Instruction.FAbs -> emitFAbs(inst)
-                is Instruction.FMin -> emitFBinOp(inst.dest, inst.lhs, inst.rhs) { d, s ->
+                is Sqrt -> emitFpUnaryXmm(inst.dest, inst.operand) { d, s -> asm.sqrtsd(d, s) }
+                is Ceil -> emitFpUnaryXmm(inst.dest, inst.operand) { d, s -> asm.roundsd(d, s, 0x02) }
+                is Floor -> emitFpUnaryXmm(inst.dest, inst.operand) { d, s -> asm.roundsd(d, s, 0x01) }
+                is Round -> emitFpUnaryXmm(inst.dest, inst.operand) { d, s -> asm.roundsd(d, s, 0x00) }
+                is FAbs -> emitFAbs(inst)
+                is FMin -> emitFBinOp(inst.dest, inst.lhs, inst.rhs) { d, s ->
                     if (inst.dest.type == Type.F32) asm.minss(d, s) else asm.minsd(d, s)
                 }
-                is Instruction.FMax -> emitFBinOp(inst.dest, inst.lhs, inst.rhs) { d, s ->
+                is FMax -> emitFBinOp(inst.dest, inst.lhs, inst.rhs) { d, s ->
                     if (inst.dest.type == Type.F32) asm.maxss(d, s) else asm.maxsd(d, s)
                 }
-                is Instruction.CopySign -> emitCopySign(inst)
+                is CopySign -> emitCopySign(inst)
 
-                is Instruction.SMin -> emitIntMinMax(inst.dest, inst.lhs, inst.rhs, signed = true, isMin = true)
-                is Instruction.SMax -> emitIntMinMax(inst.dest, inst.lhs, inst.rhs, signed = true, isMin = false)
-                is Instruction.UMin -> emitIntMinMax(inst.dest, inst.lhs, inst.rhs, signed = false, isMin = true)
-                is Instruction.UMax -> emitIntMinMax(inst.dest, inst.lhs, inst.rhs, signed = false, isMin = false)
+                is SMin -> emitIntMinMax(inst.dest, inst.lhs, inst.rhs, signed = true, isMin = true)
+                is SMax -> emitIntMinMax(inst.dest, inst.lhs, inst.rhs, signed = true, isMin = false)
+                is UMin -> emitIntMinMax(inst.dest, inst.lhs, inst.rhs, signed = false, isMin = true)
+                is UMax -> emitIntMinMax(inst.dest, inst.lhs, inst.rhs, signed = false, isMin = false)
 
-                is Instruction.MemCpy -> emitRepMovsb(inst.dst, inst.src, inst.len)
-                is Instruction.MemSet -> emitMemSet(inst)
-                is Instruction.MemMove -> emitRepMovsb(inst.dst, inst.src, inst.len)
+                is MemCpy -> emitRepMovsb(inst.dst, inst.src, inst.len)
+                is MemSet -> emitMemSet(inst)
+                is MemMove -> emitRepMovsb(inst.dst, inst.src, inst.len)
 
-                is Instruction.Fence -> {
+                is Fence -> {
                     when (inst.ordering) {
                         AtomicOrdering.ACQUIRE -> asm.lfence()
                         AtomicOrdering.RELEASE -> asm.sfence()
@@ -1017,33 +1104,35 @@ class X86CodeGenerator : CodeGenerator {
                     }
                 }
 
-                is Instruction.FRem -> emitFRem(inst)
-                is Instruction.FMA -> emitFMA(inst)
+                is FRem -> emitFRem(inst)
+                is FMA -> emitFMA(inst)
 
-                is Instruction.SAddSat -> emitSatArith(inst.dest, inst.lhs, inst.rhs, signed = true, isAdd = true)
-                is Instruction.UAddSat -> emitSatArith(inst.dest, inst.lhs, inst.rhs, signed = false, isAdd = true)
-                is Instruction.SSubSat -> emitSatArith(inst.dest, inst.lhs, inst.rhs, signed = true, isAdd = false)
-                is Instruction.USubSat -> emitSatArith(inst.dest, inst.lhs, inst.rhs, signed = false, isAdd = false)
+                is SAddSat -> emitSatArith(inst.dest, inst.lhs, inst.rhs, signed = true, isAdd = true)
+                is UAddSat -> emitSatArith(inst.dest, inst.lhs, inst.rhs, signed = false, isAdd = true)
+                is SSubSat -> emitSatArith(inst.dest, inst.lhs, inst.rhs, signed = true, isAdd = false)
+                is USubSat -> emitSatArith(inst.dest, inst.lhs, inst.rhs, signed = false, isAdd = false)
 
-                is Instruction.SAddOverflow -> emitOverflowArith(inst.dest, inst.lhs, inst.rhs, signed = true, op = "add")
-                is Instruction.UAddOverflow -> emitOverflowArith(inst.dest, inst.lhs, inst.rhs, signed = false, op = "add")
-                is Instruction.SSubOverflow -> emitOverflowArith(inst.dest, inst.lhs, inst.rhs, signed = true, op = "sub")
-                is Instruction.USubOverflow -> emitOverflowArith(inst.dest, inst.lhs, inst.rhs, signed = false, op = "sub")
-                is Instruction.SMulOverflow -> emitOverflowArith(inst.dest, inst.lhs, inst.rhs, signed = true, op = "mul")
-                is Instruction.UMulOverflow -> emitOverflowArith(inst.dest, inst.lhs, inst.rhs, signed = false, op = "mul")
+                is SAddOverflow -> emitOverflowArith(inst.dest, inst.lhs, inst.rhs, signed = true, op = "add")
+                is UAddOverflow -> emitOverflowArith(inst.dest, inst.lhs, inst.rhs, signed = false, op = "add")
+                is SSubOverflow -> emitOverflowArith(inst.dest, inst.lhs, inst.rhs, signed = true, op = "sub")
+                is USubOverflow -> emitOverflowArith(inst.dest, inst.lhs, inst.rhs, signed = false, op = "sub")
+                is SMulOverflow -> emitOverflowArith(inst.dest, inst.lhs, inst.rhs, signed = true, op = "mul")
+                is UMulOverflow -> emitOverflowArith(inst.dest, inst.lhs, inst.rhs, signed = false, op = "mul")
 
-                is Instruction.AtomicRMW -> emitAtomicRMW(inst)
-                is Instruction.CmpXchg -> emitCmpXchg(inst)
+                is AtomicRMW -> emitAtomicRMW(inst)
+                is CmpXchg -> emitCmpXchg(inst)
 
-                is Instruction.Invoke -> emitInvoke(inst)
-                is Instruction.LandingPad -> emitLandingPad(inst)
-                is Instruction.Resume -> emitResume(inst)
+                is Invoke -> emitInvoke(inst)
+                is CallBr -> emitCallBr(inst)
+                is LandingPad -> emitLandingPad(inst)
+                is Resume -> emitResume(inst)
+                is Throw -> emitThrow(inst)
 
-                is Instruction.Unreachable -> asm.ud2()
-                is Instruction.Trap -> asm.int3()
-                is Instruction.DebugTrap -> asm.int3()
+                is Unreachable -> asm.ud2()
+                is Trap -> asm.int3()
+                is DebugTrap -> asm.int3()
 
-                is Instruction.DebugLoc -> {
+                is DebugLoc -> {
                     ctx.debugLineMapBuilder.add(
                         codeOffset = asm.position().toLong(),
                         file = inst.scope,
@@ -1053,14 +1142,14 @@ class X86CodeGenerator : CodeGenerator {
                         inlinedAt = inst.inlinedAt,
                     )
                 }
-                is Instruction.DebugValue -> {} // no-op at native level
-                is Instruction.DebugDeclare -> {} // no-op at native level
+                is DebugValue -> {} // no-op at native level
+                is DebugDeclare -> {} // no-op at native level
 
                 else -> error("Unsupported IR instruction for x86-64: ${inst::class.simpleName}")
             }
         }
 
-        private fun emitReturn(inst: Instruction.Ret) {
+        private fun emitReturn(inst: Ret) {
             val retVal = inst.value
             if (retVal != null) {
                 when (retVal.type) {
@@ -1128,7 +1217,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitCall(inst: Instruction.Call) {
+        private fun emitCall(inst: Call) {
             // System V: GP and XMM args use independent counters
             // Windows: GP and XMM share the same slot index
             var gpIdx = 0
@@ -1300,7 +1389,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitInvoke(inst: Instruction.Invoke) {
+        private fun emitInvoke(inst: Invoke) {
             // Invoke is a call with exception handling. Emit args + call like a normal Call,
             // but record the call site for the LSDA and branch to normalDest after.
             val funcName = when (val f = inst.function) {
@@ -1389,7 +1478,82 @@ class X86CodeGenerator : CodeGenerator {
             asm.jmpLabel("${fn.name}.${inst.normalDest}")
         }
 
-        private fun emitLandingPad(inst: Instruction.LandingPad) {
+        private fun emitCallBr(inst: CallBr) {
+            // CallBr: call a function that may branch to indirect destinations (asm goto).
+            // Emit as a normal call, store return value, then fall through to fallthrough block.
+            // The indirect destinations are reached by the callee (inline asm), not by us.
+            val funcName = when (val f = inst.function) {
+                is FunctionRef -> f.name
+                is GlobalRef -> f.name
+                else -> error("Unsupported callbr target: $f")
+            }
+
+            // Emit arguments
+            var gpIdx = 0
+            var xmmIdx = 0
+            for (arg in inst.args) {
+                when {
+                    arg.type == Type.F64 || arg.type == Type.F32 -> {
+                        if (isWindows) {
+                            if (gpIdx < callArgRegsXmm.size) { loadValueXmm(arg, callArgRegsXmm[gpIdx]) }
+                            gpIdx++
+                        } else {
+                            if (xmmIdx < callArgRegsXmm.size) { loadValueXmm(arg, callArgRegsXmm[xmmIdx]) }
+                            xmmIdx++
+                        }
+                    }
+                    else -> {
+                        if (gpIdx < callArgRegs64.size) {
+                            when (arg.type) {
+                                Type.I32, Type.I16, Type.I8, Type.I1 -> loadValue32(arg, callArgRegs32[gpIdx])
+                                else -> loadValue64(arg, callArgRegs64[gpIdx])
+                            }
+                        }
+                        gpIdx++
+                    }
+                }
+            }
+
+            // Emit the call
+            val isLocal = module.functions.any { it.name == funcName && !it.isExternal }
+            if (isLocal) {
+                asm.callLabel(funcName)
+            } else {
+                val off = asm.callExtern()
+                relocations.add(Relocation(
+                    offset = off.toLong(), symbol = funcName,
+                    type = RelocationType.X86_64.PLT32, addend = -4, section = ".text"))
+            }
+
+            // Store return value
+            val dest = inst.dest
+            if (dest != null) {
+                when (dest.type) {
+                    Type.I32 -> {
+                        val d = getDest32(dest.name)
+                        if (d != eax32) { asm.mov(d, eax32 as X86Operand32) }
+                        if (isSpilled(dest.name)) { storeTo(dest.name, reg32 = d) }
+                    }
+                    Type.I64, Type.OpaquePointer, is Type.Pointer -> {
+                        val d = getDest64(dest.name)
+                        if (d != rax64) { asm.mov(d, rax64 as X86Operand64) }
+                        if (isSpilled(dest.name)) { storeTo(dest.name, reg64 = d) }
+                    }
+                    Type.F64, Type.F32 -> {
+                        val d = getDestXmm(dest.name)
+                        if (d != xmm0) { asm.movsd(d, xmm0) }
+                        if (isSpilled(dest.name)) { storeToXmm(dest.name, d) }
+                    }
+                    else -> {}
+                }
+            }
+
+            // Fall through to fallthrough block
+            emitPhiCopies(inst.fallthrough)
+            asm.jmpLabel("${fn.name}.${inst.fallthrough}")
+        }
+
+        private fun emitLandingPad(inst: LandingPad) {
             // The landing pad label is where the unwinder transfers control.
             // By the Itanium ABI, on entry to a landing pad:
             //   RAX = exception pointer, RDX = selector value
@@ -1416,20 +1580,27 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitResume(inst: Instruction.Resume) {
-            // Resume unwinding: call _Unwind_Resume(exceptionPtr)
-            // The exception pointer is in the value operand
-            loadValue64(inst.value, callArgRegs64[0]) // RDI (System V) or RCX (Win64)
+        private fun emitResume(inst: Resume) {
+            loadValue64(inst.value, callArgRegs64[0])
             val off = asm.callExtern()
             relocations.add(Relocation(
                 offset = off.toLong(), symbol = "_Unwind_Resume",
                 type = RelocationType.X86_64.PLT32, addend = -4, section = ".text"))
-            asm.ud2() // unreachable after _Unwind_Resume
+            asm.ud2()
+        }
+
+        private fun emitThrow(inst: Throw) {
+            loadValue64(inst.exception, callArgRegs64[0])
+            val off = asm.callExtern()
+            relocations.add(Relocation(
+                offset = off.toLong(), symbol = "kgen_throw",
+                type = RelocationType.X86_64.PLT32, addend = -4, section = ".text"))
+            asm.ud2()
         }
 
         private fun resolveActionIndex(unwindLabel: String): Int {
             val unwindBlock = fn.blocks.firstOrNull { it.label == unwindLabel } ?: return 0
-            val lp = unwindBlock.instructions.firstOrNull { it is Instruction.LandingPad } as? Instruction.LandingPad
+            val lp = unwindBlock.instructions.firstOrNull { it is LandingPad } as? LandingPad
                 ?: return 0
             if (lp.cleanup && lp.clauses.isEmpty()) return 0 // cleanup only, no type filter
             val catchClause = lp.clauses.filterIsInstance<LandingPadClause.Catch>().firstOrNull() ?: return 0
@@ -1447,7 +1618,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitICmp(inst: Instruction.ICmp) {
+        private fun emitICmp(inst: ICmp) {
             val dest = getDest32(inst.dest.name)
             when (inst.lhs.type) {
                 Type.I32, Type.I16, Type.I8, Type.I1 -> {
@@ -1505,7 +1676,7 @@ class X86CodeGenerator : CodeGenerator {
             if (isSpilled(inst.dest.name)) storeTo(inst.dest.name, reg32 = dest)
         }
 
-        private fun emitGetElementPtr(inst: Instruction.GetElementPtr) {
+        private fun emitGetElementPtr(inst: GetElementPtr) {
             val dest = getDest64(inst.dest.name)
             val ptr = inst.ptr
             if (ptr is GlobalRef && isTlsGlobal(ptr.name)) {
@@ -1665,7 +1836,7 @@ class X86CodeGenerator : CodeGenerator {
             return currentType
         }
 
-        private fun emitExtractValue(inst: Instruction.ExtractValue) {
+        private fun emitExtractValue(inst: ExtractValue) {
             val fieldType = aggregateFieldType(inst.aggregate.type, inst.indices)
             val fieldOffset = aggregateFieldOffset(inst.aggregate.type, inst.indices)
 
@@ -1696,7 +1867,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitInsertValue(inst: Instruction.InsertValue) {
+        private fun emitInsertValue(inst: InsertValue) {
             val fieldType = aggregateFieldType(inst.aggregate.type, inst.indices)
             val fieldOffset = aggregateFieldOffset(inst.aggregate.type, inst.indices)
 
@@ -1781,7 +1952,7 @@ class X86CodeGenerator : CodeGenerator {
             return Integer.numberOfTrailingZeros(n)
         }
 
-        private fun emitMul(inst: Instruction.Mul) {
+        private fun emitMul(inst: Mul) {
             when (inst.lhs.type) {
                 Type.I32 -> {
                     val dest = getDest32(inst.dest.name)
@@ -1922,7 +2093,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitNeg(inst: Instruction.Neg) {
+        private fun emitNeg(inst: Neg) {
             when (inst.operand.type) {
                 Type.I32 -> {
                     val d = getDest32(inst.dest.name)
@@ -1940,7 +2111,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitNot(inst: Instruction.Not) {
+        private fun emitNot(inst: Not) {
             when (inst.operand.type) {
                 Type.I32 -> {
                     val d = getDest32(inst.dest.name)
@@ -1972,7 +2143,7 @@ class X86CodeGenerator : CodeGenerator {
             if (isSpilled(dest.name)) storeTo(dest.name, reg64 = d)
         }
 
-        private fun emitBitCast(inst: Instruction.BitCast) {
+        private fun emitBitCast(inst: BitCast) {
             val srcType = inst.value.type
             val destType = inst.dest.type
             when {
@@ -1993,7 +2164,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitZExt(inst: Instruction.ZExt) {
+        private fun emitZExt(inst: ZExt) {
             val src = inst.value
             val srcType = src.type
             val destType = inst.dest.type
@@ -2034,7 +2205,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitSExt(inst: Instruction.SExt) {
+        private fun emitSExt(inst: SExt) {
             val src = inst.value
             val srcType = src.type
             val destType = inst.dest.type
@@ -2100,7 +2271,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitAlloca(inst: Instruction.Alloca) {
+        private fun emitAlloca(inst: Alloca) {
             val offset = allocaOffsets[inst.dest.name]
                 ?: error("No alloca offset for ${inst.dest.name}")
             // lea dest, [rbp + offset]
@@ -2132,6 +2303,16 @@ class X86CodeGenerator : CodeGenerator {
         private fun isTlsGlobal(name: String): Boolean =
             module.globals.any { it.name == name && it.threadLocal != null }
 
+        private fun tlsMode(name: String): ThreadLocalMode =
+            module.globals.first { it.name == name && it.threadLocal != null }.threadLocal!!
+
+        /**
+         * Resolve a pointer value to a GP register holding its address.
+         *
+         * For [GlobalRef] values, emits a RIP-relative LEA with a PC32 relocation
+         * (or a TLS address load for thread-local globals). For local SSA values,
+         * loads from the register allocation or spill slot.
+         */
         private fun resolvePointer(ptr: Value, scratch: X86Register64 = r11_64): X86Register64 {
             if (ptr is GlobalRef) {
                 if (isTlsGlobal(ptr.name)) {
@@ -2152,48 +2333,145 @@ class X86CodeGenerator : CodeGenerator {
         }
 
         /**
-         * Load the address of a TLS variable into [dest].
-         * Linux local-exec: mov dest, fs:[0]; lea dest, [dest + tpoff]
-         * Windows: mov dest, gs:[0x58]; mov dest, [dest]; lea dest, [dest + offset]
+         * Load the address of a thread-local variable into [dest].
+         *
+         * Supports three TLS access models on Linux:
+         * - **LOCAL_EXEC**: direct FS/GS segment offset (static linking only)
+         * - **INITIAL_EXEC**: GOT-relative TP offset (for shared libraries)
+         * - **GENERAL_DYNAMIC**: full `__tls_get_addr` call sequence (relaxed to LOCAL_EXEC by static linker)
+         *
+         * On Windows, uses the TEB (Thread Environment Block) via GS segment.
          */
         private fun loadTlsAddress(name: String, dest: X86Register64): X86Register64 {
-            val enc = (dest as X86Register).encoding
-            val rex = 0x48 or ((enc shr 3) and 1).shl(2)
+            val mode = tlsMode(name)
             if (isWindows) {
-                // Windows TLS via TEB: gs:[0x58] = ThreadLocalStoragePointer
-                // mov dest, gs:[0x58]
-                asm.emitByte(0x65) // GS prefix
-                asm.emitByte(rex)
-                asm.emitByte(0x8B) // MOV r64, [disp32]
-                asm.emitByte(0x04 or ((enc and 7) shl 3))
-                asm.emitByte(0x25) // SIB: [disp32]
-                asm.emitInt32(0x58)
-                // mov dest, [dest] — dereference TLS slot pointer
-                asm.emitByte(rex)
-                asm.emitByte(0x8B)
-                asm.emitByte(((enc and 7) shl 3) or (enc and 7))
-            } else {
-                // Linux local-exec: mov dest, fs:[0]
-                asm.emitByte(0x64) // FS prefix
-                asm.emitByte(rex)
-                asm.emitByte(0x8B) // MOV r64, [disp32]
-                asm.emitByte(0x04 or ((enc and 7) shl 3))
-                asm.emitByte(0x25) // SIB: [disp32]
-                asm.emitInt32(0)
+                return loadTlsAddressWindows(name, dest)
             }
-            // lea dest, [dest + tpoff] — add TLS offset via relocation
-            asm.emitByte(rex)
+            return when (mode) {
+                ThreadLocalMode.GENERAL_DYNAMIC -> loadTlsAddressGeneralDynamic(name, dest)
+                ThreadLocalMode.INITIAL_EXEC -> loadTlsAddressInitialExec(name, dest)
+                else -> loadTlsAddressLocalExec(name, dest)
+            }
+        }
+
+        /**
+         * GENERAL_DYNAMIC: data16 lea rdi, [rip+sym@TLSGD]; data16 data16 rex.W call __tls_get_addr@PLT
+         * Works everywhere (shared libraries, dlopen), calls __tls_get_addr.
+         * Result in RAX. Clobbers caller-saved registers.
+         */
+        private fun loadTlsAddressGeneralDynamic(name: String, dest: X86Register64): X86Register64 {
+            // Standard GD sequence (32 bytes, exactly as specified by x86-64 ABI):
+            // 0x66                          data16 prefix (padding for linker relaxation)
+            // 48 8d 3d XX XX XX XX          lea rdi, [rip + sym@TLSGD]
+            // 0x66 0x66                     data16 data16 (padding)
+            // 48 e8 XX XX XX XX             rex.W call __tls_get_addr@PLT
+
+            // data16 + lea rdi, [rip + sym@TLSGD]
+            asm.emitByte(0x66) // data16 prefix
+            asm.emitByte(0x48) // REX.W
             asm.emitByte(0x8D) // LEA
-            asm.emitByte(0x80 or ((enc and 7) shl 3) or (enc and 7)) // [dest + disp32]
+            asm.emitByte(0x3D) // rdi, [rip+disp32]
             relocations.add(Relocation(
                 offset = asm.position().toLong(), symbol = name,
-                type = if (isWindows) RelocationType.X86_64.R_32 else RelocationType.X86_64.TPOFF32,
-                addend = 0, section = ".text"))
+                type = RelocationType.X86_64.TLSGD, addend = -4, section = ".text"))
+            asm.emitInt32(0)
+
+            // data16 data16 rex.W call __tls_get_addr@PLT
+            asm.emitByte(0x66) // data16
+            asm.emitByte(0x66) // data16
+            asm.emitByte(0x48) // REX.W
+            asm.emitByte(0xE8) // CALL rel32
+            relocations.add(Relocation(
+                offset = asm.position().toLong(), symbol = "__tls_get_addr",
+                type = RelocationType.X86_64.PLT32, addend = -4, section = ".text"))
+            asm.emitInt32(0)
+
+            // Result is in RAX. Move to dest if different.
+            if (dest != X86Register.RAX) {
+                asm.mov(dest, X86Register.RAX as X86Register64)
+            }
+            return dest
+        }
+
+        /**
+         * LOCAL_EXEC: mov dest, fs:[0]; lea dest, [dest + tpoff]
+         * Static offset known at link time — most efficient.
+         */
+        private fun loadTlsAddressLocalExec(name: String, dest: X86Register64): X86Register64 {
+            val enc = (dest as X86Register).encoding
+            val rex = 0x48 or ((enc shr 3) and 1).shl(2)
+            // mov dest, fs:[0]
+            asm.emitByte(0x64) // FS prefix
+            asm.emitByte(rex)
+            asm.emitByte(0x8B) // MOV r64, [disp32]
+            asm.emitByte(0x04 or ((enc and 7) shl 3))
+            asm.emitByte(0x25) // SIB: [disp32]
+            asm.emitInt32(0)
+            // lea dest, [dest + tpoff]
+            asm.emitByte(rex)
+            asm.emitByte(0x8D) // LEA
+            asm.emitByte(0x80 or ((enc and 7) shl 3) or (enc and 7))
+            relocations.add(Relocation(
+                offset = asm.position().toLong(), symbol = name,
+                type = RelocationType.X86_64.TPOFF32, addend = 0, section = ".text"))
             asm.emitInt32(0)
             return dest
         }
 
-        private fun emitLoad(inst: Instruction.Load) {
+        /**
+         * INITIAL_EXEC: mov dest, fs:[0]; add dest, [rip + symbol@GOTTPOFF]
+         * Offset loaded from GOT at runtime — works for shared libraries.
+         */
+        private fun loadTlsAddressInitialExec(name: String, dest: X86Register64): X86Register64 {
+            val enc = (dest as X86Register).encoding
+            val rex = 0x48 or ((enc shr 3) and 1).shl(2)
+            // mov dest, fs:[0]
+            asm.emitByte(0x64) // FS prefix
+            asm.emitByte(rex)
+            asm.emitByte(0x8B) // MOV r64, [disp32]
+            asm.emitByte(0x04 or ((enc and 7) shl 3))
+            asm.emitByte(0x25) // SIB: [disp32]
+            asm.emitInt32(0)
+            // add dest, qword ptr [rip + symbol@GOTTPOFF]
+            asm.emitByte(rex)
+            asm.emitByte(0x03) // ADD r64, r/m64
+            asm.emitByte(0x05 or ((enc and 7) shl 3)) // [rip + disp32]
+            relocations.add(Relocation(
+                offset = asm.position().toLong(), symbol = name,
+                type = RelocationType.X86_64.GOTTPOFF, addend = -4, section = ".text"))
+            asm.emitInt32(0)
+            return dest
+        }
+
+        /**
+         * Windows: mov dest, gs:[0x58]; mov dest, [dest]; lea dest, [dest + offset]
+         */
+        private fun loadTlsAddressWindows(name: String, dest: X86Register64): X86Register64 {
+            val enc = (dest as X86Register).encoding
+            val rex = 0x48 or ((enc shr 3) and 1).shl(2)
+            // mov dest, gs:[0x58] — TEB.ThreadLocalStoragePointer
+            asm.emitByte(0x65) // GS prefix
+            asm.emitByte(rex)
+            asm.emitByte(0x8B) // MOV r64, [disp32]
+            asm.emitByte(0x04 or ((enc and 7) shl 3))
+            asm.emitByte(0x25) // SIB: [disp32]
+            asm.emitInt32(0x58)
+            // mov dest, [dest] — dereference TLS slot pointer
+            asm.emitByte(rex)
+            asm.emitByte(0x8B)
+            asm.emitByte(((enc and 7) shl 3) or (enc and 7))
+            // lea dest, [dest + offset]
+            asm.emitByte(rex)
+            asm.emitByte(0x8D) // LEA
+            asm.emitByte(0x80 or ((enc and 7) shl 3) or (enc and 7))
+            relocations.add(Relocation(
+                offset = asm.position().toLong(), symbol = name,
+                type = RelocationType.X86_64.R_32, addend = 0, section = ".text"))
+            asm.emitInt32(0)
+            return dest
+        }
+
+        private fun emitLoad(inst: Load) {
             val ptr = inst.ptr
             val destType = inst.dest.type
             when (destType) {
@@ -2225,7 +2503,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitStore(inst: Instruction.Store) {
+        private fun emitStore(inst: Store) {
             val ptr = inst.ptr
             val val_ = inst.value
             val addr = resolvePointer(ptr, r11_64)
@@ -2256,7 +2534,7 @@ class X86CodeGenerator : CodeGenerator {
 
         // ── Varargs (System V AMD64 ABI) ────────────────────────────
 
-        private fun emitVAStart(inst: Instruction.VAStart) {
+        private fun emitVAStart(inst: VAStart) {
             // va_list layout (System V): { u32 gp_offset, u32 fp_offset, ptr overflow_arg_area, ptr reg_save_area }
             val vaListPtr = getOrLoad64(inst.argList.name, r11_64)
 
@@ -2277,7 +2555,7 @@ class X86CodeGenerator : CodeGenerator {
             asm.mov(X86Memory.base(vaListPtr).offset(16), r10_64)
         }
 
-        private fun emitVAArg(inst: Instruction.VAArg) {
+        private fun emitVAArg(inst: VAArg) {
             val vaListPtr = getOrLoad64(inst.argList.name, r11_64)
             val dest = inst.dest
             val isGp = inst.argType != Type.F64 && inst.argType != Type.F32
@@ -2334,7 +2612,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitVACopy(inst: Instruction.VACopy) {
+        private fun emitVACopy(inst: VACopy) {
             // Copy 24 bytes from src va_list to dst va_list
             val src = getOrLoad64(inst.src.name, r10_64)
             val dst = getOrLoad64(inst.dst.name, r11_64)
@@ -2357,7 +2635,7 @@ class X86CodeGenerator : CodeGenerator {
                 type = RelocationType.X86_64.PLT32, addend = -4, section = ".text"))
         }
 
-        private fun emitGCRoot(inst: Instruction.GCRoot) {
+        private fun emitGCRoot(inst: GCRoot) {
             gcRoots.add(inst.ptr.name)
         }
 
@@ -2416,7 +2694,7 @@ class X86CodeGenerator : CodeGenerator {
             if (isSpilled(dest.name)) storeToXmm(dest.name, d)
         }
 
-        private fun emitFAbs(inst: Instruction.FAbs) {
+        private fun emitFAbs(inst: FAbs) {
             val d = getDestXmm(inst.dest.name)
             val src = if (inst.operand is Parameter || inst.operand is InstructionRef) {
                 getOrLoadXmm(inst.operand.name, if (d == xmm15) xmm14 else xmm15)
@@ -2433,7 +2711,7 @@ class X86CodeGenerator : CodeGenerator {
             if (isSpilled(inst.dest.name)) storeToXmm(inst.dest.name, d)
         }
 
-        private fun emitCopySign(inst: Instruction.CopySign) {
+        private fun emitCopySign(inst: CopySign) {
             val d = getDestXmm(inst.dest.name)
             // Load magnitude, clear its sign bit
             loadValueXmm(inst.magnitude, d)
@@ -2482,7 +2760,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitFRem(inst: Instruction.FRem) {
+        private fun emitFRem(inst: FRem) {
             // x86 doesn't have a direct float remainder instruction in SSE
             // Use x87 FPU: fprem (partial remainder, IEEE 754 behavior)
             // Or compute: result = lhs - trunc(lhs / rhs) * rhs
@@ -2528,9 +2806,9 @@ class X86CodeGenerator : CodeGenerator {
             if (isSpilled(inst.dest.name)) storeToXmm(inst.dest.name, d)
         }
 
-        private fun emitFMA(inst: Instruction.FMA) {
+        private fun emitFMA(inst: FMA) {
             // FMA: dest = a * b + c
-            // Use vfmadd213sd if available, otherwise mul + add
+            // vfmadd213: dest = dest * src2 + src3  (put a in dest, b in src2, c in src3)
             val d = getDestXmm(inst.dest.name)
             val aXmm = if (inst.a is Parameter || inst.a is InstructionRef) {
                 getOrLoadXmm(inst.a.name, if (d == xmm15) xmm14 else xmm15)
@@ -2547,20 +2825,32 @@ class X86CodeGenerator : CodeGenerator {
                 loadValueXmm(inst.b, s)
                 s
             }
-
-            if (d != aXmm) asm.movsd(d, aXmm)
-            asm.mulsd(d, bXmm)
-
             val cXmm = if (inst.c is Parameter || inst.c is InstructionRef) {
-                val s = if (d == xmm14) xmm13 else xmm14
+                val s = pickScratchXmm(d, aXmm, bXmm)
                 getOrLoadXmm(inst.c.name, s)
             } else {
-                val s = if (d == xmm14) xmm13 else xmm14
+                val s = pickScratchXmm(d, aXmm, bXmm)
                 loadValueXmm(inst.c, s)
                 s
             }
-            asm.addsd(d, cXmm)
+
+            // Move a into dest for the vfmadd213 destructive form
+            if (d != aXmm) {
+                asm.movsd(d, aXmm)
+            }
+
+            val isFloat = inst.dest.type == Type.F32
+            if (isFloat) {
+                asm.vfmadd213ss(d, bXmm, cXmm)
+            } else {
+                asm.vfmadd213sd(d, bXmm, cXmm)
+            }
             if (isSpilled(inst.dest.name)) storeToXmm(inst.dest.name, d)
+        }
+
+        private fun pickScratchXmm(vararg avoid: X86Xmm): X86Xmm {
+            val candidates = listOf(xmm15, xmm14, xmm13, xmm12)
+            return candidates.first { it !in avoid }
         }
 
         private fun emitSatArith(dest: InstructionRef, lhs: Value, rhs: Value, signed: Boolean, isAdd: Boolean) {
@@ -2680,7 +2970,7 @@ class X86CodeGenerator : CodeGenerator {
             asm.emitInt64(value)
         }
 
-        private fun emitAtomicRMW(inst: Instruction.AtomicRMW) {
+        private fun emitAtomicRMW(inst: AtomicRMW) {
             // lock prefix + operation on [ptr]
             // Result is the old value at [ptr] before the operation
             val ptrReg = r10_64
@@ -2741,7 +3031,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitLockOp(inst: Instruction.AtomicRMW, opcode: Int, subOpcode: Int) {
+        private fun emitLockOp(inst: AtomicRMW, opcode: Int, subOpcode: Int) {
             // lock xadd for ADD
             when (inst.dest.type) {
                 Type.I64, Type.OpaquePointer, is Type.Pointer -> {
@@ -2779,7 +3069,7 @@ class X86CodeGenerator : CodeGenerator {
             asm.emitByte(((vEnc and 7) shl 3) or (bEnc and 7))
         }
 
-        private fun emitAtomicRMWLoop(inst: Instruction.AtomicRMW, ptrReg: X86Register64) {
+        private fun emitAtomicRMWLoop(inst: AtomicRMW, ptrReg: X86Register64) {
             // Generic atomic RMW via cmpxchg loop:
             // retry: mov rax, [ptr]       ; load old value
             //        mov tmp, rax
@@ -2889,7 +3179,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitCmpXchg(inst: Instruction.CmpXchg) {
+        private fun emitCmpXchg(inst: CmpXchg) {
             // cmpxchg: RAX = expected, operand = new value
             // If [ptr] == RAX, set ZF and store new → [ptr], else load [ptr] → RAX
             // Result is old value
@@ -2925,7 +3215,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitFNeg(inst: Instruction.FNeg) {
+        private fun emitFNeg(inst: FNeg) {
             // fneg = xor with sign bit mask, or sub from 0
             // Simplest: xorpd with sign mask. But easier: sub from 0
             val d = getDestXmm(inst.dest.name)
@@ -2942,7 +3232,7 @@ class X86CodeGenerator : CodeGenerator {
             if (isSpilled(inst.dest.name)) storeToXmm(inst.dest.name, d)
         }
 
-        private fun emitFCmp(inst: Instruction.FCmp) {
+        private fun emitFCmp(inst: FCmp) {
             val lhsReg = getOrLoadXmm(inst.lhs.name, xmm14)
             val rhsReg = if (inst.rhs is Parameter || inst.rhs is InstructionRef) {
                 getOrLoadXmm(inst.rhs.name, xmm15)
@@ -2979,7 +3269,7 @@ class X86CodeGenerator : CodeGenerator {
             if (isSpilled(inst.dest.name)) storeTo(inst.dest.name, reg32 = dest)
         }
 
-        private fun emitSIToFP(inst: Instruction.SIToFP) {
+        private fun emitSIToFP(inst: SIToFP) {
             val d = getDestXmm(inst.dest.name)
             val toF32 = inst.toType == Type.F32
             when (inst.value.type) {
@@ -2998,7 +3288,7 @@ class X86CodeGenerator : CodeGenerator {
             if (isSpilled(inst.dest.name)) storeToXmm(inst.dest.name, d)
         }
 
-        private fun emitFPToSI(inst: Instruction.FPToSI) {
+        private fun emitFPToSI(inst: FPToSI) {
             val src = getOrLoadXmm(inst.value.name, xmm15)
             val fromF32 = inst.value.type == Type.F32
             when (inst.toType) {
@@ -3016,7 +3306,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitUIToFP(inst: Instruction.UIToFP) {
+        private fun emitUIToFP(inst: UIToFP) {
             // Unsigned int to float: zero-extend to i64, then cvtsi2sd with 64-bit source
             val d = getDestXmm(inst.dest.name)
             when (inst.value.type) {
@@ -3039,7 +3329,7 @@ class X86CodeGenerator : CodeGenerator {
             if (isSpilled(inst.dest.name)) storeToXmm(inst.dest.name, d)
         }
 
-        private fun emitFPToUI(inst: Instruction.FPToUI) {
+        private fun emitFPToUI(inst: FPToUI) {
             // Float to unsigned int: use cvtsd2si with 64-bit dest, then truncate
             val src = getOrLoadXmm(inst.value.name, xmm15)
             when (inst.toType) {
@@ -3060,7 +3350,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitFPExt(inst: Instruction.FPExt) {
+        private fun emitFPExt(inst: FPExt) {
             // f32 → f64: cvtss2sd
             val d = getDestXmm(inst.dest.name)
             val src = getOrLoadXmm(inst.value.name, if (d == xmm15) xmm14 else xmm15)
@@ -3074,7 +3364,7 @@ class X86CodeGenerator : CodeGenerator {
             if (isSpilled(inst.dest.name)) storeToXmm(inst.dest.name, d)
         }
 
-        private fun emitFPTrunc(inst: Instruction.FPTrunc) {
+        private fun emitFPTrunc(inst: FPTrunc) {
             // f64 → f32: cvtsd2ss
             val d = getDestXmm(inst.dest.name)
             val src = getOrLoadXmm(inst.value.name, if (d == xmm15) xmm14 else xmm15)
@@ -3088,7 +3378,7 @@ class X86CodeGenerator : CodeGenerator {
             if (isSpilled(inst.dest.name)) storeToXmm(inst.dest.name, d)
         }
 
-        private fun emitCtlz(inst: Instruction.Ctlz) {
+        private fun emitCtlz(inst: Ctlz) {
             when (inst.operand.type) {
                 Type.I64 -> {
                     val d = getDest64(inst.dest.name)
@@ -3105,7 +3395,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitCttz(inst: Instruction.Cttz) {
+        private fun emitCttz(inst: Cttz) {
             when (inst.operand.type) {
                 Type.I64 -> {
                     val d = getDest64(inst.dest.name)
@@ -3122,7 +3412,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitCtpop(inst: Instruction.Ctpop) {
+        private fun emitCtpop(inst: Ctpop) {
             when (inst.operand.type) {
                 Type.I64 -> {
                     val d = getDest64(inst.dest.name)
@@ -3139,7 +3429,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitBSwap(inst: Instruction.BSwap) {
+        private fun emitBSwap(inst: BSwap) {
             when (inst.operand.type) {
                 Type.I64 -> {
                     val d = getDest64(inst.dest.name)
@@ -3156,7 +3446,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitBitReverse(inst: Instruction.BitReverse) {
+        private fun emitBitReverse(inst: BitReverse) {
             when (inst.operand.type) {
                 Type.I64 -> {
                     val d = getDest64(inst.dest.name)
@@ -3245,7 +3535,7 @@ class X86CodeGenerator : CodeGenerator {
             asm.movsb()
         }
 
-        private fun emitMemSet(inst: Instruction.MemSet) {
+        private fun emitMemSet(inst: MemSet) {
             // rep stosb: RDI = dst, AL = value, RCX = count
             loadValue64(inst.dst, rdi64)
             loadValue64(inst.len, rcx64)
@@ -3458,6 +3748,14 @@ class X86CodeGenerator : CodeGenerator {
             else -> error("Unknown 32-bit register: $r")
         }
 
+        /**
+         * Emit parallel phi copies when transitioning from the current block to [targetBlockLabel].
+         *
+         * Phi nodes in SSA form require simultaneous assignment at block boundaries.
+         * This method uses topological ordering to emit non-conflicting moves first,
+         * then breaks register cycles using a scratch register (R10 for GP, XMM14 for FP)
+         * to avoid corrupting live values during sequential emission.
+         */
         private fun emitPhiCopies(targetBlockLabel: String) {
             val moves = phiMoves[currentBlockLabel to targetBlockLabel] ?: return
             if (moves.size <= 1) {
@@ -3586,7 +3884,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitSwitch(inst: Instruction.Switch) {
+        private fun emitSwitch(inst: Switch) {
             // Lowered as a chain of compare-and-branch
             val valType = inst.value.type
             for ((caseVal, target) in inst.cases) {
@@ -3620,17 +3918,17 @@ class X86CodeGenerator : CodeGenerator {
             asm.jmpLabel("${fn.name}.${inst.defaultTarget}")
         }
 
-        private fun emitBr(inst: Instruction.Br) {
+        private fun emitBr(inst: Br) {
             emitPhiCopies(inst.target)
             asm.jmpLabel("${fn.name}.${inst.target}")
         }
 
-        private fun emitIndirectBr(inst: Instruction.IndirectBr) {
+        private fun emitIndirectBr(inst: IndirectBr) {
             val addrReg = getOrLoad64(inst.address.name, r11_64)
             asm.jmpReg(addrReg as X86Register64)
         }
 
-        private fun emitCondBr(inst: Instruction.CondBr, nextBlockLabel: String?) {
+        private fun emitCondBr(inst: CondBr, nextBlockLabel: String?) {
             val truePhis = phiMoves[currentBlockLabel to inst.trueTarget]
             val falsePhis = phiMoves[currentBlockLabel to inst.falseTarget]
 
@@ -3662,8 +3960,8 @@ class X86CodeGenerator : CodeGenerator {
         }
 
         private fun emitFusedCmpBranch(
-            cmp: Instruction.ICmp,
-            br: Instruction.CondBr,
+            cmp: ICmp,
+            br: CondBr,
             nextBlockLabel: String?,
         ) {
             // Emit the comparison — 32-bit or 64-bit based on operand type
@@ -3738,7 +4036,7 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitSelect(inst: Instruction.Select) {
+        private fun emitSelect(inst: Select) {
             // select dest, cond, trueVal, falseVal
             // Strategy: load falseVal into dest, test cond, cmov trueVal if true
             when (inst.dest.type) {

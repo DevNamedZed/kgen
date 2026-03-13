@@ -1,11 +1,12 @@
 package org.kgen.codegen
 
 import org.kgen.binary.LineEntry
+import org.kgen.ir.instructions.*
 
 /**
  * Maps native code offsets to source locations (file, line, column).
  *
- * Built during code generation by collecting [org.kgen.ir.Instruction.DebugLoc]
+ * Built during code generation by collecting [DebugLoc]
  * instructions and associating them with the machine code offsets where they appear.
  * Enables post-mortem debugging: given a crash address or profiler sample, look up
  * which source line produced that code.

@@ -1,15 +1,25 @@
 package org.kgen.codegen
 
 /**
- * Decodes raw bytes into structured instruction sequences.
+ * Decodes raw machine code bytes into structured instruction sequences.
  *
- * Each backend provides its own instruction type [I].
+ * Part of the three-layer code generation API: [CodeGenerator] (IR to binary),
+ * [Assembler] (structured instructions to raw bytes), and [Disassembler] (raw bytes to instructions).
+ * Each backend provides its own concrete disassembler (e.g., `X86Disassembler`, `Arm64Disassembler`,
+ * `RiscVDisassembler`, `WasmDisassembler`, `JvmDisassembler`, `CilDisassembler`) parameterized by
+ * a backend-specific instruction type [I].
  *
- * ```kotlin
- * val disasm: Disassembler<X86Instruction> = ...
- * val instructions = disasm.disassemble(bytes, baseAddress = 0x401000)
- * instructions.forEach { println("${it.address}: ${it.instruction}") }
+ * Disassemblers are stateless and can be reused across multiple invocations.
+ *
+ * ```java
+ * Disassembler<X86Instruction> disasm = new X86Disassembler();
+ * List<DisassembledInstruction<X86Instruction>> insns = disasm.disassemble(bytes, 0x401000L);
+ * for (var insn : insns) {
+ *     System.out.println(insn.address() + ": " + insn.instruction());
+ * }
  * ```
+ *
+ * See `spec/roadmap.md` for the full list of supported targets and instruction coverage.
  */
 interface Disassembler<I> {
     /** Target identifier (e.g., "x86_64", "aarch64"). */

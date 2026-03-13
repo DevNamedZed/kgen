@@ -1,6 +1,8 @@
 package org.kgen.ir
 
-/** Reduction operations for [Instruction.VectorReduce]. */
+import org.kgen.ir.instructions.*
+
+/** Reduction operations for [VectorReduce]. */
 enum class VectorReduceOp {
     ADD, MUL, AND, OR, XOR,
     SMIN, SMAX, UMIN, UMAX,

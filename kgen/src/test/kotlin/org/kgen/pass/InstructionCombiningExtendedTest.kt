@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
+import org.kgen.ir.instructions.*
 
 class InstructionCombiningExtendedTest {
 
@@ -17,7 +18,7 @@ class InstructionCombiningExtendedTest {
     }
 
     private fun retValue(module: Module, funcIdx: Int = 0): Value? {
-        return (module.functions[funcIdx].blocks[0].instructions.last() as Instruction.Ret).value
+        return (module.functions[funcIdx].blocks[0].instructions.last() as Ret).value
     }
 
     private fun instCount(module: Module, funcIdx: Int = 0): Int {

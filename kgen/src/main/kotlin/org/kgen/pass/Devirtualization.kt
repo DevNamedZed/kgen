@@ -1,6 +1,7 @@
 package org.kgen.pass
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.types.*
 
 /**
@@ -68,13 +69,13 @@ class Devirtualization : ModulePass {
         typeInfo: Map<String, String>,
     ): Instruction? {
         return when (inst) {
-            is Instruction.VirtualCall -> {
+            is VirtualCall -> {
                 val concreteType = resolveConcreteType(inst.obj, typeInfo)
                     ?: hierarchy.singleImplementor(inst.className, inst.methodName)
 
                 if (concreteType != null) {
                     val targetName = "$concreteType.${inst.methodName}"
-                    Instruction.Call(
+                    Call(
                         dest = inst.dest,
                         function = FunctionRef(targetName, inst.methodType),
                         args = listOf(inst.obj) + inst.args,
@@ -83,13 +84,13 @@ class Devirtualization : ModulePass {
                 } else null
             }
 
-            is Instruction.InterfaceCall -> {
+            is InterfaceCall -> {
                 val concreteType = resolveConcreteType(inst.obj, typeInfo)
                     ?: hierarchy.singleInterfaceImplementor(inst.interfaceName, inst.methodName)
 
                 if (concreteType != null) {
                     val targetName = "$concreteType.${inst.methodName}"
-                    Instruction.Call(
+                    Call(
                         dest = inst.dest,
                         function = FunctionRef(targetName, inst.methodType),
                         args = listOf(inst.obj) + inst.args,
@@ -118,7 +119,7 @@ class Devirtualization : ModulePass {
         val result = mutableMapOf<String, String>()
         for (block in fn.blocks) {
             for (inst in block.instructions) {
-                if (inst is Instruction.GCAlloc && inst.allocType is Type.ClassRef) {
+                if (inst is GCAlloc && inst.allocType is Type.ClassRef) {
                     result[inst.dest.name] = (inst.allocType as Type.ClassRef).name
                 }
             }

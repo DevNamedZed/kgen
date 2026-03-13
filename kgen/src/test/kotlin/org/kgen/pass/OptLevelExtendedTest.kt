@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -38,7 +39,7 @@ class OptLevelExtendedTest {
             finalizeFunction()
         }
         val result = OptLevel.O1.pipeline().execute(module)
-        val ret = result.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = result.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(10, (ret.value as Constant.I32).value)
     }
 
@@ -52,7 +53,7 @@ class OptLevelExtendedTest {
             finalizeFunction()
         }
         val result = OptLevel.O1.pipeline().execute(module)
-        val ret = result.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = result.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(15, (ret.value as Constant.I32).value)
     }
 
@@ -66,7 +67,7 @@ class OptLevelExtendedTest {
             finalizeFunction()
         }
         val result = OptLevel.O1.pipeline().execute(module)
-        val ret = result.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = result.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(42, (ret.value as Constant.I32).value)
     }
 
@@ -95,7 +96,7 @@ class OptLevelExtendedTest {
             finalizeFunction()
         }
         val result = OptLevel.O1.pipeline().execute(module)
-        val ret = result.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = result.functions[0].blocks[0].instructions.last() as Ret
         assertTrue(ret.value is Parameter, "add x,0 should simplify to x: ${ret.value}")
     }
 
@@ -109,7 +110,7 @@ class OptLevelExtendedTest {
             finalizeFunction()
         }
         val result = OptLevel.O1.pipeline().execute(module)
-        val ret = result.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = result.functions[0].blocks[0].instructions.last() as Ret
         assertTrue(ret.value is Parameter, "mul x,1 should simplify to x: ${ret.value}")
     }
 
@@ -123,7 +124,7 @@ class OptLevelExtendedTest {
             finalizeFunction()
         }
         val result = OptLevel.O1.pipeline().execute(module)
-        val ret = result.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = result.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(0, (ret.value as Constant.I32).value, "mul x,0 should simplify to 0")
     }
 
@@ -139,7 +140,7 @@ class OptLevelExtendedTest {
             finalizeFunction()
         }
         val result = OptLevel.O2.pipeline().execute(module)
-        val ret = result.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = result.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(22, (ret.value as Constant.I32).value)
     }
 
@@ -170,7 +171,7 @@ class OptLevelExtendedTest {
         }
         val result = OptLevel.O1.pipeline().execute(module)
         val insts = result.functions[1].blocks[0].instructions
-        assertTrue(insts.any { it is Instruction.Call }, "Call should survive O1: $insts")
+        assertTrue(insts.any { it is Call }, "Call should survive O1: $insts")
     }
 
     @Test
@@ -183,7 +184,7 @@ class OptLevelExtendedTest {
             finalizeFunction()
         }
         val result = OptLevel.O1.pipeline().execute(module)
-        val ret = result.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = result.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(300_000L, (ret.value as Constant.I64).value)
     }
 
@@ -197,7 +198,7 @@ class OptLevelExtendedTest {
             finalizeFunction()
         }
         val result = OptLevel.O1.pipeline().execute(module)
-        val ret = result.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = result.functions[0].blocks[0].instructions.last() as Ret
         assertTrue(ret.value is Constant.I32 && (ret.value as Constant.I32).value == 0,
             "x - x should fold to 0: ${ret.value}")
     }
@@ -244,7 +245,7 @@ class OptLevelExtendedTest {
             finalizeFunction()
         }
         val result = OptLevel.O2.pipeline().execute(module)
-        val ret = result.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = result.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(8, (ret.value as Constant.I32).value)
     }
 
@@ -274,7 +275,7 @@ class OptLevelExtendedTest {
             finalizeFunction()
         }
         val result = OptLevel.O1.pipeline().execute(module)
-        val ret = result.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = result.functions[0].blocks[0].instructions.last() as Ret
         assertTrue(ret.value is Constant.I32 && (ret.value as Constant.I32).value == 0,
             "x ^ x should fold to 0: ${ret.value}")
     }
@@ -303,7 +304,7 @@ class OptLevelExtendedTest {
             finalizeFunction()
         }
         val result = OptLevel.O1.pipeline().execute(module)
-        val ret = result.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = result.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(0x0F, (ret.value as Constant.I32).value)
     }
 
@@ -317,7 +318,7 @@ class OptLevelExtendedTest {
             finalizeFunction()
         }
         val result = OptLevel.O1.pipeline().execute(module)
-        val ret = result.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = result.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(0xFF, (ret.value as Constant.I32).value)
     }
 
@@ -331,7 +332,7 @@ class OptLevelExtendedTest {
             finalizeFunction()
         }
         val result = OptLevel.O1.pipeline().execute(module)
-        val ret = result.functions[0].blocks[0].instructions.last() as Instruction.Ret
+        val ret = result.functions[0].blocks[0].instructions.last() as Ret
         assertEquals(16, (ret.value as Constant.I32).value)
     }
 
@@ -354,7 +355,7 @@ class OptLevelExtendedTest {
         // f1: dead code removed
         assertEquals(1, result.functions[0].blocks[0].instructions.size)
         // f2: constant folded
-        val ret = result.functions[1].blocks[0].instructions.last() as Instruction.Ret
+        val ret = result.functions[1].blocks[0].instructions.last() as Ret
         assertEquals(7, (ret.value as Constant.I32).value)
     }
 }

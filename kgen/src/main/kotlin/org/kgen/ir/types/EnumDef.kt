@@ -1,6 +1,7 @@
 package org.kgen.ir.types
 
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 
 /** Enum definition with variants. Variants can have fields (algebraic enums). */
 data class EnumDef(

@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -35,7 +36,7 @@ class OptLevelTest {
         val result = OptLevel.O1.pipeline().execute(ir.build())
         val insts = result.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "O1 should fold + DCE: $insts")
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertEquals(30, (ret.value as Constant.I32).value)
     }
 
@@ -52,7 +53,7 @@ class OptLevelTest {
         val result = OptLevel.O1.pipeline().execute(ir.build())
         val insts = result.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "O1 should simplify identity chain: $insts")
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertTrue(ret.value is Parameter)
     }
 
@@ -71,7 +72,7 @@ class OptLevelTest {
         val result = OptLevel.O2.pipeline().execute(ir.build())
         val insts = result.functions[0].blocks[0].instructions
         assertEquals(1, insts.size, "O2 should fully reduce: $insts")
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertEquals(0, (ret.value as Constant.I32).value)
     }
 

@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -29,7 +30,7 @@ class Mem2RegExtendedTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size)
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertTrue((ret.value as Constant.I1).value)
     }
 
@@ -46,7 +47,7 @@ class Mem2RegExtendedTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size)
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertEquals(42.toByte(), (ret.value as Constant.I8).value)
     }
 
@@ -63,7 +64,7 @@ class Mem2RegExtendedTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size)
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertEquals(1000.toShort(), (ret.value as Constant.I16).value)
     }
 
@@ -80,7 +81,7 @@ class Mem2RegExtendedTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size)
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertEquals(2.5f, (ret.value as Constant.F32).value)
     }
 
@@ -96,7 +97,7 @@ class Mem2RegExtendedTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size)
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertEquals(0L, (ret.value as Constant.I64).value)
     }
 
@@ -112,7 +113,7 @@ class Mem2RegExtendedTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size)
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertEquals(0.0, (ret.value as Constant.F64).value)
     }
 
@@ -128,7 +129,7 @@ class Mem2RegExtendedTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size)
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertFalse((ret.value as Constant.I1).value)
     }
 
@@ -152,9 +153,9 @@ class Mem2RegExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        assertFalse(insts.any { it is Instruction.Alloca })
-        assertFalse(insts.any { it is Instruction.Store })
-        assertFalse(insts.any { it is Instruction.Load })
+        assertFalse(insts.any { it is Alloca })
+        assertFalse(insts.any { it is Store })
+        assertFalse(insts.any { it is Load })
     }
 
     @Test
@@ -171,7 +172,7 @@ class Mem2RegExtendedTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size)
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertEquals(200, (ret.value as Constant.I32).value)
     }
 
@@ -195,8 +196,8 @@ class Mem2RegExtendedTest {
         }
         val mergeBlock = module.functions[0].blocks[2]
         val insts = mergeBlock.instructions
-        assertTrue(insts.any { it is Instruction.Phi }, "Should insert phi: $insts")
-        assertFalse(insts.any { it is Instruction.Load })
+        assertTrue(insts.any { it is Phi }, "Should insert phi: $insts")
+        assertFalse(insts.any { it is Load })
     }
 
     @Test
@@ -221,7 +222,7 @@ class Mem2RegExtendedTest {
             finalizeFunction()
         }
         val mergeBlock = module.functions[0].blocks[3]
-        val phi = mergeBlock.instructions.first { it is Instruction.Phi } as Instruction.Phi
+        val phi = mergeBlock.instructions.first { it is Phi } as Phi
         val values = phi.incoming.map { (v, _) -> (v as Constant.I32).value }.toSet()
         assertEquals(setOf(10, 20), values)
     }
@@ -238,7 +239,7 @@ class Mem2RegExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        assertTrue(insts.any { it is Instruction.Alloca })
+        assertTrue(insts.any { it is Alloca })
     }
 
     @Test
@@ -258,8 +259,8 @@ class Mem2RegExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        assertFalse(insts.any { it is Instruction.Alloca })
-        val addInst = insts[0] as Instruction.Add
+        assertFalse(insts.any { it is Alloca })
+        val addInst = insts[0] as Add
         assertEquals(5, (addInst.lhs as Constant.I32).value)
         assertEquals(7, (addInst.rhs as Constant.I32).value)
     }
@@ -278,7 +279,7 @@ class Mem2RegExtendedTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(2, insts.size) // add + ret
-        val ret = insts[1] as Instruction.Ret
+        val ret = insts[1] as Ret
         assertTrue(ret.value is InstructionRef)
     }
 
@@ -296,8 +297,8 @@ class Mem2RegExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        assertFalse(insts.any { it is Instruction.Load })
-        val addInst = insts[0] as Instruction.Add
+        assertFalse(insts.any { it is Load })
+        val addInst = insts[0] as Add
         assertEquals(42, (addInst.lhs as Constant.I32).value)
         assertEquals(42, (addInst.rhs as Constant.I32).value)
     }
@@ -320,7 +321,7 @@ class Mem2RegExtendedTest {
         val fn = module.functions.find { it.name == "f" }!!
         val insts = fn.blocks[0].instructions
         // ptr alloca should not be promoted since address is used in store as value
-        assertTrue(insts.any { it is Instruction.Load })
+        assertTrue(insts.any { it is Load })
     }
 
     @Test
@@ -338,8 +339,8 @@ class Mem2RegExtendedTest {
             finalizeFunction()
         }
         val insts = module.functions[0].blocks[0].instructions
-        assertFalse(insts.any { it is Instruction.Alloca })
-        val addInst = insts[0] as Instruction.Add
+        assertFalse(insts.any { it is Alloca })
+        val addInst = insts[0] as Add
         assertEquals(1, (addInst.lhs as Constant.I32).value)
         assertEquals(2, (addInst.rhs as Constant.I32).value)
     }
@@ -358,7 +359,7 @@ class Mem2RegExtendedTest {
             finalizeFunction()
         }
         val fn = module.functions.find { it.name == "f" }!!
-        assertTrue(fn.blocks[0].instructions.any { it is Instruction.Alloca })
+        assertTrue(fn.blocks[0].instructions.any { it is Alloca })
     }
 
     @Test
@@ -379,7 +380,7 @@ class Mem2RegExtendedTest {
         val fn = module.functions.find { it.name == "f" }!!
         val insts = fn.blocks[0].instructions
         // good alloca should be promoted, bad should remain
-        val allocas = insts.filterIsInstance<Instruction.Alloca>()
+        val allocas = insts.filterIsInstance<Alloca>()
         assertEquals(1, allocas.size, "Only bad alloca should remain: $allocas")
     }
 
@@ -430,9 +431,9 @@ class Mem2RegExtendedTest {
             finalizeFunction()
         }
         val fn = module.functions[0]
-        assertFalse(fn.blocks.any { b -> b.instructions.any { it is Instruction.Alloca } })
+        assertFalse(fn.blocks.any { b -> b.instructions.any { it is Alloca } })
         val loopBlock = fn.blocks.find { it.label == "loop" }!!
-        assertTrue(loopBlock.instructions.any { it is Instruction.Phi })
+        assertTrue(loopBlock.instructions.any { it is Phi })
     }
 
     @Test
@@ -464,7 +465,7 @@ class Mem2RegExtendedTest {
             finalizeFunction()
         }
         val mergeBlock = module.functions[0].blocks[3]
-        val phis = mergeBlock.instructions.filterIsInstance<Instruction.Phi>()
+        val phis = mergeBlock.instructions.filterIsInstance<Phi>()
         assertEquals(2, phis.size, "Should have two phis: $phis")
     }
 
@@ -481,7 +482,7 @@ class Mem2RegExtendedTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size)
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertEquals(99, (ret.value as Constant.I32).value)
     }
 
@@ -498,7 +499,7 @@ class Mem2RegExtendedTest {
         }
         val insts = module.functions[0].blocks[0].instructions
         assertEquals(1, insts.size)
-        val ret = insts[0] as Instruction.Ret
+        val ret = insts[0] as Ret
         assertEquals(3.14, (ret.value as Constant.F64).value)
     }
 
@@ -521,7 +522,7 @@ class Mem2RegExtendedTest {
             ret(v2)
             finalizeFunction()
         }
-        assertEquals(10, ((module.functions[0].blocks[0].instructions[0] as Instruction.Ret).value as Constant.I32).value)
-        assertEquals(20, ((module.functions[1].blocks[0].instructions[0] as Instruction.Ret).value as Constant.I32).value)
+        assertEquals(10, ((module.functions[0].blocks[0].instructions[0] as Ret).value as Constant.I32).value)
+        assertEquals(20, ((module.functions[1].blocks[0].instructions[0] as Ret).value as Constant.I32).value)
     }
 }

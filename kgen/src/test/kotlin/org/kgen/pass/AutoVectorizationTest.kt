@@ -3,6 +3,7 @@ package org.kgen.pass
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
+import org.kgen.ir.instructions.*
 import org.kgen.ir.build.IrBuilder
 import org.kgen.ir.target.Target
 
@@ -88,8 +89,8 @@ class AutoVectorizationTest {
         val fn = result.functions.first()
         val entryInsts = fn.blocks.first().instructions
 
-        val hasSplat = entryInsts.any { it is Instruction.Splat }
-        val hasExtract = entryInsts.any { it is Instruction.ExtractElement }
+        val hasSplat = entryInsts.any { it is Splat }
+        val hasExtract = entryInsts.any { it is ExtractElement }
 
         if (hasSplat) {
             assertTrue(hasExtract, "Should have extract after SLP vectorization")
@@ -115,7 +116,7 @@ class AutoVectorizationTest {
         val fn = result.functions.first()
         val entryInsts = fn.blocks.first().instructions
 
-        val hasSplat = entryInsts.any { it is Instruction.Splat }
+        val hasSplat = entryInsts.any { it is Splat }
         assertFalse(hasSplat, "Different ops should not be SLP-vectorized")
     }
 
@@ -138,26 +139,26 @@ class AutoVectorizationTest {
             returnType = Type.Void,
             blocks = listOf(
                 BasicBlock("entry", listOf(
-                    Instruction.Br("header"),
+                    Br("header"),
                 )),
                 BasicBlock("header", listOf(
-                    Instruction.Phi(iRef, listOf(
+                    Phi(iRef, listOf(
                         Constant.I32(0) to "entry",
                         nextIRef to "body",
                     )),
-                    Instruction.ICmp(cmpRef, ICmpPredicate.SLT, iRef, nParam),
-                    Instruction.CondBr(cmpRef, "body", "exit"),
+                    ICmp(cmpRef, ICmpPredicate.SLT, iRef, nParam),
+                    CondBr(cmpRef, "body", "exit"),
                 )),
                 BasicBlock("body", listOf(
-                    Instruction.GetElementPtr(gepRef, Type.I32, arrParam, listOf(iRef)),
-                    Instruction.Load(loadRef, gepRef, Type.I32),
-                    Instruction.Add(addRef, loadRef, Constant.I32(1)),
-                    Instruction.Store(addRef, gepRef),
-                    Instruction.Add(nextIRef, iRef, Constant.I32(1)),
-                    Instruction.Br("header"),
+                    GetElementPtr(gepRef, Type.I32, arrParam, listOf(iRef)),
+                    Load(loadRef, gepRef, Type.I32),
+                    Add(addRef, loadRef, Constant.I32(1)),
+                    Store(addRef, gepRef),
+                    Add(nextIRef, iRef, Constant.I32(1)),
+                    Br("header"),
                 )),
                 BasicBlock("exit", listOf(
-                    Instruction.Ret(null),
+                    Ret(null),
                 )),
             ),
         )
@@ -235,8 +236,8 @@ class AutoVectorizationTest {
         val fn = result.functions.first()
         val entryInsts = fn.blocks.first().instructions
 
-        val hasSplat = entryInsts.any { it is Instruction.Splat }
-        val hasExtract = entryInsts.any { it is Instruction.ExtractElement }
+        val hasSplat = entryInsts.any { it is Splat }
+        val hasExtract = entryInsts.any { it is ExtractElement }
 
         if (hasSplat) {
             assertTrue(hasExtract, "Should have extract after SLP vectorization of muls")
