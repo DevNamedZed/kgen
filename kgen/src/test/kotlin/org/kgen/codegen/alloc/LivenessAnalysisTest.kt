@@ -21,8 +21,8 @@ class LivenessAnalysisTest {
     fun simpleReturn() {
         val fn = buildFunction {
             createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            val entry = appendBlock("entry")
-            positionAtEnd(entry)
+            val entry = createBlock("entry")
+            appendBlock(entry)
             ret(Parameter("x", Type.I64, 0))
             finalizeFunction()
         }
@@ -36,8 +36,8 @@ class LivenessAnalysisTest {
     fun addTwoParams() {
         val fn = buildFunction {
             createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            val entry = appendBlock("entry")
-            positionAtEnd(entry)
+            val entry = createBlock("entry")
+            appendBlock(entry)
             val result = add(Parameter("a", Type.I64, 0), Parameter("b", Type.I64, 1))
             ret(result)
             finalizeFunction()
@@ -54,8 +54,8 @@ class LivenessAnalysisTest {
         val fn = buildFunction {
             declareFunction("ext", listOf(Param("x", Type.I64)), Type.I64)
             createFunction("f", listOf(Param("a", Type.I64)), Type.I64)
-            val entry = appendBlock("entry")
-            positionAtEnd(entry)
+            val entry = createBlock("entry")
+            appendBlock(entry)
             val p = Parameter("a", Type.I64, 0)
             val fnType = Type.Function(listOf(Type.I64), Type.I64)
             val fnRef = GlobalRef("ext", fnType)
@@ -75,8 +75,8 @@ class LivenessAnalysisTest {
         val fn = buildFunction {
             declareFunction("ext", listOf(Param("x", Type.I64)), Type.I64)
             createFunction("f", emptyList(), Type.I64)
-            val entry = appendBlock("entry")
-            positionAtEnd(entry)
+            val entry = createBlock("entry")
+            appendBlock(entry)
             val fnType = Type.Function(listOf(Type.I64), Type.I64)
             val fnRef = GlobalRef("ext", fnType)
             val callResult = call(fnRef, listOf(Constant.I64(42)), Type.I64)!!
@@ -95,8 +95,8 @@ class LivenessAnalysisTest {
     fun intervalsSortedByStart() {
         val fn = buildFunction {
             createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            val entry = appendBlock("entry")
-            positionAtEnd(entry)
+            val entry = createBlock("entry")
+            appendBlock(entry)
             val sum = add(Parameter("a", Type.I64, 0), Parameter("b", Type.I64, 1))
             val doubled = add(sum, sum)
             ret(doubled)
@@ -113,8 +113,8 @@ class LivenessAnalysisTest {
     fun useCounting() {
         val fn = buildFunction {
             createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            val entry = appendBlock("entry")
-            positionAtEnd(entry)
+            val entry = createBlock("entry")
+            appendBlock(entry)
             val p = Parameter("x", Type.I64, 0)
             val a = add(p, p) // x used twice here
             val b = add(a, p) // x used once more
@@ -155,8 +155,8 @@ class LivenessAnalysisTest {
     fun emptyFunctionProducesNoIntervals() {
         val fn = buildFunction {
             createFunction("f", emptyList(), Type.Void)
-            val entry = appendBlock("entry")
-            positionAtEnd(entry)
+            val entry = createBlock("entry")
+            appendBlock(entry)
             ret()
             finalizeFunction()
         }

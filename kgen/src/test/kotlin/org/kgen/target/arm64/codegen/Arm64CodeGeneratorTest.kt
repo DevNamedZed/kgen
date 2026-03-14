@@ -29,7 +29,7 @@ class Arm64CodeGeneratorTest {
     fun `generates add function`() {
         val lines = buildAndDisassemble {
             val params = createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val sum = add(params[0], params[1])
             ret(sum)
             finalizeFunction()
@@ -44,7 +44,7 @@ class Arm64CodeGeneratorTest {
     fun `generates sub function`() {
         val lines = buildAndDisassemble {
             val params = createFunction("subtract", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = sub(params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -56,7 +56,7 @@ class Arm64CodeGeneratorTest {
     fun `generates mul function`() {
         val lines = buildAndDisassemble {
             val params = createFunction("multiply", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = mul(params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -68,7 +68,7 @@ class Arm64CodeGeneratorTest {
     fun `generates sdiv function`() {
         val lines = buildAndDisassemble {
             val params = createFunction("divide", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = sdiv(params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -80,7 +80,7 @@ class Arm64CodeGeneratorTest {
     fun `generates select with compare`() {
         val lines = buildAndDisassemble {
             val params = createFunction("max", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cond = icmp(ICmpPredicate.SGT, params[0], params[1])
             val result = select(cond, params[0], params[1])
             ret(result)
@@ -94,7 +94,7 @@ class Arm64CodeGeneratorTest {
     fun `generates 64-bit add`() {
         val lines = buildAndDisassemble {
             val params = createFunction("add64", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = add(params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -106,7 +106,7 @@ class Arm64CodeGeneratorTest {
     fun `generates void return`() {
         val lines = buildAndDisassemble {
             createFunction("doNothing", emptyList(), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(null)
             finalizeFunction()
         }
@@ -120,7 +120,7 @@ class Arm64CodeGeneratorTest {
         val lines = buildAndDisassemble {
             declareFunction("helper", listOf(Param("x", Type.I32)), Type.I32)
             val params = createFunction("caller", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = call("helper", listOf(params[0]), Type.I32)
             ret(result)
             finalizeFunction()
@@ -132,7 +132,7 @@ class Arm64CodeGeneratorTest {
     fun `produces valid object file`() {
         val ir = IrBuilder("test", Target.arm64())
         val params = ir.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.add(params[0], params[1]))
         ir.finalizeFunction()
         val module = ir.build()
@@ -152,7 +152,7 @@ class Arm64CodeGeneratorTest {
     fun `generates ELF object bytes`() {
         val ir = IrBuilder("test", Target.arm64())
         ir.createFunction("main", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I32(42))
         ir.finalizeFunction()
         val module = ir.build()
@@ -169,7 +169,7 @@ class Arm64CodeGeneratorTest {
     fun `generates logical operations`() {
         val lines = buildAndDisassemble {
             val params = createFunction("bitops", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val x = and(params[0], params[1])
             val y = or(x, params[1])
             val z = xor(y, params[0])
@@ -185,7 +185,7 @@ class Arm64CodeGeneratorTest {
     fun `generates shift operations`() {
         val lines = buildAndDisassemble {
             val params = createFunction("shifts", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val x = shl(params[0], params[1])
             val y = lshr(x, params[1])
             ret(y)
@@ -199,7 +199,7 @@ class Arm64CodeGeneratorTest {
     fun `generates fadd function`() {
         val lines = buildAndDisassemble {
             val params = createFunction("fadd_test", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = fadd(params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -212,7 +212,7 @@ class Arm64CodeGeneratorTest {
     fun `generates fsub function`() {
         val lines = buildAndDisassemble {
             val params = createFunction("fsub_test", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = fsub(params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -224,7 +224,7 @@ class Arm64CodeGeneratorTest {
     fun `generates fmul and fdiv`() {
         val lines = buildAndDisassemble {
             val params = createFunction("fmuld", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val product = fmul(params[0], params[1])
             val result = fdiv(product, params[1])
             ret(result)
@@ -238,7 +238,7 @@ class Arm64CodeGeneratorTest {
     fun `generates fneg`() {
         val lines = buildAndDisassemble {
             val params = createFunction("fneg_test", listOf(Param("a", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = fneg(params[0])
             ret(result)
             finalizeFunction()
@@ -250,7 +250,7 @@ class Arm64CodeGeneratorTest {
     fun `generates sitofp conversion`() {
         val lines = buildAndDisassemble {
             val params = createFunction("int_to_double", listOf(Param("a", Type.I32)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = sitofp(params[0], Type.F64)
             ret(result)
             finalizeFunction()
@@ -262,7 +262,7 @@ class Arm64CodeGeneratorTest {
     fun `generates fptosi conversion`() {
         val lines = buildAndDisassemble {
             val params = createFunction("double_to_int", listOf(Param("a", Type.F64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = fptosi(params[0], Type.I32)
             ret(result)
             finalizeFunction()
@@ -274,7 +274,7 @@ class Arm64CodeGeneratorTest {
     fun `generates fpext f32 to f64`() {
         val lines = buildAndDisassemble {
             val params = createFunction("float_to_double", listOf(Param("a", Type.F32)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = fpext(params[0], Type.F64)
             ret(result)
             finalizeFunction()
@@ -286,7 +286,7 @@ class Arm64CodeGeneratorTest {
     fun `generates fptrunc f64 to f32`() {
         val lines = buildAndDisassemble {
             val params = createFunction("double_to_float", listOf(Param("a", Type.F64)), Type.F32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = fptrunc(params[0], Type.F32)
             ret(result)
             finalizeFunction()
@@ -298,7 +298,7 @@ class Arm64CodeGeneratorTest {
     fun `generates fcmp`() {
         val lines = buildAndDisassemble {
             val params = createFunction("fcmp_test", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I1)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = fcmp(FCmpPredicate.OLT, params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -311,7 +311,7 @@ class Arm64CodeGeneratorTest {
     fun `generates fp constant loading`() {
         val lines = buildAndDisassemble {
             val params = createFunction("add_const", listOf(Param("a", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = fadd(params[0], Constant.F64(3.14))
             ret(result)
             finalizeFunction()
@@ -325,7 +325,7 @@ class Arm64CodeGeneratorTest {
         val lines = buildAndDisassemble {
             declareFunction("compute", listOf(Param("x", Type.F64), Param("y", Type.F64)), Type.F64)
             val params = createFunction("caller", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = call("compute", listOf(params[0], params[1]), Type.F64)
             ret(result)
             finalizeFunction()
@@ -337,7 +337,7 @@ class Arm64CodeGeneratorTest {
     fun `generates neg instruction`() {
         val lines = buildAndDisassemble {
             val params = createFunction("neg", listOf(Param("a", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = neg(params[0])
             ret(result)
             finalizeFunction()
@@ -349,7 +349,7 @@ class Arm64CodeGeneratorTest {
     fun `generates not instruction`() {
         val lines = buildAndDisassemble {
             val params = createFunction("bitnot", listOf(Param("a", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = not(params[0])
             ret(result)
             finalizeFunction()
@@ -361,7 +361,7 @@ class Arm64CodeGeneratorTest {
     fun `generates intTrunc`() {
         val lines = buildAndDisassemble {
             val params = createFunction("narrow", listOf(Param("a", Type.I64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = trunc(params[0], Type.I32)
             ret(result)
             finalizeFunction()
@@ -373,19 +373,19 @@ class Arm64CodeGeneratorTest {
     fun `generates switch`() {
         val lines = buildAndDisassemble {
             val params = createFunction("sw", listOf(Param("a", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             switch(params[0], "default", listOf(
                 Constant.I32(1) to "case1",
                 Constant.I32(2) to "case2"
             ))
 
-            positionAtEnd(appendBlock("case1"))
+            appendBlock("case1")
             ret(Constant.I32(10))
 
-            positionAtEnd(appendBlock("case2"))
+            appendBlock("case2")
             ret(Constant.I32(20))
 
-            positionAtEnd(appendBlock("default"))
+            appendBlock("default")
             ret(Constant.I32(0))
 
             finalizeFunction()

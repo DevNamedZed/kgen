@@ -1,0 +1,84 @@
+name: Atomic
+interfaceName: AtomicInstruction
+enumValue: ATOMIC
+description: |-
+  Atomic synchronization instructions.
+
+  Atomic instructions provide hardware-level guarantees for concurrent memory access.
+  They include memory fences, compare-and-swap, and atomic read-modify-write operations.
+imports:
+- org.kgen.ir.AtomicOrdering
+- org.kgen.ir.AtomicRMWOp
+sections:
+- comment: Atomic instructions
+  instructions:
+  - name: Fence
+    description: 'Memory fence: enforces an ordering constraint without accessing memory.'
+    effects: FENCE
+    fields:
+    - name: ordering
+      type: AtomicOrdering
+      role: config
+    - name: syncScope
+      type: String?
+      default: 'null'
+      role: config
+  - name: CmpXchg
+    description: |-
+      Atomic compare-and-exchange: `dest = cmpxchg ptr, cmp, new`.
+
+      Atomically reads the value at ptr, compares to cmp, and if equal writes new.
+    effects: ATOMIC_RMW
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: ptr
+      type: Value
+      role: operand
+    - name: cmp
+      type: Value
+      role: operand
+    - name: new
+      type: Value
+      role: operand
+    - name: successOrdering
+      type: AtomicOrdering
+      role: config
+    - name: failureOrdering
+      type: AtomicOrdering
+      role: config
+    - name: weak
+      type: Boolean
+      default: 'false'
+      role: flag
+    - name: volatile
+      type: Boolean
+      default: 'false'
+      role: flag
+  - name: AtomicRMW
+    description: 'Atomic read-modify-write: `dest = atomicrmw op ptr, value`.'
+    effects: ATOMIC_RMW
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: op
+      type: AtomicRMWOp
+      role: config
+    - name: ptr
+      type: Value
+      role: operand
+    - name: value
+      type: Value
+      role: operand
+    - name: ordering
+      type: AtomicOrdering
+      role: config
+    - name: volatile
+      type: Boolean
+      default: 'false'
+      role: flag
+    emit:
+      name: atomicRMW
+      resultType: value.type

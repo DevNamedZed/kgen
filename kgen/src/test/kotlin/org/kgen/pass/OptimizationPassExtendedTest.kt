@@ -34,7 +34,7 @@ class OptimizationPassExtendedTest {
     fun `dce removes dead sub instruction`() {
         val module = dce.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             sub(params[0], Constant.I32(1)) // dead
             ret(params[0])
             finalizeFunction()
@@ -48,7 +48,7 @@ class OptimizationPassExtendedTest {
     fun `dce removes dead icmp`() {
         val module = dce.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             icmp(ICmpPredicate.EQ, params[0], Constant.I32(0)) // dead
             ret(params[0])
             finalizeFunction()
@@ -61,7 +61,7 @@ class OptimizationPassExtendedTest {
     fun `dce removes dead zext`() {
         val module = dce.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             zext(params[0], Type.I64) // dead
             ret(Constant.I64(0))
             finalizeFunction()
@@ -74,7 +74,7 @@ class OptimizationPassExtendedTest {
     fun `dce preserves alloca used by store`() {
         val module = dce.run(build {
             val params = createFunction("f", listOf(Param("ptr", Type.OpaquePointer)), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = alloca(Type.I32)
             store(Constant.I32(10), a)
             val v = load(Type.I32, a)
@@ -90,7 +90,7 @@ class OptimizationPassExtendedTest {
     fun `dce removes long dead chain across multiple types`() {
         val module = dce.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], Constant.I32(1))
             val b = mul(a, Constant.I32(2))
             val c = sub(b, Constant.I32(3))
@@ -107,7 +107,7 @@ class OptimizationPassExtendedTest {
     fun `dce preserves load with used result`() {
         val module = dce.run(build {
             val params = createFunction("f", listOf(Param("ptr", Type.OpaquePointer)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val v = load(Type.I32, params[0])
             ret(v)
             finalizeFunction()
@@ -120,7 +120,7 @@ class OptimizationPassExtendedTest {
     fun `dce removes dead select`() {
         val module = dce.run(build {
             val params = createFunction("f", listOf(Param("c", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             select(params[0], Constant.I32(1), Constant.I32(2)) // dead
             ret(Constant.I32(0))
             finalizeFunction()
@@ -133,7 +133,7 @@ class OptimizationPassExtendedTest {
     fun `dce removes dead neg`() {
         val module = dce.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             neg(params[0]) // dead
             ret(params[0])
             finalizeFunction()
@@ -149,20 +149,20 @@ class OptimizationPassExtendedTest {
         val module = buildWithMem2Reg {
             val params = createFunction("f", listOf(
                 Param("a", Type.I32), Param("b", Type.I32), Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val iSlot = alloca(Type.I32)
             store(Constant.I32(0), iSlot)
-            br("loop")
+            br(BlockRef("loop"))
 
-            positionAtEnd(appendBlock("loop"))
+            appendBlock("loop")
             val i = load(Type.I32, iSlot)
             val diff = sub(params[0], params[1]) // loop-invariant
             val iNext = add(i, diff)
             store(iNext, iSlot)
             val cond = icmp(ICmpPredicate.SLT, iNext, params[2])
-            condBr(cond, "loop", "exit")
+            condBr(cond, BlockRef("loop"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             val result = load(Type.I32, iSlot)
             ret(result)
             finalizeFunction()
@@ -181,20 +181,20 @@ class OptimizationPassExtendedTest {
         val module = buildWithMem2Reg {
             val params = createFunction("f", listOf(
                 Param("ptr", Type.OpaquePointer), Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val iSlot = alloca(Type.I32)
             store(Constant.I32(0), iSlot)
-            br("loop")
+            br(BlockRef("loop"))
 
-            positionAtEnd(appendBlock("loop"))
+            appendBlock("loop")
             val i = load(Type.I32, iSlot)
             store(Constant.I32(42), params[0]) // side-effecting, must not hoist
             val iNext = add(i, Constant.I32(1))
             store(iNext, iSlot)
             val cond = icmp(ICmpPredicate.SLT, iNext, params[1])
-            condBr(cond, "loop", "exit")
+            condBr(cond, BlockRef("loop"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             val result = load(Type.I32, iSlot)
             ret(result)
             finalizeFunction()
@@ -213,21 +213,21 @@ class OptimizationPassExtendedTest {
         val module = buildWithMem2Reg {
             val params = createFunction("f", listOf(
                 Param("a", Type.I32), Param("b", Type.I32), Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val iSlot = alloca(Type.I32)
             store(Constant.I32(0), iSlot)
-            br("loop")
+            br(BlockRef("loop"))
 
-            positionAtEnd(appendBlock("loop"))
+            appendBlock("loop")
             val i = load(Type.I32, iSlot)
             val flag = icmp(ICmpPredicate.SGT, params[0], params[1]) // loop-invariant
             val chosen = select(flag, Constant.I32(10), Constant.I32(1))
             val iNext = add(i, chosen)
             store(iNext, iSlot)
             val cond = icmp(ICmpPredicate.SLT, iNext, params[2])
-            condBr(cond, "loop", "exit")
+            condBr(cond, BlockRef("loop"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             val result = load(Type.I32, iSlot)
             ret(result)
             finalizeFunction()
@@ -245,7 +245,7 @@ class OptimizationPassExtendedTest {
     fun `licm handles single block function without crash`() {
         val module = build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(params[0])
             finalizeFunction()
         }
@@ -258,20 +258,20 @@ class OptimizationPassExtendedTest {
         val module = buildWithMem2Reg {
             val params = createFunction("f", listOf(
                 Param("c", Type.I1), Param("a", Type.I32), Param("b", Type.I32), Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val iSlot = alloca(Type.I32)
             store(Constant.I32(0), iSlot)
-            br("loop")
+            br(BlockRef("loop"))
 
-            positionAtEnd(appendBlock("loop"))
+            appendBlock("loop")
             val i = load(Type.I32, iSlot)
             val chosen = select(params[0], params[1], params[2]) // loop-invariant
             val iNext = add(i, chosen)
             store(iNext, iSlot)
             val cond = icmp(ICmpPredicate.SLT, iNext, params[3])
-            condBr(cond, "loop", "exit")
+            condBr(cond, BlockRef("loop"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             val result = load(Type.I32, iSlot)
             ret(result)
             finalizeFunction()
@@ -292,13 +292,13 @@ class OptimizationPassExtendedTest {
         val tinyInliner = Inlining(maxInstructionCount = 1)
         val ir = IrBuilder("test", Target.x86_64())
         val params = ir.createFunction("add2", listOf(Param("x", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val r = ir.add(params[0], Constant.I32(2))
         ir.ret(r)
         ir.finalizeFunction()
 
         ir.createFunction("main", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val v = ir.call("add2", listOf(Constant.I32(3)), Type.I32)!!
         ir.ret(v)
         ir.finalizeFunction()
@@ -313,13 +313,13 @@ class OptimizationPassExtendedTest {
     fun `inlining handles multiple call sites to same function`() {
         val module = inliner.run(build {
             val p = createFunction("inc", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = add(p[0], Constant.I32(1))
             ret(r)
             finalizeFunction()
 
             val params = createFunction("main", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val x = call("inc", listOf(params[0]), Type.I32)!!
             val y = call("inc", listOf(params[1]), Type.I32)!!
             val sum = add(x, y)
@@ -336,13 +336,13 @@ class OptimizationPassExtendedTest {
     fun `inlining substitutes parameters correctly for sub`() {
         val module = inliner.run(build {
             val p = createFunction("diff", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = sub(p[0], p[1])
             ret(r)
             finalizeFunction()
 
             createFunction("main", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = call("diff", listOf(Constant.I32(10), Constant.I32(3)), Type.I32)!!
             ret(result)
             finalizeFunction()
@@ -359,18 +359,18 @@ class OptimizationPassExtendedTest {
     fun `inlining handles nested inlining in same function`() {
         val module = inliner.run(build {
             val p1 = createFunction("add1", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(p1[0], Constant.I32(1)))
             finalizeFunction()
 
             val p2 = createFunction("add2", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = call("add1", listOf(p2[0]), Type.I32)!!
             ret(add(r, Constant.I32(1)))
             finalizeFunction()
 
             createFunction("main", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = call("add2", listOf(Constant.I32(0)), Type.I32)!!
             ret(result)
             finalizeFunction()
@@ -383,14 +383,14 @@ class OptimizationPassExtendedTest {
     fun `inlining with mul instruction`() {
         val module = inliner.run(build {
             val p = createFunction("cube", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val sq = mul(p[0], p[0])
             val cu = mul(sq, p[0])
             ret(cu)
             finalizeFunction()
 
             val params = createFunction("main", listOf(Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = call("cube", listOf(params[0]), Type.I32)!!
             ret(result)
             finalizeFunction()
@@ -407,13 +407,13 @@ class OptimizationPassExtendedTest {
     fun `jt threads through chain of unconditional branches`() {
         val module = jt.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            br("a")
-            positionAtEnd(appendBlock("a"))
-            br("b")
-            positionAtEnd(appendBlock("b"))
-            br("c")
-            positionAtEnd(appendBlock("c"))
+            appendBlock("entry")
+            br(BlockRef("a"))
+            appendBlock("a")
+            br(BlockRef("b"))
+            appendBlock("b")
+            br(BlockRef("c"))
+            appendBlock("c")
             ret(Constant.I32(42))
             finalizeFunction()
         })
@@ -428,13 +428,13 @@ class OptimizationPassExtendedTest {
     fun `jt removes dead blocks from constant switch`() {
         val module = jt.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(Constant.I1(true), "live", "dead")
+            appendBlock("entry")
+            condBr(Constant.I1(true), BlockRef("live"), BlockRef("dead"))
 
-            positionAtEnd(appendBlock("live"))
+            appendBlock("live")
             ret(Constant.I32(1))
 
-            positionAtEnd(appendBlock("dead"))
+            appendBlock("dead")
             ret(Constant.I32(2))
 
             finalizeFunction()
@@ -447,16 +447,16 @@ class OptimizationPassExtendedTest {
     fun `jt handles diamond pattern with constant conditions`() {
         val module = jt.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(Constant.I1(true), "left", "right")
+            appendBlock("entry")
+            condBr(Constant.I1(true), BlockRef("left"), BlockRef("right"))
 
-            positionAtEnd(appendBlock("left"))
-            br("merge")
+            appendBlock("left")
+            br(BlockRef("merge"))
 
-            positionAtEnd(appendBlock("right"))
-            br("merge")
+            appendBlock("right")
+            br(BlockRef("merge"))
 
-            positionAtEnd(appendBlock("merge"))
+            appendBlock("merge")
             ret(Constant.I32(0))
 
             finalizeFunction()
@@ -473,10 +473,10 @@ class OptimizationPassExtendedTest {
     fun `jt preserves block with instructions before branch`() {
         val module = jt.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val v = add(params[0], Constant.I32(1))
-            br("next")
-            positionAtEnd(appendBlock("next"))
+            br(BlockRef("next"))
+            appendBlock("next")
             ret(v)
             finalizeFunction()
         })
@@ -490,23 +490,23 @@ class OptimizationPassExtendedTest {
     fun `jt handles multiple constant branches in sequence`() {
         val module = jt.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(Constant.I1(false), "d1", "a")
+            appendBlock("entry")
+            condBr(Constant.I1(false), BlockRef("d1"), BlockRef("a"))
 
-            positionAtEnd(appendBlock("a"))
-            condBr(Constant.I1(true), "b", "d2")
+            appendBlock("a")
+            condBr(Constant.I1(true), BlockRef("b"), BlockRef("d2"))
 
-            positionAtEnd(appendBlock("b"))
-            condBr(Constant.I1(false), "d3", "c")
+            appendBlock("b")
+            condBr(Constant.I1(false), BlockRef("d3"), BlockRef("c"))
 
-            positionAtEnd(appendBlock("c"))
+            appendBlock("c")
             ret(Constant.I32(100))
 
-            positionAtEnd(appendBlock("d1"))
+            appendBlock("d1")
             ret(Constant.I32(0))
-            positionAtEnd(appendBlock("d2"))
+            appendBlock("d2")
             ret(Constant.I32(0))
-            positionAtEnd(appendBlock("d3"))
+            appendBlock("d3")
             ret(Constant.I32(0))
 
             finalizeFunction()
@@ -523,7 +523,7 @@ class OptimizationPassExtendedTest {
     fun `gvn eliminates redundant sub`() {
         val module = gvn.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = sub(params[0], params[1])
             val b = sub(params[0], params[1]) // redundant
             val sum = add(a, b)
@@ -540,7 +540,7 @@ class OptimizationPassExtendedTest {
     fun `gvn eliminates redundant and`() {
         val module = gvn.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = and(params[0], params[1])
             val b = and(params[0], params[1]) // redundant
             val sum = add(a, b)
@@ -555,7 +555,7 @@ class OptimizationPassExtendedTest {
     fun `gvn eliminates redundant select`() {
         val module = gvn.run(build {
             val params = createFunction("f", listOf(Param("c", Type.I1), Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = select(params[0], params[1], params[2])
             val b = select(params[0], params[1], params[2]) // redundant
             val sum = add(a, b)
@@ -570,7 +570,7 @@ class OptimizationPassExtendedTest {
     fun `gvn eliminates three redundant adds`() {
         val module = gvn.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], params[1])
             val b = add(params[0], params[1]) // redundant
             val c = add(params[0], params[1]) // redundant
@@ -588,7 +588,7 @@ class OptimizationPassExtendedTest {
     fun `gvn preserves stores even with same operands`() {
         val module = gvn.run(build {
             val params = createFunction("f", listOf(Param("ptr", Type.OpaquePointer)), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             store(Constant.I32(42), params[0])
             store(Constant.I32(42), params[0]) // NOT redundant (side effect)
             ret(null)
@@ -605,7 +605,7 @@ class OptimizationPassExtendedTest {
     fun `mem2reg promotes three allocas`() {
         val module = mem2reg.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = alloca(Type.I32)
             val b = alloca(Type.I32)
             val c = alloca(Type.I32)
@@ -629,19 +629,19 @@ class OptimizationPassExtendedTest {
     fun `mem2reg inserts phi at merge point with different values`() {
         val module = mem2reg.run(build {
             val params = createFunction("f", listOf(Param("c", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
-            condBr(params[0], "left", "right")
+            condBr(params[0], BlockRef("left"), BlockRef("right"))
 
-            positionAtEnd(appendBlock("left"))
+            appendBlock("left")
             store(Constant.I32(10), ptr)
-            br("merge")
+            br(BlockRef("merge"))
 
-            positionAtEnd(appendBlock("right"))
+            appendBlock("right")
             store(Constant.I32(20), ptr)
-            br("merge")
+            br(BlockRef("merge"))
 
-            positionAtEnd(appendBlock("merge"))
+            appendBlock("merge")
             val v = load(Type.I32, ptr)
             ret(v)
             finalizeFunction()
@@ -659,27 +659,27 @@ class OptimizationPassExtendedTest {
     fun `mem2reg handles nested if-else`() {
         val module = mem2reg.run(build {
             val params = createFunction("f", listOf(Param("c1", Type.I1), Param("c2", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(0), ptr)
-            condBr(params[0], "outer_true", "outer_false")
+            condBr(params[0], BlockRef("outer_true"), BlockRef("outer_false"))
 
-            positionAtEnd(appendBlock("outer_true"))
-            condBr(params[1], "inner_true", "inner_false")
+            appendBlock("outer_true")
+            condBr(params[1], BlockRef("inner_true"), BlockRef("inner_false"))
 
-            positionAtEnd(appendBlock("inner_true"))
+            appendBlock("inner_true")
             store(Constant.I32(1), ptr)
-            br("outer_merge")
+            br(BlockRef("outer_merge"))
 
-            positionAtEnd(appendBlock("inner_false"))
+            appendBlock("inner_false")
             store(Constant.I32(2), ptr)
-            br("outer_merge")
+            br(BlockRef("outer_merge"))
 
-            positionAtEnd(appendBlock("outer_false"))
+            appendBlock("outer_false")
             store(Constant.I32(3), ptr)
-            br("outer_merge")
+            br(BlockRef("outer_merge"))
 
-            positionAtEnd(appendBlock("outer_merge"))
+            appendBlock("outer_merge")
             val v = load(Type.I32, ptr)
             ret(v)
             finalizeFunction()
@@ -696,7 +696,7 @@ class OptimizationPassExtendedTest {
     fun `mem2reg promotes i1 alloca`() {
         val module = mem2reg.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I1)
             store(Constant.I1(true), ptr)
             val v = load(Type.I1, ptr)
@@ -712,19 +712,19 @@ class OptimizationPassExtendedTest {
     fun `mem2reg with store-load in loop`() {
         val module = mem2reg.run(build {
             val params = createFunction("f", listOf(Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val iSlot = alloca(Type.I32)
             store(Constant.I32(0), iSlot)
-            br("loop")
+            br(BlockRef("loop"))
 
-            positionAtEnd(appendBlock("loop"))
+            appendBlock("loop")
             val i = load(Type.I32, iSlot)
             val iNext = add(i, Constant.I32(1))
             store(iNext, iSlot)
             val cond = icmp(ICmpPredicate.SLT, iNext, params[0])
-            condBr(cond, "loop", "exit")
+            condBr(cond, BlockRef("loop"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             val result = load(Type.I32, iSlot)
             ret(result)
             finalizeFunction()
@@ -745,7 +745,7 @@ class OptimizationPassExtendedTest {
         val structType = Type.Struct(null, listOf(Type.I32, Type.I32))
         val module = sroa.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(structType)
             val f0 = gep(structType, ptr, Constant.I32(0), Constant.I32(0))
             store(Constant.I32(10), f0)
@@ -770,7 +770,7 @@ class OptimizationPassExtendedTest {
         val arrayType = Type.Array(Type.I32, 2)
         val module = sroa.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(arrayType)
             val e0 = gep(arrayType, ptr, Constant.I32(0), Constant.I32(0))
             store(Constant.I32(100), e0)
@@ -794,7 +794,7 @@ class OptimizationPassExtendedTest {
         val module = sroa.run(build {
             declareFunction("use_struct", listOf(Param("p", Type.OpaquePointer)), Type.Void)
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(structType)
             call("use_struct", listOf(ptr), Type.Void) // address escapes
             val f0 = gep(structType, ptr, Constant.I32(0), Constant.I32(0))
@@ -813,7 +813,7 @@ class OptimizationPassExtendedTest {
         val structType = Type.Struct(null, listOf(Type.I32, Type.I64, Type.I32))
         val module = sroa.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(structType)
             val f0 = gep(structType, ptr, Constant.I32(0), Constant.I32(0))
             store(Constant.I32(1), f0)
@@ -837,7 +837,7 @@ class OptimizationPassExtendedTest {
     fun `instcombine simplifies x + 0`() {
         val module = instCombine.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = add(params[0], Constant.I32(0))
             ret(r)
             finalizeFunction()
@@ -852,7 +852,7 @@ class OptimizationPassExtendedTest {
     fun `instcombine simplifies x * 1`() {
         val module = instCombine.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = mul(params[0], Constant.I32(1))
             ret(r)
             finalizeFunction()
@@ -867,7 +867,7 @@ class OptimizationPassExtendedTest {
     fun `instcombine simplifies x * 0`() {
         val module = instCombine.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = mul(params[0], Constant.I32(0))
             ret(r)
             finalizeFunction()
@@ -883,7 +883,7 @@ class OptimizationPassExtendedTest {
     fun `instcombine simplifies x - 0`() {
         val module = instCombine.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = sub(params[0], Constant.I32(0))
             ret(r)
             finalizeFunction()
@@ -896,7 +896,7 @@ class OptimizationPassExtendedTest {
     fun `instcombine simplifies x and 0`() {
         val module = instCombine.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = and(params[0], Constant.I32(0))
             ret(r)
             finalizeFunction()
@@ -912,7 +912,7 @@ class OptimizationPassExtendedTest {
     fun `instcombine simplifies x or 0`() {
         val module = instCombine.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = or(params[0], Constant.I32(0))
             ret(r)
             finalizeFunction()
@@ -927,7 +927,7 @@ class OptimizationPassExtendedTest {
     fun `instcombine simplifies x xor 0`() {
         val module = instCombine.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = xor(params[0], Constant.I32(0))
             ret(r)
             finalizeFunction()
@@ -940,7 +940,7 @@ class OptimizationPassExtendedTest {
     fun `instcombine simplifies x shl 0`() {
         val module = instCombine.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = shl(params[0], Constant.I32(0))
             ret(r)
             finalizeFunction()
@@ -953,7 +953,7 @@ class OptimizationPassExtendedTest {
     fun `instcombine simplifies select with constant true`() {
         val module = instCombine.run(build {
             val params = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = select(Constant.I1(true), params[0], params[1])
             ret(r)
             finalizeFunction()
@@ -969,7 +969,7 @@ class OptimizationPassExtendedTest {
     fun `instcombine simplifies select with constant false`() {
         val module = instCombine.run(build {
             val params = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = select(Constant.I1(false), params[0], params[1])
             ret(r)
             finalizeFunction()
@@ -985,7 +985,7 @@ class OptimizationPassExtendedTest {
     fun `instcombine simplifies 0 + x`() {
         val module = instCombine.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = add(Constant.I32(0), params[0])
             ret(r)
             finalizeFunction()
@@ -998,7 +998,7 @@ class OptimizationPassExtendedTest {
     fun `instcombine simplifies 1 * x`() {
         val module = instCombine.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = mul(Constant.I32(1), params[0])
             ret(r)
             finalizeFunction()
@@ -1011,7 +1011,7 @@ class OptimizationPassExtendedTest {
     fun `instcombine chained simplifications`() {
         val module = instCombine.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], Constant.I32(0))  // x + 0 -> x
             val b = mul(a, Constant.I32(1))           // x * 1 -> x (after a -> x)
             ret(b)
@@ -1033,7 +1033,7 @@ class OptimizationPassExtendedTest {
 
         val module = pipeline.execute(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = alloca(Type.I32)
             store(Constant.I32(42), a)
             val v = load(Type.I32, a)
@@ -1053,7 +1053,7 @@ class OptimizationPassExtendedTest {
 
         val module = pipeline.execute(build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], Constant.I32(0)) // simplified to x
             val b = mul(params[0], Constant.I32(0)) // simplified to 0, now dead if unused...
             // but b is used:
@@ -1074,7 +1074,7 @@ class OptimizationPassExtendedTest {
 
         val module = pipeline.execute(build {
             val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], params[1])
             add(params[0], params[1]) // redundant, removed by gvn
             val c = mul(a, a)

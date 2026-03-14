@@ -110,7 +110,7 @@ class PinningLoweringTest {
     private fun buildPinModule(): Module {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", listOf(Param("obj", Type.Reference(Type.I64, false))), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val param = Parameter("obj", Type.Reference(Type.I64, false), 0)
         ir.pin(param)
         ir.ret()
@@ -121,7 +121,7 @@ class PinningLoweringTest {
     private fun buildPinUnpinModule(): Module {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", listOf(Param("obj", Type.Reference(Type.I64, false))), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val param = Parameter("obj", Type.Reference(Type.I64, false), 0)
         val pinned = ir.pin(param)
         ir.unpin(pinned)
@@ -136,7 +136,7 @@ class PinningLoweringTest {
             Param("obj", Type.Reference(Type.I64, false)),
             Param("val", Type.Reference(Type.I32, false)),
         ), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val obj = Parameter("obj", Type.Reference(Type.I64, false), 0)
         val v = Parameter("val", Type.Reference(Type.I32, false), 1)
         ir.writeBarrier(obj, Constant.I32(0), v)
@@ -148,7 +148,7 @@ class PinningLoweringTest {
     private fun buildReadBarrierModule(): Module {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", listOf(Param("r", Type.Reference(Type.I64))), Type.Reference(Type.I64))
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val param = Parameter("r", Type.Reference(Type.I64), 0)
         val result = ir.readBarrier(param)
         ir.ret(result)

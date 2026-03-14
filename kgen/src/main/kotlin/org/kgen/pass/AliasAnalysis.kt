@@ -43,27 +43,22 @@ interface AliasAnalysis {
 
     /**
      * Returns true if [inst] may read from memory.
+     *
+     * Default implementation delegates to [InstructionEffects.readsMemory].
+     * Subclasses may override to provide more precise results using alias information.
      */
-    fun readsMemory(inst: Instruction): Boolean = when (inst) {
-        is Load -> true
-        is MemCpy -> true
-        is MemMove -> true
-        is Call -> true
-        is Invoke -> true
-        else -> false
+    fun readsMemory(inst: Instruction): Boolean {
+        return inst.effects.readsMemory()
     }
 
     /**
      * Returns true if [inst] may write to memory.
+     *
+     * Default implementation delegates to [InstructionEffects.writesMemory].
+     * Subclasses may override to provide more precise results using alias information.
      */
-    fun writesMemory(inst: Instruction): Boolean = when (inst) {
-        is Store -> true
-        is MemCpy -> true
-        is MemSet -> true
-        is MemMove -> true
-        is Call -> true
-        is Invoke -> true
-        else -> false
+    fun writesMemory(inst: Instruction): Boolean {
+        return inst.effects.writesMemory()
     }
 
     /**

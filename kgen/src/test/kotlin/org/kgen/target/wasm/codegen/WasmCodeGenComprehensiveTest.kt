@@ -34,7 +34,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 add`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.add(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -45,7 +45,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 sub`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.sub(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -56,7 +56,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 mul`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.mul(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -67,7 +67,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 sdiv`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.sdiv(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -78,7 +78,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 udiv`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.udiv(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -89,7 +89,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 srem`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.srem(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -100,7 +100,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 urem`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.urem(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -111,7 +111,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 add with constant`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.add(p[0], Constant.I32(42)))
             ir.finalizeFunction()
         }
@@ -122,7 +122,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 sub with constant`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.sub(p[0], Constant.I32(1)))
             ir.finalizeFunction()
         }
@@ -133,7 +133,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 mul with constant`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.mul(p[0], Constant.I32(3)))
             ir.finalizeFunction()
         }
@@ -144,7 +144,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 neg`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.neg(p[0]))
             ir.finalizeFunction()
         }
@@ -155,7 +155,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 not`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.not(p[0]))
             ir.finalizeFunction()
         }
@@ -168,7 +168,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 add`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.add(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -179,7 +179,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 sub`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.sub(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -190,7 +190,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 mul`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.mul(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -201,7 +201,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 sdiv`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.sdiv(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -212,7 +212,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 udiv`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.udiv(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -223,7 +223,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 srem`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.srem(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -234,7 +234,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 urem`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.urem(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -245,7 +245,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 add with constant`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.add(p[0], Constant.I64(100L)))
             ir.finalizeFunction()
         }
@@ -256,7 +256,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 neg`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.neg(p[0]))
             ir.finalizeFunction()
         }
@@ -267,7 +267,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 not`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.not(p[0]))
             ir.finalizeFunction()
         }
@@ -280,7 +280,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f32 add`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fadd(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -291,7 +291,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f32 sub`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fsub(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -302,7 +302,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f32 mul`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fmul(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -313,7 +313,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f32 div`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fdiv(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -324,7 +324,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f32 neg`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32)), Type.F32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fneg(p[0]))
             ir.finalizeFunction()
         }
@@ -335,7 +335,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f32 add with constant`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32)), Type.F32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fadd(p[0], Constant.F32(1.5f)))
             ir.finalizeFunction()
         }
@@ -346,7 +346,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f32 chain add sub mul div`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val sum = ir.fadd(p[0], p[1])
             val diff = ir.fsub(sum, Constant.F32(1.0f))
             val prod = ir.fmul(diff, Constant.F32(2.0f))
@@ -362,7 +362,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f64 add`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fadd(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -373,7 +373,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f64 sub`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fsub(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -384,7 +384,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f64 mul`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fmul(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -395,7 +395,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f64 div`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fdiv(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -406,7 +406,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f64 neg`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F64)), Type.F64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fneg(p[0]))
             ir.finalizeFunction()
         }
@@ -417,7 +417,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f64 add with constant`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F64)), Type.F64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fadd(p[0], Constant.F64(3.14159)))
             ir.finalizeFunction()
         }
@@ -428,7 +428,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f64 chain add sub mul div`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val sum = ir.fadd(p[0], p[1])
             val diff = ir.fsub(sum, Constant.F64(1.0))
             val prod = ir.fmul(diff, Constant.F64(2.0))
@@ -444,7 +444,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 and`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.and(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -455,7 +455,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 or`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.or(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -466,7 +466,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 xor`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.xor(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -477,7 +477,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 shl`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.shl(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -488,7 +488,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 lshr`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.lshr(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -499,7 +499,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 ashr`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.ashr(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -510,7 +510,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 and with constant mask`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.and(p[0], Constant.I32(0xFF)))
             ir.finalizeFunction()
         }
@@ -521,7 +521,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 shl with constant shift`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.shl(p[0], Constant.I32(4)))
             ir.finalizeFunction()
         }
@@ -534,7 +534,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 and`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.and(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -545,7 +545,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 or`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.or(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -556,7 +556,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 xor`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.xor(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -567,7 +567,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 shl`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.shl(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -578,7 +578,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 lshr`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.lshr(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -589,7 +589,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 ashr`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.ashr(p[0], p[1]))
             ir.finalizeFunction()
         }
@@ -602,7 +602,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 icmp EQ`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.icmp(ICmpPredicate.EQ, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -614,7 +614,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 icmp NE`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.icmp(ICmpPredicate.NE, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -626,7 +626,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 icmp SLT`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.icmp(ICmpPredicate.SLT, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -638,7 +638,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 icmp SLE`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.icmp(ICmpPredicate.SLE, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -650,7 +650,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 icmp SGT`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.icmp(ICmpPredicate.SGT, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -662,7 +662,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 icmp SGE`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.icmp(ICmpPredicate.SGE, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -674,7 +674,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 icmp ULT`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.icmp(ICmpPredicate.ULT, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -686,7 +686,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 icmp ULE`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.icmp(ICmpPredicate.ULE, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -698,7 +698,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 icmp UGT`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.icmp(ICmpPredicate.UGT, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -710,7 +710,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 icmp UGE`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.icmp(ICmpPredicate.UGE, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -724,7 +724,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 icmp EQ`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.icmp(ICmpPredicate.EQ, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -736,7 +736,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 icmp NE`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.icmp(ICmpPredicate.NE, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -748,7 +748,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 icmp SLT`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.icmp(ICmpPredicate.SLT, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -760,7 +760,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 icmp SGT`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.icmp(ICmpPredicate.SGT, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -772,7 +772,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 icmp ULT`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.icmp(ICmpPredicate.ULT, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -784,7 +784,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 icmp UGT`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.icmp(ICmpPredicate.UGT, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -798,7 +798,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f32 fcmp OEQ`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.fcmp(FCmpPredicate.OEQ, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -810,7 +810,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f32 fcmp ONE`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.fcmp(FCmpPredicate.ONE, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -822,7 +822,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f32 fcmp OLT`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.fcmp(FCmpPredicate.OLT, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -834,7 +834,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f32 fcmp OLE`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.fcmp(FCmpPredicate.OLE, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -846,7 +846,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f32 fcmp OGT`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.fcmp(FCmpPredicate.OGT, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -858,7 +858,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f32 fcmp OGE`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.fcmp(FCmpPredicate.OGE, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -870,7 +870,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f32 fcmp UEQ`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.fcmp(FCmpPredicate.UEQ, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -882,7 +882,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f32 fcmp UNE`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.fcmp(FCmpPredicate.UNE, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -894,7 +894,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f32 fcmp FALSE`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.fcmp(FCmpPredicate.FALSE, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -906,7 +906,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f32 fcmp TRUE`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.fcmp(FCmpPredicate.TRUE, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -918,7 +918,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f32 fcmp ORD`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.fcmp(FCmpPredicate.ORD, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -930,7 +930,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f32 fcmp UNO`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.fcmp(FCmpPredicate.UNO, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -944,7 +944,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f64 fcmp OEQ`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.fcmp(FCmpPredicate.OEQ, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -956,7 +956,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f64 fcmp OLT`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.fcmp(FCmpPredicate.OLT, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -968,7 +968,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f64 fcmp OGT`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.fcmp(FCmpPredicate.OGT, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -980,7 +980,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f64 fcmp ORD`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.fcmp(FCmpPredicate.ORD, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -992,7 +992,7 @@ class WasmCodeGenComprehensiveTest {
     fun `f64 fcmp UNO`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.fcmp(FCmpPredicate.UNO, p[0], p[1])
             ir.ret(ir.select(cmp, Constant.I32(1), Constant.I32(0)))
             ir.finalizeFunction()
@@ -1006,7 +1006,7 @@ class WasmCodeGenComprehensiveTest {
     fun `zext i32 to i64`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.zext(p[0], Type.I64))
             ir.finalizeFunction()
         }
@@ -1017,7 +1017,7 @@ class WasmCodeGenComprehensiveTest {
     fun `sext i32 to i64`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.sext(p[0], Type.I64))
             ir.finalizeFunction()
         }
@@ -1028,7 +1028,7 @@ class WasmCodeGenComprehensiveTest {
     fun `trunc i64 to i32`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.trunc(p[0], Type.I32))
             ir.finalizeFunction()
         }
@@ -1039,7 +1039,7 @@ class WasmCodeGenComprehensiveTest {
     fun `sitofp i32 to f32`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32)), Type.F32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.sitofp(p[0], Type.F32))
             ir.finalizeFunction()
         }
@@ -1050,7 +1050,7 @@ class WasmCodeGenComprehensiveTest {
     fun `sitofp i32 to f64`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32)), Type.F64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.sitofp(p[0], Type.F64))
             ir.finalizeFunction()
         }
@@ -1061,7 +1061,7 @@ class WasmCodeGenComprehensiveTest {
     fun `sitofp i64 to f32`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64)), Type.F32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.sitofp(p[0], Type.F32))
             ir.finalizeFunction()
         }
@@ -1072,7 +1072,7 @@ class WasmCodeGenComprehensiveTest {
     fun `sitofp i64 to f64`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64)), Type.F64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.sitofp(p[0], Type.F64))
             ir.finalizeFunction()
         }
@@ -1083,7 +1083,7 @@ class WasmCodeGenComprehensiveTest {
     fun `uitofp i32 to f32`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32)), Type.F32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.uitofp(p[0], Type.F32))
             ir.finalizeFunction()
         }
@@ -1094,7 +1094,7 @@ class WasmCodeGenComprehensiveTest {
     fun `uitofp i32 to f64`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32)), Type.F64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.uitofp(p[0], Type.F64))
             ir.finalizeFunction()
         }
@@ -1105,7 +1105,7 @@ class WasmCodeGenComprehensiveTest {
     fun `uitofp i64 to f32`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64)), Type.F32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.uitofp(p[0], Type.F32))
             ir.finalizeFunction()
         }
@@ -1116,7 +1116,7 @@ class WasmCodeGenComprehensiveTest {
     fun `uitofp i64 to f64`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64)), Type.F64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.uitofp(p[0], Type.F64))
             ir.finalizeFunction()
         }
@@ -1127,7 +1127,7 @@ class WasmCodeGenComprehensiveTest {
     fun `fptosi f32 to i32`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fptosi(p[0], Type.I32))
             ir.finalizeFunction()
         }
@@ -1138,7 +1138,7 @@ class WasmCodeGenComprehensiveTest {
     fun `fptosi f64 to i32`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F64)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fptosi(p[0], Type.I32))
             ir.finalizeFunction()
         }
@@ -1149,7 +1149,7 @@ class WasmCodeGenComprehensiveTest {
     fun `fptosi f32 to i64`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fptosi(p[0], Type.I64))
             ir.finalizeFunction()
         }
@@ -1160,7 +1160,7 @@ class WasmCodeGenComprehensiveTest {
     fun `fptosi f64 to i64`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fptosi(p[0], Type.I64))
             ir.finalizeFunction()
         }
@@ -1171,7 +1171,7 @@ class WasmCodeGenComprehensiveTest {
     fun `fptoui f32 to i32`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fptoui(p[0], Type.I32))
             ir.finalizeFunction()
         }
@@ -1182,7 +1182,7 @@ class WasmCodeGenComprehensiveTest {
     fun `fptoui f64 to i32`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F64)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fptoui(p[0], Type.I32))
             ir.finalizeFunction()
         }
@@ -1193,7 +1193,7 @@ class WasmCodeGenComprehensiveTest {
     fun `fptoui f32 to i64`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fptoui(p[0], Type.I64))
             ir.finalizeFunction()
         }
@@ -1204,7 +1204,7 @@ class WasmCodeGenComprehensiveTest {
     fun `fptoui f64 to i64`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fptoui(p[0], Type.I64))
             ir.finalizeFunction()
         }
@@ -1215,7 +1215,7 @@ class WasmCodeGenComprehensiveTest {
     fun `fpext f32 to f64`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32)), Type.F64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fpext(p[0], Type.F64))
             ir.finalizeFunction()
         }
@@ -1226,7 +1226,7 @@ class WasmCodeGenComprehensiveTest {
     fun `fptrunc f64 to f32`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F64)), Type.F32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.fptrunc(p[0], Type.F32))
             ir.finalizeFunction()
         }
@@ -1239,7 +1239,7 @@ class WasmCodeGenComprehensiveTest {
     fun `select i32 based on icmp`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.icmp(ICmpPredicate.SGT, p[0], p[1])
             ir.ret(ir.select(cmp, p[0], p[1]))
             ir.finalizeFunction()
@@ -1251,7 +1251,7 @@ class WasmCodeGenComprehensiveTest {
     fun `select i64 based on icmp`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.icmp(ICmpPredicate.SGT, p[0], p[1])
             ir.ret(ir.select(cmp, p[0], p[1]))
             ir.finalizeFunction()
@@ -1263,7 +1263,7 @@ class WasmCodeGenComprehensiveTest {
     fun `select f32 based on fcmp`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.fcmp(FCmpPredicate.OGT, p[0], p[1])
             ir.ret(ir.select(cmp, p[0], p[1]))
             ir.finalizeFunction()
@@ -1275,7 +1275,7 @@ class WasmCodeGenComprehensiveTest {
     fun `select f64 based on fcmp`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.fcmp(FCmpPredicate.OGT, p[0], p[1])
             ir.ret(ir.select(cmp, p[0], p[1]))
             ir.finalizeFunction()
@@ -1287,7 +1287,7 @@ class WasmCodeGenComprehensiveTest {
     fun `select with boolean constant condition`() {
         val wasm = generateWasm { ir ->
             ir.createFunction("f", emptyList(), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.select(Constant.I1(true), Constant.I32(10), Constant.I32(20)))
             ir.finalizeFunction()
         }
@@ -1300,12 +1300,12 @@ class WasmCodeGenComprehensiveTest {
     fun `call defined function with no args`() {
         val wasm = generateWasm { ir ->
             ir.createFunction("helper", emptyList(), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.I32(99))
             ir.finalizeFunction()
 
             ir.createFunction("main", emptyList(), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val r = ir.call("helper", emptyList(), Type.I32)
             ir.ret(r!!)
             ir.finalizeFunction()
@@ -1318,12 +1318,12 @@ class WasmCodeGenComprehensiveTest {
         val wasm = generateWasm { ir ->
             val hp = ir.createFunction("add3", listOf(
                 Param("a", Type.I32), Param("b", Type.I32), Param("c", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.add(ir.add(hp[0], hp[1]), hp[2]))
             ir.finalizeFunction()
 
             ir.createFunction("main", emptyList(), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val r = ir.call("add3", listOf(Constant.I32(1), Constant.I32(2), Constant.I32(3)), Type.I32)
             ir.ret(r!!)
             ir.finalizeFunction()
@@ -1336,7 +1336,7 @@ class WasmCodeGenComprehensiveTest {
         val wasm = generateWasm { ir ->
             ir.declareFunction("log", listOf(Param("v", Type.I32)), Type.Void)
             ir.createFunction("main", emptyList(), Type.Void)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.call("log", listOf(Constant.I32(42)), Type.Void)
             ir.ret()
             ir.finalizeFunction()
@@ -1349,7 +1349,7 @@ class WasmCodeGenComprehensiveTest {
         val wasm = generateWasm { ir ->
             ir.declareFunction("getVal", emptyList(), Type.I32)
             ir.createFunction("main", emptyList(), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val v = ir.call("getVal", emptyList(), Type.I32)
             ir.ret(v!!)
             ir.finalizeFunction()
@@ -1362,7 +1362,7 @@ class WasmCodeGenComprehensiveTest {
         val wasm = generateWasm { ir ->
             ir.declareFunction("getVal", emptyList(), Type.I32)
             ir.createFunction("main", emptyList(), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val v = ir.call("getVal", emptyList(), Type.I32)
             val doubled = ir.mul(v!!, Constant.I32(2))
             ir.ret(ir.add(doubled, Constant.I32(1)))
@@ -1377,7 +1377,7 @@ class WasmCodeGenComprehensiveTest {
             ir.declareFunction("getA", emptyList(), Type.I32)
             ir.declareFunction("getB", emptyList(), Type.I32)
             ir.createFunction("main", emptyList(), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val a = ir.call("getA", emptyList(), Type.I32)
             val b = ir.call("getB", emptyList(), Type.I32)
             ir.ret(ir.add(a!!, b!!))
@@ -1393,7 +1393,7 @@ class WasmCodeGenComprehensiveTest {
         val wasm = generateWasm { ir ->
             for (i in 0 until 5) {
                 val p = ir.createFunction("fn$i", listOf(Param("x", Type.I32)), Type.I32)
-                ir.positionAtEnd(ir.appendBlock("entry"))
+                ir.appendBlock("entry")
                 ir.ret(ir.add(p[0], Constant.I32(i)))
                 ir.finalizeFunction()
             }
@@ -1406,13 +1406,13 @@ class WasmCodeGenComprehensiveTest {
         val wasm = generateWasm { ir ->
             for (i in 0 until 5) {
                 val p = ir.createFunction("intFn$i", listOf(Param("x", Type.I32)), Type.I32)
-                ir.positionAtEnd(ir.appendBlock("entry"))
+                ir.appendBlock("entry")
                 ir.ret(ir.add(p[0], Constant.I32(i)))
                 ir.finalizeFunction()
             }
             for (i in 0 until 5) {
                 val p = ir.createFunction("floatFn$i", listOf(Param("x", Type.F64)), Type.F64)
-                ir.positionAtEnd(ir.appendBlock("entry"))
+                ir.appendBlock("entry")
                 ir.ret(ir.fadd(p[0], Constant.F64(i.toDouble())))
                 ir.finalizeFunction()
             }
@@ -1429,7 +1429,7 @@ class WasmCodeGenComprehensiveTest {
             ir.declareFunction("log_f64", listOf(Param("v", Type.F64)), Type.Void)
             ir.declareFunction("read_input", emptyList(), Type.I32)
             ir.createFunction("main", emptyList(), Type.Void)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val v = ir.call("read_input", emptyList(), Type.I32)
             ir.call("log_i32", listOf(v!!), Type.Void)
             ir.call("log_f64", listOf(Constant.F64(3.14)), Type.Void)
@@ -1443,12 +1443,12 @@ class WasmCodeGenComprehensiveTest {
     fun `internal linkage function not exported`() {
         val wasm = generateWasm { ir ->
             ir.createFunction("internal_helper", emptyList(), Type.I32, linkage = Linkage.INTERNAL)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.I32(7))
             ir.finalizeFunction()
 
             ir.createFunction("public_fn", emptyList(), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val r = ir.call("internal_helper", emptyList(), Type.I32)
             ir.ret(r!!)
             ir.finalizeFunction()
@@ -1460,12 +1460,12 @@ class WasmCodeGenComprehensiveTest {
     fun `all internal functions`() {
         val wasm = generateWasm { ir ->
             ir.createFunction("a", emptyList(), Type.I32, linkage = Linkage.INTERNAL)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.I32(1))
             ir.finalizeFunction()
 
             ir.createFunction("b", emptyList(), Type.I32, linkage = Linkage.INTERNAL)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.I32(2))
             ir.finalizeFunction()
         }
@@ -1478,7 +1478,7 @@ class WasmCodeGenComprehensiveTest {
     fun `void function with no args`() {
         val wasm = generateWasm { ir ->
             ir.createFunction("noop", emptyList(), Type.Void)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret()
             ir.finalizeFunction()
         }
@@ -1490,7 +1490,7 @@ class WasmCodeGenComprehensiveTest {
         val wasm = generateWasm { ir ->
             ir.declareFunction("log", listOf(Param("v", Type.I32)), Type.Void)
             ir.createFunction("main", emptyList(), Type.Void)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.call("log", listOf(Constant.I32(1)), Type.Void)
             ir.call("log", listOf(Constant.I32(2)), Type.Void)
             ir.call("log", listOf(Constant.I32(3)), Type.Void)
@@ -1506,7 +1506,7 @@ class WasmCodeGenComprehensiveTest {
     fun `return i32 constant zero`() {
         val wasm = generateWasm { ir ->
             ir.createFunction("f", emptyList(), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.I32(0))
             ir.finalizeFunction()
         }
@@ -1517,7 +1517,7 @@ class WasmCodeGenComprehensiveTest {
     fun `return i32 constant negative`() {
         val wasm = generateWasm { ir ->
             ir.createFunction("f", emptyList(), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.I32(-1))
             ir.finalizeFunction()
         }
@@ -1528,7 +1528,7 @@ class WasmCodeGenComprehensiveTest {
     fun `return i32 constant max`() {
         val wasm = generateWasm { ir ->
             ir.createFunction("f", emptyList(), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.I32(Int.MAX_VALUE))
             ir.finalizeFunction()
         }
@@ -1539,7 +1539,7 @@ class WasmCodeGenComprehensiveTest {
     fun `return i32 constant min`() {
         val wasm = generateWasm { ir ->
             ir.createFunction("f", emptyList(), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.I32(Int.MIN_VALUE))
             ir.finalizeFunction()
         }
@@ -1550,7 +1550,7 @@ class WasmCodeGenComprehensiveTest {
     fun `return i64 constant large`() {
         val wasm = generateWasm { ir ->
             ir.createFunction("f", emptyList(), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.I64(Long.MAX_VALUE))
             ir.finalizeFunction()
         }
@@ -1561,7 +1561,7 @@ class WasmCodeGenComprehensiveTest {
     fun `return f32 constant zero`() {
         val wasm = generateWasm { ir ->
             ir.createFunction("f", emptyList(), Type.F32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.F32(0.0f))
             ir.finalizeFunction()
         }
@@ -1572,7 +1572,7 @@ class WasmCodeGenComprehensiveTest {
     fun `return f64 constant zero`() {
         val wasm = generateWasm { ir ->
             ir.createFunction("f", emptyList(), Type.F64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.F64(0.0))
             ir.finalizeFunction()
         }
@@ -1583,7 +1583,7 @@ class WasmCodeGenComprehensiveTest {
     fun `return f64 constant negative`() {
         val wasm = generateWasm { ir ->
             ir.createFunction("f", emptyList(), Type.F64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.F64(-273.15))
             ir.finalizeFunction()
         }
@@ -1597,7 +1597,7 @@ class WasmCodeGenComprehensiveTest {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(
                 Param("a", Type.I32), Param("b", Type.I32), Param("c", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val sum = ir.add(p[0], p[1])
             val prod = ir.mul(sum, p[2])
             val anded = ir.and(prod, Constant.I32(0xFFFF))
@@ -1612,7 +1612,7 @@ class WasmCodeGenComprehensiveTest {
     fun `chained i64 arithmetic expression`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val sum = ir.add(p[0], p[1])
             val diff = ir.sub(sum, Constant.I64(1L))
             val prod = ir.mul(diff, Constant.I64(3L))
@@ -1627,7 +1627,7 @@ class WasmCodeGenComprehensiveTest {
     fun `mixed integer and float conversion chain`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32)), Type.F64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val f32val = ir.sitofp(p[0], Type.F32)
             val f64val = ir.fpext(f32val, Type.F64)
             ir.ret(ir.fadd(f64val, Constant.F64(0.5)))
@@ -1640,7 +1640,7 @@ class WasmCodeGenComprehensiveTest {
     fun `conversion round trip i32 to f64 to i32`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val asFloat = ir.sitofp(p[0], Type.F64)
             val doubled = ir.fmul(asFloat, Constant.F64(2.0))
             ir.ret(ir.fptosi(doubled, Type.I32))
@@ -1656,7 +1656,7 @@ class WasmCodeGenComprehensiveTest {
         fun buildModule(): ByteArray {
             val ir = IrBuilder("test", Target.wasm())
             val p = ir.createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val sum = ir.add(p[0], p[1])
             val prod = ir.mul(sum, Constant.I32(2))
             ir.ret(ir.sub(prod, Constant.I32(1)))
@@ -1672,7 +1672,7 @@ class WasmCodeGenComprehensiveTest {
             val ir = IrBuilder("test", Target.wasm())
             ir.declareFunction("ext", listOf(Param("v", Type.I32)), Type.I32)
             ir.createFunction("main", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val r = ir.call("ext", listOf(ir.param(0)), Type.I32)
             ir.ret(r!!)
             ir.finalizeFunction()
@@ -1689,7 +1689,7 @@ class WasmCodeGenComprehensiveTest {
             val p = ir.createFunction("f", listOf(
                 Param("a", Type.I32), Param("b", Type.I64),
                 Param("c", Type.F32), Param("d", Type.F64)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(p[0])
             ir.finalizeFunction()
         }
@@ -1700,7 +1700,7 @@ class WasmCodeGenComprehensiveTest {
     fun `function with six i32 params`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", (0 until 6).map { Param("p$it", Type.I32) }, Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             var acc: Value = p[0]
             for (i in 1 until 6) acc = ir.add(acc, p[i])
             ir.ret(acc)
@@ -1715,7 +1715,7 @@ class WasmCodeGenComprehensiveTest {
     fun `function that only returns a parameter`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("identity", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(p[0])
             ir.finalizeFunction()
         }
@@ -1726,7 +1726,7 @@ class WasmCodeGenComprehensiveTest {
     fun `function with no parameters returning constant`() {
         val wasm = generateWasm { ir ->
             ir.createFunction("fortyTwo", emptyList(), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.I32(42))
             ir.finalizeFunction()
         }
@@ -1737,7 +1737,7 @@ class WasmCodeGenComprehensiveTest {
     fun `binary output size is reasonable`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.add(p[0], Constant.I32(1)))
             ir.finalizeFunction()
         }
@@ -1750,7 +1750,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 full arithmetic chain add sub mul sdiv srem`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val sum = ir.add(p[0], p[1])
             val diff = ir.sub(sum, p[1])
             val prod = ir.mul(diff, Constant.I32(3))
@@ -1765,7 +1765,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i64 full arithmetic chain add sub mul sdiv srem`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val sum = ir.add(p[0], p[1])
             val diff = ir.sub(sum, p[1])
             val prod = ir.mul(diff, Constant.I64(3L))
@@ -1780,7 +1780,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 bitwise chain and or xor shl lshr ashr`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val v1 = ir.and(p[0], p[1])
             val v2 = ir.or(v1, Constant.I32(0xFF))
             val v3 = ir.xor(v2, p[1])
@@ -1798,13 +1798,13 @@ class WasmCodeGenComprehensiveTest {
             ir.declareFunction("ext", listOf(Param("v", Type.I32)), Type.I32)
 
             val hp = ir.createFunction("helper", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val r = ir.call("ext", listOf(hp[0]), Type.I32)
             ir.ret(ir.add(r!!, Constant.I32(1)))
             ir.finalizeFunction()
 
             val mp = ir.createFunction("main", listOf(Param("n", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val v = ir.call("helper", listOf(mp[0]), Type.I32)
             ir.ret(v!!)
             ir.finalizeFunction()
@@ -1817,7 +1817,7 @@ class WasmCodeGenComprehensiveTest {
         val wasm = generateWasm { ir ->
             for (i in 0 until 20) {
                 val p = ir.createFunction("fn$i", listOf(Param("x", Type.I32)), Type.I32)
-                ir.positionAtEnd(ir.appendBlock("entry"))
+                ir.appendBlock("entry")
                 ir.ret(ir.add(p[0], Constant.I32(i)))
                 ir.finalizeFunction()
             }
@@ -1829,7 +1829,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 max function using select`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("max", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.icmp(ICmpPredicate.SGT, p[0], p[1])
             ir.ret(ir.select(cmp, p[0], p[1]))
             ir.finalizeFunction()
@@ -1841,7 +1841,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 min function using select`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("min", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cmp = ir.icmp(ICmpPredicate.SLT, p[0], p[1])
             ir.ret(ir.select(cmp, p[0], p[1]))
             ir.finalizeFunction()
@@ -1853,7 +1853,7 @@ class WasmCodeGenComprehensiveTest {
     fun `i32 abs function using neg and select`() {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("abs", listOf(Param("a", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val negated = ir.neg(p[0])
             val isNeg = ir.icmp(ICmpPredicate.SLT, p[0], Constant.I32(0))
             ir.ret(ir.select(isNeg, negated, p[0]))
@@ -1867,7 +1867,7 @@ class WasmCodeGenComprehensiveTest {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("clamp", listOf(
                 Param("v", Type.I32), Param("lo", Type.I32), Param("hi", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val tooLow = ir.icmp(ICmpPredicate.SLT, p[0], p[1])
             val clamped1 = ir.select(tooLow, p[1], p[0])
             val tooHigh = ir.icmp(ICmpPredicate.SGT, clamped1, p[2])
@@ -1882,7 +1882,7 @@ class WasmCodeGenComprehensiveTest {
         val wasm = generateWasm { ir ->
             val p = ir.createFunction("lerp", listOf(
                 Param("a", Type.F64), Param("b", Type.F64), Param("t", Type.F64)), Type.F64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val diff = ir.fsub(p[1], p[0])
             val scaled = ir.fmul(diff, p[2])
             ir.ret(ir.fadd(p[0], scaled))

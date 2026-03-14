@@ -18,8 +18,8 @@ class LocalSlotAllocatorTest {
     fun paramsGetFirstSlots() {
         val fn = buildFunction {
             createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            val entry = appendBlock("entry")
-            positionAtEnd(entry)
+            val entry = createBlock("entry")
+            appendBlock(entry)
             ret(Parameter("a", Type.I64, 0))
             finalizeFunction()
         }
@@ -35,8 +35,8 @@ class LocalSlotAllocatorTest {
     fun valuesGetSlotsAfterParams() {
         val fn = buildFunction {
             createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            val entry = appendBlock("entry")
-            positionAtEnd(entry)
+            val entry = createBlock("entry")
+            appendBlock(entry)
             val p = Parameter("x", Type.I64, 0)
             val doubled = add(p, p)
             ret(doubled)
@@ -56,8 +56,8 @@ class LocalSlotAllocatorTest {
     fun slotReuseWhenLifetimesDontOverlap() {
         val fn = buildFunction {
             createFunction("f", emptyList(), Type.I64)
-            val entry = appendBlock("entry")
-            positionAtEnd(entry)
+            val entry = createBlock("entry")
+            appendBlock(entry)
             val a = add(Constant.I64(1), Constant.I64(2))
             val b = add(a, Constant.I64(3)) // a is dead after this
             val c = add(Constant.I64(4), Constant.I64(5)) // c can reuse a's slot
@@ -78,8 +78,8 @@ class LocalSlotAllocatorTest {
     fun noReuseGivesUniqueSlots() {
         val fn = buildFunction {
             createFunction("f", emptyList(), Type.I64)
-            val entry = appendBlock("entry")
-            positionAtEnd(entry)
+            val entry = createBlock("entry")
+            appendBlock(entry)
             val a = add(Constant.I64(1), Constant.I64(2))
             val b = add(a, Constant.I64(3))
             val c = add(Constant.I64(4), Constant.I64(5))
@@ -100,8 +100,8 @@ class LocalSlotAllocatorTest {
     fun slotTypesTracked() {
         val fn = buildFunction {
             createFunction("f", listOf(Param("x", Type.I64), Param("y", Type.I32)), Type.I64)
-            val entry = appendBlock("entry")
-            positionAtEnd(entry)
+            val entry = createBlock("entry")
+            appendBlock(entry)
             ret(Parameter("x", Type.I64, 0))
             finalizeFunction()
         }
@@ -117,8 +117,8 @@ class LocalSlotAllocatorTest {
     fun emptyFunctionNoSlots() {
         val fn = buildFunction {
             createFunction("f", emptyList(), Type.Void)
-            val entry = appendBlock("entry")
-            positionAtEnd(entry)
+            val entry = createBlock("entry")
+            appendBlock(entry)
             ret()
             finalizeFunction()
         }
@@ -135,8 +135,8 @@ class LocalSlotAllocatorTest {
         val params = (0 until 8).map { Param("p$it", Type.I64) }
         val fn = buildFunction {
             createFunction("f", params, Type.I64)
-            val entry = appendBlock("entry")
-            positionAtEnd(entry)
+            val entry = createBlock("entry")
+            appendBlock(entry)
             ret(Parameter("p0", Type.I64, 0))
             finalizeFunction()
         }

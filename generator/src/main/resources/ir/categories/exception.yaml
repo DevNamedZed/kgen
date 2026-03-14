@@ -1,0 +1,134 @@
+name: Exception
+interfaceName: ExceptionInstruction
+enumValue: EXCEPTION
+description: |-
+  Exception handling instructions.
+
+  Exception instructions implement structured exception handling in the IR. They model
+  landing pads for catching exceptions, resume for re-throwing, and the Windows-style
+  catch/cleanup pad mechanism.
+imports:
+- org.kgen.ir.BlockRef
+- org.kgen.ir.LandingPadClause
+- org.kgen.ir.Type
+sections:
+- comment: Landing pad and resume
+  instructions:
+  - name: LandingPad
+    description: 'Exception landing pad: receives control when an Invoke unwinds.'
+    effects:
+      bits:
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: resultType
+      type: Type
+      role: config
+    - name: clauses
+      type: List<LandingPadClause>
+      role: config
+    - name: cleanup
+      type: Boolean
+      default: 'false'
+      role: flag
+    emit:
+      resultType: resultType
+  - name: Resume
+    description: 'Resume unwinding after a landing pad: re-throws the exception.'
+    effects:
+      bits:
+      - IS_TERMINATOR
+      - CAN_THROW
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: value
+      type: Value
+      role: operand
+- comment: Windows-style exception handling
+  instructions:
+  - name: CatchSwitch
+    description: 'Windows-style catch dispatch: selects a handler from a list of catch pads.'
+    effects:
+      bits:
+      - IS_TERMINATOR
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: parentPad
+      type: Value?
+      role: operandNullable
+    - name: handlers
+      type: List<BlockRef>
+      role: config
+    - name: unwindDest
+      type: BlockRef?
+      default: 'null'
+      role: config
+    emit:
+      resultType: Type.Token
+  - name: CatchPad
+    description: 'Windows-style catch pad: begins a catch handler within a CatchSwitch.'
+    effects:
+      bits:
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: catchSwitch
+      type: Value
+      role: operand
+    - name: args
+      type: List<Value>
+      role: operandList
+    emit:
+      resultType: Type.Token
+  - name: CleanupPad
+    description: 'Windows-style cleanup pad: begins a cleanup handler during unwinding.'
+    effects:
+      bits:
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: parentPad
+      type: Value?
+      role: operandNullable
+    - name: args
+      type: List<Value>
+      role: operandList
+    emit:
+      resultType: Type.Token
+  - name: CatchRet
+    description: Return from a catch handler.
+    effects:
+      bits:
+      - IS_TERMINATOR
+      - IS_BRANCH
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: catchPad
+      type: Value
+      role: operand
+    - name: dest
+      type: BlockRef
+      role: config
+  - name: CleanupRet
+    description: 'Return from a cleanup handler: continues unwinding.'
+    effects:
+      bits:
+      - IS_TERMINATOR
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: cleanupPad
+      type: Value
+      role: operand
+    - name: unwindDest
+      type: BlockRef?
+      default: 'null'
+      role: config

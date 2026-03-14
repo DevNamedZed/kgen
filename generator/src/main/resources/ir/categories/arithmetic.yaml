@@ -1,0 +1,717 @@
+name: Arithmetic
+interfaceName: ArithmeticInstruction
+enumValue: ARITHMETIC
+description: |-
+  Integer and floating-point computation instructions.
+
+  All arithmetic instructions produce a single result value and consume one or more
+  operands of matching type. Integer operations support optional overflow flags
+  (`nuw`/`nsw`) that cause the result to be poison on overflow. Floating-point
+  operations support fast-math flags for aggressive optimization.
+
+  Arithmetic instructions are always legal in native compilation contexts.
+imports:
+- org.kgen.ir.FastMathFlags
+sections:
+- comment: Integer arithmetic
+  instructions:
+  - name: Add
+    description: |-
+      Integer addition: `dest = lhs + rhs`.
+
+      Result type matches the operand type. If `nuw` (no unsigned wrap) is set,
+      unsigned overflow produces poison. If `nsw` (no signed wrap) is set,
+      signed overflow produces poison. Both flags default to false (wrapping two's complement).
+    effects: PURE_COMMUTATIVE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    - name: nuw
+      type: Boolean
+      default: 'false'
+      role: flag
+    - name: nsw
+      type: Boolean
+      default: 'false'
+      role: flag
+  - name: Sub
+    description: |-
+      Integer subtraction: `dest = lhs - rhs`.
+
+      Overflow semantics match Add: `nuw` and `nsw` flags control poison on wrap.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    - name: nuw
+      type: Boolean
+      default: 'false'
+      role: flag
+    - name: nsw
+      type: Boolean
+      default: 'false'
+      role: flag
+  - name: Mul
+    description: |-
+      Integer multiplication: `dest = lhs * rhs`.
+
+      Overflow semantics match Add: `nuw` and `nsw` flags control poison on wrap.
+    effects: PURE_COMMUTATIVE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    - name: nuw
+      type: Boolean
+      default: 'false'
+      role: flag
+    - name: nsw
+      type: Boolean
+      default: 'false'
+      role: flag
+  - name: UDiv
+    description: |-
+      Unsigned integer division: `dest = lhs / rhs` (unsigned).
+
+      Division by zero is undefined behavior. If `exact` is true and the result
+      is not exact (i.e., `lhs` is not evenly divisible by `rhs`), the result is poison.
+    effects: MAY_TRAP
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    - name: exact
+      type: Boolean
+      default: 'false'
+      role: flag
+    emit:
+      name: udiv
+  - name: SDiv
+    description: |-
+      Signed integer division: `dest = lhs / rhs` (signed).
+
+      Division by zero and `INT_MIN / -1` are undefined behavior. If `exact` is true
+      and the result is not exact, the result is poison.
+    effects: MAY_TRAP
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    - name: exact
+      type: Boolean
+      default: 'false'
+      role: flag
+    emit:
+      name: sdiv
+  - name: URem
+    description: |-
+      Unsigned integer remainder: `dest = lhs % rhs` (unsigned).
+
+      Division by zero is undefined behavior.
+    effects: MAY_TRAP
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    emit:
+      name: urem
+  - name: SRem
+    description: |-
+      Signed integer remainder: `dest = lhs % rhs` (signed).
+
+      The result has the same sign as the dividend. Division by zero is undefined behavior.
+    effects: MAY_TRAP
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    emit:
+      name: srem
+  - name: Neg
+    description: 'Integer negation: `dest = -operand` (equivalent to `0 - operand`).'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: operand
+      type: Value
+      role: operand
+- comment: Overflow-checked arithmetic
+  instructions:
+  - name: SAddOverflow
+    description: |-
+      Signed addition with overflow detection: `dest = {lhs + rhs, overflow_flag}`.
+
+      Returns a struct `{T, i1}` where the second element is true if signed overflow occurred.
+    effects: PURE_COMMUTATIVE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    emit:
+      name: saddOverflow
+  - name: UAddOverflow
+    description: |-
+      Unsigned addition with overflow detection: `dest = {lhs + rhs, overflow_flag}`.
+
+      Returns a struct `{T, i1}` where the second element is true if unsigned overflow (carry) occurred.
+    effects: PURE_COMMUTATIVE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    emit:
+      name: uaddOverflow
+  - name: SSubOverflow
+    description: |-
+      Signed subtraction with overflow detection: `dest = {lhs - rhs, overflow_flag}`.
+
+      Returns a struct `{T, i1}` where the second element is true if signed overflow occurred.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    emit:
+      name: ssubOverflow
+  - name: USubOverflow
+    description: |-
+      Unsigned subtraction with overflow detection: `dest = {lhs - rhs, overflow_flag}`.
+
+      Returns a struct `{T, i1}` where the second element is true if unsigned underflow (borrow) occurred.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    emit:
+      name: usubOverflow
+  - name: SMulOverflow
+    description: |-
+      Signed multiplication with overflow detection: `dest = {lhs * rhs, overflow_flag}`.
+
+      Returns a struct `{T, i1}` where the second element is true if signed overflow occurred.
+    effects: PURE_COMMUTATIVE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    emit:
+      name: smulOverflow
+  - name: UMulOverflow
+    description: |-
+      Unsigned multiplication with overflow detection: `dest = {lhs * rhs, overflow_flag}`.
+
+      Returns a struct `{T, i1}` where the second element is true if unsigned overflow occurred.
+    effects: PURE_COMMUTATIVE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    emit:
+      name: umulOverflow
+- comment: Saturating arithmetic
+  instructions:
+  - name: SAddSat
+    description: |-
+      Signed saturating addition: `dest = clamp(lhs + rhs, INT_MIN, INT_MAX)`.
+
+      On overflow, the result clamps to the minimum or maximum representable value.
+    effects: PURE_COMMUTATIVE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    emit:
+      name: saddSat
+  - name: UAddSat
+    description: |-
+      Unsigned saturating addition: `dest = min(lhs + rhs, UINT_MAX)`.
+
+      On overflow, the result clamps to the maximum representable value.
+    effects: PURE_COMMUTATIVE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    emit:
+      name: uaddSat
+  - name: SSubSat
+    description: 'Signed saturating subtraction: `dest = clamp(lhs - rhs, INT_MIN, INT_MAX)`.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    emit:
+      name: ssubSat
+  - name: USubSat
+    description: 'Unsigned saturating subtraction: `dest = max(lhs - rhs, 0)`.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    emit:
+      name: usubSat
+- comment: Min / Max / Abs
+  instructions:
+  - name: SMin
+    description: 'Signed minimum: `dest = min(lhs, rhs)` using signed comparison.'
+    effects: PURE_COMMUTATIVE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    emit:
+      name: smin
+  - name: SMax
+    description: 'Signed maximum: `dest = max(lhs, rhs)` using signed comparison.'
+    effects: PURE_COMMUTATIVE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    emit:
+      name: smax
+  - name: UMin
+    description: 'Unsigned minimum: `dest = min(lhs, rhs)` using unsigned comparison.'
+    effects: PURE_COMMUTATIVE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    emit:
+      name: umin
+  - name: UMax
+    description: 'Unsigned maximum: `dest = max(lhs, rhs)` using unsigned comparison.'
+    effects: PURE_COMMUTATIVE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    emit:
+      name: umax
+  - name: Abs
+    description: |-
+      Integer absolute value: `dest = |operand|`.
+
+      If `isIntMin` is true and the operand is `INT_MIN` (which has no positive representation),
+      the result is poison. If false, `INT_MIN` returns `INT_MIN` (wrapping behavior).
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: operand
+      type: Value
+      role: operand
+    - name: isIntMin
+      type: Boolean
+      default: 'false'
+      role: flag
+- comment: Floating-point arithmetic
+  instructions:
+  - name: FAdd
+    description: |-
+      Floating-point addition: `dest = lhs + rhs`.
+
+      Follows IEEE 754 semantics unless fast-math flags permit reassociation or other transformations.
+    effects: PURE_COMMUTATIVE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    - name: fastMath
+      type: FastMathFlags
+      default: FastMathFlags.NONE
+      role: flag
+    emit:
+      name: fadd
+  - name: FSub
+    description: 'Floating-point subtraction: `dest = lhs - rhs`.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    - name: fastMath
+      type: FastMathFlags
+      default: FastMathFlags.NONE
+      role: flag
+    emit:
+      name: fsub
+  - name: FMul
+    description: 'Floating-point multiplication: `dest = lhs * rhs`.'
+    effects: PURE_COMMUTATIVE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    - name: fastMath
+      type: FastMathFlags
+      default: FastMathFlags.NONE
+      role: flag
+    emit:
+      name: fmul
+  - name: FDiv
+    description: |-
+      Floating-point division: `dest = lhs / rhs`.
+
+      Division by zero follows IEEE 754 rules (produces infinity or NaN) unless
+      fast-math flags alter behavior.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    - name: fastMath
+      type: FastMathFlags
+      default: FastMathFlags.NONE
+      role: flag
+    emit:
+      name: fdiv
+  - name: FRem
+    description: 'Floating-point remainder: `dest = lhs % rhs` (IEEE 754 remainder).'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    - name: fastMath
+      type: FastMathFlags
+      default: FastMathFlags.NONE
+      role: flag
+    emit:
+      name: frem
+  - name: FNeg
+    description: |-
+      Floating-point negation: `dest = -operand`.
+
+      Flips the sign bit. NaN propagation follows IEEE 754.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: operand
+      type: Value
+      role: operand
+    - name: fastMath
+      type: FastMathFlags
+      default: FastMathFlags.NONE
+      role: flag
+    emit:
+      name: fneg
+  - name: FAbs
+    description: |-
+      Floating-point absolute value: `dest = |operand|`.
+
+      Clears the sign bit. Works correctly with NaN and infinity.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: operand
+      type: Value
+      role: operand
+    emit:
+      name: fabs
+  - name: FMA
+    description: |-
+      Fused multiply-add: `dest = a * b + c` with a single rounding step.
+
+      More precise than separate multiply and add because the intermediate product
+      is not rounded. Maps to hardware FMA instructions where available.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: a
+      type: Value
+      role: operand
+    - name: b
+      type: Value
+      role: operand
+    - name: c
+      type: Value
+      role: operand
+    emit:
+      name: fma
+  - name: FMin
+    description: |-
+      Floating-point minimum: `dest = min(lhs, rhs)`.
+
+      If either operand is NaN, the result is NaN. Follows IEEE 754-2008 `minNum` semantics.
+    effects: PURE_COMMUTATIVE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    emit:
+      name: fmin
+  - name: FMax
+    description: |-
+      Floating-point maximum: `dest = max(lhs, rhs)`.
+
+      If either operand is NaN, the result is NaN. Follows IEEE 754-2008 `maxNum` semantics.
+    effects: PURE_COMMUTATIVE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    emit:
+      name: fmax
+- comment: Floating-point math functions
+  instructions:
+  - name: Sqrt
+    description: |-
+      Square root: `dest = sqrt(operand)`.
+
+      For negative inputs (except -0), the result is NaN per IEEE 754.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: operand
+      type: Value
+      role: operand
+  - name: Ceil
+    description: 'Ceiling: `dest = ceil(operand)` — smallest integer >= operand.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: operand
+      type: Value
+      role: operand
+  - name: Floor
+    description: 'Floor: `dest = floor(operand)` — largest integer <= operand.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: operand
+      type: Value
+      role: operand
+  - name: Round
+    description: |-
+      Round to nearest integer: `dest = round(operand)`.
+
+      Ties round to the nearest even integer (banker's rounding).
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: operand
+      type: Value
+      role: operand
+  - name: FTrunc
+    description: |-
+      Floating-point truncation toward zero: `dest = trunc(operand)`.
+
+      Rounds toward zero (drops the fractional part). Not to be confused with
+      IntTrunc which narrows integer bit width.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: operand
+      type: Value
+      role: operand
+    emit:
+      name: ftrunc
+  - name: CopySign
+    description: |-
+      Copy sign: `dest` has the magnitude of `magnitude` and the sign of `sign`.
+
+      Equivalent to `copysign(magnitude, sign)` in C. Works correctly with NaN and zero.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: magnitude
+      type: Value
+      role: operand
+    - name: sign
+      type: Value
+      role: operand

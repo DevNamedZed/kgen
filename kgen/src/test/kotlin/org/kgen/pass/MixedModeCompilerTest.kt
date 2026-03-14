@@ -15,7 +15,7 @@ class MixedModeCompilerTest {
         val p1 = builder.createFunction("hotCompute",
             listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32,
             attributes = setOf(FnAttribute.NATIVE))
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret(builder.add(p1[0], p1[1]))
         builder.finalizeFunction()
 
@@ -23,7 +23,7 @@ class MixedModeCompilerTest {
         val p2 = builder.createFunction("managedWrapper",
             listOf(Param("x", Type.I32)), Type.I32,
             attributes = setOf(FnAttribute.MANAGED))
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val result = builder.call("hotCompute", listOf(p2[0], p2[0]), Type.I32)
         builder.ret(result!!)
         builder.finalizeFunction()
@@ -32,7 +32,7 @@ class MixedModeCompilerTest {
         val p3 = builder.createFunction("managedHelper",
             listOf(Param("n", Type.I32)), Type.I32,
             attributes = setOf(FnAttribute.MANAGED))
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret(p3[0])
         builder.finalizeFunction()
 
@@ -144,7 +144,7 @@ class MixedModeCompilerTest {
     fun noMixedModeDetection() {
         val builder = IrBuilder("pure", Target.x86_64())
         val p = builder.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret(p[0])
         builder.finalizeFunction()
         val module = builder.build()
@@ -211,7 +211,7 @@ class MixedModeCompilerTest {
         val p1 = builder.createFunction("managedFn",
             listOf(Param("x", Type.I32)), Type.I32,
             attributes = setOf(FnAttribute.MANAGED))
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret(p1[0])
         builder.finalizeFunction()
 
@@ -219,7 +219,7 @@ class MixedModeCompilerTest {
         val p2 = builder.createFunction("nativeFn",
             listOf(Param("x", Type.I32)), Type.I32,
             attributes = setOf(FnAttribute.NATIVE))
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val r = builder.call("managedFn", listOf(p2[0]), Type.I32)
         builder.ret(r!!)
         builder.finalizeFunction()

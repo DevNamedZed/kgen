@@ -32,14 +32,14 @@ class LicmAliasAnalysisTest {
         val module = buildWithMem2Reg {
             addGlobal("readOnly", Type.I32, Constant.I32(42))
             val params = createFunction("f", listOf(Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val iSlot = alloca(Type.I32)
             val sumSlot = alloca(Type.I32)
             store(Constant.I32(0), iSlot)
             store(Constant.I32(0), sumSlot)
-            br("loop")
+            br(BlockRef("loop"))
 
-            positionAtEnd(appendBlock("loop"))
+            appendBlock("loop")
             val i = load(Type.I32, iSlot)
             val sum = load(Type.I32, sumSlot)
             val gval = load(Type.I32, GlobalRef("readOnly", Type.Pointer(Type.I32)))
@@ -48,9 +48,9 @@ class LicmAliasAnalysisTest {
             val iNext = add(i, Constant.I32(1))
             store(iNext, iSlot)
             val cond = icmp(ICmpPredicate.SLT, iNext, params[0])
-            condBr(cond, "loop", "exit")
+            condBr(cond, BlockRef("loop"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             val result = load(Type.I32, sumSlot)
             ret(result)
             finalizeFunction()
@@ -73,21 +73,21 @@ class LicmAliasAnalysisTest {
         val module = buildWithMem2Reg {
             val params = createFunction("f", listOf(
                 Param("ptr", Type.Pointer(Type.I32)), Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val iSlot = alloca(Type.I32)
             store(Constant.I32(0), iSlot)
-            br("loop")
+            br(BlockRef("loop"))
 
-            positionAtEnd(appendBlock("loop"))
+            appendBlock("loop")
             val i = load(Type.I32, iSlot)
             val v = load(Type.I32, params[0])   // load from param ptr
             store(v, params[0])                 // store to same param ptr
             val iNext = add(i, Constant.I32(1))
             store(iNext, iSlot)
             val cond = icmp(ICmpPredicate.SLT, iNext, params[1])
-            condBr(cond, "loop", "exit")
+            condBr(cond, BlockRef("loop"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             val result = load(Type.I32, iSlot)
             ret(result)
             finalizeFunction()
@@ -105,20 +105,20 @@ class LicmAliasAnalysisTest {
         val module = buildWithMem2Reg {
             addGlobal("g", Type.I32, Constant.I32(42))
             val params = createFunction("f", listOf(Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val iSlot = alloca(Type.I32)
             store(Constant.I32(0), iSlot)
-            br("loop")
+            br(BlockRef("loop"))
 
-            positionAtEnd(appendBlock("loop"))
+            appendBlock("loop")
             val i = load(Type.I32, iSlot)
             val gval = load(Type.I32, GlobalRef("g", Type.Pointer(Type.I32)))
             val iNext = add(i, gval)
             store(iNext, iSlot)
             val cond = icmp(ICmpPredicate.SLT, iNext, params[0])
-            condBr(cond, "loop", "exit")
+            condBr(cond, BlockRef("loop"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             val result = load(Type.I32, iSlot)
             ret(result)
             finalizeFunction()
@@ -137,20 +137,20 @@ class LicmAliasAnalysisTest {
         val module = buildWithMem2Reg {
             addGlobal("g", Type.I32, Constant.I32(42))
             val params = createFunction("f", listOf(Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val iSlot = alloca(Type.I32)
             store(Constant.I32(0), iSlot)
-            br("loop")
+            br(BlockRef("loop"))
 
-            positionAtEnd(appendBlock("loop"))
+            appendBlock("loop")
             val i = load(Type.I32, iSlot)
             val gval = load(Type.I32, GlobalRef("g", Type.Pointer(Type.I32)), null, true) // volatile
             val iNext = add(i, gval)
             store(iNext, iSlot)
             val cond = icmp(ICmpPredicate.SLT, iNext, params[0])
-            condBr(cond, "loop", "exit")
+            condBr(cond, BlockRef("loop"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             val result = load(Type.I32, iSlot)
             ret(result)
             finalizeFunction()
@@ -168,7 +168,7 @@ class LicmAliasAnalysisTest {
         val module = buildModule {
             val structType = Type.Struct(null, listOf(Type.I32, Type.I32))
             val params = createFunction("f", listOf(Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val s = alloca(structType)
             val f0 = gep(structType, s, Constant.I32(0), Constant.I32(0))
             val f1 = gep(structType, s, Constant.I32(0), Constant.I32(1))
@@ -176,18 +176,18 @@ class LicmAliasAnalysisTest {
             store(Constant.I32(0), f1)
             val iSlot = alloca(Type.I32)
             store(Constant.I32(0), iSlot)
-            br("loop")
+            br(BlockRef("loop"))
 
-            positionAtEnd(appendBlock("loop"))
+            appendBlock("loop")
             val i = load(Type.I32, iSlot)
             val v = load(Type.I32, f0)   // field 0 — should be hoistable
             store(v, f1)                 // writes to field 1 only
             val iNext = add(i, Constant.I32(1))
             store(iNext, iSlot)
             val cond = icmp(ICmpPredicate.SLT, iNext, params[0])
-            condBr(cond, "loop", "exit")
+            condBr(cond, BlockRef("loop"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             val result = load(Type.I32, f1)
             ret(result)
             finalizeFunction()
@@ -208,21 +208,21 @@ class LicmAliasAnalysisTest {
             declareFunction("sideEffect", emptyList(), Type.Void)
             val params = createFunction("f", listOf(
                 Param("ptr", Type.Pointer(Type.I32)), Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val iSlot = alloca(Type.I32)
             store(Constant.I32(0), iSlot)
-            br("loop")
+            br(BlockRef("loop"))
 
-            positionAtEnd(appendBlock("loop"))
+            appendBlock("loop")
             val i = load(Type.I32, iSlot)
             val v = load(Type.I32, params[0])  // cannot hoist — call may modify *ptr
             call("sideEffect", emptyList(), Type.Void)
             val iNext = add(i, v)
             store(iNext, iSlot)
             val cond = icmp(ICmpPredicate.SLT, iNext, params[1])
-            condBr(cond, "loop", "exit")
+            condBr(cond, BlockRef("loop"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             val result = load(Type.I32, iSlot)
             ret(result)
             finalizeFunction()

@@ -63,8 +63,7 @@ class Compiler(private val target: Target = Target.x86_64()) {
         val retType = langTypeToIr(fn.returnType)
 
         ir.createFunction(fn.name, params, retType)
-        val entry = ir.appendBlock("entry")
-        ir.positionAtEnd(entry)
+        ir.appendBlock("entry")
 
         val ctx = FunctionContext(ir, fn, program)
 
@@ -168,7 +167,7 @@ class Compiler(private val target: Target = Target.x86_64()) {
         ctx.ir.condBr(condition, thenLabel, elseLabel ?: mergeLabel)
 
         // Then block
-        ctx.ir.positionAtEnd(ctx.ir.appendBlock(thenLabel))
+        ctx.ir.appendBlock(thenLabel)
         ctx.hasTerminator = false
         compileBlock(ctx, ifStmt.thenBlock)
         if (!ctx.hasTerminator) {
@@ -177,7 +176,7 @@ class Compiler(private val target: Target = Target.x86_64()) {
 
         // Else block
         if (ifStmt.elseBlock != null && elseLabel != null) {
-            ctx.ir.positionAtEnd(ctx.ir.appendBlock(elseLabel))
+            ctx.ir.appendBlock(elseLabel)
             ctx.hasTerminator = false
             compileBlock(ctx, ifStmt.elseBlock)
             if (!ctx.hasTerminator) {
@@ -186,7 +185,7 @@ class Compiler(private val target: Target = Target.x86_64()) {
         }
 
         // Merge
-        ctx.ir.positionAtEnd(ctx.ir.appendBlock(mergeLabel))
+        ctx.ir.appendBlock(mergeLabel)
         ctx.hasTerminator = false
     }
 
@@ -198,12 +197,12 @@ class Compiler(private val target: Target = Target.x86_64()) {
         ctx.ir.br(condLabel)
 
         // Condition
-        ctx.ir.positionAtEnd(ctx.ir.appendBlock(condLabel))
+        ctx.ir.appendBlock(condLabel)
         val condition = compileExpr(ctx, whileStmt.condition)
         ctx.ir.condBr(condition, bodyLabel, exitLabel)
 
         // Body
-        ctx.ir.positionAtEnd(ctx.ir.appendBlock(bodyLabel))
+        ctx.ir.appendBlock(bodyLabel)
         ctx.hasTerminator = false
         compileBlock(ctx, whileStmt.body)
         if (!ctx.hasTerminator) {
@@ -211,7 +210,7 @@ class Compiler(private val target: Target = Target.x86_64()) {
         }
 
         // Exit
-        ctx.ir.positionAtEnd(ctx.ir.appendBlock(exitLabel))
+        ctx.ir.appendBlock(exitLabel)
         ctx.hasTerminator = false
     }
 

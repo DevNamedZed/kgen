@@ -137,7 +137,6 @@ class JavaToNativeEndToEndTest {
         val superClass = cp.classEntry("java/lang/Object")
         val codeIdx = cp.utf8("Code")
         val countField = cp.fieldRef("org/kgen/test/Counter", "count", "I")
-
         // static int getCount() { return count; }
         val getCountName = cp.utf8("getCount")
         val getCountDesc = cp.utf8("()I")
@@ -186,7 +185,6 @@ class JavaToNativeEndToEndTest {
         val codeIdx = cp.utf8("Code")
         val xField = cp.fieldRef("org/kgen/test/Point", "x", "I")
         val yField = cp.fieldRef("org/kgen/test/Point", "y", "I")
-
         // int getX() { return this.x; }
         val getXName = cp.utf8("getX")
         val getXDesc = cp.utf8("()I")

@@ -22,13 +22,13 @@ class DevirtualizationTest {
 
         builder.createFunction("FinalPoint.toString",
             listOf(Param("this", Type.ClassRef("FinalPoint"))), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret(Constant.I32(42))
         builder.finalizeFunction()
 
         val callerParams = builder.createFunction("caller",
             listOf(Param("obj", Type.ClassRef("FinalPoint"))), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val methodType = Type.Function(listOf(Type.ClassRef("FinalPoint")), Type.I32)
         val result = builder.virtualCall(callerParams[0], "FinalPoint", "toString", methodType, emptyList())
         builder.ret(result!!)
@@ -55,13 +55,13 @@ class DevirtualizationTest {
 
         builder.createFunction("OnlySub.method",
             listOf(Param("this", Type.ClassRef("OnlySub"))), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret(Constant.I32(1))
         builder.finalizeFunction()
 
         val callerParams = builder.createFunction("caller",
             listOf(Param("obj", Type.ClassRef("Base"))), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val methodType = Type.Function(listOf(Type.ClassRef("Base")), Type.I32)
         val result = builder.virtualCall(callerParams[0], "Base", "method", methodType, emptyList())
         builder.ret(result!!)
@@ -88,14 +88,14 @@ class DevirtualizationTest {
         for (cls in listOf("Circle", "Square")) {
             builder.createFunction("$cls.area",
                 listOf(Param("this", Type.ClassRef(cls))), Type.I32)
-            builder.positionAtEnd(builder.appendBlock("entry"))
+            builder.appendBlock("entry")
             builder.ret(Constant.I32(1))
             builder.finalizeFunction()
         }
 
         val callerParams = builder.createFunction("caller",
             listOf(Param("obj", Type.ClassRef("Shape"))), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val methodType = Type.Function(listOf(Type.ClassRef("Shape")), Type.I32)
         val result = builder.virtualCall(callerParams[0], "Shape", "area", methodType, emptyList())
         builder.ret(result!!)
@@ -119,13 +119,13 @@ class DevirtualizationTest {
 
         builder.createFunction("Doc.print",
             listOf(Param("this", Type.ClassRef("Doc"))), Type.Void)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret()
         builder.finalizeFunction()
 
         val callerParams = builder.createFunction("caller",
             listOf(Param("obj", Type.InterfaceRef("Printable"))), Type.Void)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val methodType = Type.Function(listOf(Type.InterfaceRef("Printable")), Type.Void)
         builder.interfaceCall(callerParams[0], "Printable", "print", methodType, emptyList())
         builder.ret()
@@ -151,12 +151,12 @@ class DevirtualizationTest {
 
         builder.createFunction("MyObj.method",
             listOf(Param("this", Type.ClassRef("MyObj"))), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret(Constant.I32(99))
         builder.finalizeFunction()
 
         builder.createFunction("caller", emptyList(), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val obj = builder.gcAlloc(Type.ClassRef("MyObj"))
         val methodType = Type.Function(listOf(Type.ClassRef("Base")), Type.I32)
         val result = builder.virtualCall(obj, "Base", "method", methodType, emptyList())
@@ -177,7 +177,7 @@ class DevirtualizationTest {
     fun noChangeWhenNoVirtualCalls() {
         val builder = IrBuilder("test", Target.x86_64())
         val params = builder.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret(builder.add(params[0], params[1]))
         builder.finalizeFunction()
 

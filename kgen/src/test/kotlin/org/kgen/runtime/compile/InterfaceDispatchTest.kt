@@ -74,9 +74,7 @@ class InterfaceDispatchTest {
     @Test
     fun `invokeinterface produces Call with mangled name`() {
         val classBytes = buildInterfaceCallClass(
-            "java/lang/Comparable", "compareTo", "(Ljava/lang/Object;)I"
-        )
-
+            "java/lang/Comparable", "compareTo", "(Ljava/lang/Object;)I")
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "callIface" }
         val instructions = fn.blocks.flatMap { it.instructions }
@@ -88,9 +86,7 @@ class InterfaceDispatchTest {
     @Test
     fun `invokeinterface passes this as first argument`() {
         val classBytes = buildInterfaceCallClass(
-            "java/lang/Comparable", "compareTo", "(Ljava/lang/Object;)I"
-        )
-
+            "java/lang/Comparable", "compareTo", "(Ljava/lang/Object;)I")
         val module = compile(classBytes)
         val fn = module.functions.first { it.name == "callIface" }
         val instructions = fn.blocks.flatMap { it.instructions }
@@ -107,7 +103,6 @@ class InterfaceDispatchTest {
         val superClass = cp.classEntry("java/lang/Object")
         val codeIdx = cp.utf8("Code")
         val ifaceMethod = cp.interfaceMethodRef("java/lang/Runnable", "run", "()V")
-
         val bytecode = byteArrayOf(
             0x2A,             // aload_0
             0xB9.toByte(),    // invokeinterface
@@ -143,7 +138,6 @@ class InterfaceDispatchTest {
         val superClass = cp.classEntry("java/lang/Object")
         val codeIdx = cp.utf8("Code")
         val ifaceMethod = cp.interfaceMethodRef("java/lang/Comparable", "compareTo", "(Ljava/lang/Object;)I")
-
         // callIface method
         val callBytecode = byteArrayOf(
             0x2A, 0x2B,
@@ -180,7 +174,6 @@ class InterfaceDispatchTest {
         val codeIdx = cp.utf8("Code")
         val virtualMethod = cp.methodRef("java/lang/Object", "hashCode", "()I")
         val ifaceMethod = cp.interfaceMethodRef("java/lang/Comparable", "compareTo", "(Ljava/lang/Object;)I")
-
         // method: int mixedCall(Object a, Object b)
         // return a.hashCode() + ((Comparable)a).compareTo(b)
         val bytecode = byteArrayOf(
@@ -227,7 +220,6 @@ class InterfaceDispatchTest {
 
         // Custom interface method with (int, int) -> int
         val ifaceMethod = cp.interfaceMethodRef("org/kgen/test/Adder", "add", "(II)I")
-
         val bytecode = byteArrayOf(
             0x2A,             // aload_0 (receiver)
             0x1B,             // iload_1

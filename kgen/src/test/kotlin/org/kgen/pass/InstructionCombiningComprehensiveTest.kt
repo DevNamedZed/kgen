@@ -25,7 +25,7 @@ class InstructionCombiningComprehensiveTest {
         fun `x plus 0 simplifies to x`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = add(params[0], Constant.I32(0))
                 ret(r)
                 finalizeFunction()
@@ -39,7 +39,7 @@ class InstructionCombiningComprehensiveTest {
         fun `0 plus x simplifies to x`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = add(Constant.I32(0), params[0])
                 ret(r)
                 finalizeFunction()
@@ -53,7 +53,7 @@ class InstructionCombiningComprehensiveTest {
         fun `x plus 0 i64 simplifies to x`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = add(params[0], Constant.I64(0L))
                 ret(r)
                 finalizeFunction()
@@ -70,7 +70,7 @@ class InstructionCombiningComprehensiveTest {
         fun `x minus 0 simplifies to x`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = sub(params[0], Constant.I32(0))
                 ret(r)
                 finalizeFunction()
@@ -83,7 +83,7 @@ class InstructionCombiningComprehensiveTest {
         fun `x minus x simplifies to 0`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = sub(params[0], params[0])
                 ret(r)
                 finalizeFunction()
@@ -100,7 +100,7 @@ class InstructionCombiningComprehensiveTest {
         fun `x times 1 simplifies to x`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = mul(params[0], Constant.I32(1))
                 ret(r)
                 finalizeFunction()
@@ -114,7 +114,7 @@ class InstructionCombiningComprehensiveTest {
         fun `1 times x simplifies to x`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = mul(Constant.I32(1), params[0])
                 ret(r)
                 finalizeFunction()
@@ -128,7 +128,7 @@ class InstructionCombiningComprehensiveTest {
         fun `x times 0 simplifies to 0`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = mul(params[0], Constant.I32(0))
                 ret(r)
                 finalizeFunction()
@@ -141,7 +141,7 @@ class InstructionCombiningComprehensiveTest {
         fun `0 times x simplifies to 0`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = mul(Constant.I32(0), params[0])
                 ret(r)
                 finalizeFunction()
@@ -154,7 +154,7 @@ class InstructionCombiningComprehensiveTest {
         fun `x times 1 i64 simplifies to x`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = mul(params[0], Constant.I64(1L))
                 ret(r)
                 finalizeFunction()
@@ -171,7 +171,7 @@ class InstructionCombiningComprehensiveTest {
         fun `x and 0 simplifies to 0`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = and(params[0], Constant.I32(0))
                 ret(r)
                 finalizeFunction()
@@ -184,7 +184,7 @@ class InstructionCombiningComprehensiveTest {
         fun `0 and x simplifies to 0`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = and(Constant.I32(0), params[0])
                 ret(r)
                 finalizeFunction()
@@ -197,7 +197,7 @@ class InstructionCombiningComprehensiveTest {
         fun `x and all-ones simplifies to x`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = and(params[0], Constant.I32(-1))
                 ret(r)
                 finalizeFunction()
@@ -211,7 +211,7 @@ class InstructionCombiningComprehensiveTest {
         fun `all-ones and x simplifies to x`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = and(Constant.I32(-1), params[0])
                 ret(r)
                 finalizeFunction()
@@ -225,7 +225,7 @@ class InstructionCombiningComprehensiveTest {
         fun `x and x simplifies to x`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = and(params[0], params[0])
                 ret(r)
                 finalizeFunction()
@@ -243,7 +243,7 @@ class InstructionCombiningComprehensiveTest {
         fun `x or 0 simplifies to x`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = or(params[0], Constant.I32(0))
                 ret(r)
                 finalizeFunction()
@@ -257,7 +257,7 @@ class InstructionCombiningComprehensiveTest {
         fun `0 or x simplifies to x`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = or(Constant.I32(0), params[0])
                 ret(r)
                 finalizeFunction()
@@ -271,7 +271,7 @@ class InstructionCombiningComprehensiveTest {
         fun `x or x simplifies to x`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = or(params[0], params[0])
                 ret(r)
                 finalizeFunction()
@@ -289,7 +289,7 @@ class InstructionCombiningComprehensiveTest {
         fun `x xor 0 simplifies to x`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = xor(params[0], Constant.I32(0))
                 ret(r)
                 finalizeFunction()
@@ -303,7 +303,7 @@ class InstructionCombiningComprehensiveTest {
         fun `0 xor x simplifies to x`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = xor(Constant.I32(0), params[0])
                 ret(r)
                 finalizeFunction()
@@ -317,7 +317,7 @@ class InstructionCombiningComprehensiveTest {
         fun `x xor x simplifies to 0`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = xor(params[0], params[0])
                 ret(r)
                 finalizeFunction()
@@ -334,7 +334,7 @@ class InstructionCombiningComprehensiveTest {
         fun `shl x by 0 simplifies to x`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = shl(params[0], Constant.I32(0))
                 ret(r)
                 finalizeFunction()
@@ -348,7 +348,7 @@ class InstructionCombiningComprehensiveTest {
         fun `lshr x by 0 simplifies to x`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = lshr(params[0], Constant.I32(0))
                 ret(r)
                 finalizeFunction()
@@ -362,7 +362,7 @@ class InstructionCombiningComprehensiveTest {
         fun `ashr x by 0 simplifies to x`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = ashr(params[0], Constant.I32(0))
                 ret(r)
                 finalizeFunction()
@@ -380,7 +380,7 @@ class InstructionCombiningComprehensiveTest {
         fun `select with true constant picks true branch`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = select(Constant.I1(true), params[0], params[1])
                 ret(r)
                 finalizeFunction()
@@ -393,7 +393,7 @@ class InstructionCombiningComprehensiveTest {
         fun `select with false constant picks false branch`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = select(Constant.I1(false), params[0], params[1])
                 ret(r)
                 finalizeFunction()
@@ -408,7 +408,7 @@ class InstructionCombiningComprehensiveTest {
                 val params = createFunction("f", listOf(
                     Param("c", Type.I1), Param("x", Type.I32)
                 ), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = select(params[0], params[1], params[1])
                 ret(r)
                 finalizeFunction()
@@ -425,7 +425,7 @@ class InstructionCombiningComprehensiveTest {
         fun `chained add and mul identities collapse`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = add(params[0], Constant.I32(0))
                 val b = mul(a, Constant.I32(1))
                 val c = sub(b, Constant.I32(0))
@@ -445,7 +445,7 @@ class InstructionCombiningComprehensiveTest {
         fun `non-identity add is preserved`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = add(params[0], Constant.I32(5))
                 ret(r)
                 finalizeFunction()
@@ -459,7 +459,7 @@ class InstructionCombiningComprehensiveTest {
         fun `non-identity mul is preserved`() {
             val module = buildAndCombine {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = mul(params[0], Constant.I32(3))
                 ret(r)
                 finalizeFunction()

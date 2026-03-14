@@ -18,7 +18,7 @@ class EhFrameEmissionTest {
             listOf(Param("a", Type.I64), Param("b", Type.I64)),
             Type.I64,
         )
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val sum = ir.add(params[0], params[1])
         ir.ret(sum)
         ir.finalizeFunction()
@@ -29,12 +29,12 @@ class EhFrameEmissionTest {
         val ir = IrBuilder("test", target)
 
         val p1 = ir.createFunction("func1", listOf(Param("x", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(p1[0])
         ir.finalizeFunction()
 
         val p2 = ir.createFunction("func2", listOf(Param("y", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(p2[0])
         ir.finalizeFunction()
 

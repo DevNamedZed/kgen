@@ -27,7 +27,7 @@ class CilCodeGenComprehensiveTest {
     ): List<CilInstruction> {
         val ir = IrBuilder("test", Target.msil())
         ir.createFunction("testFn", params, returnType)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         block(ir)
         ir.finalizeFunction()
         val module = ir.build()
@@ -1343,10 +1343,10 @@ class CilCodeGenComprehensiveTest {
     fun `br produces BR opcode`() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("test", emptyList(), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
-            ir.br("target")
+            ir.appendBlock("entry")
+            ir.br(BlockRef("target"))
 
-            ir.positionAtEnd(ir.appendBlock("target"))
+            ir.appendBlock("target")
             ir.ret(Constant.I32(0))
             ir.finalizeFunction()
         }
@@ -1357,15 +1357,15 @@ class CilCodeGenComprehensiveTest {
     fun `condBr produces BRTRUE and BR`() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("test", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val x = Parameter("x", Type.I32, 0)
             val cmp = ir.icmp(ICmpPredicate.SGT, x, Constant.I32(0))
-            ir.condBr(cmp, "positive", "negative")
+            ir.condBr(cmp, BlockRef("positive"), BlockRef("negative"))
 
-            ir.positionAtEnd(ir.appendBlock("positive"))
+            ir.appendBlock("positive")
             ir.ret(Constant.I32(1))
 
-            ir.positionAtEnd(ir.appendBlock("negative"))
+            ir.appendBlock("negative")
             ir.ret(Constant.I32(0))
             ir.finalizeFunction()
         }
@@ -1377,7 +1377,7 @@ class CilCodeGenComprehensiveTest {
     fun `switch produces CEQ per case and BR for default`() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("sw", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val x = Parameter("x", Type.I32, 0)
             ir.switch(x, "default", listOf(
                 Constant.I32(0) to "case0",
@@ -1385,13 +1385,13 @@ class CilCodeGenComprehensiveTest {
                 Constant.I32(2) to "case2"
             ))
 
-            ir.positionAtEnd(ir.appendBlock("case0"))
+            ir.appendBlock("case0")
             ir.ret(Constant.I32(10))
-            ir.positionAtEnd(ir.appendBlock("case1"))
+            ir.appendBlock("case1")
             ir.ret(Constant.I32(20))
-            ir.positionAtEnd(ir.appendBlock("case2"))
+            ir.appendBlock("case2")
             ir.ret(Constant.I32(30))
-            ir.positionAtEnd(ir.appendBlock("default"))
+            ir.appendBlock("default")
             ir.ret(Constant.I32(0))
             ir.finalizeFunction()
         }
@@ -1404,14 +1404,14 @@ class CilCodeGenComprehensiveTest {
     fun `switch with single case`() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("sw1", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val x = Parameter("x", Type.I32, 0)
             ir.switch(x, "default", listOf(
                 Constant.I32(5) to "case5"
             ))
-            ir.positionAtEnd(ir.appendBlock("case5"))
+            ir.appendBlock("case5")
             ir.ret(Constant.I32(50))
-            ir.positionAtEnd(ir.appendBlock("default"))
+            ir.appendBlock("default")
             ir.ret(Constant.I32(0))
             ir.finalizeFunction()
         }
@@ -1646,12 +1646,12 @@ class CilCodeGenComprehensiveTest {
         val ir = IrBuilder("test", Target.msil())
 
         ir.createFunction("helper", listOf(Param("x", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Parameter("x", Type.I32, 0))
         ir.finalizeFunction()
 
         ir.createFunction("caller", listOf(Param("a", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
         val result = ir.call("helper", listOf(a), Type.I32)
         ir.ret(result)
@@ -1671,12 +1671,12 @@ class CilCodeGenComprehensiveTest {
         val ir = IrBuilder("test", Target.msil())
 
         ir.createFunction("sideEffect", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret()
         ir.finalizeFunction()
 
         ir.createFunction("caller", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.call("sideEffect", emptyList(), Type.Void)
         ir.ret()
         ir.finalizeFunction()
@@ -1698,7 +1698,7 @@ class CilCodeGenComprehensiveTest {
         ir.createFunction("add3", listOf(
             Param("a", Type.I32), Param("b", Type.I32), Param("c", Type.I32)
         ), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val pa = Parameter("a", Type.I32, 0)
         val pb = Parameter("b", Type.I32, 1)
         val pc = Parameter("c", Type.I32, 2)
@@ -1708,7 +1708,7 @@ class CilCodeGenComprehensiveTest {
         ir.finalizeFunction()
 
         ir.createFunction("caller", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val result = ir.call("add3", listOf(Constant.I32(1), Constant.I32(2), Constant.I32(3)), Type.I32)
         ir.ret(result)
         ir.finalizeFunction()
@@ -1902,12 +1902,12 @@ class CilCodeGenComprehensiveTest {
         val ir = IrBuilder("test", Target.msil())
 
         ir.createFunction("funcA", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I32(1))
         ir.finalizeFunction()
 
         ir.createFunction("funcB", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I32(2))
         ir.finalizeFunction()
 
@@ -1925,7 +1925,7 @@ class CilCodeGenComprehensiveTest {
     fun `single function does not use container format`() {
         val ir = IrBuilder("test", Target.msil())
         ir.createFunction("only", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I32(99))
         ir.finalizeFunction()
 
@@ -1944,12 +1944,12 @@ class CilCodeGenComprehensiveTest {
         val ir = IrBuilder("test", Target.msil())
 
         ir.createFunction("ignored", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I32(0))
         ir.finalizeFunction()
 
         ir.createFunction("target", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I32(42))
         ir.finalizeFunction()
 
@@ -1966,7 +1966,7 @@ class CilCodeGenComprehensiveTest {
     fun `generateMethodAssembler returns assembler`() {
         val ir = IrBuilder("test", Target.msil())
         ir.createFunction("fn", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I32(5))
         ir.finalizeFunction()
 
@@ -1987,7 +1987,7 @@ class CilCodeGenComprehensiveTest {
         ir.declareFunction("externalFn", listOf(Param("x", Type.I32)), Type.I32)
 
         ir.createFunction("caller", listOf(Param("a", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
         val result = ir.call("externalFn", listOf(a), Type.I32)
         ir.ret(result)
@@ -2048,20 +2048,20 @@ class CilCodeGenComprehensiveTest {
     fun `diamond control flow pattern`() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("diamond", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val x = Parameter("x", Type.I32, 0)
             val cmp = ir.icmp(ICmpPredicate.SGT, x, Constant.I32(0))
-            ir.condBr(cmp, "then", "else")
+            ir.condBr(cmp, BlockRef("then"), BlockRef("else"))
 
-            ir.positionAtEnd(ir.appendBlock("then"))
+            ir.appendBlock("then")
             val doubled = ir.mul(x, Constant.I32(2))
-            ir.br("merge")
+            ir.br(BlockRef("merge"))
 
-            ir.positionAtEnd(ir.appendBlock("else"))
+            ir.appendBlock("else")
             val negated = ir.neg(x)
-            ir.br("merge")
+            ir.br(BlockRef("merge"))
 
-            ir.positionAtEnd(ir.appendBlock("merge"))
+            ir.appendBlock("merge")
             ir.ret(Constant.I32(0))
             ir.finalizeFunction()
         }
@@ -2382,7 +2382,6 @@ class CilClassBuilderComprehensiveTest {
     fun `additional type ref`() {
         val builder = CilClassBuilder("TestAsm", "MyClass")
         val idx = builder.addTypeRef(1, "Console", "System")
-
         val meta = builder.build()
         assertEquals(2, meta.tables.typeRefs.size)
         assertEquals("Console", meta.strings.get(meta.tables.typeRefs[1].name))

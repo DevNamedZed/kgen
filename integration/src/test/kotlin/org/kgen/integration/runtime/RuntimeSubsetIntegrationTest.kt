@@ -112,7 +112,7 @@ class RuntimeSubsetIntegrationTest {
                 org.kgen.ir.Param("y", org.kgen.ir.Type.I32),
                 org.kgen.ir.Param("z", org.kgen.ir.Type.I32),
             ), org.kgen.ir.Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val x = org.kgen.ir.Parameter("x", org.kgen.ir.Type.I32, 0)
             val y = org.kgen.ir.Parameter("y", org.kgen.ir.Type.I32, 1)
             val z = org.kgen.ir.Parameter("z", org.kgen.ir.Type.I32, 2)

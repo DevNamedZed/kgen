@@ -29,7 +29,7 @@ class HelloWorldTest {
         ir.declareFunction("puts", listOf(Param("s", Type.OpaquePointer)), Type.I32)
 
         ir.createFunction("main", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.call("puts", listOf(strRef), Type.I32)
         ir.ret(Constant.I32(0))
         ir.finalizeFunction()
@@ -49,7 +49,7 @@ class HelloWorldTest {
         ir.declareFunction("puts", listOf(Param("s", Type.OpaquePointer)), Type.I32)
 
         ir.createFunction("main", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.call("puts", listOf(strRef), Type.I32)
         ir.ret(Constant.I32(0))
         ir.finalizeFunction()

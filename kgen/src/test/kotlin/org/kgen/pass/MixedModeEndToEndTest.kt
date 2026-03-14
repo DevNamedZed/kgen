@@ -138,7 +138,7 @@ class MixedModeEndToEndTest {
         val p1 = builder.createFunction("onEvent",
             listOf(Param("eventCode", Type.I32)), Type.I32,
             attributes = setOf(FnAttribute.MANAGED))
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret(p1[0])
         builder.finalizeFunction()
 
@@ -146,7 +146,7 @@ class MixedModeEndToEndTest {
         val p2 = builder.createFunction("onComplete",
             listOf(Param("result", Type.I64)), Type.Void,
             attributes = setOf(FnAttribute.MANAGED))
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret()
         builder.finalizeFunction()
 
@@ -154,7 +154,7 @@ class MixedModeEndToEndTest {
         val p3 = builder.createFunction("nativeEventLoop",
             listOf(Param("count", Type.I32)), Type.I32,
             attributes = setOf(FnAttribute.NATIVE))
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val eventResult = builder.call("onEvent", listOf(p3[0]), Type.I32)
         builder.call("onComplete", listOf(Constant.I64(0)), Type.Void)
         builder.ret(eventResult!!)
@@ -191,14 +191,14 @@ class MixedModeEndToEndTest {
         val p1 = nativeBuilder.createFunction("matMul",
             listOf(Param("a", Type.I64), Param("b", Type.I64), Param("n", Type.I32)), Type.I64,
             attributes = setOf(FnAttribute.NATIVE))
-        nativeBuilder.positionAtEnd(nativeBuilder.appendBlock("entry"))
+        nativeBuilder.appendBlock("entry")
         nativeBuilder.ret(p1[0])
         nativeBuilder.finalizeFunction()
 
         val p2 = nativeBuilder.createFunction("vectorAdd",
             listOf(Param("a", Type.I64), Param("b", Type.I64), Param("len", Type.I32)), Type.I64,
             attributes = setOf(FnAttribute.NATIVE))
-        nativeBuilder.positionAtEnd(nativeBuilder.appendBlock("entry"))
+        nativeBuilder.appendBlock("entry")
         nativeBuilder.ret(p2[0])
         nativeBuilder.finalizeFunction()
 
@@ -210,7 +210,7 @@ class MixedModeEndToEndTest {
         val p3 = managedBuilder.createFunction("runPipeline",
             listOf(Param("dataPtr", Type.I64), Param("size", Type.I32)), Type.I64,
             attributes = setOf(FnAttribute.MANAGED))
-        managedBuilder.positionAtEnd(managedBuilder.appendBlock("entry"))
+        managedBuilder.appendBlock("entry")
         managedBuilder.ret(p3[0])
         managedBuilder.finalizeFunction()
 
@@ -270,7 +270,7 @@ class MixedModeEndToEndTest {
         val p1 = builder.createFunction("managedEntry",
             listOf(Param("x", Type.I32), Param("y", Type.F64)), Type.F64,
             attributes = setOf(FnAttribute.MANAGED))
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val nativeResult = builder.call("nativeCompute", listOf(p1[0], p1[1]), Type.F64)
         builder.ret(nativeResult!!)
         builder.finalizeFunction()
@@ -279,7 +279,7 @@ class MixedModeEndToEndTest {
         val p2 = builder.createFunction("nativeCompute",
             listOf(Param("x", Type.I32), Param("y", Type.F64)), Type.F64,
             attributes = setOf(FnAttribute.NATIVE))
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val callback = builder.call("managedLog", listOf(p2[0]), Type.Void)
         builder.ret(p2[1])
         builder.finalizeFunction()
@@ -288,7 +288,7 @@ class MixedModeEndToEndTest {
         val p3 = builder.createFunction("managedLog",
             listOf(Param("code", Type.I32)), Type.Void,
             attributes = setOf(FnAttribute.MANAGED))
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret()
         builder.finalizeFunction()
 
@@ -330,7 +330,7 @@ class MixedModeEndToEndTest {
         val p1 = builder.createFunction("fastAdd",
             listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32,
             attributes = setOf(FnAttribute.NATIVE))
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret(builder.add(p1[0], p1[1]))
         builder.finalizeFunction()
 
@@ -338,7 +338,7 @@ class MixedModeEndToEndTest {
         val p2 = builder.createFunction("fastMul",
             listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32,
             attributes = setOf(FnAttribute.NATIVE))
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret(builder.mul(p2[0], p2[1]))
         builder.finalizeFunction()
 
@@ -346,7 +346,7 @@ class MixedModeEndToEndTest {
         val p3 = builder.createFunction("orchestrate",
             listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32,
             attributes = setOf(FnAttribute.MANAGED))
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val sum = builder.call("fastAdd", listOf(p3[0], p3[1]), Type.I32)
         val product = builder.call("fastMul", listOf(p3[0], p3[1]), Type.I32)
         builder.ret(builder.add(sum!!, product!!))
@@ -356,7 +356,7 @@ class MixedModeEndToEndTest {
         val p4 = builder.createFunction("formatResult",
             listOf(Param("value", Type.I32)), Type.I32,
             attributes = setOf(FnAttribute.MANAGED))
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret(p4[0])
         builder.finalizeFunction()
 

@@ -22,7 +22,7 @@ class ScalarReplacementOfAggregatesTest {
         val pointType = Type.Struct(null, listOf(Type.I32, Type.I32))
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(pointType)
             val xPtr = gep(pointType, ptr, Constant.I32(0), Constant.I32(0))
             store(Constant.I32(10), xPtr)
@@ -45,7 +45,7 @@ class ScalarReplacementOfAggregatesTest {
         val pointType = Type.Struct(null, listOf(Type.I32, Type.I32))
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(pointType)
             val xPtr = gep(pointType, ptr, Constant.I32(0), Constant.I32(0))
             store(Constant.I32(42), xPtr)
@@ -66,7 +66,7 @@ class ScalarReplacementOfAggregatesTest {
         val arrType = Type.Array(Type.I32, 3)
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(arrType)
             val e0 = gep(arrType, ptr, Constant.I32(0), Constant.I32(0))
             store(Constant.I32(100), e0)
@@ -88,7 +88,7 @@ class ScalarReplacementOfAggregatesTest {
         val module = buildAndTransform {
             declareFunction("use_ptr", listOf(Param("p", Type.OpaquePointer)), Type.Void)
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(pointType)
             // Pass the alloca pointer to a call — address escapes
             call("use_ptr", listOf(ptr), Type.Void)
@@ -107,7 +107,7 @@ class ScalarReplacementOfAggregatesTest {
         val arrType = Type.Array(Type.I32, 4)
         val module = buildAndTransform {
             val params = createFunction("f", listOf(Param("idx", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(arrType)
             // Dynamic index — can't do SROA
             val ePtr = gep(arrType, ptr, Constant.I32(0), params[0])
@@ -126,7 +126,7 @@ class ScalarReplacementOfAggregatesTest {
     fun `does not replace scalar alloca`() {
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(7), ptr)
             val v = load(Type.I32, ptr)
@@ -145,7 +145,7 @@ class ScalarReplacementOfAggregatesTest {
         val outerType = Type.Struct(null, listOf(innerType, Type.I64))
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(outerType)
             // Access outer.field1 (the i64)
             val f1Ptr = gep(outerType, ptr, Constant.I32(0), Constant.I32(1))
@@ -165,7 +165,7 @@ class ScalarReplacementOfAggregatesTest {
         val pointType = Type.Struct(null, listOf(Type.I32, Type.I32))
         val module = buildAndTransform {
             val params = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(pointType)
             val xPtr = gep(pointType, ptr, Constant.I32(0), Constant.I32(0))
             store(params[0], xPtr)
@@ -201,7 +201,7 @@ class ScalarReplacementOfAggregatesTest {
         val bigArray = Type.Array(Type.I32, 100)
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(bigArray)
             val e0 = gep(bigArray, ptr, Constant.I32(0), Constant.I32(0))
             store(Constant.I32(1), e0)

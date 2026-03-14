@@ -149,13 +149,13 @@ class IrVerifier {
         for (block in fn.blocks) {
             for (inst in block.instructions) {
                 if (inst is Invoke) {
-                    val unwindBlock = fn.blocks.find { it.label == inst.unwindDest }
+                    val unwindBlock = fn.blocks.find { it.label == inst.unwindDest.label }
                     if (unwindBlock != null && unwindBlock.instructions.isNotEmpty()) {
                         val firstNonDebug = unwindBlock.instructions.firstOrNull {
                             it !is DebugLoc && it !is DebugValue && it !is DebugDeclare
                         }
                         if (firstNonDebug != null && firstNonDebug !is LandingPad) {
-                            error("Invoke unwind destination %${inst.unwindDest} in $ctx must begin with LandingPad")
+                            error("Invoke unwind destination %${inst.unwindDest.label} in $ctx must begin with LandingPad")
                         }
                     }
                 }
@@ -203,6 +203,21 @@ class IrVerifier {
                         inst is CoroResume || inst is CoroDestroy || inst is CoroSize
                     if (isCoroDep && !dominates(coroBeginBlock, block.label, idom)) {
                         error("${inst::class.simpleName} in block %${block.label} of $ctx is not dominated by CoroBegin")
+                    }
+                }
+            }
+        }
+
+        // ClosureInvokeOnce linear-use check: each closure value may appear in at most one ClosureInvokeOnce
+        val closureInvokeOnceCounts = mutableMapOf<String, Int>()
+        for (block in fn.blocks) {
+            for (inst in block.instructions) {
+                if (inst is ClosureInvokeOnce) {
+                    val closureName = inst.closure.name
+                    val count = closureInvokeOnceCounts.getOrDefault(closureName, 0) + 1
+                    closureInvokeOnceCounts[closureName] = count
+                    if (count > 1) {
+                        error("Closure %$closureName in $ctx is used in multiple ClosureInvokeOnce instructions (linear-use violation)")
                     }
                 }
             }
@@ -264,17 +279,17 @@ class IrVerifier {
     }
 
     private fun terminatorTargets(inst: Instruction): List<String> = when (inst) {
-        is Br -> listOf(inst.target)
-        is CondBr -> listOf(inst.trueTarget, inst.falseTarget)
-        is Switch -> listOf(inst.defaultTarget) + inst.cases.map { it.second }
-        is IndirectBr -> inst.targets
-        is Invoke -> listOf(inst.normalDest, inst.unwindDest)
-        is CallBr -> listOf(inst.fallthrough) + inst.indirectDests
-        is CatchSwitch -> inst.handlers + listOfNotNull(inst.unwindDest)
-        is CatchRet -> listOf(inst.dest)
-        is CleanupRet -> listOfNotNull(inst.unwindDest)
-        is TagSwitch -> inst.cases.map { it.second } + listOfNotNull(inst.defaultTarget)
-        is DebugTrap -> listOfNotNull(inst.successor)
+        is Br -> listOf(inst.target.label)
+        is CondBr -> listOf(inst.trueTarget.label, inst.falseTarget.label)
+        is Switch -> listOf(inst.defaultTarget.label) + inst.cases.map { it.second.label }
+        is IndirectBr -> inst.targets.map { it.label }
+        is Invoke -> listOf(inst.normalDest.label, inst.unwindDest.label)
+        is CallBr -> listOf(inst.fallthrough.label) + inst.indirectDests.map { it.label }
+        is CatchSwitch -> inst.handlers.map { it.label } + listOfNotNull(inst.unwindDest?.label)
+        is CatchRet -> listOf(inst.dest.label)
+        is CleanupRet -> listOfNotNull(inst.unwindDest?.label)
+        is TagSwitch -> inst.cases.map { it.second.label } + listOfNotNull(inst.defaultTarget?.label)
+        is DebugTrap -> listOfNotNull(inst.successor?.label)
         else -> emptyList()
     }
 
@@ -376,7 +391,7 @@ class IrVerifier {
                 // So we check phi incoming values differently
                 if (inst is Phi) {
                     for ((value, predLabel) in inst.incoming) {
-                        checkValueDominance(value, predLabel, valueDef, idom, fn, "phi in block %${block.label} of $ctx (from %$predLabel)")
+                        checkValueDominance(value, predLabel.label, valueDef, idom, fn, "phi in block %${block.label} of $ctx (from %${predLabel.label})")
                     }
                 } else {
                     for (operand in instructionOperands(inst)) {
@@ -430,7 +445,7 @@ class IrVerifier {
                     if (inst !is DebugLoc && inst !is DebugValue && inst !is DebugDeclare) break
                     continue
                 }
-                val incomingLabels = inst.incoming.map { it.second }
+                val incomingLabels = inst.incoming.map { it.second.label }
 
                 // Each incoming block must be an actual predecessor
                 for (label in incomingLabels) {
@@ -499,7 +514,7 @@ class IrVerifier {
         is Ceil -> listOf(inst.operand)
         is Floor -> listOf(inst.operand)
         is Round -> listOf(inst.operand)
-        is Trunc -> listOf(inst.operand)
+        is FTrunc -> listOf(inst.operand)
         is CopySign -> listOf(inst.magnitude, inst.sign)
         is And -> listOf(inst.lhs, inst.rhs)
         is Or -> listOf(inst.lhs, inst.rhs)
@@ -508,8 +523,6 @@ class IrVerifier {
         is Shl -> listOf(inst.lhs, inst.rhs)
         is LShr -> listOf(inst.lhs, inst.rhs)
         is AShr -> listOf(inst.lhs, inst.rhs)
-        is RotateLeft -> listOf(inst.value, inst.amount)
-        is RotateRight -> listOf(inst.value, inst.amount)
         is Rotl -> listOf(inst.value, inst.amount)
         is Rotr -> listOf(inst.value, inst.amount)
         is Ctlz -> listOf(inst.operand)
@@ -639,6 +652,7 @@ class IrVerifier {
         is DebugDeclare -> listOf(inst.address)
         is Assume -> listOf(inst.condition)
         is Expect -> listOf(inst.value)
+        else -> emptyList()
     }
 
     private fun CatchSwitch.args(): List<Value> = emptyList()
@@ -687,7 +701,7 @@ class IrVerifier {
             is Ceil -> verifyFloatUnary(inst.operand, ctx, "ceil")
             is Floor -> verifyFloatUnary(inst.operand, ctx, "floor")
             is Round -> verifyFloatUnary(inst.operand, ctx, "round")
-            is Trunc -> verifyFloatUnary(inst.operand, ctx, "trunc")
+            is FTrunc -> verifyFloatUnary(inst.operand, ctx, "ftrunc")
 
             // FMA: all three operands must be same float type
             is FMA -> {
@@ -704,8 +718,6 @@ class IrVerifier {
             is Shl -> verifyIntBinOp(inst.lhs, inst.rhs, ctx, "shl")
             is LShr -> verifyIntBinOp(inst.lhs, inst.rhs, ctx, "lshr")
             is AShr -> verifyIntBinOp(inst.lhs, inst.rhs, ctx, "ashr")
-            is RotateLeft -> verifyIntBinOp(inst.value, inst.amount, ctx, "rotl")
-            is RotateRight -> verifyIntBinOp(inst.value, inst.amount, ctx, "rotr")
             is Rotl -> verifyIntBinOp(inst.value, inst.amount, ctx, "rotl")
             is Rotr -> verifyIntBinOp(inst.value, inst.amount, ctx, "rotr")
 
@@ -789,18 +801,18 @@ class IrVerifier {
             }
 
             // Branch targets
-            is Br -> verifyBlockRef(inst.target, blockLabels, ctx, "br")
+            is Br -> verifyBlockRef(inst.target.label, blockLabels, ctx, "br")
             is CondBr -> {
                 if (inst.condition.type != Type.I1) {
                     error("condbr condition must be i1 in $ctx")
                 }
-                verifyBlockRef(inst.trueTarget, blockLabels, ctx, "condbr true")
-                verifyBlockRef(inst.falseTarget, blockLabels, ctx, "condbr false")
+                verifyBlockRef(inst.trueTarget.label, blockLabels, ctx, "condbr true")
+                verifyBlockRef(inst.falseTarget.label, blockLabels, ctx, "condbr false")
             }
             is Switch -> {
-                verifyBlockRef(inst.defaultTarget, blockLabels, ctx, "switch default")
+                verifyBlockRef(inst.defaultTarget.label, blockLabels, ctx, "switch default")
                 for ((c, target) in inst.cases) {
-                    verifyBlockRef(target, blockLabels, ctx, "switch case")
+                    verifyBlockRef(target.label, blockLabels, ctx, "switch case")
                     if (c.type != inst.value.type) {
                         error("switch case type ${IrPrinter.typeStr(c.type)} doesn't match value type ${IrPrinter.typeStr(inst.value.type)} in $ctx")
                     }
@@ -811,7 +823,7 @@ class IrVerifier {
                     error("indirectbr address must be pointer type in $ctx")
                 }
                 for (target in inst.targets) {
-                    verifyBlockRef(target, blockLabels, ctx, "indirectbr")
+                    verifyBlockRef(target.label, blockLabels, ctx, "indirectbr")
                 }
             }
 
@@ -833,16 +845,16 @@ class IrVerifier {
 
             // Invoke: arg types + block refs
             is Invoke -> {
-                verifyBlockRef(inst.normalDest, blockLabels, ctx, "invoke normal")
-                verifyBlockRef(inst.unwindDest, blockLabels, ctx, "invoke unwind")
+                verifyBlockRef(inst.normalDest.label, blockLabels, ctx, "invoke normal")
+                verifyBlockRef(inst.unwindDest.label, blockLabels, ctx, "invoke unwind")
                 verifyCallArgs(inst.function, inst.args, ctx, "invoke")
             }
 
             // CallBr: arg types + block refs
             is CallBr -> {
-                verifyBlockRef(inst.fallthrough, blockLabels, ctx, "callbr fallthrough")
+                verifyBlockRef(inst.fallthrough.label, blockLabels, ctx, "callbr fallthrough")
                 for (dest in inst.indirectDests) {
-                    verifyBlockRef(dest, blockLabels, ctx, "callbr indirect")
+                    verifyBlockRef(dest.label, blockLabels, ctx, "callbr indirect")
                 }
                 verifyCallArgs(inst.function, inst.args, ctx, "callbr")
             }
@@ -853,9 +865,9 @@ class IrVerifier {
                     error("phi must have at least one incoming value in $ctx")
                 }
                 for ((value, label) in inst.incoming) {
-                    verifyBlockRef(label, blockLabels, ctx, "phi")
+                    verifyBlockRef(label.label, blockLabels, ctx, "phi")
                     if (value.type != inst.dest.type) {
-                        error("phi incoming value type ${IrPrinter.typeStr(value.type)} doesn't match phi type ${IrPrinter.typeStr(inst.dest.type)} from %$label in $ctx")
+                        error("phi incoming value type ${IrPrinter.typeStr(value.type)} doesn't match phi type ${IrPrinter.typeStr(inst.dest.type)} from %${label.label} in $ctx")
                     }
                 }
             }
@@ -913,27 +925,27 @@ class IrVerifier {
 
             // EH block refs
             is CatchSwitch -> {
-                for (handler in inst.handlers) verifyBlockRef(handler, blockLabels, ctx, "catchswitch handler")
-                inst.unwindDest?.let { verifyBlockRef(it, blockLabels, ctx, "catchswitch unwind") }
+                for (handler in inst.handlers) verifyBlockRef(handler.label, blockLabels, ctx, "catchswitch handler")
+                inst.unwindDest?.let { verifyBlockRef(it.label, blockLabels, ctx, "catchswitch unwind") }
             }
-            is CatchRet -> verifyBlockRef(inst.dest, blockLabels, ctx, "catchret")
+            is CatchRet -> verifyBlockRef(inst.dest.label, blockLabels, ctx, "catchret")
             is CleanupRet -> {
-                inst.unwindDest?.let { verifyBlockRef(it, blockLabels, ctx, "cleanupret unwind") }
+                inst.unwindDest?.let { verifyBlockRef(it.label, blockLabels, ctx, "cleanupret unwind") }
             }
 
             // High-level: TryCatchRegion block refs
             is TryCatchRegion -> {
-                verifyBlockRef(inst.tryBlock, blockLabels, ctx, "trycatch try")
+                verifyBlockRef(inst.tryBlock.label, blockLabels, ctx, "trycatch try")
                 for (handler in inst.catches) {
                     verifyBlockRef(handler.handlerBlock, blockLabels, ctx, "trycatch handler")
                 }
-                inst.finallyBlock?.let { verifyBlockRef(it, blockLabels, ctx, "trycatch finally") }
+                inst.finallyBlock?.let { verifyBlockRef(it.label, blockLabels, ctx, "trycatch finally") }
             }
 
             // High-level: TagSwitch block refs + exhaustiveness
             is TagSwitch -> {
-                for ((_, target) in inst.cases) verifyBlockRef(target, blockLabels, ctx, "tagswitch case")
-                inst.defaultTarget?.let { verifyBlockRef(it, blockLabels, ctx, "tagswitch default") }
+                for ((_, target) in inst.cases) verifyBlockRef(target.label, blockLabels, ctx, "tagswitch case")
+                inst.defaultTarget?.let { verifyBlockRef(it.label, blockLabels, ctx, "tagswitch default") }
                 if (inst.defaultTarget == null && inst.union.type is Type.TaggedUnion) {
                     val unionType = inst.union.type as Type.TaggedUnion
                     val variantNames = unionType.variants.map { it.name }.toSet()

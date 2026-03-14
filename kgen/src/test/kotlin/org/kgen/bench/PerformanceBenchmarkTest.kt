@@ -23,7 +23,7 @@ class PerformanceBenchmarkTest {
         for (i in 0 until functionCount) {
             val params = builder.createFunction("func_$i",
                 listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            builder.positionAtEnd(builder.appendBlock("entry"))
+            builder.appendBlock("entry")
             var acc = builder.add(params[0], params[1])
             for (b in 1 until blocksPerFunction) {
                 acc = builder.mul(acc, params[0])
@@ -123,7 +123,7 @@ class PerformanceBenchmarkTest {
         val builder = IrBuilder("bench", Target.x86_64())
         for (i in 0 until 100) {
             val params = builder.createFunction("fold_$i", listOf(Param("x", Type.I32)), Type.I32)
-            builder.positionAtEnd(builder.appendBlock("entry"))
+            builder.appendBlock("entry")
             // Create a chain of foldable operations
             var acc: Value = Constant.I32(1)
             for (j in 0 until 20) {

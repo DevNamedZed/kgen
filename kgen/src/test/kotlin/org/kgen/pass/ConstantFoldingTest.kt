@@ -21,7 +21,7 @@ class ConstantFoldingTest {
     fun `folds constant i32 addition`() {
         val module = buildAndFold {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val sum = add(Constant.I32(10), Constant.I32(20))
             ret(sum)
             finalizeFunction()
@@ -35,7 +35,7 @@ class ConstantFoldingTest {
     fun `folds constant i32 subtraction`() {
         val module = buildAndFold {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val diff = sub(Constant.I32(50), Constant.I32(30))
             ret(diff)
             finalizeFunction()
@@ -48,7 +48,7 @@ class ConstantFoldingTest {
     fun `folds constant i32 multiplication`() {
         val module = buildAndFold {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val prod = mul(Constant.I32(6), Constant.I32(7))
             ret(prod)
             finalizeFunction()
@@ -61,7 +61,7 @@ class ConstantFoldingTest {
     fun `folds constant i32 division`() {
         val module = buildAndFold {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val quot = sdiv(Constant.I32(100), Constant.I32(7))
             ret(quot)
             finalizeFunction()
@@ -74,7 +74,7 @@ class ConstantFoldingTest {
     fun `does not fold division by zero`() {
         val module = buildAndFold {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val quot = sdiv(Constant.I32(100), Constant.I32(0))
             ret(quot)
             finalizeFunction()
@@ -88,7 +88,7 @@ class ConstantFoldingTest {
     fun `folds chained constant expressions`() {
         val module = buildAndFold {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(Constant.I32(10), Constant.I32(20)) // 30
             val b = mul(a, Constant.I32(2)) // 60
             val c = sub(b, Constant.I32(18)) // 42
@@ -107,7 +107,7 @@ class ConstantFoldingTest {
     fun `preserves non-constant operations`() {
         val module = buildAndFold {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val sum = add(params[0], Constant.I32(1))
             ret(sum)
             finalizeFunction()
@@ -121,7 +121,7 @@ class ConstantFoldingTest {
     fun `folds constant i64 arithmetic`() {
         val module = buildAndFold {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val sum = add(Constant.I64(1000000000L), Constant.I64(2000000000L))
             ret(sum)
             finalizeFunction()
@@ -134,7 +134,7 @@ class ConstantFoldingTest {
     fun `folds constant bitwise operations`() {
         val module = buildAndFold {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = and(Constant.I32(0xFF00), Constant.I32(0x0FF0))
             ret(a)
             finalizeFunction()
@@ -147,7 +147,7 @@ class ConstantFoldingTest {
     fun `folds constant shifts`() {
         val module = buildAndFold {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val shifted = shl(Constant.I32(1), Constant.I32(10))
             ret(shifted)
             finalizeFunction()
@@ -160,7 +160,7 @@ class ConstantFoldingTest {
     fun `folds constant icmp`() {
         val module = buildAndFold {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cmp = icmp(ICmpPredicate.SLT, Constant.I32(5), Constant.I32(10))
             val result = zext(cmp, Type.I32)
             ret(result)
@@ -174,7 +174,7 @@ class ConstantFoldingTest {
     fun `folds constant f64 arithmetic`() {
         val module = buildAndFold {
             createFunction("f", emptyList(), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val sum = fadd(Constant.F64(1.5), Constant.F64(2.5))
             ret(sum)
             finalizeFunction()
@@ -187,7 +187,7 @@ class ConstantFoldingTest {
     fun `folds constant negation`() {
         val module = buildAndFold {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val neg = neg(Constant.I32(42))
             ret(neg)
             finalizeFunction()
@@ -200,7 +200,7 @@ class ConstantFoldingTest {
     fun `folds zext of constant`() {
         val module = buildAndFold {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ext = zext(Constant.I32(42), Type.I64)
             ret(ext)
             finalizeFunction()
@@ -214,7 +214,7 @@ class ConstantFoldingTest {
         val module = buildAndFold {
             declareFunction("external_fn", listOf(Param("x", Type.I32)), Type.I32)
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = call("external_fn", listOf(Constant.I32(42)), Type.I32)
             ret(result)
             finalizeFunction()
@@ -227,7 +227,7 @@ class ConstantFoldingTest {
     fun `pipeline with constant folding and DCE`() {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = ir.add(Constant.I32(10), Constant.I32(20))
         val b = ir.mul(Constant.I32(3), Constant.I32(4))
         // Only 'a' is used in the return; 'b' is dead

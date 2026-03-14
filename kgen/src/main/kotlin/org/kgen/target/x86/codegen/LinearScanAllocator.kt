@@ -100,7 +100,7 @@ class LinearScanAllocator(
                 // Copy-like: bitcast, trunc, zext, sext — dest should prefer source register
                 val copyPair: Pair<String, String>? = when (inst) {
                     is BitCast -> inst.dest.name to inst.value.name
-                    is Trunc -> inst.dest.name to inst.operand.name
+                    is FTrunc -> inst.dest.name to inst.operand.name
                     is ZExt -> inst.dest.name to inst.value.name
                     is SExt -> inst.dest.name to inst.value.name
                     is IntTrunc -> inst.dest.name to inst.value.name

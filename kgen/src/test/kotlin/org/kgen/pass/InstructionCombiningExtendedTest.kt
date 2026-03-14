@@ -31,7 +31,7 @@ class InstructionCombiningExtendedTest {
     fun i64XPlus0() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(params[0], Constant.I64(0)))
             finalizeFunction()
         }
@@ -42,7 +42,7 @@ class InstructionCombiningExtendedTest {
     fun i640PlusX() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(Constant.I64(0), params[0]))
             finalizeFunction()
         }
@@ -53,7 +53,7 @@ class InstructionCombiningExtendedTest {
     fun i64XMinus0() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sub(params[0], Constant.I64(0)))
             finalizeFunction()
         }
@@ -64,7 +64,7 @@ class InstructionCombiningExtendedTest {
     fun i64XMinusX() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sub(params[0], params[0]))
             finalizeFunction()
         }
@@ -75,7 +75,7 @@ class InstructionCombiningExtendedTest {
     fun i64XTimes1() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(mul(params[0], Constant.I64(1)))
             finalizeFunction()
         }
@@ -86,7 +86,7 @@ class InstructionCombiningExtendedTest {
     fun i64XTimes0() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(mul(params[0], Constant.I64(0)))
             finalizeFunction()
         }
@@ -97,7 +97,7 @@ class InstructionCombiningExtendedTest {
     fun i64XAnd0() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(and(params[0], Constant.I64(0)))
             finalizeFunction()
         }
@@ -108,7 +108,7 @@ class InstructionCombiningExtendedTest {
     fun i64XAndMinus1() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(and(params[0], Constant.I64(-1)))
             finalizeFunction()
         }
@@ -119,7 +119,7 @@ class InstructionCombiningExtendedTest {
     fun i64XOr0() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(or(params[0], Constant.I64(0)))
             finalizeFunction()
         }
@@ -130,7 +130,7 @@ class InstructionCombiningExtendedTest {
     fun i64XXor0() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(xor(params[0], Constant.I64(0)))
             finalizeFunction()
         }
@@ -141,7 +141,7 @@ class InstructionCombiningExtendedTest {
     fun i64XXorX() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(xor(params[0], params[0]))
             finalizeFunction()
         }
@@ -152,7 +152,7 @@ class InstructionCombiningExtendedTest {
     fun i64XShl0() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(shl(params[0], Constant.I64(0)))
             finalizeFunction()
         }
@@ -165,7 +165,7 @@ class InstructionCombiningExtendedTest {
     fun lshrBy0() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(lshr(params[0], Constant.I32(0)))
             finalizeFunction()
         }
@@ -176,7 +176,7 @@ class InstructionCombiningExtendedTest {
     fun ashrBy0() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(ashr(params[0], Constant.I32(0)))
             finalizeFunction()
         }
@@ -187,7 +187,7 @@ class InstructionCombiningExtendedTest {
     fun i64LshrBy0() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(lshr(params[0], Constant.I64(0)))
             finalizeFunction()
         }
@@ -198,7 +198,7 @@ class InstructionCombiningExtendedTest {
     fun i64AshrBy0() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(ashr(params[0], Constant.I64(0)))
             finalizeFunction()
         }
@@ -211,7 +211,7 @@ class InstructionCombiningExtendedTest {
     fun udivBy1() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(udiv(params[0], Constant.I32(1)))
             finalizeFunction()
         }
@@ -223,7 +223,7 @@ class InstructionCombiningExtendedTest {
     fun sdivBy1() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sdiv(params[0], Constant.I32(1)))
             finalizeFunction()
         }
@@ -236,7 +236,7 @@ class InstructionCombiningExtendedTest {
     fun i64UdivBy1() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(udiv(params[0], Constant.I64(1)))
             finalizeFunction()
         }
@@ -248,7 +248,7 @@ class InstructionCombiningExtendedTest {
     fun i64SdivBy1() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sdiv(params[0], Constant.I64(1)))
             finalizeFunction()
         }
@@ -262,7 +262,7 @@ class InstructionCombiningExtendedTest {
     fun oneTimesX() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(mul(Constant.I32(1), params[0]))
             finalizeFunction()
         }
@@ -273,7 +273,7 @@ class InstructionCombiningExtendedTest {
     fun zeroTimesX() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(mul(Constant.I32(0), params[0]))
             finalizeFunction()
         }
@@ -286,7 +286,7 @@ class InstructionCombiningExtendedTest {
     fun xOrMinus1() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(or(params[0], Constant.I32(-1)))
             finalizeFunction()
         }
@@ -301,7 +301,7 @@ class InstructionCombiningExtendedTest {
     fun xOrX() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(or(params[0], params[0]))
             finalizeFunction()
         }
@@ -312,7 +312,7 @@ class InstructionCombiningExtendedTest {
     fun xAndX() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(and(params[0], params[0]))
             finalizeFunction()
         }
@@ -325,7 +325,7 @@ class InstructionCombiningExtendedTest {
     fun chainedI64Identities() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], Constant.I64(0))
             val b = mul(a, Constant.I64(1))
             val c = sub(b, Constant.I64(0))
@@ -341,7 +341,7 @@ class InstructionCombiningExtendedTest {
     fun chainedShiftIdentities() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = shl(params[0], Constant.I32(0))
             val b = lshr(a, Constant.I32(0))
             val c = ashr(b, Constant.I32(0))
@@ -356,7 +356,7 @@ class InstructionCombiningExtendedTest {
     fun chainedBitwiseIdentities() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = and(params[0], Constant.I32(-1))
             val b = or(a, Constant.I32(0))
             val c = xor(b, Constant.I32(0))
@@ -373,12 +373,12 @@ class InstructionCombiningExtendedTest {
     fun multipleFunctionsCombined() {
         val module = buildAndCombine {
             val p1 = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(p1[0], Constant.I32(0)))
             finalizeFunction()
 
             val p2 = createFunction("g", listOf(Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(mul(p2[0], Constant.I32(1)))
             finalizeFunction()
         }
@@ -392,7 +392,7 @@ class InstructionCombiningExtendedTest {
     fun preservesNonIdentityMul() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(mul(params[0], Constant.I32(3)))
             finalizeFunction()
         }
@@ -403,7 +403,7 @@ class InstructionCombiningExtendedTest {
     fun preservesNonIdentitySub() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sub(params[0], Constant.I32(7)))
             finalizeFunction()
         }
@@ -414,7 +414,7 @@ class InstructionCombiningExtendedTest {
     fun preservesNonIdentityShl() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(shl(params[0], Constant.I32(2)))
             finalizeFunction()
         }
@@ -425,7 +425,7 @@ class InstructionCombiningExtendedTest {
     fun preservesNonIdentityAnd() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(and(params[0], Constant.I32(0xFF)))
             finalizeFunction()
         }
@@ -438,7 +438,7 @@ class InstructionCombiningExtendedTest {
     fun twoParamsAddIdentity() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], Constant.I32(0))
             val b = add(a, params[1])
             ret(b)
@@ -453,7 +453,7 @@ class InstructionCombiningExtendedTest {
     fun selectI64() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(select(Constant.I1(true), params[0], params[1]))
             finalizeFunction()
         }
@@ -464,7 +464,7 @@ class InstructionCombiningExtendedTest {
     fun selectFalseI64() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(select(Constant.I1(false), params[0], params[1]))
             finalizeFunction()
         }
@@ -475,7 +475,7 @@ class InstructionCombiningExtendedTest {
     fun selectSameI64() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("cond", Type.I1), Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(select(params[0], params[1], params[1]))
             finalizeFunction()
         }
@@ -488,7 +488,7 @@ class InstructionCombiningExtendedTest {
     fun multipleZeroProducers() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val z1 = sub(params[0], params[0]) // → 0
             val z2 = xor(params[1], params[1]) // → 0
             val sum = add(z1, z2) // 0 + 0
@@ -508,7 +508,7 @@ class InstructionCombiningExtendedTest {
     fun voidFunctionUnchanged() {
         val module = buildAndCombine {
             createFunction("f", emptyList(), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret()
             finalizeFunction()
         }
@@ -522,7 +522,7 @@ class InstructionCombiningExtendedTest {
         val module = buildAndCombine {
             declareFunction("ext", listOf(Param("x", Type.I32)), Type.I32)
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(params[0], Constant.I32(0)))
             finalizeFunction()
         }
@@ -537,12 +537,12 @@ class InstructionCombiningExtendedTest {
     fun mixedTypesI32AndI64() {
         val module = buildAndCombine {
             val p32 = createFunction("f32", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(p32[0], Constant.I32(0)))
             finalizeFunction()
 
             val p64 = createFunction("f64", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(p64[0], Constant.I64(0)))
             finalizeFunction()
         }
@@ -556,7 +556,7 @@ class InstructionCombiningExtendedTest {
     fun identityOpUsedMultipleTimes() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], Constant.I32(0)) // → x
             val b = add(a, a) // → x + x
             ret(b)
@@ -570,7 +570,7 @@ class InstructionCombiningExtendedTest {
     fun idempotency() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], Constant.I32(0))
             val b = mul(a, Constant.I32(1))
             ret(b)

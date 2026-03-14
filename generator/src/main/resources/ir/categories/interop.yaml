@@ -1,0 +1,111 @@
+name: Interop
+interfaceName: InteropInstruction
+enumValue: INTEROP
+description: |-
+  Managed/native interop instructions.
+
+  Interop instructions handle the boundary between managed and native code:
+  pinning objects, computing interior pointers, and performing cross-boundary calls.
+imports:
+- org.kgen.ir.ManagedCallDirection
+- org.kgen.ir.Type
+sections:
+- comment: Interop instructions
+  instructions:
+  - name: Pin
+    description: Pins a managed object reference, preventing the GC from relocating it.
+    effects:
+      bits:
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: ref
+      type: Value
+      role: operand
+    emit:
+      resultType: Type.OpaquePointer
+  - name: Unpin
+    description: Unpins a previously pinned managed object.
+    effects:
+      bits:
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: ref
+      type: Value
+      role: operand
+  - name: InteriorPtr
+    description: Computes a pointer to an element within a managed object.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: ref
+      type: Value
+      role: operand
+    - name: index
+      type: Value
+      role: operand
+    - name: pointeeType
+      type: Type
+      role: config
+    emit:
+      resultType: Type.OpaquePointer
+  - name: ManagedCall
+    description: Calls across the managed/native boundary with appropriate transition logic.
+    effects: CALL
+    fields:
+    - name: dest
+      type: InstructionRef?
+      role: resultNullable
+    - name: function
+      type: Value
+      role: operand
+    - name: args
+      type: List<Value>
+      role: operandList
+    - name: returnType
+      type: Type
+      role: config
+    - name: direction
+      type: ManagedCallDirection
+      role: config
+- comment: GPU memory
+  instructions:
+  - name: ManagedToDevice
+    description: |-
+      Pins a managed reference into GPU-accessible memory.
+
+      The GC must not relocate the object while any pin is active.
+      Host-side only; requires GcManaged + KernelLaunch capability.
+    effects:
+      bits:
+      - HAS_SIDE_EFFECTS
+    emit:
+      resultType: Type.OpaquePointer
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: ref
+      type: Value
+      role: operand
+    - name: targetAddrSpace
+      type: Int
+      default: '1'
+      role: config
+  - name: DeviceRelease
+    description: |-
+      Releases a ManagedToDevice pin.
+
+      The host code is responsible for calling this after confirming
+      no in-flight kernel still holds the pointer.
+    effects:
+      bits:
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: ptr
+      type: Value
+      role: operand

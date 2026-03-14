@@ -40,7 +40,7 @@ class GraphColoringAllocatorTest {
     fun simpleAddition() {
         val fn = buildFunction {
             createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = Parameter("a", Type.I64, 0)
             val b = Parameter("b", Type.I64, 1)
             val sum = add(a, b)
@@ -61,7 +61,7 @@ class GraphColoringAllocatorTest {
     fun moreValuesThanRegisters() {
         val fn = buildFunction {
             createFunction("many", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = Parameter("a", Type.I64, 0)
             val b = Parameter("b", Type.I64, 1)
             val c = add(a, b)
@@ -96,7 +96,7 @@ class GraphColoringAllocatorTest {
         val fn = buildFunction {
             declareFunction("ext", emptyList(), Type.I64)
             createFunction("caller", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val x = Parameter("x", Type.I64, 0)
             val callResult = call("ext", emptyList(), Type.I64)!!
             val sum = add(x, callResult)
@@ -119,7 +119,7 @@ class GraphColoringAllocatorTest {
     fun noValuesNoSpills() {
         val fn = buildFunction {
             createFunction("noop", emptyList(), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret()
             finalizeFunction()
         }
@@ -137,7 +137,7 @@ class GraphColoringAllocatorTest {
         val fn = buildFunction {
             declareFunction("ext", emptyList(), Type.Void)
             createFunction("f", listOf(Param("a", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = Parameter("a", Type.I64, 0)
             call("ext", emptyList(), Type.Void)
             ret(a)
@@ -164,7 +164,7 @@ class GraphColoringAllocatorTest {
     fun spillSlotReuse() {
         val fn = buildFunction {
             createFunction("spills", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val v1 = add(Constant.I64(1), Constant.I64(2))
             val v2 = add(Constant.I64(3), Constant.I64(4))
             val v3 = add(v1, v2)
@@ -193,7 +193,7 @@ class GraphColoringAllocatorTest {
     fun clobberAwarenessAvoidsClobberedRegister() {
         val fn = buildFunction {
             createFunction("divtest", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = Parameter("a", Type.I64, 0)
             val b = Parameter("b", Type.I64, 1)
             val q = sdiv(a, b)
@@ -234,7 +234,7 @@ class GraphColoringAllocatorTest {
             createFunction("uses_many", listOf(
                 Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64)
             ), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = Parameter("a", Type.I64, 0)
             val b = Parameter("b", Type.I64, 1)
             val c = Parameter("c", Type.I64, 2)
@@ -262,7 +262,7 @@ class GraphColoringAllocatorTest {
         // Two non-overlapping values should get the same register
         val fn = buildFunction {
             createFunction("share", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val v1 = add(Constant.I64(1), Constant.I64(2))
             val v2 = add(v1, Constant.I64(3))
             // v1 is dead after v2 uses it, so v3 should reuse v1's register
@@ -294,7 +294,7 @@ class GraphColoringAllocatorTest {
     fun allValuesGetLocation() {
         val fn = buildFunction {
             createFunction("complete", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = Parameter("a", Type.I64, 0)
             val b = Parameter("b", Type.I64, 1)
             val sum = add(a, b)

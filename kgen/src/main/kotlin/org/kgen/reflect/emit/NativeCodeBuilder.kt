@@ -139,14 +139,14 @@ class NativeCodeBuilder private constructor(private val target: Target) {
         when (spec) {
             is FunctionSpec.ReturnDefault -> {
                 ir.createFunction(emitName, irParams, irReturnType)
-                ir.positionAtEnd(ir.appendBlock("entry"))
+                ir.appendBlock("entry")
                 emitReturnDefault(ir, irReturnType)
                 ir.finalizeFunction()
             }
 
             is FunctionSpec.ReturnConst -> {
                 ir.createFunction(emitName, irParams, irReturnType)
-                ir.positionAtEnd(ir.appendBlock("entry"))
+                ir.appendBlock("entry")
                 val c = makeConstant(irReturnType, spec.value)
                 ir.ret(c)
                 ir.finalizeFunction()
@@ -154,7 +154,7 @@ class NativeCodeBuilder private constructor(private val target: Target) {
 
             is FunctionSpec.Delegate -> {
                 val params = ir.createFunction(emitName, irParams, irReturnType)
-                ir.positionAtEnd(ir.appendBlock("entry"))
+                ir.appendBlock("entry")
                 ir.declareFunction(spec.targetName, irParams, irReturnType)
                 val args = params.map { it as org.kgen.ir.Value }
                 if (irReturnType == Type.Void) {
@@ -169,14 +169,14 @@ class NativeCodeBuilder private constructor(private val target: Target) {
 
             is FunctionSpec.Identity -> {
                 val params = ir.createFunction(emitName, irParams, irReturnType)
-                ir.positionAtEnd(ir.appendBlock("entry"))
+                ir.appendBlock("entry")
                 ir.ret(params[spec.paramIndex])
                 ir.finalizeFunction()
             }
 
             is FunctionSpec.Custom -> {
                 val params = ir.createFunction(emitName, irParams, irReturnType)
-                ir.positionAtEnd(ir.appendBlock("entry"))
+                ir.appendBlock("entry")
                 spec.body(ir, params)
                 ir.finalizeFunction()
             }

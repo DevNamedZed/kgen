@@ -68,7 +68,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `single parameter used once has tight interval`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(Parameter("x", Type.I64, 0))
                 finalizeFunction()
             }
@@ -82,7 +82,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `unused parameter still has an interval`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("x", Type.I64)), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -98,7 +98,7 @@ class RegisterAllocatorComprehensiveTest {
                 createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64)
                 ), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val c = Parameter("c", Type.I64, 2)
@@ -118,7 +118,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `value used multiple times has correct use count`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val x = Parameter("x", Type.I64, 0)
                 val a = add(x, x)
                 val b = add(a, x)
@@ -135,7 +135,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `intervals are sorted by start position`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = add(a, Constant.I64(1))
                 val c = mul(b, Constant.I64(2))
@@ -153,7 +153,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `value defined and used in same instruction has start equal to end`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v = add(Constant.I64(1), Constant.I64(2))
                 ret(v)
                 finalizeFunction()
@@ -167,21 +167,21 @@ class RegisterAllocatorComprehensiveTest {
         fun `diamond CFG both branches`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val x = Parameter("x", Type.I64, 0)
                 val cond = icmp(ICmpPredicate.SGT, x, Constant.I64(0))
-                condBr(cond, "then", "else")
+                condBr(cond, BlockRef("then"), BlockRef("else"))
 
-                positionAtEnd(appendBlock("then"))
+                appendBlock("then")
                 val a = add(x, Constant.I64(1))
-                br("merge")
+                br(BlockRef("merge"))
 
-                positionAtEnd(appendBlock("else"))
+                appendBlock("else")
                 val b = sub(x, Constant.I64(1))
-                br("merge")
+                br(BlockRef("merge"))
 
-                positionAtEnd(appendBlock("merge"))
-                val phi = phi(Type.I64, listOf(a to "then", b to "else"))
+                appendBlock("merge")
+                val phi = phi(Type.I64, listOf(a to BlockRef("then"), b to BlockRef("else")))
                 ret(phi)
                 finalizeFunction()
             }
@@ -195,18 +195,18 @@ class RegisterAllocatorComprehensiveTest {
         fun `loop extends live range of value used in header`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("n", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
-                br("header")
+                appendBlock("entry")
+                br(BlockRef("header"))
 
-                positionAtEnd(appendBlock("header"))
+                appendBlock("header")
                 val n = Parameter("n", Type.I64, 0)
                 val cond = icmp(ICmpPredicate.SGT, n, Constant.I64(0))
-                condBr(cond, "body", "exit")
+                condBr(cond, BlockRef("body"), BlockRef("exit"))
 
-                positionAtEnd(appendBlock("body"))
-                br("header")
+                appendBlock("body")
+                br(BlockRef("header"))
 
-                positionAtEnd(appendBlock("exit"))
+                appendBlock("exit")
                 ret(n)
                 finalizeFunction()
             }
@@ -220,7 +220,7 @@ class RegisterAllocatorComprehensiveTest {
             val fn = buildFunction {
                 declareFunction("ext", emptyList(), Type.I64)
                 createFunction("f", listOf(Param("a", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 call("ext", emptyList(), Type.I64)
                 val result = add(a, Constant.I64(1))
@@ -237,7 +237,7 @@ class RegisterAllocatorComprehensiveTest {
             val fn = buildFunction {
                 declareFunction("ext", emptyList(), Type.I64)
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = call("ext", emptyList(), Type.I64)!!
                 val v = add(r, Constant.I64(1))
                 ret(v)
@@ -256,7 +256,7 @@ class RegisterAllocatorComprehensiveTest {
             val fn = buildFunction {
                 declareFunction("ext", emptyList(), Type.I64)
                 createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val x = Parameter("x", Type.I64, 0)
                 val r1 = call("ext", emptyList(), Type.I64)!!
                 val r2 = call("ext", emptyList(), Type.I64)!!
@@ -273,7 +273,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `empty function produces no intervals`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -309,8 +309,8 @@ class RegisterAllocatorComprehensiveTest {
             val inst = Phi(
                 InstructionRef("r", Type.I64),
                 listOf(
-                    Parameter("a", Type.I64, 0) to "bb1",
-                    InstructionRef("b", Type.I64) to "bb2"
+                    Parameter("a", Type.I64, 0) to BlockRef("bb1"),
+                    InstructionRef("b", Type.I64) to BlockRef("bb2")
                 )
             )
             val ops = LivenessAnalysis.operandValues(inst)
@@ -358,7 +358,7 @@ class RegisterAllocatorComprehensiveTest {
 
         @Test
         fun `operandValues handles branch`() {
-            val inst = Br("target")
+            val inst = Br(BlockRef("target"))
             val ops = LivenessAnalysis.operandValues(inst)
             assertTrue(ops.isEmpty())
         }
@@ -366,8 +366,7 @@ class RegisterAllocatorComprehensiveTest {
         @Test
         fun `operandValues handles conditional branch`() {
             val inst = CondBr(
-                Parameter("cond", Type.I1, 0), "then", "else"
-            )
+                Parameter("cond", Type.I1, 0), BlockRef("then"), BlockRef("else"))
             val ops = LivenessAnalysis.operandValues(inst)
             assertEquals(1, ops.size)
         }
@@ -376,7 +375,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `interval type matches parameter type`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(Parameter("x", Type.I32, 0))
                 finalizeFunction()
             }
@@ -389,7 +388,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `interval type for computed value is instruction result type`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val sum = add(a, b)
@@ -406,7 +405,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `clobber events detected for sdiv`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val q = sdiv(a, b)
@@ -431,7 +430,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `clobber events detected for shl`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val s = shl(a, b)
@@ -455,7 +454,7 @@ class RegisterAllocatorComprehensiveTest {
             val fn = buildFunction {
                 declareFunction("ext", emptyList(), Type.Void)
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 call("ext", emptyList(), Type.Void)
                 ret()
                 finalizeFunction()
@@ -476,7 +475,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `no clobber events when constraints have no clobbers`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val q = sdiv(a, b)
@@ -498,7 +497,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `multiple clobber events in sequence`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val q1 = sdiv(a, b)
@@ -523,19 +522,19 @@ class RegisterAllocatorComprehensiveTest {
         fun `nested loop extends outer variable range`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("n", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
-                br("outer")
+                appendBlock("entry")
+                br(BlockRef("outer"))
 
-                positionAtEnd(appendBlock("outer"))
+                appendBlock("outer")
                 val n = Parameter("n", Type.I64, 0)
                 val outerCond = icmp(ICmpPredicate.SGT, n, Constant.I64(0))
-                condBr(outerCond, "inner", "exit")
+                condBr(outerCond, BlockRef("inner"), BlockRef("exit"))
 
-                positionAtEnd(appendBlock("inner"))
+                appendBlock("inner")
                 val innerCond = icmp(ICmpPredicate.SGT, n, Constant.I64(5))
-                condBr(innerCond, "inner", "outer")
+                condBr(innerCond, BlockRef("inner"), BlockRef("outer"))
 
-                positionAtEnd(appendBlock("exit"))
+                appendBlock("exit")
                 ret(n)
                 finalizeFunction()
             }
@@ -548,7 +547,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `floating point values have correct type in intervals`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("x", Type.F64), Param("y", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val x = Parameter("x", Type.F64, 0)
                 val y = Parameter("y", Type.F64, 1)
                 val sum = fadd(x, y)
@@ -568,7 +567,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `simple addition allocates all in registers`() {
             val fn = buildFunction {
                 createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val sum = add(a, b)
@@ -587,7 +586,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `no values function produces empty allocation`() {
             val fn = buildFunction {
                 createFunction("noop", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -604,7 +603,7 @@ class RegisterAllocatorComprehensiveTest {
                 createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64)
                 ), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val c = Parameter("c", Type.I64, 2)
@@ -632,7 +631,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `single register forces all but one value to spill`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = add(Constant.I64(1), Constant.I64(2))
                 val b = add(Constant.I64(3), Constant.I64(4))
                 val c = add(a, b)
@@ -649,7 +648,7 @@ class RegisterAllocatorComprehensiveTest {
             val fn = buildFunction {
                 declareFunction("ext", emptyList(), Type.I64)
                 createFunction("caller", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val x = Parameter("x", Type.I64, 0)
                 val r = call("ext", emptyList(), Type.I64)!!
                 val sum = add(x, r)
@@ -670,7 +669,7 @@ class RegisterAllocatorComprehensiveTest {
             val fn = buildFunction {
                 declareFunction("ext", emptyList(), Type.Void)
                 createFunction("f", listOf(Param("a", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 call("ext", emptyList(), Type.Void)
                 ret(a)
@@ -692,7 +691,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `spill slot reuse for non-overlapping lifetimes`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v1 = add(Constant.I64(1), Constant.I64(2))
                 val v2 = add(Constant.I64(3), Constant.I64(4))
                 val v3 = add(v1, v2)
@@ -713,7 +712,7 @@ class RegisterAllocatorComprehensiveTest {
                 createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64)
                 ), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val c = Parameter("c", Type.I64, 2)
@@ -738,7 +737,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `clobber awareness avoids clobbered register`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val q = sdiv(a, b)
@@ -771,7 +770,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `split points generated when all registers clobbered`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val q = sdiv(a, b)
@@ -799,7 +798,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `split point spill offsets are negative`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v1 = add(Constant.I64(1), Constant.I64(2))
                 val v2 = sdiv(v1, Constant.I64(3))
                 val v3 = add(v1, v2)
@@ -828,7 +827,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `chain of additions with enough registers`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val x = Parameter("x", Type.I64, 0)
                 val a = add(x, Constant.I64(1))
                 val b = add(a, Constant.I64(2))
@@ -846,7 +845,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `all live at once with two regs forces spill`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = add(Constant.I64(1), Constant.I64(2))
                 val b = add(Constant.I64(3), Constant.I64(4))
                 val c = add(a, b)
@@ -864,7 +863,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `return value allocated`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v = add(Constant.I64(10), Constant.I64(20))
                 ret(v)
                 finalizeFunction()
@@ -881,7 +880,7 @@ class RegisterAllocatorComprehensiveTest {
                 createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)
                 ), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 call("ext", emptyList(), Type.Void)
@@ -906,7 +905,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `param not across call stays in param register`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val r = add(a, Constant.I64(1))
                 ret(r)
@@ -928,7 +927,7 @@ class RegisterAllocatorComprehensiveTest {
                     Param("c", Type.I64), Param("d", Type.I64),
                     Param("e", Type.I64)
                 ), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val c = Parameter("c", Type.I64, 2)
@@ -955,7 +954,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `high pressure with many simultaneous live values`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v1 = add(Constant.I64(1), Constant.I64(2))
                 val v2 = add(Constant.I64(3), Constant.I64(4))
                 val v3 = add(Constant.I64(5), Constant.I64(6))
@@ -978,7 +977,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `tree reduction needs log n registers`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = add(Constant.I64(1), Constant.I64(2))
                 val b = add(Constant.I64(3), Constant.I64(4))
                 val c = add(Constant.I64(5), Constant.I64(6))
@@ -1006,7 +1005,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `linear chain uses minimal registers`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 var v = add(Constant.I64(0), Constant.I64(1))
                 for (i in 2..10) {
                     v = add(v, Constant.I64(i.toLong()))
@@ -1024,7 +1023,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `wide fan-out creates high pressure`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val x = Parameter("x", Type.I64, 0)
                 val a = add(x, Constant.I64(1))
                 val b = add(x, Constant.I64(2))
@@ -1051,7 +1050,7 @@ class RegisterAllocatorComprehensiveTest {
                     Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64),
                     Param("d", Type.I64), Param("e", Type.I64), Param("f", Type.I64)
                 ), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val c = Parameter("c", Type.I64, 2)
@@ -1080,21 +1079,21 @@ class RegisterAllocatorComprehensiveTest {
         fun `diamond CFG allocation succeeds`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val x = Parameter("x", Type.I64, 0)
                 val cond = icmp(ICmpPredicate.SGT, x, Constant.I64(0))
-                condBr(cond, "then", "else")
+                condBr(cond, BlockRef("then"), BlockRef("else"))
 
-                positionAtEnd(appendBlock("then"))
+                appendBlock("then")
                 val a = add(x, Constant.I64(1))
-                br("merge")
+                br(BlockRef("merge"))
 
-                positionAtEnd(appendBlock("else"))
+                appendBlock("else")
                 val b = sub(x, Constant.I64(1))
-                br("merge")
+                br(BlockRef("merge"))
 
-                positionAtEnd(appendBlock("merge"))
-                val phi = phi(Type.I64, listOf(a to "then", b to "else"))
+                appendBlock("merge")
+                val phi = phi(Type.I64, listOf(a to BlockRef("then"), b to BlockRef("else")))
                 ret(phi)
                 finalizeFunction()
             }
@@ -1108,19 +1107,19 @@ class RegisterAllocatorComprehensiveTest {
         fun `simple loop allocation`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("n", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
-                br("loop")
+                appendBlock("entry")
+                br(BlockRef("loop"))
 
-                positionAtEnd(appendBlock("loop"))
+                appendBlock("loop")
                 val n = Parameter("n", Type.I64, 0)
                 val cond = icmp(ICmpPredicate.SGT, n, Constant.I64(0))
-                condBr(cond, "body", "exit")
+                condBr(cond, BlockRef("body"), BlockRef("exit"))
 
-                positionAtEnd(appendBlock("body"))
+                appendBlock("body")
                 val dec = sub(n, Constant.I64(1))
-                br("loop")
+                br(BlockRef("loop"))
 
-                positionAtEnd(appendBlock("exit"))
+                appendBlock("exit")
                 ret(n)
                 finalizeFunction()
             }
@@ -1133,30 +1132,30 @@ class RegisterAllocatorComprehensiveTest {
         fun `nested conditional allocation`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("x", Type.I64), Param("y", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val x = Parameter("x", Type.I64, 0)
                 val y = Parameter("y", Type.I64, 1)
                 val c1 = icmp(ICmpPredicate.SGT, x, Constant.I64(0))
-                condBr(c1, "outer_then", "outer_else")
+                condBr(c1, BlockRef("outer_then"), BlockRef("outer_else"))
 
-                positionAtEnd(appendBlock("outer_then"))
+                appendBlock("outer_then")
                 val c2 = icmp(ICmpPredicate.SGT, y, Constant.I64(0))
-                condBr(c2, "inner_then", "inner_else")
+                condBr(c2, BlockRef("inner_then"), BlockRef("inner_else"))
 
-                positionAtEnd(appendBlock("inner_then"))
+                appendBlock("inner_then")
                 val a = add(x, y)
-                br("merge")
+                br(BlockRef("merge"))
 
-                positionAtEnd(appendBlock("inner_else"))
+                appendBlock("inner_else")
                 val b = sub(x, y)
-                br("merge")
+                br(BlockRef("merge"))
 
-                positionAtEnd(appendBlock("outer_else"))
+                appendBlock("outer_else")
                 val c = mul(x, y)
-                br("merge")
+                br(BlockRef("merge"))
 
-                positionAtEnd(appendBlock("merge"))
-                val phi = phi(Type.I64, listOf(a to "inner_then", b to "inner_else", c to "outer_else"))
+                appendBlock("merge")
+                val phi = phi(Type.I64, listOf(a to BlockRef("inner_then"), b to BlockRef("inner_else"), c to BlockRef("outer_else")))
                 ret(phi)
                 finalizeFunction()
             }
@@ -1170,19 +1169,19 @@ class RegisterAllocatorComprehensiveTest {
             val fn = buildFunction {
                 declareFunction("process", listOf(Param("v", Type.I64)), Type.I64)
                 createFunction("f", listOf(Param("n", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
-                br("loop")
+                appendBlock("entry")
+                br(BlockRef("loop"))
 
-                positionAtEnd(appendBlock("loop"))
+                appendBlock("loop")
                 val n = Parameter("n", Type.I64, 0)
                 val cond = icmp(ICmpPredicate.SGT, n, Constant.I64(0))
-                condBr(cond, "body", "exit")
+                condBr(cond, BlockRef("body"), BlockRef("exit"))
 
-                positionAtEnd(appendBlock("body"))
+                appendBlock("body")
                 call("process", listOf(n), Type.I64)
-                br("loop")
+                br(BlockRef("loop"))
 
-                positionAtEnd(appendBlock("exit"))
+                appendBlock("exit")
                 ret(n)
                 finalizeFunction()
             }
@@ -1197,7 +1196,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `sequential blocks no branches`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val x = Parameter("x", Type.I64, 0)
                 val a = add(x, Constant.I64(1))
                 val b = add(a, Constant.I64(2))
@@ -1219,7 +1218,7 @@ class RegisterAllocatorComprehensiveTest {
             val fn = buildFunction {
                 declareFunction("ext", emptyList(), Type.Void)
                 createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val x = Parameter("x", Type.I64, 0)
                 call("ext", emptyList(), Type.Void)
                 ret(x)
@@ -1246,7 +1245,7 @@ class RegisterAllocatorComprehensiveTest {
             val fn = buildFunction {
                 declareFunction("ext", emptyList(), Type.I64)
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 call("ext", emptyList(), Type.I64)
@@ -1267,7 +1266,7 @@ class RegisterAllocatorComprehensiveTest {
             val fn = buildFunction {
                 declareFunction("ext", emptyList(), Type.I64)
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = call("ext", emptyList(), Type.I64)!!
                 ret(r)
                 finalizeFunction()
@@ -1283,7 +1282,7 @@ class RegisterAllocatorComprehensiveTest {
             val fn = buildFunction {
                 declareFunction("ext", emptyList(), Type.Void)
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v = add(Constant.I64(42), Constant.I64(0))
                 call("ext", emptyList(), Type.Void)
                 ret(v)
@@ -1299,7 +1298,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `multiple div operations each clobber`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val q = sdiv(a, b)
@@ -1328,7 +1327,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `shift clobber with variable amount`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val s = shl(a, b)
@@ -1365,7 +1364,7 @@ class RegisterAllocatorComprehensiveTest {
             )
             val fn = buildFunction {
                 createFunction("f", listOf(Param("x", Type.F64), Param("y", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val x = Parameter("x", Type.F64, 0)
                 val y = Parameter("y", Type.F64, 1)
                 val sum = fadd(x, y)
@@ -1382,7 +1381,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `f32 and f64 intervals have correct types`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("x", Type.F32), Param("y", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val x = Parameter("x", Type.F32, 0)
                 val y = Parameter("y", Type.F64, 1)
                 ret(y)
@@ -1403,7 +1402,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `lower cost value evicted first`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = add(Constant.I64(1), Constant.I64(2))
                 val b = add(Constant.I64(3), Constant.I64(4))
                 // a has fewer uses, b has fewer uses, c uses both
@@ -1421,7 +1420,7 @@ class RegisterAllocatorComprehensiveTest {
             val fn = buildFunction {
                 declareFunction("ext", emptyList(), Type.Void)
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = add(Constant.I64(1), Constant.I64(2))
                 val b = add(Constant.I64(3), Constant.I64(4))
                 call("ext", emptyList(), Type.Void)
@@ -1445,7 +1444,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `heavily used value survives eviction`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val x = Parameter("x", Type.I64, 0)
                 val a = add(x, x)
                 val b = add(a, x)
@@ -1469,7 +1468,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `parameters get first slots`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val sum = add(a, b)
@@ -1486,7 +1485,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `slot reuse for non-overlapping lifetimes`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = add(Constant.I64(1), Constant.I64(2))
                 val b = add(a, Constant.I64(3))
                 // a is dead after b is computed
@@ -1505,7 +1504,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `no reuse mode gives each value unique slot`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = add(Constant.I64(1), Constant.I64(2))
                 val b = add(a, Constant.I64(3))
                 val c = add(Constant.I64(4), Constant.I64(5))
@@ -1523,7 +1522,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `type-based slot reuse only reuses matching types`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val x = Parameter("x", Type.I64, 0)
                 val a = add(x, Constant.I64(1))
                 // a dies, its slot could be reused by another I64 value
@@ -1543,7 +1542,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `empty function produces param slots only`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("x", Type.I64)), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -1557,7 +1556,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `no params no values gives zero slots`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -1570,7 +1569,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `slot types tracked for all slots`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I32, 0)
                 val b = Parameter("b", Type.I64, 1)
                 ret(b)
@@ -1586,7 +1585,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `high watermark tracks maximum slots needed`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = add(Constant.I64(1), Constant.I64(2))
                 val b = add(Constant.I64(3), Constant.I64(4))
                 val c = add(Constant.I64(5), Constant.I64(6))
@@ -1605,7 +1604,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `reuse with same type reuses slot`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = add(Constant.I64(1), Constant.I64(2))
                 val b = add(a, Constant.I64(3))
                 // a should be dead, its I64 slot reusable
@@ -1623,7 +1622,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `many sequential values reuse slots aggressively`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 var v = add(Constant.I64(0), Constant.I64(1))
                 for (i in 2..8) {
                     v = add(v, Constant.I64(i.toLong()))
@@ -1642,7 +1641,7 @@ class RegisterAllocatorComprehensiveTest {
                 createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64)
                 ), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(Constant.I64(42))
                 finalizeFunction()
             }
@@ -1658,21 +1657,21 @@ class RegisterAllocatorComprehensiveTest {
         fun `local slot allocator with branching CFG`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val x = Parameter("x", Type.I64, 0)
                 val cond = icmp(ICmpPredicate.SGT, x, Constant.I64(0))
-                condBr(cond, "then", "else")
+                condBr(cond, BlockRef("then"), BlockRef("else"))
 
-                positionAtEnd(appendBlock("then"))
+                appendBlock("then")
                 val a = add(x, Constant.I64(1))
-                br("merge")
+                br(BlockRef("merge"))
 
-                positionAtEnd(appendBlock("else"))
+                appendBlock("else")
                 val b = sub(x, Constant.I64(1))
-                br("merge")
+                br(BlockRef("merge"))
 
-                positionAtEnd(appendBlock("merge"))
-                val phi = phi(Type.I64, listOf(a to "then", b to "else"))
+                appendBlock("merge")
+                val phi = phi(Type.I64, listOf(a to BlockRef("then"), b to BlockRef("else")))
                 ret(phi)
                 finalizeFunction()
             }
@@ -1819,7 +1818,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `single instruction function`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -1832,7 +1831,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `value used only in return`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v = add(Constant.I64(0), Constant.I64(0))
                 ret(v)
                 finalizeFunction()
@@ -1846,7 +1845,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `constant-only instructions produce minimal intervals`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v = add(Constant.I64(100), Constant.I64(200))
                 ret(v)
                 finalizeFunction()
@@ -1859,7 +1858,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `allocator with zero allocatable registers throws`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v = add(Constant.I64(1), Constant.I64(2))
                 ret(v)
                 finalizeFunction()
@@ -1952,7 +1951,7 @@ class RegisterAllocatorComprehensiveTest {
                     Param("e", Type.I64), Param("f", Type.I64),
                     Param("g", Type.I64), Param("h", Type.I64)
                 ), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val c = Parameter("c", Type.I64, 2)
@@ -1984,7 +1983,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `liveness then linear scan end to end`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val sum = add(a, b)
@@ -2009,7 +2008,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `liveness then local slot end to end`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val sum = add(a, b)
@@ -2029,7 +2028,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `same function different constraints different results`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val c = add(a, b)
@@ -2053,22 +2052,22 @@ class RegisterAllocatorComprehensiveTest {
             val fn = buildFunction {
                 declareFunction("compute", listOf(Param("v", Type.I64)), Type.I64)
                 createFunction("f", listOf(Param("n", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val n = Parameter("n", Type.I64, 0)
                 val cond = icmp(ICmpPredicate.SGT, n, Constant.I64(10))
-                condBr(cond, "big", "small")
+                condBr(cond, BlockRef("big"), BlockRef("small"))
 
-                positionAtEnd(appendBlock("big"))
+                appendBlock("big")
                 val r1 = call("compute", listOf(n), Type.I64)!!
                 val doubled = mul(r1, Constant.I64(2))
-                br("done")
+                br(BlockRef("done"))
 
-                positionAtEnd(appendBlock("small"))
+                appendBlock("small")
                 val incremented = add(n, Constant.I64(1))
-                br("done")
+                br(BlockRef("done"))
 
-                positionAtEnd(appendBlock("done"))
-                val phi = phi(Type.I64, listOf(doubled to "big", incremented to "small"))
+                appendBlock("done")
+                val phi = phi(Type.I64, listOf(doubled to BlockRef("big"), incremented to BlockRef("small")))
                 ret(phi)
                 finalizeFunction()
             }
@@ -2081,7 +2080,7 @@ class RegisterAllocatorComprehensiveTest {
         fun `register and slot allocator agree on value count`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val c = add(a, b)

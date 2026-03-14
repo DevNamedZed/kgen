@@ -26,12 +26,12 @@ class PeRoundTripTest {
         ir.targetTriple = "x86_64-unknown-windows-msvc"
 
         val params = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.add(params[0], params[1]))
         ir.finalizeFunction()
 
         ir.createFunction("square", listOf(Param("x", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val x = Parameter("x", Type.I64, 0)
         ir.ret(ir.mul(x, x))
         ir.finalizeFunction()
@@ -50,7 +50,7 @@ class PeRoundTripTest {
         ir.declareFunction("puts", listOf(Param("s", Type.OpaquePointer)), Type.I32)
 
         ir.createFunction("main", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I32(0))
         ir.finalizeFunction()
 

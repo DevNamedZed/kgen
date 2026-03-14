@@ -98,7 +98,7 @@ class IrSerializerExtendedTest {
         val mod = module("test") {
             function("branch", listOf(Param("c", Type.I1)), Type.I32) {
                 block("entry") {
-                    condBr(param(0), "yes", "no")
+                    condBr(param(0), BlockRef("yes"), BlockRef("no"))
                 }
                 block("yes") {
                     ret(i32(1))
@@ -268,12 +268,12 @@ class IrSerializerExtendedTest {
             function("max", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32) {
                 block("entry") {
                     val cmp = icmp(ICmpPredicate.SGT, param(0), param(1))
-                    condBr(cmp, "then", "else")
+                    condBr(cmp, BlockRef("then"), BlockRef("else"))
                 }
-                block("then") { br("merge") }
-                block("else") { br("merge") }
+                block("then") { br(BlockRef("merge")) }
+                block("else") { br(BlockRef("merge")) }
                 block("merge") {
-                    val r = phi(Type.I32, listOf(param(0) to "then", param(1) to "else"))
+                    val r = phi(Type.I32, listOf(param(0) to BlockRef("then"), param(1) to BlockRef("else")))
                     ret(r)
                 }
             }

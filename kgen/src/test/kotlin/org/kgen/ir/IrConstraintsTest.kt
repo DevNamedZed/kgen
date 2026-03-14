@@ -193,8 +193,16 @@ class IrConstraintsTest {
     inner class ManagedNativePresetTests {
 
         @Test
-        fun containsAllCategories() {
-            for (category in IrCategory.entries) {
+        fun containsCoreCategories() {
+            val expected = setOf(
+                IrCategory.TERMINATOR, IrCategory.CALL, IrCategory.SSA,
+                IrCategory.DEBUG, IrCategory.INTRINSIC,
+                IrCategory.ARITHMETIC, IrCategory.BITWISE, IrCategory.COMPARISON,
+                IrCategory.CONVERSION, IrCategory.MEMORY, IrCategory.ATOMIC,
+                IrCategory.VECTOR, IrCategory.AGGREGATE, IrCategory.EXCEPTION,
+                IrCategory.RUNTIME, IrCategory.INTEROP, IrCategory.OBJECT,
+            )
+            for (category in expected) {
                 assertTrue(IrConstraints.MANAGED_NATIVE.contains(category)) {
                     "MANAGED_NATIVE should contain $category"
                 }
@@ -202,8 +210,42 @@ class IrConstraintsTest {
         }
 
         @Test
-        fun sizeEqualsAllCategoriesCount() {
-            assertEquals(IrCategory.entries.size, IrConstraints.MANAGED_NATIVE.size)
+        fun doesNotContainDeoptOrCompute() {
+            assertFalse(IrConstraints.MANAGED_NATIVE.contains(IrCategory.DEOPTIMIZATION))
+            assertFalse(IrConstraints.MANAGED_NATIVE.contains(IrCategory.COMPUTE))
+        }
+    }
+
+    @Nested
+    inner class JitPresetTests {
+
+        @Test
+        fun containsDeoptimization() {
+            assertTrue(IrConstraints.JIT.contains(IrCategory.DEOPTIMIZATION))
+        }
+
+        @Test
+        fun containsManagedNativeCategories() {
+            assertTrue(IrConstraints.JIT.containsAll(IrConstraints.MANAGED_NATIVE))
+        }
+    }
+
+    @Nested
+    inner class ComputeKernelPresetTests {
+
+        @Test
+        fun containsCompute() {
+            assertTrue(IrConstraints.COMPUTE_KERNEL.contains(IrCategory.COMPUTE))
+        }
+
+        @Test
+        fun doesNotContainObject() {
+            assertFalse(IrConstraints.COMPUTE_KERNEL.contains(IrCategory.OBJECT))
+        }
+
+        @Test
+        fun doesNotContainException() {
+            assertFalse(IrConstraints.COMPUTE_KERNEL.contains(IrCategory.EXCEPTION))
         }
     }
 
@@ -222,11 +264,6 @@ class IrConstraintsTest {
         @Test
         fun sizeEqualsAllCategoriesCount() {
             assertEquals(IrCategory.entries.size, IrConstraints.ALL.size)
-        }
-
-        @Test
-        fun equalsMangedNative() {
-            assertEquals(IrConstraints.ALL, IrConstraints.MANAGED_NATIVE)
         }
     }
 

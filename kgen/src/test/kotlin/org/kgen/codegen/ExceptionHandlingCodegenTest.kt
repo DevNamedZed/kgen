@@ -23,18 +23,18 @@ class ExceptionHandlingCodegenTest {
             listOf(Param("x", Type.I64)),
             Type.I64,
         )
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.invoke(
             FunctionRef("may_throw", Type.Function(emptyList(), Type.Void)),
             emptyList(), Type.Void,
-            normalDest = "normal",
-            unwindDest = "catch",
+            normalDest = BlockRef("normal"),
+            unwindDest = BlockRef("catch"),
         )
 
-        ir.positionAtEnd(ir.appendBlock("normal"))
+        ir.appendBlock("normal")
         ir.ret(Constant.I64(0))
 
-        ir.positionAtEnd(ir.appendBlock("catch"))
+        ir.appendBlock("catch")
         ir.landingPad(
             Type.OpaquePointer,
             listOf(LandingPadClause.Catch(GlobalRef("java/lang/Exception", Type.OpaquePointer))),
@@ -50,18 +50,18 @@ class ExceptionHandlingCodegenTest {
         ir.declareFunction("may_throw", emptyList(), Type.Void)
 
         ir.createFunction("cleanup", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.invoke(
             FunctionRef("may_throw", Type.Function(emptyList(), Type.Void)),
             emptyList(), Type.Void,
-            normalDest = "normal",
-            unwindDest = "cleanup",
+            normalDest = BlockRef("normal"),
+            unwindDest = BlockRef("cleanup"),
         )
 
-        ir.positionAtEnd(ir.appendBlock("normal"))
+        ir.appendBlock("normal")
         ir.ret()
 
-        ir.positionAtEnd(ir.appendBlock("cleanup"))
+        ir.appendBlock("cleanup")
         val lp = ir.landingPad(Type.OpaquePointer, emptyList(), cleanup = true)
         ir.resume(lp)
 
@@ -75,26 +75,26 @@ class ExceptionHandlingCodegenTest {
         ir.declareFunction("bar", emptyList(), Type.Void)
 
         ir.createFunction("multiInvoke", emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.invoke(
             FunctionRef("foo", Type.Function(emptyList(), Type.Void)),
             emptyList(), Type.Void,
-            normalDest = "after_foo",
-            unwindDest = "catch",
+            normalDest = BlockRef("after_foo"),
+            unwindDest = BlockRef("catch"),
         )
 
-        ir.positionAtEnd(ir.appendBlock("after_foo"))
+        ir.appendBlock("after_foo")
         ir.invoke(
             FunctionRef("bar", Type.Function(emptyList(), Type.Void)),
             emptyList(), Type.Void,
-            normalDest = "done",
-            unwindDest = "catch",
+            normalDest = BlockRef("done"),
+            unwindDest = BlockRef("catch"),
         )
 
-        ir.positionAtEnd(ir.appendBlock("done"))
+        ir.appendBlock("done")
         ir.ret(Constant.I64(0))
 
-        ir.positionAtEnd(ir.appendBlock("catch"))
+        ir.appendBlock("catch")
         ir.landingPad(
             Type.OpaquePointer,
             listOf(LandingPadClause.Catch(GlobalRef("Exception", Type.OpaquePointer))),
@@ -129,7 +129,7 @@ class ExceptionHandlingCodegenTest {
     fun `no invoke means no except table`() {
         val ir = IrBuilder("test", Target.x86_64())
         val params = ir.createFunction("simple", listOf(Param("a", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(params[0])
         ir.finalizeFunction()
         val code = X86CodeGenerator().generateCode(ir.build())
@@ -176,18 +176,18 @@ class ExceptionHandlingCodegenTest {
         ir.declareFunction("get_value", emptyList(), Type.I64)
 
         ir.createFunction("invokeWithReturn", emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val result = ir.invoke(
             FunctionRef("get_value", Type.Function(emptyList(), Type.I64)),
             emptyList(), Type.I64,
-            normalDest = "normal",
-            unwindDest = "catch",
+            normalDest = BlockRef("normal"),
+            unwindDest = BlockRef("catch"),
         )
 
-        ir.positionAtEnd(ir.appendBlock("normal"))
+        ir.appendBlock("normal")
         ir.ret(result!!)
 
-        ir.positionAtEnd(ir.appendBlock("catch"))
+        ir.appendBlock("catch")
         ir.landingPad(Type.OpaquePointer, emptyList(), cleanup = true)
         ir.ret(Constant.I64(-1))
 
@@ -202,18 +202,18 @@ class ExceptionHandlingCodegenTest {
         ir.declareFunction("process", listOf(Param("a", Type.I64), Param("b", Type.I32)), Type.I32)
 
         val params = ir.createFunction("invokeWithArgs", listOf(Param("a", Type.I64)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val result = ir.invoke(
             FunctionRef("process", Type.Function(listOf(Type.I64, Type.I32), Type.I32)),
             listOf(params[0], Constant.I32(42)), Type.I32,
-            normalDest = "normal",
-            unwindDest = "catch",
+            normalDest = BlockRef("normal"),
+            unwindDest = BlockRef("catch"),
         )
 
-        ir.positionAtEnd(ir.appendBlock("normal"))
+        ir.appendBlock("normal")
         ir.ret(result!!)
 
-        ir.positionAtEnd(ir.appendBlock("catch"))
+        ir.appendBlock("catch")
         ir.landingPad(Type.OpaquePointer, emptyList(), cleanup = true)
         ir.ret(Constant.I32(-1))
 
@@ -229,7 +229,7 @@ class ExceptionHandlingCodegenTest {
         ir.declareFunction("kgen_throw", listOf(Param("exception", Type.OpaquePointer)), Type.Void)
 
         val params = ir.createFunction("throwIt", listOf(Param("exn", Type.OpaquePointer)), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.throwException(params[0])
         ir.finalizeFunction()
         return ir.build()

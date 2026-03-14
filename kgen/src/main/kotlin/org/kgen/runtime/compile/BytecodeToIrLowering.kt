@@ -119,7 +119,7 @@ class BytecodeToIrLowering(
         val branchTargets = findBranchTargets()
         findMutatedLocals(params, irParams)
 
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
 
         for (idx in mutatedLocals.sorted()) {
             val type = localType(idx, params, irParams)
@@ -137,7 +137,7 @@ class BytecodeToIrLowering(
         }
 
         for (target in branchTargets.sorted()) {
-            builder.appendBlock("L$target")
+            builder.createBlock("L$target")
         }
 
         var pc = 0
@@ -152,9 +152,9 @@ class BytecodeToIrLowering(
             if (pc in branchTargets && pc > 0) {
                 val label = "L$pc"
                 if (lastInstructionPc < 0 || !isTerminator(lastInstructionPc)) {
-                    builder.br(label)
+                    builder.br(BlockRef(label))
                 }
-                builder.positionAtEnd(label)
+                builder.appendBlock(label)
 
                 // At a catch handler entry, the JVM stack has the exception reference.
                 // Push a placeholder — the real value comes from the landing pad.
@@ -179,7 +179,7 @@ class BytecodeToIrLowering(
         for (handlerPc in landingPadBlocks) {
             val catchLabel = "catch.$handlerPc"
             val handlerLabel = "L$handlerPc"
-            builder.positionAtEnd(catchLabel)
+            builder.appendBlock(catchLabel)
 
             // Build catch clauses from the exception table
             val entries = exceptionTable.filter { it.handlerPc == handlerPc }
@@ -198,7 +198,7 @@ class BytecodeToIrLowering(
             // JVM handler expects the exception reference on the stack
             stack.clear()
             push(exPtr)
-            builder.br(handlerLabel)
+            builder.br(BlockRef(handlerLabel))
         }
 
         builder.finalizeFunction()
@@ -517,11 +517,11 @@ class BytecodeToIrLowering(
         IF_ICMPLE -> { lowerIfICmp(pc, ICmpPredicate.SLE); pc + 3 }
 
         GOTO -> {
-            builder.br("L${pc + readI16(pc + 1)}")
+            builder.br(BlockRef("L${pc + readI16(pc + 1)}"))
             pc + 3
         }
         GOTO_W -> {
-            builder.br("L${pc + readI32(pc + 1)}")
+            builder.br(BlockRef("L${pc + readI32(pc + 1)}"))
             pc + 5
         }
         else -> null
@@ -627,14 +627,14 @@ class BytecodeToIrLowering(
         val zero = if (value.type == Type.I64) const64(0) else const32(0)
         val cmp = builder.icmp(pred, value, zero)
         val target = pc + readI16(pc + 1)
-        builder.condBr(cmp, "L$target", "L${pc + 3}")
+        builder.condBr(cmp, BlockRef("L$target"), BlockRef("L${pc + 3}"))
     }
 
     private fun lowerIfICmp(pc: Int, pred: ICmpPredicate) {
         val r = pop(); val l = pop()
         val cmp = builder.icmp(pred, l, r)
         val target = pc + readI16(pc + 1)
-        builder.condBr(cmp, "L$target", "L${pc + 3}")
+        builder.condBr(cmp, BlockRef("L$target"), BlockRef("L${pc + 3}"))
     }
 
     private fun lowerArrayLoad(elemType: Type, elemSize: Int) {
@@ -1010,19 +1010,18 @@ class BytecodeToIrLowering(
         val normalLabel = "invoke.normal.${normalBlockCounter++}"
         val unwindLabel = "catch.${handler.handlerPc}"
 
-        // Create the normal continuation block
-        builder.appendBlock(normalLabel)
-        // Create the landing pad block if it doesn't exist yet
+        // Create forward references for normal and unwind blocks
+        builder.createBlock(normalLabel)
         if (handler.handlerPc !in landingPadBlocks) {
-            builder.appendBlock(unwindLabel)
+            builder.createBlock(unwindLabel)
             landingPadBlocks.add(handler.handlerPc)
         }
 
         val funcRef = GlobalRef(name, Type.Function(args.map { it.type }, returnType))
-        val result = builder.invoke(funcRef, args, returnType, normalLabel, unwindLabel)
+        val result = builder.invoke(funcRef, args, returnType, BlockRef(normalLabel), BlockRef(unwindLabel))
 
         // Continue in the normal block
-        builder.positionAtEnd(normalLabel)
+        builder.appendBlock(normalLabel)
         if (result != null && returnType != Type.Void) {
             push(result)
         }

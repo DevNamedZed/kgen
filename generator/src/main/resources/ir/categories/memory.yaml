@@ -1,0 +1,286 @@
+name: Memory
+interfaceName: MemoryInstruction
+enumValue: MEMORY
+description: |-
+  Memory access and manipulation instructions.
+
+  Memory instructions cover stack allocation, loads, stores, pointer arithmetic,
+  bulk memory operations (copy/set/move), and lifetime/variadic-argument management.
+imports:
+- org.kgen.ir.AtomicOrdering
+- org.kgen.ir.Type
+sections:
+- comment: Core memory operations
+  instructions:
+  - name: Alloca
+    description: 'Allocate space on the stack: `dest = alloca allocType [, numElements] [, align]`.'
+    effects:
+      bits:
+      - WRITES_STACK_MEMORY
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: allocType
+      type: Type
+      role: config
+    - name: numElements
+      type: Value?
+      default: 'null'
+      role: operandNullable
+    - name: align
+      type: Int?
+      default: 'null'
+      role: config
+    emit:
+      resultType: Type.OpaquePointer
+  - name: Load
+    description: 'Load a value from memory: `dest = *ptr`.'
+    effects: READS_HEAP
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: ptr
+      type: Value
+      role: operand
+    - name: loadType
+      type: Type
+      role: config
+    - name: align
+      type: Int?
+      default: 'null'
+      role: config
+    - name: volatile
+      type: Boolean
+      default: 'false'
+      role: flag
+    - name: ordering
+      type: AtomicOrdering?
+      default: 'null'
+      role: config
+  - name: Store
+    description: 'Store a value to memory: `*ptr = value`.'
+    effects: WRITES_HEAP
+    fields:
+    - name: value
+      type: Value
+      role: operand
+    - name: ptr
+      type: Value
+      role: operand
+    - name: align
+      type: Int?
+      default: 'null'
+      role: config
+    - name: volatile
+      type: Boolean
+      default: 'false'
+      role: flag
+    - name: ordering
+      type: AtomicOrdering?
+      default: 'null'
+      role: config
+  - name: GetElementPtr
+    description: Compute an element address within an aggregate or array.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: baseType
+      type: Type
+      role: config
+    - name: ptr
+      type: Value
+      role: operand
+    - name: indices
+      type: List<Value>
+      role: operandList
+    - name: inBounds
+      type: Boolean
+      default: 'true'
+      role: flag
+    emit:
+      name: gep
+      resultType: Type.Pointer(baseType)
+- comment: Bulk memory operations
+  instructions:
+  - name: MemCpy
+    description: |-
+      Copy a block of memory: `memcpy(dst, src, len)`.
+
+      Source and destination must not overlap.
+    effects: READ_WRITE_HEAP
+    fields:
+    - name: dst
+      type: Value
+      role: operand
+    - name: src
+      type: Value
+      role: operand
+    - name: len
+      type: Value
+      role: operand
+    - name: volatile
+      type: Boolean
+      default: 'false'
+      role: flag
+    emit:
+      name: memcpy
+  - name: MemSet
+    description: 'Fill a block of memory with a byte value: `memset(dst, value, len)`.'
+    effects: WRITES_HEAP
+    fields:
+    - name: dst
+      type: Value
+      role: operand
+    - name: value
+      type: Value
+      role: operand
+    - name: len
+      type: Value
+      role: operand
+    - name: volatile
+      type: Boolean
+      default: 'false'
+      role: flag
+    emit:
+      name: memset
+  - name: MemMove
+    description: Copy a block of memory, handling overlapping regions.
+    effects: READ_WRITE_HEAP
+    fields:
+    - name: dst
+      type: Value
+      role: operand
+    - name: src
+      type: Value
+      role: operand
+    - name: len
+      type: Value
+      role: operand
+    - name: volatile
+      type: Boolean
+      default: 'false'
+      role: flag
+    emit:
+      name: memmove
+  - name: Prefetch
+    description: 'Prefetch a cache line: hint to the processor that address will be accessed soon.'
+    effects: PURE
+    fields:
+    - name: address
+      type: Value
+      role: operand
+    - name: rw
+      type: Int
+      role: config
+    - name: locality
+      type: Int
+      role: config
+    - name: cacheType
+      type: Int
+      role: config
+- comment: Stack management
+  instructions:
+  - name: StackSave
+    description: Save the current stack pointer.
+    effects:
+      bits:
+      - READS_STACK_MEMORY
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    emit:
+      resultType: Type.OpaquePointer
+  - name: StackRestore
+    description: Restore a previously saved stack pointer.
+    effects:
+      bits:
+      - WRITES_STACK_MEMORY
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: ptr
+      type: Value
+      role: operand
+  - name: LifetimeStart
+    description: Mark the beginning of a stack object's lifetime.
+    effects: PURE
+    fields:
+    - name: ptr
+      type: Value
+      role: operand
+    - name: size
+      type: Long
+      role: config
+  - name: LifetimeEnd
+    description: Mark the end of a stack object's lifetime.
+    effects: PURE
+    fields:
+    - name: ptr
+      type: Value
+      role: operand
+    - name: size
+      type: Long
+      role: config
+- comment: Variadic argument support
+  instructions:
+  - name: VAStart
+    description: Initialize a variadic argument list.
+    effects:
+      bits:
+      - WRITES_STACK_MEMORY
+      - HAS_SIDE_EFFECTS
+    emit:
+      name: vaStart
+    fields:
+    - name: argList
+      type: Value
+      role: operand
+  - name: VAEnd
+    description: Clean up a variadic argument list.
+    effects:
+      bits:
+      - HAS_SIDE_EFFECTS
+    emit:
+      name: vaEnd
+    fields:
+    - name: argList
+      type: Value
+      role: operand
+  - name: VACopy
+    description: Copy a variadic argument list.
+    effects:
+      bits:
+      - READS_STACK_MEMORY
+      - WRITES_STACK_MEMORY
+      - HAS_SIDE_EFFECTS
+    emit:
+      name: vaCopy
+    fields:
+    - name: dst
+      type: Value
+      role: operand
+    - name: src
+      type: Value
+      role: operand
+  - name: VAArg
+    description: Retrieve the next variadic argument.
+    effects:
+      bits:
+      - READS_STACK_MEMORY
+    emit:
+      name: vaArg
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: argList
+      type: Value
+      role: operand
+    - name: argType
+      type: Type
+      role: config

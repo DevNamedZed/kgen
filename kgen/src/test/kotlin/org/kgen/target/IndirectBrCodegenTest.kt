@@ -17,13 +17,13 @@ class IndirectBrCodegenTest {
     private fun buildIndirectBrModule(target: Target): Module {
         val ir = IrBuilder("indirectbr_test", target)
         val params = ir.createFunction("dispatch", listOf(Param("addr", Type.Pointer(Type.I8))), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
-        ir.indirectBr(params[0], listOf("target_a", "target_b"))
+        ir.appendBlock("entry")
+        ir.indirectBr(params[0], listOf(BlockRef("target_a"), BlockRef("target_b")))
 
-        ir.positionAtEnd(ir.appendBlock("target_a"))
+        ir.appendBlock("target_a")
         ir.ret(Constant.I32(1))
 
-        ir.positionAtEnd(ir.appendBlock("target_b"))
+        ir.appendBlock("target_b")
         ir.ret(Constant.I32(2))
 
         ir.finalizeFunction()
@@ -73,10 +73,10 @@ class IndirectBrCodegenTest {
     fun `x86 indirectBr with single target`() {
         val ir = IrBuilder("single_target", Target.x86_64())
         val params = ir.createFunction("go", listOf(Param("addr", Type.Pointer(Type.I8))), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
-        ir.indirectBr(params[0], listOf("dest"))
+        ir.appendBlock("entry")
+        ir.indirectBr(params[0], listOf(BlockRef("dest")))
 
-        ir.positionAtEnd(ir.appendBlock("dest"))
+        ir.appendBlock("dest")
         ir.ret(Constant.I32(42))
 
         ir.finalizeFunction()

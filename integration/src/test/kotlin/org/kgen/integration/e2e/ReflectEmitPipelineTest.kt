@@ -102,7 +102,7 @@ class ReflectEmitPipelineTest {
         val ir = IrBuilder("pe_reflect", Target.x86_64())
         ir.targetTriple = "x86_64-unknown-windows-msvc"
         val p = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.add(p[0], p[1]))
         ir.finalizeFunction()
 
@@ -121,17 +121,17 @@ class ReflectEmitPipelineTest {
         val ir = IrBuilder("pipeline", Target.x86_64())
 
         val addP = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.add(addP[0], addP[1]))
         ir.finalizeFunction()
 
         val absP = ir.createFunction("abs_val", listOf(Param("x", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val cond = ir.icmp(ICmpPredicate.SGE, absP[0], Constant.I64(0))
-        ir.condBr(cond, "pos", "neg")
-        ir.positionAtEnd(ir.appendBlock("pos"))
+        ir.condBr(cond, BlockRef("pos"), BlockRef("neg"))
+        ir.appendBlock("pos")
         ir.ret(absP[0])
-        ir.positionAtEnd(ir.appendBlock("neg"))
+        ir.appendBlock("neg")
         ir.ret(ir.sub(Constant.I64(0), absP[0]))
         ir.finalizeFunction()
 
@@ -163,7 +163,7 @@ class ReflectEmitPipelineTest {
     private fun buildModule(): Module {
         val ir = IrBuilder("reflect_test", Target.x86_64())
         val p = ir.createFunction("compute", listOf(Param("x", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.mul(p[0], Constant.I64(2)))
         ir.finalizeFunction()
         return ir.build()
@@ -173,12 +173,12 @@ class ReflectEmitPipelineTest {
         val ir = IrBuilder("multi_reflect", Target.x86_64())
 
         val addP = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.add(addP[0], addP[1]))
         ir.finalizeFunction()
 
         val mulP = ir.createFunction("mul", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.mul(mulP[0], mulP[1]))
         ir.finalizeFunction()
 

@@ -40,7 +40,7 @@ class RiscVAllocatorTest {
         fun `single i64 param uses a0 register`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = add(params[0], Constant.I64(1))
                 ret(result)
                 finalizeFunction()
@@ -53,7 +53,7 @@ class RiscVAllocatorTest {
         fun `pointer param uses gp register`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("p", Type.OpaquePointer)), Type.OpaquePointer)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(params[0])
                 finalizeFunction()
             }
@@ -65,7 +65,7 @@ class RiscVAllocatorTest {
             val code = generateCode {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = add(params[0], params[1])
                 ret(sum)
                 finalizeFunction()
@@ -79,7 +79,7 @@ class RiscVAllocatorTest {
             val code = generateCode {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = add(params[0], params[1])
                 val result = add(sum, params[2])
                 ret(result)
@@ -93,7 +93,7 @@ class RiscVAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val ab = add(params[0], params[1])
                 val result = add(ab, params[2])
                 ret(result)
@@ -107,7 +107,7 @@ class RiscVAllocatorTest {
         fun `allocatable pool includes t0 through t6`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v1 = add(params[0], Constant.I64(1))
                 val v2 = add(params[0], Constant.I64(2))
                 val v3 = add(params[0], Constant.I64(3))
@@ -142,7 +142,7 @@ class RiscVAllocatorTest {
         fun `first param in a0`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = add(params[0], Constant.I64(1))
                 ret(result)
                 finalizeFunction()
@@ -155,7 +155,7 @@ class RiscVAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = add(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -168,7 +168,7 @@ class RiscVAllocatorTest {
         fun `eight params use a0 through a7`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", (0 until 8).map { Param("p$it", Type.I64) }, Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 var sum = add(params[0], params[1])
                 for (i in 2 until 8) sum = add(sum, params[i])
                 ret(sum)
@@ -184,7 +184,7 @@ class RiscVAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = add(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -198,7 +198,7 @@ class RiscVAllocatorTest {
         fun `return value in a0`() {
             val lines = generateAndDisassemble {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(Constant.I64(42))
                 finalizeFunction()
             }
@@ -214,7 +214,7 @@ class RiscVAllocatorTest {
         fun `identity function`() {
             val code = generateCode {
                 val params = createFunction("id", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(params[0])
                 finalizeFunction()
             }
@@ -227,7 +227,7 @@ class RiscVAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("add", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = add(params[0], params[1])
                 ret(sum)
                 finalizeFunction()
@@ -240,7 +240,7 @@ class RiscVAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val ab = add(params[0], params[1])
                 val result = add(ab, params[2])
                 ret(result)
@@ -254,7 +254,7 @@ class RiscVAllocatorTest {
         fun `add with immediate uses addi`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = add(params[0], Constant.I64(42))
                 ret(result)
                 finalizeFunction()
@@ -269,7 +269,7 @@ class RiscVAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = sub(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -282,7 +282,7 @@ class RiscVAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = mul(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -295,7 +295,7 @@ class RiscVAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = sdiv(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -308,7 +308,7 @@ class RiscVAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = srem(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -321,7 +321,7 @@ class RiscVAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = and(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -334,7 +334,7 @@ class RiscVAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = or(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -347,7 +347,7 @@ class RiscVAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = xor(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -360,7 +360,7 @@ class RiscVAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = shl(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -376,7 +376,7 @@ class RiscVAllocatorTest {
         fun `many live values cause spilling`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val values = (1..20).map { add(params[0], Constant.I64(it.toLong())) }
                 var sum = add(values[0], values[1])
                 for (i in 2 until values.size) sum = add(sum, values[i])
@@ -390,7 +390,7 @@ class RiscVAllocatorTest {
         fun `spilled values produce sd and ld instructions`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val values = (1..20).map { add(params[0], Constant.I64(it.toLong())) }
                 var sum = add(values[0], values[1])
                 for (i in 2 until values.size) sum = add(sum, values[i])
@@ -406,7 +406,7 @@ class RiscVAllocatorTest {
         fun `chained operations reuse registers`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 var v: Value = params[0]
                 for (i in 1..20) v = add(v, Constant.I64(i.toLong()))
                 ret(v)
@@ -419,7 +419,7 @@ class RiscVAllocatorTest {
         fun `i32 values under pressure`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val values = (1..20).map { add(params[0], Constant.I32(it)) }
                 var sum = add(values[0], values[1])
                 for (i in 2 until values.size) sum = add(sum, values[i])
@@ -434,7 +434,7 @@ class RiscVAllocatorTest {
             val code = generateCode {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val values = (1..20).map { add(params[0], Constant.I64(it.toLong())) }
                 // Use v1 many times (high spill cost)
                 var sum = add(values[0], values[0])
@@ -455,7 +455,7 @@ class RiscVAllocatorTest {
             val lines = generateAndDisassemble {
                 declareFunction("ext", emptyList(), Type.I64)
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = call("ext", emptyList(), Type.I64)!!
                 val sum = add(params[0], r)
                 ret(sum)
@@ -473,7 +473,7 @@ class RiscVAllocatorTest {
             val lines = generateAndDisassemble {
                 declareFunction("ext", emptyList(), Type.Void)
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 call("ext", emptyList(), Type.Void)
                 ret(params[0])
                 finalizeFunction()
@@ -488,7 +488,7 @@ class RiscVAllocatorTest {
             val lines = generateAndDisassemble {
                 declareFunction("ext", emptyList(), Type.Void)
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 call("ext", emptyList(), Type.Void)
                 ret(params[0])
                 finalizeFunction()
@@ -504,7 +504,7 @@ class RiscVAllocatorTest {
                 declareFunction("ext", emptyList(), Type.I64)
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = call("ext", emptyList(), Type.I64)!!
                 val sum = add(params[0], params[1])
                 val result = add(sum, params[2])
@@ -520,7 +520,7 @@ class RiscVAllocatorTest {
             val code = generateCode {
                 declareFunction("ext", listOf(Param("v", Type.I64)), Type.I64)
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v = add(params[0], Constant.I64(1))
                 val result = call("ext", listOf(v), Type.I64)
                 ret(result)
@@ -535,7 +535,7 @@ class RiscVAllocatorTest {
                 declareFunction("ext1", emptyList(), Type.I64)
                 declareFunction("ext2", listOf(Param("v", Type.I64)), Type.I64)
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r1 = call("ext1", emptyList(), Type.I64)!!
                 val r2 = call("ext2", listOf(r1), Type.I64)
                 ret(r2)
@@ -549,7 +549,7 @@ class RiscVAllocatorTest {
             val lines = generateAndDisassemble {
                 declareFunction("ext", emptyList(), Type.Void)
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 call("ext", emptyList(), Type.Void)
                 ret(params[0])
                 finalizeFunction()
@@ -569,7 +569,7 @@ class RiscVAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = add(params[0], params[1])
                 ret(sum)
                 finalizeFunction()
@@ -584,7 +584,7 @@ class RiscVAllocatorTest {
             val lines = generateAndDisassemble {
                 declareFunction("ext", emptyList(), Type.Void)
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 call("ext", emptyList(), Type.Void)
                 ret(params[0])
                 finalizeFunction()
@@ -603,7 +603,7 @@ class RiscVAllocatorTest {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64),
                     Param("d", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 call("ext", emptyList(), Type.Void)
                 val sum = add(params[0], params[1])
                 val r2 = add(sum, params[2])
@@ -622,7 +622,7 @@ class RiscVAllocatorTest {
         fun `spill slots reference stack`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val values = (1..20).map { add(params[0], Constant.I64(it.toLong())) }
                 var sum = add(values[0], values[1])
                 for (i in 2 until values.size) sum = add(sum, values[i])
@@ -638,7 +638,7 @@ class RiscVAllocatorTest {
         fun `frame allocation with addi sp`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val values = (1..20).map { add(params[0], Constant.I64(it.toLong())) }
                 var sum = add(values[0], values[1])
                 for (i in 2 until values.size) sum = add(sum, values[i])
@@ -654,7 +654,7 @@ class RiscVAllocatorTest {
         fun `short-lived values minimize spill slots`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 var v: Value = params[0]
                 for (i in 1..15) v = add(v, Constant.I64(i.toLong()))
                 ret(v)
@@ -671,7 +671,7 @@ class RiscVAllocatorTest {
         fun `unused param does not waste register`() {
             val code = generateCode {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(Constant.I64(42))
                 finalizeFunction()
             }
@@ -682,7 +682,7 @@ class RiscVAllocatorTest {
         fun `value used multiple times extends live range`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val d = add(params[0], params[0])
                 val t = add(d, params[0])
                 val q = add(t, params[0])
@@ -697,12 +697,12 @@ class RiscVAllocatorTest {
             val code = generateCode {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val cond = icmp(ICmpPredicate.SGT, params[0], params[1])
-                condBr(cond, "then", "else_")
-                positionAtEnd(appendBlock("then"))
+                condBr(cond, BlockRef("then"), BlockRef("else_"))
+                appendBlock("then")
                 ret(params[0])
-                positionAtEnd(appendBlock("else_"))
+                appendBlock("else_")
                 ret(params[1])
                 finalizeFunction()
             }
@@ -713,17 +713,17 @@ class RiscVAllocatorTest {
         fun `phi in diamond merges different paths`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("n", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val cond = icmp(ICmpPredicate.SGT, params[0], Constant.I64(0))
-                condBr(cond, "pos", "neg")
-                positionAtEnd(appendBlock("pos"))
+                condBr(cond, BlockRef("pos"), BlockRef("neg"))
+                appendBlock("pos")
                 val posVal = add(params[0], Constant.I64(1))
-                br("merge")
-                positionAtEnd(appendBlock("neg"))
+                br(BlockRef("merge"))
+                appendBlock("neg")
                 val negVal = sub(Constant.I64(0), params[0])
-                br("merge")
-                positionAtEnd(appendBlock("merge"))
-                val result = phi(Type.I64, listOf(posVal to "pos", negVal to "neg"))
+                br(BlockRef("merge"))
+                appendBlock("merge")
+                val result = phi(Type.I64, listOf(posVal to BlockRef("pos"), negVal to BlockRef("neg")))
                 ret(result)
                 finalizeFunction()
             }
@@ -735,17 +735,17 @@ class RiscVAllocatorTest {
             val code = generateCode {
                 val params = createFunction("f", listOf(
                     Param("n", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val cond = icmp(ICmpPredicate.SGT, params[0], Constant.I64(0))
-                condBr(cond, "pos", "neg")
-                positionAtEnd(appendBlock("pos"))
+                condBr(cond, BlockRef("pos"), BlockRef("neg"))
+                appendBlock("pos")
                 val posVal = add(params[0], Constant.I64(1))
-                br("merge")
-                positionAtEnd(appendBlock("neg"))
+                br(BlockRef("merge"))
+                appendBlock("neg")
                 val negVal = sub(Constant.I64(0), params[0])
-                br("merge")
-                positionAtEnd(appendBlock("merge"))
-                val result = phi(Type.I64, listOf(posVal to "pos", negVal to "neg"))
+                br(BlockRef("merge"))
+                appendBlock("merge")
+                val result = phi(Type.I64, listOf(posVal to BlockRef("pos"), negVal to BlockRef("neg")))
                 ret(result)
                 finalizeFunction()
             }
@@ -760,12 +760,12 @@ class RiscVAllocatorTest {
         fun `two functions get independent allocation`() {
             val module = buildModule {
                 val p1 = createFunction("f1", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(add(p1[0], Constant.I64(1)))
                 finalizeFunction()
 
                 val p2 = createFunction("f2", listOf(Param("y", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(add(p2[0], Constant.I64(2)))
                 finalizeFunction()
             }
@@ -779,12 +779,12 @@ class RiscVAllocatorTest {
         fun `caller and callee`() {
             val code = generateCode {
                 val hp = createFunction("helper", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(add(hp[0], Constant.I64(1)))
                 finalizeFunction()
 
                 createFunction("main", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = call("helper", listOf(Constant.I64(41)), Type.I64)
                 ret(result)
                 finalizeFunction()
@@ -796,7 +796,7 @@ class RiscVAllocatorTest {
         fun `function with no params returning constant`() {
             val code = generateCode {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(Constant.I64(42))
                 finalizeFunction()
             }
@@ -811,7 +811,7 @@ class RiscVAllocatorTest {
         fun `void return function`() {
             val code = generateCode {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -823,7 +823,7 @@ class RiscVAllocatorTest {
         fun `function returning zero`() {
             val lines = generateAndDisassemble {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(Constant.I64(0))
                 finalizeFunction()
             }
@@ -835,7 +835,7 @@ class RiscVAllocatorTest {
         fun `select instruction`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val neg = sub(Constant.I64(0), params[0])
                 val cond = icmp(ICmpPredicate.SGT, params[0], Constant.I64(0))
                 val result = select(cond, params[0], neg)
@@ -849,7 +849,7 @@ class RiscVAllocatorTest {
         fun `load and store`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("p", Type.OpaquePointer)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v = load(Type.I64, params[0])
                 val result = add(v, Constant.I64(1))
                 store(result, params[0])
@@ -864,7 +864,7 @@ class RiscVAllocatorTest {
             val code = generateCode {
                 declareFunction("ext", (0 until 8).map { Param("p$it", Type.I64) }, Type.I64)
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = call("ext", (1L..8L).map { Constant.I64(it) }, Type.I64)
                 ret(result)
                 finalizeFunction()
@@ -876,12 +876,12 @@ class RiscVAllocatorTest {
         fun `multiple basic blocks`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("n", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val cond = icmp(ICmpPredicate.SGT, params[0], Constant.I64(10))
-                condBr(cond, "big", "small")
-                positionAtEnd(appendBlock("big"))
+                condBr(cond, BlockRef("big"), BlockRef("small"))
+                appendBlock("big")
                 ret(add(params[0], Constant.I64(100)))
-                positionAtEnd(appendBlock("small"))
+                appendBlock("small")
                 ret(add(params[0], Constant.I64(1)))
                 finalizeFunction()
             }
@@ -893,7 +893,7 @@ class RiscVAllocatorTest {
             val code = generateCode {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val cmp = icmp(ICmpPredicate.EQ, params[0], params[1])
                 val result = zext(cmp, Type.I32)
                 ret(result)
@@ -907,7 +907,7 @@ class RiscVAllocatorTest {
             val code = generateCode {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = add(params[0], params[1])
                 val diff = sub(sum, Constant.I32(1))
                 ret(diff)
@@ -921,7 +921,7 @@ class RiscVAllocatorTest {
             val code = generateCode {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = udiv(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -934,7 +934,7 @@ class RiscVAllocatorTest {
             val code = generateCode {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = urem(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -947,7 +947,7 @@ class RiscVAllocatorTest {
             val code = generateCode {
                 declareFunction("ext", listOf(Param("v", Type.I64)), Type.I64)
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r1 = call("ext", listOf(params[0]), Type.I64)!!
                 val r2 = call("ext", listOf(r1), Type.I64)!!
                 val result = add(r2, params[0])
@@ -962,7 +962,7 @@ class RiscVAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = lshr(params[0], params[1])
                 ret(result)
                 finalizeFunction()

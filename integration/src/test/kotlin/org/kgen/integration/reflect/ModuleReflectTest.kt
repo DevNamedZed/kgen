@@ -35,7 +35,7 @@ class ModuleReflectTest {
     fun moduleFromGeneratedObjectFile() {
         val module = generateAndReflect {
             createFunction("hello", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I64(42))
             finalizeFunction()
         }
@@ -51,7 +51,7 @@ class ModuleReflectTest {
     fun symbolLookupByName() {
         val module = generateAndReflect {
             val params = createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(params[0], params[1]))
             finalizeFunction()
         }
@@ -66,7 +66,7 @@ class ModuleReflectTest {
     fun functionLookup() {
         val module = generateAndReflect {
             val params = createFunction("square", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(mul(params[0], params[0]))
             finalizeFunction()
         }
@@ -82,17 +82,17 @@ class ModuleReflectTest {
     fun multipleFunctionsDiscovery() {
         val module = generateAndReflect {
             val addParams = createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(addParams[0], addParams[1]))
             finalizeFunction()
 
             val subParams = createFunction("sub", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sub(subParams[0], subParams[1]))
             finalizeFunction()
 
             val mulParams = createFunction("mul", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(mul(mulParams[0], mulParams[1]))
             finalizeFunction()
         }
@@ -107,7 +107,7 @@ class ModuleReflectTest {
     fun textSectionPresent() {
         val module = generateAndReflect {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I64(0))
             finalizeFunction()
         }
@@ -123,7 +123,7 @@ class ModuleReflectTest {
         val module = generateAndReflect {
             val params = createFunction("compute", listOf(
                 Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(params[0], params[1]))
             finalizeFunction()
         }
@@ -148,7 +148,7 @@ class ModuleReflectTest {
     fun symbolBackReferenceToModule() {
         val module = generateAndReflect {
             createFunction("test", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I64(1))
             finalizeFunction()
         }
@@ -162,7 +162,7 @@ class ModuleReflectTest {
     fun moduleFromElfBytes() {
         val irModule = buildIrModule {
             createFunction("entry", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I64(0))
             finalizeFunction()
         }
@@ -182,7 +182,7 @@ class ModuleReflectTest {
     fun moduleNotLoadedByDefault() {
         val module = generateAndReflect {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I64(0))
             finalizeFunction()
         }

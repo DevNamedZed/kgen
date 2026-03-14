@@ -44,7 +44,7 @@ class SafepointInsertion : ModulePass {
                         newInstructions.add(inst)
                     }
                     is Br -> {
-                        val targetIdx = blockLabels[inst.target]
+                        val targetIdx = blockLabels[inst.target.label]
                         if (targetIdx != null && targetIdx <= blockIdx) {
                             if (!isPrecedingGCSafepoint(newInstructions)) {
                                 newInstructions.add(GCSafepoint())
@@ -53,8 +53,8 @@ class SafepointInsertion : ModulePass {
                         newInstructions.add(inst)
                     }
                     is CondBr -> {
-                        val trueIdx = blockLabels[inst.trueTarget]
-                        val falseIdx = blockLabels[inst.falseTarget]
+                        val trueIdx = blockLabels[inst.trueTarget.label]
+                        val falseIdx = blockLabels[inst.falseTarget.label]
                         val isBackEdge = (trueIdx != null && trueIdx <= blockIdx) ||
                                 (falseIdx != null && falseIdx <= blockIdx)
                         if (isBackEdge && !isPrecedingGCSafepoint(newInstructions)) {

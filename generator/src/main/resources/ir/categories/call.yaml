@@ -1,0 +1,103 @@
+name: Call
+interfaceName: CallInstruction
+enumValue: CALL
+description: |-
+  Function invocation instructions.
+
+  Call instructions transfer control to a target function with arguments
+  and optionally produce a return value.
+imports:
+- org.kgen.ir.BlockRef
+- org.kgen.ir.CallingConvention
+- org.kgen.ir.FnAttribute
+- org.kgen.ir.TailCallKind
+- org.kgen.ir.Type
+interfaceProperties:
+- name: function
+  type: Value
+- name: args
+  type: List<Value>
+- name: returnType
+  type: Type
+sections:
+- comment: Call instructions
+  instructions:
+  - name: Call
+    description: Direct or indirect function call.
+    effects: CALL
+    fields:
+    - name: dest
+      type: InstructionRef?
+      role: resultNullable
+    - name: function
+      type: Value
+      role: operand
+    - name: args
+      type: List<Value>
+      role: operandList
+    - name: returnType
+      type: Type
+      role: config
+    - name: callingConv
+      type: CallingConvention
+      default: CallingConvention.C
+      role: config
+    - name: tailCall
+      type: TailCallKind
+      default: TailCallKind.NONE
+      role: config
+    - name: attributes
+      type: Set<FnAttribute>
+      default: emptySet()
+      role: config
+  - name: Invoke
+    description: Function call with exception handling.
+    effects: INVOKE
+    fields:
+    - name: dest
+      type: InstructionRef?
+      role: resultNullable
+    - name: function
+      type: Value
+      role: operand
+    - name: args
+      type: List<Value>
+      role: operandList
+    - name: returnType
+      type: Type
+      role: config
+    - name: normalDest
+      type: BlockRef
+      role: config
+    - name: unwindDest
+      type: BlockRef
+      role: config
+    - name: callingConv
+      type: CallingConvention
+      default: CallingConvention.C
+      role: config
+  - name: CallBr
+    description: Inline assembly call with multiple successors.
+    effects:
+      bits:
+      - CALL_BITS
+      - IS_TERMINATOR
+    fields:
+    - name: dest
+      type: InstructionRef?
+      role: resultNullable
+    - name: function
+      type: Value
+      role: operand
+    - name: args
+      type: List<Value>
+      role: operandList
+    - name: returnType
+      type: Type
+      role: config
+    - name: fallthrough
+      type: BlockRef
+      role: config
+    - name: indirectDests
+      type: List<BlockRef>
+      role: config

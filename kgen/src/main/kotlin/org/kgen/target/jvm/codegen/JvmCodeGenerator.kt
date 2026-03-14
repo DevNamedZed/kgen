@@ -109,7 +109,7 @@ class JvmCodeGenerator : CodeGenerator {
             for ((idx, entry) in emitter.exceptionEntries.withIndex()) {
                 if (idx < invokes.size) {
                     val invoke = invokes[idx]
-                    val handlerPc = emitter.assembler.labelOffset(invoke.unwindDest)
+                    val handlerPc = emitter.assembler.labelOffset(invoke.unwindDest.label)
                     if (handlerPc != null) {
                         result.add(entry.copy(handlerPc = handlerPc))
                     }
@@ -311,8 +311,8 @@ class JvmCodeGenerator : CodeGenerator {
             for (block in fn.blocks) {
                 for (inst in block.instructions) {
                     if (inst is Phi) {
-                        for ((value, srcLabel) in inst.incoming) {
-                            phiCopies.getOrPut(srcLabel) { mutableListOf() }
+                        for ((value, srcLabelRef) in inst.incoming) {
+                            phiCopies.getOrPut(srcLabelRef.label) { mutableListOf() }
                                 .add(Pair(inst.dest, value))
                         }
                     }
@@ -536,7 +536,7 @@ class JvmCodeGenerator : CodeGenerator {
 
                 is Br -> {
                     emitPhiCopies(currentBlockLabel)
-                    assembler.goto(inst.target)
+                    assembler.goto(inst.target.label)
                 }
 
                 is CondBr -> {
@@ -544,9 +544,9 @@ class JvmCodeGenerator : CodeGenerator {
                     // Since phi copies may differ per target, store copies before branching
                     emitPhiCopies(currentBlockLabel)
                     pushValue(inst.condition)
-                    assembler.ifne(inst.trueTarget)
+                    assembler.ifne(inst.trueTarget.label)
                     popStack()
-                    assembler.goto(inst.falseTarget)
+                    assembler.goto(inst.falseTarget.label)
                 }
 
                 is Call -> emitCall(inst)
@@ -574,7 +574,7 @@ class JvmCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Trunc -> {
+                is FTrunc -> {
                     pushValue(inst.operand)
                     if (inst.operand.type == Type.I64 && inst.dest.type != Type.I64) {
                         assembler.l2i()
@@ -1184,21 +1184,21 @@ class JvmCodeGenerator : CodeGenerator {
         private fun emitSwitch(inst: Switch) {
             // Emit as chain of if-comparisons (no lookupswitch in assembler yet)
             emitPhiCopies(currentBlockLabel)
-            for ((caseVal, target) in inst.cases) {
+            for ((caseVal, targetRef) in inst.cases) {
                 pushValue(inst.value)
                 pushValue(caseVal)
                 if (inst.value.type == Type.I64) {
                     assembler.lcmp()
                     popStack(4)
                     pushStack()
-                    assembler.ifeq(target)
+                    assembler.ifeq(targetRef.label)
                     popStack()
                 } else {
-                    assembler.ifIcmpeq(target)
+                    assembler.ifIcmpeq(targetRef.label)
                     popStack(2)
                 }
             }
-            assembler.goto(inst.defaultTarget)
+            assembler.goto(inst.defaultTarget.label)
         }
 
         private fun emitCall(inst: Call) {
@@ -1264,7 +1264,7 @@ class JvmCodeGenerator : CodeGenerator {
                 }
 
                 // Resolve catch type from LandingPad in the unwind block
-                val catchTypeIdx = resolveCatchType(inst.unwindDest)
+                val catchTypeIdx = resolveCatchType(inst.unwindDest.label)
 
                 // Record exception table entry (handler PC resolved later via label)
                 exceptionEntries.add(ExceptionEntry(
@@ -1276,7 +1276,7 @@ class JvmCodeGenerator : CodeGenerator {
 
                 // Normal path: branch to normalDest
                 emitPhiCopies(currentBlockLabel)
-                assembler.goto(inst.normalDest)
+                assembler.goto(inst.normalDest.label)
 
                 // Record that the unwind handler has an exception on the stack
                 val exType = if (catchTypeIdx == 0) {
@@ -1284,7 +1284,7 @@ class JvmCodeGenerator : CodeGenerator {
                 } else {
                     VerificationType.Object(catchTypeIdx)
                 }
-                labelStackTypes[inst.unwindDest] = listOf(exType)
+                labelStackTypes[inst.unwindDest.label] = listOf(exType)
             }
         }
 

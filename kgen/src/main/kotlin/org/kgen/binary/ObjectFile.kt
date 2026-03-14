@@ -19,7 +19,7 @@ package org.kgen.binary
  * ```kotlin
  * val module = IrBuilder("test", Target.x86_64()).apply {
  *     createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
- *     positionAtEnd(appendBlock("entry"))
+ *     appendBlock("entry")
  *     ret(add(currentParams[0], currentParams[1]))
  *     finalizeFunction()
  * }.build()

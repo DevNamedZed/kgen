@@ -1,0 +1,77 @@
+name: Ssa
+interfaceName: SsaInstruction
+enumValue: SSA
+description: |-
+  SSA form management instructions.
+
+  Handles value selection and merging at control flow join points.
+imports:
+- org.kgen.ir.BlockRef
+- org.kgen.ir.Type
+sections:
+- comment: SSA instructions
+  instructions:
+  - name: Phi
+    description: 'Phi node: merges values from predecessor basic blocks at a control flow join point.'
+    effects: PURE
+    emit:
+      resultType: resultType
+      extraParams:
+      - name: resultType
+        type: Type
+        description: the type of the merged value
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: incoming
+      type: List<Pair<Value, BlockRef>>
+      role: operandMapFirst
+  - name: Select
+    description: 'Conditional value selection: `dest = condition ? trueValue : falseValue`.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: condition
+      type: Value
+      role: operand
+    - name: trueValue
+      type: Value
+      role: operand
+    - name: falseValue
+      type: Value
+      role: operand
+    emit:
+      resultType: trueValue.type
+  - name: Freeze
+    description: Freeze a potentially poison or undef value to an arbitrary but fixed value.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+  - name: PiNode
+    description: |-
+      Type-refinement pseudo-instruction.
+
+      Produces a new SSA value with a narrowed type for a value that has been
+      proven to be of that type at a given program point (e.g., after a guard).
+      Emits no machine code — eliminated before instruction selection.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: base
+      type: Value
+      role: operand
+    - name: refinedType
+      type: Type
+      role: config
+    emit:
+      resultType: refinedType

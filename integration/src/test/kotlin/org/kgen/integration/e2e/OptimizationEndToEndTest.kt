@@ -152,7 +152,7 @@ class OptimizationEndToEndTest {
     private fun buildConstantExprModule(): Module {
         val ir = IrBuilder("const_fold", Target.x86_64())
         ir.createFunction("constant", emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = ir.add(Constant.I64(10), Constant.I64(20))
         val b = ir.mul(a, Constant.I64(3))
         ir.ret(b)
@@ -163,7 +163,7 @@ class OptimizationEndToEndTest {
     private fun buildAllocaModule(): Module {
         val ir = IrBuilder("alloca_test", Target.x86_64())
         val p = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val slot = ir.alloca(Type.I32)
         ir.store(p[0], slot)
         val loaded = ir.load(Type.I32, slot)
@@ -175,22 +175,22 @@ class OptimizationEndToEndTest {
     private fun buildPhiCandidateModule(): Module {
         val ir = IrBuilder("phi_test", Target.x86_64())
         val p = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
 
         val slot = ir.alloca(Type.I32)
         val cond = ir.icmp(ICmpPredicate.SGT, p[0], Constant.I32(0))
-        ir.condBr(cond, "pos", "neg")
+        ir.condBr(cond, BlockRef("pos"), BlockRef("neg"))
 
-        ir.positionAtEnd(ir.appendBlock("pos"))
+        ir.appendBlock("pos")
         ir.store(p[0], slot)
-        ir.br("merge")
+        ir.br(BlockRef("merge"))
 
-        ir.positionAtEnd(ir.appendBlock("neg"))
+        ir.appendBlock("neg")
         val neg = ir.sub(Constant.I32(0), p[0])
         ir.store(neg, slot)
-        ir.br("merge")
+        ir.br(BlockRef("merge"))
 
-        ir.positionAtEnd(ir.appendBlock("merge"))
+        ir.appendBlock("merge")
         val result = ir.load(Type.I32, slot)
         ir.ret(result)
         ir.finalizeFunction()
@@ -200,7 +200,7 @@ class OptimizationEndToEndTest {
     private fun buildComputeModule(): Module {
         val ir = IrBuilder("compute_mod", Target.x86_64())
         val p = ir.createFunction("compute", listOf(Param("x", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val slot = ir.alloca(Type.I64)
         ir.store(p[0], slot)
         val loaded = ir.load(Type.I64, slot)
@@ -213,22 +213,22 @@ class OptimizationEndToEndTest {
     private fun buildBranchModule(): Module {
         val ir = IrBuilder("branch_mod", Target.x86_64())
         val p = ir.createFunction("abs_val", listOf(Param("x", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
 
         val slot = ir.alloca(Type.I64)
         val cond = ir.icmp(ICmpPredicate.SGE, p[0], Constant.I64(0))
-        ir.condBr(cond, "pos", "neg")
+        ir.condBr(cond, BlockRef("pos"), BlockRef("neg"))
 
-        ir.positionAtEnd(ir.appendBlock("pos"))
+        ir.appendBlock("pos")
         ir.store(p[0], slot)
-        ir.br("done")
+        ir.br(BlockRef("done"))
 
-        ir.positionAtEnd(ir.appendBlock("neg"))
+        ir.appendBlock("neg")
         val neg = ir.sub(Constant.I64(0), p[0])
         ir.store(neg, slot)
-        ir.br("done")
+        ir.br(BlockRef("done"))
 
-        ir.positionAtEnd(ir.appendBlock("done"))
+        ir.appendBlock("done")
         val result = ir.load(Type.I64, slot)
         ir.ret(result)
         ir.finalizeFunction()
@@ -238,7 +238,7 @@ class OptimizationEndToEndTest {
     private fun buildDeadCodeModule(): Module {
         val ir = IrBuilder("dce_test", Target.x86_64())
         val p = ir.createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val dead = ir.mul(p[0], Constant.I64(999)) // unused
         val result = ir.add(p[0], Constant.I64(1))
         ir.ret(result)

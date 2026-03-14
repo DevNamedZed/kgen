@@ -47,10 +47,7 @@ class KgenInlineTest {
         val quadName = cp.utf8("quadruple")
         val quadDesc = cp.utf8("(I)I")
         val doubleItRef = cp.methodRef(
-            "org/kgen/runtime/test/InlineTest",
-            "doubleIt", "(I)I"
-        )
-
+            "org/kgen/runtime/test/InlineTest", "doubleIt", "(I)I")
         // quadruple bytecode: iload_0, invokestatic doubleIt, invokestatic doubleIt, ireturn
         val quadCode = byteArrayOf(
             0x1A,                     // iload_0

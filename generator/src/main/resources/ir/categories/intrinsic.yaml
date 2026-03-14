@@ -1,0 +1,63 @@
+name: Intrinsic
+interfaceName: IntrinsicInstruction
+enumValue: INTRINSIC
+description: |-
+  Target-specific intrinsics and inline assembly instructions.
+
+  Intrinsic instructions provide access to platform capabilities that cannot be
+  expressed through the general IR.
+imports:
+- org.kgen.ir.AsmDialect
+- org.kgen.ir.Type
+sections:
+- comment: Intrinsic instructions
+  instructions:
+  - name: Intrinsic
+    description: Calls a named intrinsic function with the given arguments.
+    effects: CALL
+    fields:
+    - name: dest
+      type: InstructionRef?
+      role: resultNullable
+    - name: name
+      type: String
+      role: config
+    - name: args
+      type: List<Value>
+      role: operandList
+    - name: returnType
+      type: Type
+      role: config
+  - name: InlineAsm
+    description: Embeds raw assembly code within the IR instruction stream.
+    effects: CALL
+    fields:
+    - name: dest
+      type: InstructionRef?
+      role: resultNullable
+    - name: assembly
+      type: String
+      role: config
+    - name: constraints
+      type: String
+      role: config
+    - name: sideEffects
+      type: Boolean
+      default: 'true'
+      role: flag
+    - name: alignStack
+      type: Boolean
+      default: 'false'
+      role: flag
+    - name: dialect
+      type: AsmDialect
+      default: AsmDialect.ATT
+      role: config
+    - name: args
+      type: List<Value>
+      default: emptyList()
+      role: operandList
+    - name: returnType
+      type: Type
+      default: Type.Void
+      role: config

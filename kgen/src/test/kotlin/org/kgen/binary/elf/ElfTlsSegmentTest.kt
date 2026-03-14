@@ -284,7 +284,7 @@ class ElfTlsSegmentTest {
         ir.addGlobal("tls_ie", org.kgen.ir.Type.I32, org.kgen.ir.Constant.I32(99),
             threadLocal = org.kgen.ir.ThreadLocalMode.INITIAL_EXEC)
         ir.createFunction("_start", emptyList(), org.kgen.ir.Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val loaded = ir.load(org.kgen.ir.Type.I32,
             org.kgen.ir.GlobalRef("tls_ie", org.kgen.ir.Type.Pointer(org.kgen.ir.Type.I32)))
         ir.ret(loaded)
@@ -355,7 +355,7 @@ class ElfTlsSegmentTest {
         ir.addGlobal("tls_gd", org.kgen.ir.Type.I32, org.kgen.ir.Constant.I32(77),
             threadLocal = org.kgen.ir.ThreadLocalMode.GENERAL_DYNAMIC)
         ir.createFunction("_start", emptyList(), org.kgen.ir.Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val loaded = ir.load(org.kgen.ir.Type.I32,
             org.kgen.ir.GlobalRef("tls_gd", org.kgen.ir.Type.Pointer(org.kgen.ir.Type.I32)))
         ir.ret(loaded)

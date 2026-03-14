@@ -60,7 +60,7 @@ class Mem2Reg : ModulePass {
                 nextId++
                 val preds = cfg.predecessors[phiBlock] ?: emptySet()
                 val placeholder = undefFor(allocType)
-                val phi = Phi(phiRef, preds.map { placeholder to it })
+                val phi = Phi(phiRef, preds.map { placeholder to BlockRef(it) })
                 val insts = blockInsts[phiBlock]!!
                 insts.add(0, phi)
                 phiRefs[phiBlock] = phiRef
@@ -109,7 +109,7 @@ class Mem2Reg : ModulePass {
                             val currentVal = defStack.first()
                             succInsts[i] = phi.copy(
                                 incoming = phi.incoming.map { (v, pred) ->
-                                    if (pred == blockLabel) currentVal to pred else v to pred
+                                    if (pred.label == blockLabel) currentVal to pred else v to pred
                                 }
                             )
                         }
@@ -240,13 +240,13 @@ class Mem2Reg : ModulePass {
     }
 
     private fun terminatorTargets(inst: Instruction): List<String> = when (inst) {
-        is Br -> listOf(inst.target)
-        is CondBr -> listOf(inst.trueTarget, inst.falseTarget)
-        is Switch -> listOf(inst.defaultTarget) + inst.cases.map { it.second }
-        is IndirectBr -> inst.targets
-        is Invoke -> listOf(inst.normalDest, inst.unwindDest)
-        is CallBr -> listOf(inst.fallthrough) + inst.indirectDests
-        is CatchSwitch -> inst.handlers + listOfNotNull(inst.unwindDest)
+        is Br -> listOf(inst.target.label)
+        is CondBr -> listOf(inst.trueTarget.label, inst.falseTarget.label)
+        is Switch -> listOf(inst.defaultTarget.label) + inst.cases.map { it.second.label }
+        is IndirectBr -> inst.targets.map { it.label }
+        is Invoke -> listOf(inst.normalDest.label, inst.unwindDest.label)
+        is CallBr -> listOf(inst.fallthrough.label) + inst.indirectDests.map { it.label }
+        is CatchSwitch -> inst.handlers.map { it.label } + listOfNotNull(inst.unwindDest?.label)
         else -> emptyList()
     }
 
@@ -397,7 +397,7 @@ class Mem2Reg : ModulePass {
             is ZExt -> inst.copy(value = rw(inst.value))
             is SExt -> inst.copy(value = rw(inst.value))
             is IntTrunc -> inst.copy(value = rw(inst.value))
-            is Trunc -> inst.copy(operand = rw(inst.operand))
+            is FTrunc -> inst.copy(operand = rw(inst.operand))
             is Ret -> inst.copy(value = inst.value?.let { rw(it) })
             is Call -> inst.copy(args = inst.args.map { rw(it) })
             is Select -> inst.copy(condition = rw(inst.condition), trueValue = rw(inst.trueValue), falseValue = rw(inst.falseValue))

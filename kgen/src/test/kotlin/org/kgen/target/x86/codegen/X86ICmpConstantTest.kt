@@ -22,14 +22,14 @@ class X86ICmpConstantTest {
     fun `icmp with constant zero on rhs compiles`() {
         compileAndCheck { ir ->
             val params = ir.createFunction("fn", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cond = ir.icmp(ICmpPredicate.EQ, params[0], Constant.I32(0))
-            ir.condBr(cond, "then", "else")
+            ir.condBr(cond, BlockRef("then"), BlockRef("else"))
 
-            ir.positionAtEnd(ir.appendBlock("then"))
+            ir.appendBlock("then")
             ir.ret(Constant.I32(1))
 
-            ir.positionAtEnd(ir.appendBlock("else"))
+            ir.appendBlock("else")
             ir.ret(Constant.I32(0))
             ir.finalizeFunction()
         }
@@ -39,14 +39,14 @@ class X86ICmpConstantTest {
     fun `icmp with constant on lhs compiles`() {
         compileAndCheck { ir ->
             val params = ir.createFunction("fn", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cond = ir.icmp(ICmpPredicate.SGT, Constant.I32(5), params[0])
-            ir.condBr(cond, "then", "else")
+            ir.condBr(cond, BlockRef("then"), BlockRef("else"))
 
-            ir.positionAtEnd(ir.appendBlock("then"))
+            ir.appendBlock("then")
             ir.ret(Constant.I32(1))
 
-            ir.positionAtEnd(ir.appendBlock("else"))
+            ir.appendBlock("else")
             ir.ret(Constant.I32(0))
             ir.finalizeFunction()
         }
@@ -56,14 +56,14 @@ class X86ICmpConstantTest {
     fun `icmp with both constants compiles`() {
         compileAndCheck { ir ->
             ir.createFunction("fn", emptyList(), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cond = ir.icmp(ICmpPredicate.SLT, Constant.I32(3), Constant.I32(10))
-            ir.condBr(cond, "then", "else")
+            ir.condBr(cond, BlockRef("then"), BlockRef("else"))
 
-            ir.positionAtEnd(ir.appendBlock("then"))
+            ir.appendBlock("then")
             ir.ret(Constant.I32(1))
 
-            ir.positionAtEnd(ir.appendBlock("else"))
+            ir.appendBlock("else")
             ir.ret(Constant.I32(0))
             ir.finalizeFunction()
         }
@@ -73,7 +73,7 @@ class X86ICmpConstantTest {
     fun `icmp in non-fused context compiles`() {
         compileAndCheck { ir ->
             val params = ir.createFunction("fn", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cond = ir.icmp(ICmpPredicate.SGT, params[0], Constant.I32(0))
             val result = ir.select(cond, Constant.I32(1), Constant.I32(-1))
             ir.ret(result)
@@ -90,18 +90,18 @@ class X86ICmpConstantTest {
 
         // We need to build blocks manually with correct phi references.
         // First build body to get the iNext ref, then patch the phi.
-        ir.positionAtEnd(ir.appendBlock("entry"))
-        ir.br("body")
+        ir.appendBlock("entry")
+        ir.br(BlockRef("body"))
 
         // body: i = phi(0 from entry, iNext from body); if i >= 10 goto exit else loop
-        ir.positionAtEnd(ir.appendBlock("body"))
+        ir.appendBlock("body")
         // Placeholder phi — incoming from body will reference iNext which we create next
-        val iPhi = ir.phi(Type.I32, listOf(Constant.I32(0) to "entry"))
+        val iPhi = ir.phi(Type.I32, listOf(Constant.I32(0) to BlockRef("entry")))
         val iNext = ir.add(iPhi, Constant.I32(1))
         val cmp = ir.icmp(ICmpPredicate.SGE, iNext, Constant.I32(10))
-        ir.condBr(cmp, "exit", "body")
+        ir.condBr(cmp, BlockRef("exit"), BlockRef("body"))
 
-        ir.positionAtEnd(ir.appendBlock("exit"))
+        ir.appendBlock("exit")
         ir.ret(iNext)
         ir.finalizeFunction()
 
@@ -110,7 +110,7 @@ class X86ICmpConstantTest {
         val fn = module.functions[0]
         val bodyBlock = fn.blocks.first { it.label == "body" }
         val phiInst = bodyBlock.instructions[0] as Phi
-        val patched = phiInst.copy(incoming = phiInst.incoming + (iNext to "body"))
+        val patched = phiInst.copy(incoming = phiInst.incoming + (iNext to BlockRef("body")))
         val patchedBlock = bodyBlock.copy(instructions = listOf(patched) + bodyBlock.instructions.drop(1))
         val patchedFn = fn.copy(blocks = fn.blocks.map { if (it.label == "body") patchedBlock else it })
         val patchedModule = module.copy(functions = listOf(patchedFn))
@@ -124,14 +124,14 @@ class X86ICmpConstantTest {
     fun `i64 icmp with constant compiles`() {
         compileAndCheck { ir ->
             val params = ir.createFunction("fn", listOf(Param("x", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cond = ir.icmp(ICmpPredicate.NE, params[0], Constant.I64(0))
-            ir.condBr(cond, "then", "else")
+            ir.condBr(cond, BlockRef("then"), BlockRef("else"))
 
-            ir.positionAtEnd(ir.appendBlock("then"))
+            ir.appendBlock("then")
             ir.ret(params[0])
 
-            ir.positionAtEnd(ir.appendBlock("else"))
+            ir.appendBlock("else")
             ir.ret(Constant.I64(42))
             ir.finalizeFunction()
         }

@@ -61,7 +61,7 @@ class MixedModeIrTest {
     fun pinInstruction() {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", listOf(Param("obj", Type.Reference(Type.I64, false))), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val param = Parameter("obj", Type.Reference(Type.I64, false), 0)
         val pinned = ir.pin(param)
         assertEquals(Type.PinnedRef(Type.I64), pinned.type)
@@ -96,7 +96,7 @@ class MixedModeIrTest {
     fun interiorPtrInstruction() {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", listOf(Param("obj", Type.Reference(Type.I64, false))), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val param = Parameter("obj", Type.Reference(Type.I64, false), 0)
         val iptr = ir.interiorPtr(param, Constant.I32(2), Type.F64)
         assertEquals(Type.InteriorRef(Type.F64), iptr.type)
@@ -125,7 +125,7 @@ class MixedModeIrTest {
             Param("obj", Type.Reference(Type.I64, false)),
             Param("val", Type.Reference(Type.ClassRef("Other")))
         ), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val objParam = Parameter("obj", Type.Reference(Type.I64, false), 0)
         val valParam = Parameter("val", Type.Reference(Type.ClassRef("Other")), 1)
         ir.writeBarrier(objParam, Constant.I32(0), valParam)
@@ -149,7 +149,7 @@ class MixedModeIrTest {
     fun readBarrierBuilder() {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", listOf(Param("obj", Type.Reference(Type.I64, false))), Type.Reference(Type.I64, false))
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val param = Parameter("obj", Type.Reference(Type.I64, false), 0)
         val result = ir.readBarrier(param)
         assertEquals(Type.Reference(Type.I64, false), result.type)
@@ -183,7 +183,7 @@ class MixedModeIrTest {
         val ir = IrBuilder("test", Target.x86_64())
         ir.declareFunction("native_add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.createFunction("caller", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val fn = GlobalRef("native_add", Type.Function(listOf(Type.I32, Type.I32), Type.I32))
         val result = ir.managedCall(fn, listOf(Constant.I32(10), Constant.I32(20)), Type.I32, ManagedCallDirection.MANAGED_TO_NATIVE)
         assertNotNull(result)
@@ -200,7 +200,7 @@ class MixedModeIrTest {
         val ir = IrBuilder("test", Target.x86_64())
         ir.declareFunction("log", listOf(Param("msg", Type.I32)), Type.Void)
         ir.createFunction("caller", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val fn = GlobalRef("log", Type.Function(listOf(Type.I32), Type.Void))
         val result = ir.managedCall(fn, listOf(Constant.I32(0)), Type.Void, ManagedCallDirection.NATIVE_TO_MANAGED)
         assertNull(result)
@@ -237,7 +237,7 @@ class MixedModeIrTest {
     fun printPinInstruction() {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", listOf(Param("obj", Type.Reference(Type.I64, false))), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val param = Parameter("obj", Type.Reference(Type.I64, false), 0)
         ir.pin(param)
         ir.ret()
@@ -251,7 +251,7 @@ class MixedModeIrTest {
     fun printUnpinInstruction() {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", listOf(Param("obj", Type.Reference(Type.I64, false))), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val param = Parameter("obj", Type.Reference(Type.I64, false), 0)
         val pinned = ir.pin(param)
         ir.unpin(pinned)
@@ -267,7 +267,7 @@ class MixedModeIrTest {
         val ir = IrBuilder("test", Target.x86_64())
         ir.declareFunction("native_fn", listOf(Param("x", Type.I32)), Type.I32)
         ir.createFunction("caller", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val fn = GlobalRef("native_fn", Type.Function(listOf(Type.I32), Type.I32))
         val r = ir.managedCall(fn, listOf(Constant.I32(5)), Type.I32, ManagedCallDirection.MANAGED_TO_NATIVE)
         ir.ret(r)
@@ -282,7 +282,7 @@ class MixedModeIrTest {
     fun textRoundTripPinUnpin() {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", listOf(Param("obj", Type.Reference(Type.I64, false))), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val param = Parameter("obj", Type.Reference(Type.I64, false), 0)
         val pinned = ir.pin(param)
         ir.unpin(pinned)
@@ -303,7 +303,7 @@ class MixedModeIrTest {
     fun textRoundTripInteriorPtr() {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", listOf(Param("obj", Type.Reference(Type.I64, false))), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val param = Parameter("obj", Type.Reference(Type.I64, false), 0)
         ir.interiorPtr(param, Constant.I32(0), Type.F64)
         ir.ret()
@@ -324,7 +324,7 @@ class MixedModeIrTest {
             Param("obj", Type.Reference(Type.I64)),
             Param("val", Type.Reference(Type.I32))
         ), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val obj = Parameter("obj", Type.Reference(Type.I64), 0)
         val v = Parameter("val", Type.Reference(Type.I32), 1)
         ir.writeBarrier(obj, Constant.I32(1), v)
@@ -341,7 +341,7 @@ class MixedModeIrTest {
     fun textRoundTripReadBarrier() {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", listOf(Param("r", Type.Reference(Type.I64))), Type.Reference(Type.I64))
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val param = Parameter("r", Type.Reference(Type.I64), 0)
         val result = ir.readBarrier(param)
         ir.ret(result)
@@ -358,7 +358,7 @@ class MixedModeIrTest {
         val ir = IrBuilder("test", Target.x86_64())
         ir.declareFunction("native_add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.createFunction("caller", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val fn = GlobalRef("native_add", Type.Function(listOf(Type.I32, Type.I32), Type.I32))
         val r = ir.managedCall(fn, listOf(Constant.I32(3), Constant.I32(4)), Type.I32, ManagedCallDirection.MANAGED_TO_NATIVE)
         ir.ret(r)
@@ -378,7 +378,7 @@ class MixedModeIrTest {
         val ir = IrBuilder("test", Target.x86_64())
         ir.declareFunction("managed_fn", listOf(Param("x", Type.I32)), Type.Void)
         ir.createFunction("caller", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val fn = GlobalRef("managed_fn", Type.Function(listOf(Type.I32), Type.Void))
         ir.managedCall(fn, listOf(Constant.I32(1)), Type.Void, ManagedCallDirection.NATIVE_TO_MANAGED)
         ir.ret()
@@ -398,7 +398,7 @@ class MixedModeIrTest {
     fun binaryRoundTripPinUnpin() {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", listOf(Param("obj", Type.Reference(Type.I64, false))), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val param = Parameter("obj", Type.Reference(Type.I64, false), 0)
         val pinned = ir.pin(param)
         ir.unpin(pinned)
@@ -419,7 +419,7 @@ class MixedModeIrTest {
     fun binaryRoundTripInteriorPtr() {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", listOf(Param("obj", Type.Reference(Type.I64, false))), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val param = Parameter("obj", Type.Reference(Type.I64, false), 0)
         ir.interiorPtr(param, Constant.I32(0), Type.F64)
         ir.ret()
@@ -438,7 +438,7 @@ class MixedModeIrTest {
         val ir = IrBuilder("test", Target.x86_64())
         ir.declareFunction("native_fn", listOf(Param("x", Type.I32)), Type.I32)
         ir.createFunction("caller", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val fn = GlobalRef("native_fn", Type.Function(listOf(Type.I32), Type.I32))
         val r = ir.managedCall(fn, listOf(Constant.I32(5)), Type.I32, ManagedCallDirection.MANAGED_TO_NATIVE)
         ir.ret(r)
@@ -459,7 +459,7 @@ class MixedModeIrTest {
             Param("obj", Type.Reference(Type.I64)),
             Param("val", Type.Reference(Type.I32))
         ), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val obj = Parameter("obj", Type.Reference(Type.I64), 0)
         val v = Parameter("val", Type.Reference(Type.I32), 1)
         ir.writeBarrier(obj, Constant.I32(0), v)
@@ -476,7 +476,7 @@ class MixedModeIrTest {
     fun binaryRoundTripReadBarrier() {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", listOf(Param("r", Type.Reference(Type.I64))), Type.Reference(Type.I64))
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val param = Parameter("r", Type.Reference(Type.I64), 0)
         val result = ir.readBarrier(param)
         ir.ret(result)
@@ -493,7 +493,7 @@ class MixedModeIrTest {
         val interiorType = Type.InteriorRef(Type.F32)
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", listOf(Param("p", interiorType)), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret()
         ir.finalizeFunction()
         val module = ir.build()
@@ -509,7 +509,7 @@ class MixedModeIrTest {
         val pinnedType = Type.PinnedRef(Type.I64)
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", listOf(Param("p", pinnedType)), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret()
         ir.finalizeFunction()
         val module = ir.build()
@@ -528,7 +528,7 @@ class MixedModeIrTest {
         ir.createFunction("accessField", listOf(
             Param("obj", Type.Reference(Type.I64, false))
         ), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val param = Parameter("obj", Type.Reference(Type.I64, false), 0)
 
         // Pin the object
@@ -557,7 +557,7 @@ class MixedModeIrTest {
             Param("obj", Type.Reference(Type.I64, false)),
             Param("value", Type.Reference(Type.I32, false))
         ), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val obj = Parameter("obj", Type.Reference(Type.I64, false), 0)
         val value = Parameter("value", Type.Reference(Type.I32, false), 1)
 
@@ -582,7 +582,7 @@ class MixedModeIrTest {
         ir.declareFunction("managed_log", listOf(Param("result", Type.I32)), Type.Void)
 
         ir.createFunction("pipeline", listOf(Param("input", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val input = Parameter("input", Type.I32, 0)
 
         // Call into native code
@@ -612,7 +612,7 @@ class MixedModeIrTest {
         ir.createFunction("mixed_func", listOf(
             Param("obj", Type.Reference(Type.I64, false))
         ), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val param = Parameter("obj", Type.Reference(Type.I64, false), 0)
 
         val pinned = ir.pin(param)
@@ -650,7 +650,7 @@ class MixedModeIrTest {
         ir.createFunction("mixed_func", listOf(
             Param("obj", Type.Reference(Type.I64, false))
         ), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val param = Parameter("obj", Type.Reference(Type.I64, false), 0)
 
         val pinned = ir.pin(param)

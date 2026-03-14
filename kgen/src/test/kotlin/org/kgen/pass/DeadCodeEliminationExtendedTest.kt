@@ -21,7 +21,7 @@ class DeadCodeEliminationExtendedTest {
     fun `removes unused subtraction`() {
         val module = buildAndDCE {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             sub(Constant.I32(10), Constant.I32(3))
             ret(Constant.I32(0))
             finalizeFunction()
@@ -35,7 +35,7 @@ class DeadCodeEliminationExtendedTest {
     fun `removes unused division`() {
         val module = buildAndDCE {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             sdiv(Constant.I32(10), Constant.I32(2))
             ret(Constant.I32(0))
             finalizeFunction()
@@ -48,7 +48,7 @@ class DeadCodeEliminationExtendedTest {
     fun `removes unused bitwise operations`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             and(params[0], Constant.I32(0xFF))
             or(params[0], Constant.I32(0x10))
             xor(params[0], Constant.I32(0x01))
@@ -64,7 +64,7 @@ class DeadCodeEliminationExtendedTest {
     fun `removes unused shift operations`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             shl(params[0], Constant.I32(2))
             lshr(params[0], Constant.I32(1))
             ashr(params[0], Constant.I32(3))
@@ -79,7 +79,7 @@ class DeadCodeEliminationExtendedTest {
     fun `removes unused comparison`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             icmp(ICmpPredicate.EQ, params[0], Constant.I32(0))
             ret(params[0])
             finalizeFunction()
@@ -92,7 +92,7 @@ class DeadCodeEliminationExtendedTest {
     fun `removes unused zext`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             zext(params[0], Type.I64) // dead
             ret(Constant.I64(0))
             finalizeFunction()
@@ -105,7 +105,7 @@ class DeadCodeEliminationExtendedTest {
     fun `removes unused sext`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             sext(params[0], Type.I64) // dead
             ret(Constant.I64(0))
             finalizeFunction()
@@ -118,7 +118,7 @@ class DeadCodeEliminationExtendedTest {
     fun `removes unused trunc`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             trunc(params[0], Type.I32) // dead
             ret(Constant.I32(0))
             finalizeFunction()
@@ -131,7 +131,7 @@ class DeadCodeEliminationExtendedTest {
     fun `removes unused select`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("c", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             select(params[0], Constant.I32(1), Constant.I32(2)) // dead
             ret(Constant.I32(0))
             finalizeFunction()
@@ -144,7 +144,7 @@ class DeadCodeEliminationExtendedTest {
     fun `preserves used select`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("c", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val v = select(params[0], Constant.I32(1), Constant.I32(2))
             ret(v)
             finalizeFunction()
@@ -157,7 +157,7 @@ class DeadCodeEliminationExtendedTest {
     fun `removes unused neg`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             neg(params[0]) // dead
             ret(params[0])
             finalizeFunction()
@@ -170,7 +170,7 @@ class DeadCodeEliminationExtendedTest {
     fun `removes unused floating point operations`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("x", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             fadd(params[0], Constant.F64(1.0))
             fsub(params[0], Constant.F64(2.0))
             fmul(params[0], Constant.F64(3.0))
@@ -187,7 +187,7 @@ class DeadCodeEliminationExtendedTest {
     fun `preserves used floating point chain`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("x", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = fadd(params[0], Constant.F64(1.0))
             val b = fmul(a, Constant.F64(2.0))
             ret(b)
@@ -201,7 +201,7 @@ class DeadCodeEliminationExtendedTest {
     fun `removes unused load`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("ptr", Type.OpaquePointer)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             load(Type.I32, params[0]) // dead - result unused
             ret(Constant.I32(0))
             finalizeFunction()
@@ -214,7 +214,7 @@ class DeadCodeEliminationExtendedTest {
     fun `preserves store even when load of same pointer is dead`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("ptr", Type.OpaquePointer)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             store(Constant.I32(42), params[0])
             load(Type.I32, params[0]) // dead
             ret(Constant.I32(0))
@@ -229,14 +229,14 @@ class DeadCodeEliminationExtendedTest {
     fun `removes dead code across multiple blocks`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("c", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(params[0], "then", "else")
+            appendBlock("entry")
+            condBr(params[0], BlockRef("then"), BlockRef("else"))
 
-            positionAtEnd(appendBlock("then"))
+            appendBlock("then")
             add(Constant.I32(1), Constant.I32(2)) // dead
             ret(Constant.I32(10))
 
-            positionAtEnd(appendBlock("else"))
+            appendBlock("else")
             mul(Constant.I32(3), Constant.I32(4)) // dead
             ret(Constant.I32(20))
 
@@ -252,7 +252,7 @@ class DeadCodeEliminationExtendedTest {
     fun `preserves alloca instruction`() {
         val module = buildAndDCE {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(42), ptr)
             val v = load(Type.I32, ptr)
@@ -267,7 +267,7 @@ class DeadCodeEliminationExtendedTest {
     fun `removes deep chain of dead values`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], Constant.I32(1))
             val b = mul(a, Constant.I32(2))
             val c = sub(b, Constant.I32(3))
@@ -284,7 +284,7 @@ class DeadCodeEliminationExtendedTest {
     fun `preserves partially used chain`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], Constant.I32(1))
             val b = mul(a, Constant.I32(2)) // dead
             val c = sub(a, Constant.I32(3)) // used in ret
@@ -300,7 +300,7 @@ class DeadCodeEliminationExtendedTest {
         val module = buildAndDCE {
             declareFunction("sideEffect", emptyList(), Type.Void)
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             call("sideEffect", emptyList(), Type.Void)
             ret(Constant.I32(0))
             finalizeFunction()
@@ -314,15 +314,15 @@ class DeadCodeEliminationExtendedTest {
     fun `removes dead code in loop body`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            br("loop")
+            appendBlock("entry")
+            br(BlockRef("loop"))
 
-            positionAtEnd(appendBlock("loop"))
+            appendBlock("loop")
             add(Constant.I32(1), Constant.I32(2)) // dead
             mul(Constant.I32(3), Constant.I32(4)) // dead
-            condBr(params[0], "loop", "exit")
+            condBr(params[0], BlockRef("loop"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             ret(Constant.I32(0))
 
             finalizeFunction()
@@ -336,16 +336,16 @@ class DeadCodeEliminationExtendedTest {
     fun `preserves switch instruction`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            switch(params[0], "default", listOf(Constant.I32(0) to "case0", Constant.I32(1) to "case1"))
+            appendBlock("entry")
+            switch(params[0], BlockRef("default"), listOf(Constant.I32(0) to BlockRef("case0"), Constant.I32(1) to BlockRef("case1")))
 
-            positionAtEnd(appendBlock("case0"))
+            appendBlock("case0")
             ret(Constant.I32(10))
 
-            positionAtEnd(appendBlock("case1"))
+            appendBlock("case1")
             ret(Constant.I32(20))
 
-            positionAtEnd(appendBlock("default"))
+            appendBlock("default")
             ret(Constant.I32(30))
 
             finalizeFunction()
@@ -359,7 +359,7 @@ class DeadCodeEliminationExtendedTest {
         val module = buildAndDCE {
             val structType = Type.Struct(null, listOf(Type.I32, Type.I32))
             val params = createFunction("f", listOf(Param("p", Type.OpaquePointer)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             gep(structType, params[0], Constant.I32(0), Constant.I32(0)) // dead
             ret(Constant.I32(0))
             finalizeFunction()
@@ -372,13 +372,13 @@ class DeadCodeEliminationExtendedTest {
     fun `handles multiple functions independently`() {
         val module = buildAndDCE {
             createFunction("f1", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             add(Constant.I32(1), Constant.I32(2)) // dead
             ret(Constant.I32(0))
             finalizeFunction()
 
             createFunction("f2", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val v = add(Constant.I32(3), Constant.I32(4)) // used
             ret(v)
             finalizeFunction()
@@ -391,7 +391,7 @@ class DeadCodeEliminationExtendedTest {
     fun `removes unused conversion chain`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = zext(params[0], Type.I64)
             val b = trunc(a, Type.I32) // dead chain
             ret(params[0])
@@ -405,7 +405,7 @@ class DeadCodeEliminationExtendedTest {
     fun `preserves unreachable instruction`() {
         val module = buildAndDCE {
             createFunction("f", emptyList(), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             add(Constant.I32(1), Constant.I32(2)) // dead
             unreachable()
             finalizeFunction()
@@ -419,7 +419,7 @@ class DeadCodeEliminationExtendedTest {
     fun `removes unused i64 arithmetic`() {
         val module = buildAndDCE {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             add(Constant.I64(100L), Constant.I64(200L)) // dead
             mul(Constant.I64(300L), Constant.I64(400L)) // dead
             ret(Constant.I64(0L))
@@ -433,14 +433,14 @@ class DeadCodeEliminationExtendedTest {
     fun `preserves used icmp in condBr`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cmp = icmp(ICmpPredicate.EQ, params[0], Constant.I32(0))
-            condBr(cmp, "yes", "no")
+            condBr(cmp, BlockRef("yes"), BlockRef("no"))
 
-            positionAtEnd(appendBlock("yes"))
+            appendBlock("yes")
             ret(Constant.I32(1))
 
-            positionAtEnd(appendBlock("no"))
+            appendBlock("no")
             ret(Constant.I32(0))
 
             finalizeFunction()
@@ -454,7 +454,7 @@ class DeadCodeEliminationExtendedTest {
     fun `idempotent on already clean code`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val v = add(params[0], Constant.I32(1))
             ret(v)
             finalizeFunction()
@@ -468,17 +468,17 @@ class DeadCodeEliminationExtendedTest {
     fun `removes unused phi node`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("c", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(params[0], "a", "b")
+            appendBlock("entry")
+            condBr(params[0], BlockRef("a"), BlockRef("b"))
 
-            positionAtEnd(appendBlock("a"))
-            br("merge")
+            appendBlock("a")
+            br(BlockRef("merge"))
 
-            positionAtEnd(appendBlock("b"))
-            br("merge")
+            appendBlock("b")
+            br(BlockRef("merge"))
 
-            positionAtEnd(appendBlock("merge"))
-            phi(Type.I32, listOf(Constant.I32(1) to "a", Constant.I32(2) to "b")) // dead
+            appendBlock("merge")
+            phi(Type.I32, listOf(Constant.I32(1) to BlockRef("a"), Constant.I32(2) to BlockRef("b"))) // dead
             ret(Constant.I32(0))
             finalizeFunction()
         }

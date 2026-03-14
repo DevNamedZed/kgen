@@ -13,7 +13,7 @@ class IrTierRestrictionTest {
     fun nativeAllowsArithmetic() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val (x) = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val result = ir.add(x, x)
         ir.ret(result)
         ir.finalizeFunction()
@@ -25,7 +25,7 @@ class IrTierRestrictionTest {
     fun nativeAllowsMemory() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val ptr = ir.alloca(Type.I32)
         ir.store(Type.i32(42), ptr)
         ir.ret()
@@ -37,7 +37,7 @@ class IrTierRestrictionTest {
     fun nativeAllowsTerminators() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret()
         ir.finalizeFunction()
         assertNotNull(ir.build())
@@ -48,7 +48,7 @@ class IrTierRestrictionTest {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val func = ir.declareFunction("ext", listOf(Param("x", Type.I32)), Type.I32)
         ir.createFunction("f", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val result = ir.call(func, listOf(Type.i32(1)), Type.I32)
         ir.ret(result)
         ir.finalizeFunction()
@@ -59,7 +59,7 @@ class IrTierRestrictionTest {
     fun nativeAllowsDebug() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.debugLoc(1, 1, "main")
         ir.ret()
         ir.finalizeFunction()
@@ -70,7 +70,7 @@ class IrTierRestrictionTest {
     fun nativeAllowsComparison() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val (x) = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I1)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val cmp = ir.icmp(ICmpPredicate.EQ, x, Type.i32(0))
         ir.ret(cmp)
         ir.finalizeFunction()
@@ -81,7 +81,7 @@ class IrTierRestrictionTest {
     fun nativeAllowsConversion() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val (x) = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val ext = ir.sext(x, Type.I64)
         ir.ret(ext)
         ir.finalizeFunction()
@@ -92,7 +92,7 @@ class IrTierRestrictionTest {
     fun nativeAllowsBitwise() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val (x) = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val result = ir.and(x, Type.i32(0xFF))
         ir.ret(result)
         ir.finalizeFunction()
@@ -103,7 +103,7 @@ class IrTierRestrictionTest {
     fun nativeRejectsNewObject() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
             ir.newObject("Foo")
         }
@@ -114,7 +114,7 @@ class IrTierRestrictionTest {
     fun nativeRejectsVirtualCall() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val (x) = ir.createFunction("f", listOf(Param("obj", Type.ClassRef("Foo"))), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
             ir.virtualCall(x, "Foo", "bar", Type.Function(emptyList(), Type.Void), emptyList())
         }
@@ -125,7 +125,7 @@ class IrTierRestrictionTest {
     fun nativeRejectsGCAlloc() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
             ir.gcAlloc(Type.I32)
         }
@@ -136,7 +136,7 @@ class IrTierRestrictionTest {
     fun nativeRejectsGCSafepoint() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
             ir.gcSafepoint()
         }
@@ -147,7 +147,7 @@ class IrTierRestrictionTest {
     fun nativeRejectsWriteBarrier() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val (obj) = ir.createFunction("f", listOf(Param("obj", Type.I32)), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
             ir.writeBarrier(obj, Type.i32(0), obj)
         }
@@ -159,7 +159,7 @@ class IrTierRestrictionTest {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val refType = Type.Reference(Type.ClassRef("Foo"))
         val (obj) = ir.createFunction("f", listOf(Param("obj", refType)), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
             ir.pin(obj)
         }
@@ -172,7 +172,7 @@ class IrTierRestrictionTest {
     fun runtimeNativeAllowsArithmetic() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.RUNTIME_NATIVE)
         val (x) = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val result = ir.add(x, x)
         ir.ret(result)
         ir.finalizeFunction()
@@ -183,7 +183,7 @@ class IrTierRestrictionTest {
     fun runtimeNativeAllowsGCAlloc() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.RUNTIME_NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.gcAlloc(Type.I32)
         ir.ret()
         ir.finalizeFunction()
@@ -194,7 +194,7 @@ class IrTierRestrictionTest {
     fun runtimeNativeAllowsGCSafepoint() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.RUNTIME_NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.gcSafepoint()
         ir.ret()
         ir.finalizeFunction()
@@ -205,7 +205,7 @@ class IrTierRestrictionTest {
     fun runtimeNativeRejectsNewObject() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.RUNTIME_NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
             ir.newObject("Foo")
         }
@@ -216,7 +216,7 @@ class IrTierRestrictionTest {
     fun runtimeNativeRejectsGetField() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.RUNTIME_NATIVE)
         val (obj) = ir.createFunction("f", listOf(Param("obj", Type.ClassRef("Foo"))), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
             ir.getField(obj, "Foo", "x", Type.I32)
         }
@@ -227,7 +227,7 @@ class IrTierRestrictionTest {
     fun runtimeNativeRejectsArrayGet() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.RUNTIME_NATIVE)
         val (arr) = ir.createFunction("f", listOf(Param("arr", Type.Array(Type.I32, 10))), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
             ir.arrayGet(arr, Type.i32(0), Type.I32)
         }
@@ -239,7 +239,7 @@ class IrTierRestrictionTest {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.RUNTIME_NATIVE)
         val refType = Type.Reference(Type.ClassRef("Foo"))
         val (obj) = ir.createFunction("f", listOf(Param("obj", refType)), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
             ir.pin(obj)
         }
@@ -253,7 +253,7 @@ class IrTierRestrictionTest {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.MIXED)
         val refType = Type.Reference(Type.ClassRef("Foo"))
         val (obj) = ir.createFunction("f", listOf(Param("obj", refType)), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val pinned = ir.pin(obj)
         ir.unpin(pinned)
         ir.ret()
@@ -265,7 +265,7 @@ class IrTierRestrictionTest {
     fun mixedRejectsNewObject() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.MIXED)
         ir.createFunction("f", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
             ir.newObject("Foo")
         }
@@ -278,7 +278,7 @@ class IrTierRestrictionTest {
     fun nullConstraintsAllowEverything() {
         val ir = IrBuilder("test", Target.x86_64())
         val (x) = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.add(x, x)        // machine
         ir.gcSafepoint()     // runtime
         ir.newObject("Foo")  // object
@@ -298,7 +298,7 @@ class IrTierRestrictionTest {
     fun defaultConstraintsAllowObjectInstructions() {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.newObject("Foo")
         ir.ret()
         ir.finalizeFunction()
@@ -311,7 +311,7 @@ class IrTierRestrictionTest {
     fun nativeAllowsExceptionHandling() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.landingPad(Type.I32, emptyList())
         ir.ret()
         ir.finalizeFunction()
@@ -323,7 +323,7 @@ class IrTierRestrictionTest {
         // Throw is now OBJECT category, not EXCEPTION
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val (x) = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
             ir.throwException(x)
         }
@@ -336,7 +336,7 @@ class IrTierRestrictionTest {
     fun errorMessageIncludesCategoryName() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
             ir.newObject("Foo")
         }
@@ -351,7 +351,7 @@ class IrTierRestrictionTest {
     fun structuralInstructionsAlwaysAllowedWithNative() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.debugLoc(1, 1, "scope")
         ir.assume(Type.i1(true))
         ir.ret()
@@ -363,7 +363,7 @@ class IrTierRestrictionTest {
     fun ssaInstructionsAlwaysAllowedWithNative() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val (x) = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val sel = ir.select(Type.i1(true), x, Type.i32(0))
         ir.ret(sel)
         ir.finalizeFunction()
@@ -374,7 +374,7 @@ class IrTierRestrictionTest {
     fun intrinsicAlwaysAllowedWithNative() {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val (x) = ir.createFunction("f", listOf(Param("x", Type.F64)), Type.F64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val result = ir.intrinsic("llvm.sqrt.f64", listOf(x), Type.F64)
         ir.ret(result)
         ir.finalizeFunction()
@@ -447,7 +447,7 @@ class IrTierRestrictionTest {
         val ir = IrBuilder("test", Target.x86_64()) // null = all allowed
         ir.beginSubmodule("native_gc", IrConstraints.NATIVE)
         val (x) = ir.createFunction("gc_func", listOf(Param("x", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.add(x, x) // machine — allowed
         val ex = assertThrows(IllegalStateException::class.java) {
             ir.gcSafepoint() // runtime — rejected by NATIVE
@@ -460,11 +460,11 @@ class IrTierRestrictionTest {
         val ir = IrBuilder("test", Target.x86_64())
         ir.beginSubmodule("app", IrConstraints.ALL)
         ir.createFunction("f1", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret()
         ir.finalizeFunction()
         ir.createFunction("f2", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret()
         ir.finalizeFunction()
         ir.endSubmodule()
@@ -497,14 +497,14 @@ class IrTierRestrictionTest {
         val ir = IrBuilder("test", Target.x86_64())
         ir.beginSubmodule("gc", IrConstraints.RUNTIME_NATIVE)
         ir.createFunction("gc_alloc", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret()
         ir.finalizeFunction()
         ir.endSubmodule()
 
         ir.beginSubmodule("app", IrConstraints.ALL)
         ir.createFunction("main", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.newObject("Foo") // object — allowed in ALL
         ir.ret()
         ir.finalizeFunction()
@@ -543,7 +543,7 @@ class IrTierRestrictionTest {
         val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         // Outside any submodule — uses module-level NATIVE
         ir.createFunction("f", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
             ir.gcSafepoint() // RUNTIME — rejected by module-level NATIVE
         }

@@ -96,7 +96,6 @@ class StdlibProviderTest {
         val strIdx = cp.string("hello")
         // PrintStream.println(String)V
         val printlnRef = cp.methodRef("java/io/PrintStream", "println", "(Ljava/lang/String;)V")
-
         val nameIdx = cp.utf8("main")
         val descIdx = cp.utf8("()V")
 
@@ -145,7 +144,6 @@ class StdlibProviderTest {
         val codeIdx = cp.utf8("Code")
 
         val absRef = cp.methodRef("java/lang/Math", "abs", "(I)I")
-
         val nameIdx = cp.utf8("absVal")
         val descIdx = cp.utf8("(I)I")
 
@@ -192,7 +190,6 @@ class StdlibProviderTest {
         val codeIdx = cp.utf8("Code")
 
         val lengthRef = cp.methodRef("java/lang/String", "length", "()I")
-
         val nameIdx = cp.utf8("len")
         val descIdx = cp.utf8("(Ljava/lang/String;)I")
 

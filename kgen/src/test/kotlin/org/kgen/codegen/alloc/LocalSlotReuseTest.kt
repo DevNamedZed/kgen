@@ -22,7 +22,7 @@ class LocalSlotReuseTest {
         fun sameTypeReusesSlot() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = add(Constant.I64(1), Constant.I64(2))
                 val b = add(a, Constant.I64(3)) // a is dead after this
                 val c = add(Constant.I64(4), Constant.I64(5)) // c can reuse a's I64 slot
@@ -44,7 +44,7 @@ class LocalSlotReuseTest {
             // Build with directly constructed intervals to isolate type-based reuse behavior
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = add(Constant.I64(1), Constant.I64(2))
                 val b = add(a, Constant.I64(3)) // a dead here
                 // After a is dead, create an F64 value. It should NOT reuse a's I64 slot.
@@ -108,7 +108,7 @@ class LocalSlotReuseTest {
         fun chainOfComputationsReusesAggressively() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 // Each value is used exactly once then dies
                 val v1 = add(Constant.I64(1), Constant.I64(2))
                 val v2 = add(v1, Constant.I64(3))
@@ -131,7 +131,7 @@ class LocalSlotReuseTest {
         fun paramSlotsNeverReused() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val c = add(a, b)
@@ -158,24 +158,23 @@ class LocalSlotReuseTest {
         fun diamondCFGSlotAllocation() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("cond", Type.I1)), Type.I64)
-                val entry = appendBlock("entry")
-                val left = appendBlock("left")
-                val right = appendBlock("right")
-                val merge = appendBlock("merge")
+                val entry = createBlock("entry")
+                val left = createBlock("left")
+                val right = createBlock("right")
+                val merge = createBlock("merge")
 
-                positionAtEnd(entry)
-                condBr(Parameter("cond", Type.I1, 0), "left", "right")
-
-                positionAtEnd(left)
+                appendBlock(entry)
+                condBr(Parameter("cond", Type.I1, 0), BlockRef("left"), BlockRef("right"))
+                appendBlock(left)
                 val a = add(Constant.I64(1), Constant.I64(2))
-                br("merge")
+                br(BlockRef("merge"))
 
-                positionAtEnd(right)
+                appendBlock(right)
                 val b = add(Constant.I64(3), Constant.I64(4))
-                br("merge")
+                br(BlockRef("merge"))
 
-                positionAtEnd(merge)
-                val result = phi(Type.I64, listOf(a to "left", b to "right"))
+                appendBlock(merge)
+                val result = phi(Type.I64, listOf(a to BlockRef("left"), b to BlockRef("right")))
                 ret(result)
                 finalizeFunction()
             }

@@ -224,7 +224,7 @@ class X86DisassemblerTest {
     fun `round-trips codegen output`() {
         val ir = IrBuilder("test", Target.x86_64())
         val params = ir.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val sum = ir.add(params[0], params[1])
         ir.ret(sum)
         ir.finalizeFunction()
@@ -259,7 +259,7 @@ class X86DisassemblerTest {
         ir.declareFunction("puts", listOf(Param("s", Type.OpaquePointer)), Type.I32)
 
         ir.createFunction("main", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.call("puts", listOf(strRef), Type.I32)
         ir.ret(Constant.I32(0))
         ir.finalizeFunction()

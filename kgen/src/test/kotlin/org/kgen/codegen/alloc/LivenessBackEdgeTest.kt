@@ -23,27 +23,27 @@ class LivenessBackEdgeTest {
         fun phiIncomingFromBackEdgeExtendsLiveRange() {
             val fn = buildFunction {
                 createFunction("loop", listOf(Param("n", Type.I64)), Type.I64)
-                val entry = appendBlock("entry")
-                val header = appendBlock("header")
-                val body = appendBlock("body")
-                val exit = appendBlock("exit")
+                val entry = createBlock("entry")
+                val header = createBlock("header")
+                val body = createBlock("body")
+                val exit = createBlock("exit")
 
-                positionAtEnd(entry)
-                br("header")
+                appendBlock(entry)
+                br(BlockRef("header"))
 
-                positionAtEnd(header)
+                appendBlock(header)
                 val i = phi(Type.I64, listOf(
                     Constant.I64(0) to "entry",
                     InstructionRef("i_next", Type.I64) to "body",
                 ))
                 val cmp = icmp(ICmpPredicate.SLT, i, Parameter("n", Type.I64, 0))
-                condBr(cmp, "body", "exit")
+                condBr(cmp, BlockRef("body"), BlockRef("exit"))
 
-                positionAtEnd(body)
+                appendBlock(body)
                 val iNext = add(i, Constant.I64(1))
-                br("header")
+                br(BlockRef("header"))
 
-                positionAtEnd(exit)
+                appendBlock(exit)
                 ret(i)
                 finalizeFunction()
             }
@@ -61,28 +61,28 @@ class LivenessBackEdgeTest {
         fun phiDestExtendsToBackEdgePredecessor() {
             val fn = buildFunction {
                 createFunction("loop", listOf(Param("n", Type.I64)), Type.I64)
-                val entry = appendBlock("entry")
-                val header = appendBlock("header")
-                val body = appendBlock("body")
-                val exit = appendBlock("exit")
+                val entry = createBlock("entry")
+                val header = createBlock("header")
+                val body = createBlock("body")
+                val exit = createBlock("exit")
 
-                positionAtEnd(entry)
-                br("header")
+                appendBlock(entry)
+                br(BlockRef("header"))
 
-                positionAtEnd(header)
+                appendBlock(header)
                 val acc = phi(Type.I64, listOf(
                     Constant.I64(0) to "entry",
                     InstructionRef("acc_next", Type.I64) to "body",
                 ))
                 val n = Parameter("n", Type.I64, 0)
                 val cmp = icmp(ICmpPredicate.SLT, acc, n)
-                condBr(cmp, "body", "exit")
+                condBr(cmp, BlockRef("body"), BlockRef("exit"))
 
-                positionAtEnd(body)
+                appendBlock(body)
                 val accNext = add(acc, Constant.I64(1))
-                br("header")
+                br(BlockRef("header"))
 
-                positionAtEnd(exit)
+                appendBlock(exit)
                 ret(acc)
                 finalizeFunction()
             }
@@ -102,29 +102,29 @@ class LivenessBackEdgeTest {
         fun valueDefinedBeforeLoopUsedInsideExtendsToLoopEnd() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("limit", Type.I64)), Type.I64)
-                val entry = appendBlock("entry")
-                val header = appendBlock("header")
-                val body = appendBlock("body")
-                val exit = appendBlock("exit")
+                val entry = createBlock("entry")
+                val header = createBlock("header")
+                val body = createBlock("body")
+                val exit = createBlock("exit")
 
-                positionAtEnd(entry)
+                appendBlock(entry)
                 val limit = Parameter("limit", Type.I64, 0)
                 val initial = add(limit, Constant.I64(1))
-                br("header")
+                br(BlockRef("header"))
 
-                positionAtEnd(header)
+                appendBlock(header)
                 val counter = phi(Type.I64, listOf(
                     Constant.I64(0) to "entry",
                     InstructionRef("next", Type.I64) to "body",
                 ))
                 val cmp = icmp(ICmpPredicate.SLT, counter, initial)
-                condBr(cmp, "body", "exit")
+                condBr(cmp, BlockRef("body"), BlockRef("exit"))
 
-                positionAtEnd(body)
+                appendBlock(body)
                 val next = add(counter, Constant.I64(1))
-                br("header")
+                br(BlockRef("header"))
 
-                positionAtEnd(exit)
+                appendBlock(exit)
                 ret(counter)
                 finalizeFunction()
             }
@@ -140,28 +140,28 @@ class LivenessBackEdgeTest {
         fun paramUsedInLoopHeaderExtendsRange() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("n", Type.I64)), Type.I64)
-                val entry = appendBlock("entry")
-                val header = appendBlock("header")
-                val body = appendBlock("body")
-                val exit = appendBlock("exit")
+                val entry = createBlock("entry")
+                val header = createBlock("header")
+                val body = createBlock("body")
+                val exit = createBlock("exit")
 
-                positionAtEnd(entry)
-                br("header")
+                appendBlock(entry)
+                br(BlockRef("header"))
 
-                positionAtEnd(header)
+                appendBlock(header)
                 val i = phi(Type.I64, listOf(
                     Constant.I64(0) to "entry",
                     InstructionRef("i_inc", Type.I64) to "body",
                 ))
                 val n = Parameter("n", Type.I64, 0)
                 val cmp = icmp(ICmpPredicate.SLT, i, n)
-                condBr(cmp, "body", "exit")
+                condBr(cmp, BlockRef("body"), BlockRef("exit"))
 
-                positionAtEnd(body)
+                appendBlock(body)
                 val iInc = add(i, Constant.I64(1))
-                br("header")
+                br(BlockRef("header"))
 
-                positionAtEnd(exit)
+                appendBlock(exit)
                 ret(i)
                 finalizeFunction()
             }
@@ -180,42 +180,42 @@ class LivenessBackEdgeTest {
         fun outerVariableLiveThroughInnerLoop() {
             val fn = buildFunction {
                 createFunction("nested", listOf(Param("n", Type.I64)), Type.I64)
-                val entry = appendBlock("entry")
-                val outerHeader = appendBlock("outer_header")
-                val innerHeader = appendBlock("inner_header")
-                val innerBody = appendBlock("inner_body")
-                val outerLatch = appendBlock("outer_latch")
-                val exit = appendBlock("exit")
+                val entry = createBlock("entry")
+                val outerHeader = createBlock("outer_header")
+                val innerHeader = createBlock("inner_header")
+                val innerBody = createBlock("inner_body")
+                val outerLatch = createBlock("outer_latch")
+                val exit = createBlock("exit")
 
-                positionAtEnd(entry)
-                br("outer_header")
+                appendBlock(entry)
+                br(BlockRef("outer_header"))
 
-                positionAtEnd(outerHeader)
+                appendBlock(outerHeader)
                 val i = phi(Type.I64, listOf(
                     Constant.I64(0) to "entry",
                     InstructionRef("i_next", Type.I64) to "outer_latch",
                 ))
                 val n = Parameter("n", Type.I64, 0)
                 val outerCmp = icmp(ICmpPredicate.SLT, i, n)
-                condBr(outerCmp, "inner_header", "exit")
+                condBr(outerCmp, BlockRef("inner_header"), BlockRef("exit"))
 
-                positionAtEnd(innerHeader)
+                appendBlock(innerHeader)
                 val j = phi(Type.I64, listOf(
                     Constant.I64(0) to "outer_header",
                     InstructionRef("j_next", Type.I64) to "inner_body",
                 ))
                 val innerCmp = icmp(ICmpPredicate.SLT, j, n)
-                condBr(innerCmp, "inner_body", "outer_latch")
+                condBr(innerCmp, BlockRef("inner_body"), BlockRef("outer_latch"))
 
-                positionAtEnd(innerBody)
+                appendBlock(innerBody)
                 val jNext = add(j, Constant.I64(1))
-                br("inner_header")
+                br(BlockRef("inner_header"))
 
-                positionAtEnd(outerLatch)
+                appendBlock(outerLatch)
                 val iNext = add(i, Constant.I64(1))
-                br("outer_header")
+                br(BlockRef("outer_header"))
 
-                positionAtEnd(exit)
+                appendBlock(exit)
                 ret(i)
                 finalizeFunction()
             }

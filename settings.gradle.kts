@@ -13,3 +13,6 @@ include("integration")
 
 // Example language (JIT + mixed-mode demo)
 include("examples:lang")
+
+// API examples (IR builder, assembler, binary, Java-to-native)
+include("examples:api")

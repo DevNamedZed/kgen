@@ -2,7 +2,6 @@ package org.kgen.binary.dwarf
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
-import org.kgen.ir.instructions.*
 
 class EhFrameWriterTest {
 

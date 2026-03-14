@@ -28,7 +28,7 @@ class ModuleEndToEndTest {
 
     private fun addFunction(): ByteArray = buildElfBytes {
         val params = createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        positionAtEnd(appendBlock("entry"))
+        appendBlock("entry")
         val sum = add(params[0], params[1])
         ret(sum)
         finalizeFunction()
@@ -66,13 +66,13 @@ class ModuleEndToEndTest {
     fun multipleFunctions() {
         val bytes = buildElfBytes {
             val params = createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val sum = add(params[0], params[1])
             ret(sum)
             finalizeFunction()
 
             val params2 = createFunction("sub", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val diff = sub(params2[0], params2[1])
             ret(diff)
             finalizeFunction()
@@ -87,7 +87,7 @@ class ModuleEndToEndTest {
     fun moduleHasTextSection() {
         val bytes = buildElfBytes {
             createFunction("f", emptyList(), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret()
             finalizeFunction()
         }
@@ -101,7 +101,7 @@ class ModuleEndToEndTest {
     fun moduleFromObjectFile() {
         val obj = buildElfObjectFile {
             val params = createFunction("mul", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val prod = mul(params[0], params[1])
             ret(prod)
             finalizeFunction()
@@ -115,7 +115,7 @@ class ModuleEndToEndTest {
     fun functionWithSignature() {
         val bytes = buildElfBytes {
             val params = createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val sum = add(params[0], params[1])
             ret(sum)
             finalizeFunction()
@@ -138,7 +138,7 @@ class ModuleEndToEndTest {
     fun symbolBackReference() {
         val bytes = buildElfBytes {
             createFunction("test_func", emptyList(), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret()
             finalizeFunction()
         }
@@ -160,7 +160,7 @@ class ModuleEndToEndTest {
     fun moduleNotLoaded() {
         val bytes = buildElfBytes {
             createFunction("f", emptyList(), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret()
             finalizeFunction()
         }

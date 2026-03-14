@@ -1,0 +1,228 @@
+name: Conversion
+interfaceName: ConversionInstruction
+enumValue: CONVERSION
+description: |-
+  Type conversion and casting instructions.
+
+  Conversion instructions transform a value from one type to another.
+imports:
+- org.kgen.ir.Type
+sections:
+- comment: Integer width conversions
+  instructions:
+  - name: IntTrunc
+    description: 'Integer truncation: narrows an integer to a smaller bit width.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+    - name: toType
+      type: Type
+      role: config
+    emit:
+      name: trunc
+      resultType: toType
+  - name: ZExt
+    description: 'Zero extension: widens an integer by padding with zeros.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+    - name: toType
+      type: Type
+      role: config
+    emit:
+      name: zext
+      resultType: toType
+  - name: SExt
+    description: 'Sign extension: widens an integer by replicating the sign bit.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+    - name: toType
+      type: Type
+      role: config
+    emit:
+      name: sext
+      resultType: toType
+- comment: Floating-point precision conversions
+  instructions:
+  - name: FPTrunc
+    description: 'Floating-point truncation: narrows to a smaller precision type.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+    - name: toType
+      type: Type
+      role: config
+    emit:
+      name: fptrunc
+      resultType: toType
+  - name: FPExt
+    description: 'Floating-point extension: widens to a larger precision type.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+    - name: toType
+      type: Type
+      role: config
+    emit:
+      name: fpext
+      resultType: toType
+- comment: Float/integer conversions
+  instructions:
+  - name: FPToUI
+    description: Floating-point to unsigned integer.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+    - name: toType
+      type: Type
+      role: config
+    emit:
+      name: fptoui
+      resultType: toType
+  - name: FPToSI
+    description: Floating-point to signed integer.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+    - name: toType
+      type: Type
+      role: config
+    emit:
+      name: fptosi
+      resultType: toType
+  - name: UIToFP
+    description: Unsigned integer to floating-point.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+    - name: toType
+      type: Type
+      role: config
+    emit:
+      name: uitofp
+      resultType: toType
+  - name: SIToFP
+    description: Signed integer to floating-point.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+    - name: toType
+      type: Type
+      role: config
+    emit:
+      name: sitofp
+      resultType: toType
+- comment: Pointer/integer casts
+  instructions:
+  - name: PtrToInt
+    description: 'Pointer to integer: reinterprets a pointer as an integer.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+    - name: toType
+      type: Type
+      role: config
+    emit:
+      name: ptrtoint
+      resultType: toType
+  - name: IntToPtr
+    description: 'Integer to pointer: reinterprets an integer as a pointer.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+    - name: toType
+      type: Type
+      role: config
+    emit:
+      name: inttoptr
+      resultType: toType
+- comment: Reinterpretation casts
+  instructions:
+  - name: BitCast
+    description: 'Bitcast: reinterprets the bits of a value as a different type.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+    - name: toType
+      type: Type
+      role: config
+    emit:
+      name: bitcast
+      resultType: toType
+  - name: AddrSpaceCast
+    description: 'Address space cast: converts a pointer between address spaces.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+    - name: toType
+      type: Type
+      role: config
+    emit:
+      name: addrspacecast
+      resultType: toType

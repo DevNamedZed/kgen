@@ -330,7 +330,7 @@ class IrTextExtendedTest {
         val mod = module("sw") {
             function("f", listOf(Param("x", Type.I32)), Type.I32) {
                 block("entry") {
-                    switch(param(0), "default", listOf(i32(0) to "c0", i32(1) to "c1"))
+                    switch(param(0), BlockRef("default"), listOf(i32(0) to BlockRef("c0"), i32(1) to BlockRef("c1")))
                 }
                 block("c0") { ret(i32(100)) }
                 block("c1") { ret(i32(200)) }
@@ -408,7 +408,7 @@ class IrTextExtendedTest {
             function("f", listOf(Param("x", Type.I32)), Type.I32) {
                 block("entry") {
                     val cmp = icmp(ICmpPredicate.SGT, param(0), i32(0))
-                    condBr(cmp, "pos", "neg")
+                    condBr(cmp, BlockRef("pos"), BlockRef("neg"))
                 }
                 block("pos") { ret(param(0)) }
                 block("neg") {
@@ -427,12 +427,12 @@ class IrTextExtendedTest {
             function("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32) {
                 block("entry") {
                     val cmp = icmp(ICmpPredicate.SGT, param(0), param(1))
-                    condBr(cmp, "then", "else")
+                    condBr(cmp, BlockRef("then"), BlockRef("else"))
                 }
-                block("then") { br("merge") }
-                block("else") { br("merge") }
+                block("then") { br(BlockRef("merge")) }
+                block("else") { br(BlockRef("merge")) }
                 block("merge") {
-                    val result = phi(Type.I32, listOf(param(0) to "then", param(1) to "else"))
+                    val result = phi(Type.I32, listOf(param(0) to BlockRef("then"), param(1) to BlockRef("else")))
                     ret(result)
                 }
             }

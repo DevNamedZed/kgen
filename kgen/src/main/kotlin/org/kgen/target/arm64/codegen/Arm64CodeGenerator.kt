@@ -343,7 +343,7 @@ class Arm64CodeGenerator : CodeGenerator {
                 for (inst in block.instructions) {
                     if (inst !is Phi) break
                     for ((value, predLabel) in inst.incoming) {
-                        map.getOrPut(predLabel to block.label) { mutableListOf() }
+                        map.getOrPut(predLabel.label to block.label) { mutableListOf() }
                             .add(inst.dest to value)
                     }
                 }
@@ -597,7 +597,7 @@ class Arm64CodeGenerator : CodeGenerator {
                 is Select -> emitSelect(i)
                 is SExt -> emitSExt(i)
                 is ZExt -> emitZExt(i)
-                is Trunc -> emitTrunc(i)
+                is FTrunc -> emitFTrunc(i)
                 is Load -> emitLoad(i)
                 is Store -> emitStore(i)
                 is Alloca -> {}
@@ -1430,9 +1430,9 @@ class Arm64CodeGenerator : CodeGenerator {
                     val caseReg = getOrLoad32(caseVal)
                     asm.cmp(valReg as Arm64Register32, caseReg as Arm64Register32)
                 }
-                asm.bCond(Arm64Condition.EQ, "${fn.name}.$target")
+                asm.bCond(Arm64Condition.EQ, "${fn.name}.${target.label}")
             }
-            asm.b("${fn.name}.${inst.defaultTarget}")
+            asm.b("${fn.name}.${inst.defaultTarget.label}")
         }
 
         private fun findValueType(name: String): Type? {
@@ -1522,8 +1522,8 @@ class Arm64CodeGenerator : CodeGenerator {
                 asm.cmp(getOrLoad32(cmpLhs), getOrLoad32(cmpRhs))
             }
             val cond = mapIrCond(cmp.predicate)
-            val trueTarget = br.trueTarget
-            val falseTarget = br.falseTarget
+            val trueTarget = br.trueTarget.label
+            val falseTarget = br.falseTarget.label
             emitPhiMoves(trueTarget)
             emitPhiMoves(falseTarget)
 
@@ -1539,8 +1539,8 @@ class Arm64CodeGenerator : CodeGenerator {
 
         private fun emitCondBr(inst: CondBr, nextBlockLabel: String?) {
             val condition = inst.condition
-            val trueTarget = inst.trueTarget
-            val falseTarget = inst.falseTarget
+            val trueTarget = inst.trueTarget.label
+            val falseTarget = inst.falseTarget.label
             val condReg = getOrLoad32(condition)
             asm.cmp(condReg, Arm64Register.WZR)
             emitPhiMoves(trueTarget)
@@ -1580,7 +1580,7 @@ class Arm64CodeGenerator : CodeGenerator {
         }
 
         private fun emitBr(inst: Br) {
-            val target = inst.target
+            val target = inst.target.label
             emitPhiMoves(target)
             asm.b("${fn.name}.$target")
         }
@@ -1685,11 +1685,11 @@ class Arm64CodeGenerator : CodeGenerator {
             asm.bl(funcName)
             val callEnd = asm.size() - funcStartOffset
 
-            val actionIndex = resolveActionIndex(inst.unwindDest)
+            val actionIndex = resolveActionIndex(inst.unwindDest.label)
             ehCallSites.add(EhCallSite(
                 callOffset = callStart,
                 callLength = callEnd - callStart,
-                landingPadLabel = "${fn.name}.lp.${inst.unwindDest}",
+                landingPadLabel = "${fn.name}.lp.${inst.unwindDest.label}",
                 actionIndex = actionIndex,
             ))
 
@@ -1718,8 +1718,8 @@ class Arm64CodeGenerator : CodeGenerator {
             }
 
             // Branch to normal destination
-            emitPhiMoves(inst.normalDest)
-            asm.b("${fn.name}.${inst.normalDest}")
+            emitPhiMoves(inst.normalDest.label)
+            asm.b("${fn.name}.${inst.normalDest.label}")
         }
 
         private fun emitCallBr(inst: CallBr) {
@@ -1779,8 +1779,8 @@ class Arm64CodeGenerator : CodeGenerator {
             }
 
             // Fall through to fallthrough block
-            emitPhiMoves(inst.fallthrough)
-            asm.b("${fn.name}.${inst.fallthrough}")
+            emitPhiMoves(inst.fallthrough.label)
+            asm.b("${fn.name}.${inst.fallthrough.label}")
         }
 
         private fun emitLandingPad(inst: LandingPad) {
@@ -1896,7 +1896,7 @@ class Arm64CodeGenerator : CodeGenerator {
             storeTo64(dest.name, destReg)
         }
 
-        private fun emitTrunc(inst: Trunc) {
+        private fun emitFTrunc(inst: FTrunc) {
             val src = inst.operand
             val dest = inst.dest
             val srcReg = getOrLoad64(src)

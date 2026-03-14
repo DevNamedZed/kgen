@@ -12,12 +12,12 @@ class ProfileGuidedOptimizationTest {
     private fun buildSimpleModule(): Module {
         val builder = IrBuilder("test", Target.x86_64())
         val params = builder.createFunction("hotFunc", listOf(Param("x", Type.I32)), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret(params[0])
         builder.finalizeFunction()
 
         val params2 = builder.createFunction("coldFunc", listOf(Param("x", Type.I32)), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret(params2[0])
         builder.finalizeFunction()
 
@@ -27,14 +27,14 @@ class ProfileGuidedOptimizationTest {
     private fun buildModuleWithBranch(): Module {
         val builder = IrBuilder("test", Target.x86_64())
         val params = builder.createFunction("branchFunc", listOf(Param("x", Type.I32)), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val cmp = builder.icmp(ICmpPredicate.SGT, params[0], Constant.I32(0))
-        builder.condBr(cmp, "then", "else")
+        builder.condBr(cmp, BlockRef("then"), BlockRef("else"))
 
-        builder.positionAtEnd(builder.appendBlock("then"))
+        builder.appendBlock("then")
         builder.ret(Constant.I32(1))
 
-        builder.positionAtEnd(builder.appendBlock("else"))
+        builder.appendBlock("else")
         builder.ret(Constant.I32(0))
 
         builder.finalizeFunction()

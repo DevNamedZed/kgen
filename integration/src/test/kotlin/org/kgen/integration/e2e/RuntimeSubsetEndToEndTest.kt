@@ -160,7 +160,6 @@ class RuntimeSubsetEndToEndTest {
                 code.lload(0)
                 code.lload(7)
                 code.invokestatic("org/kgen/runtime/Kgen", "storeLong", "(JJ)V")
-
                 // return cursor
                 code.lload(5)
                 code.lreturn()
@@ -278,7 +277,6 @@ class RuntimeSubsetEndToEndTest {
                 code.iconst(1)
                 code.ior()
                 code.invokestatic("org/kgen/runtime/Kgen", "storeInt", "(JI)V")
-
                 code.return_()
 
                 code.label("bail")

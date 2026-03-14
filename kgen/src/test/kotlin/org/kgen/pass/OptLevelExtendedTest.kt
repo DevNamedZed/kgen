@@ -20,7 +20,7 @@ class OptLevelExtendedTest {
         val pipeline = OptLevel.O0.pipeline()
         val module = buildModule {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I32(42))
             finalizeFunction()
         }
@@ -33,7 +33,7 @@ class OptLevelExtendedTest {
     fun o1FoldsAddConstants() {
         val module = buildModule {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(Constant.I32(3), Constant.I32(7))
             ret(a)
             finalizeFunction()
@@ -47,7 +47,7 @@ class OptLevelExtendedTest {
     fun o1FoldsSubConstants() {
         val module = buildModule {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = sub(Constant.I32(20), Constant.I32(5))
             ret(a)
             finalizeFunction()
@@ -61,7 +61,7 @@ class OptLevelExtendedTest {
     fun o1FoldsMulConstants() {
         val module = buildModule {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = mul(Constant.I32(6), Constant.I32(7))
             ret(a)
             finalizeFunction()
@@ -75,7 +75,7 @@ class OptLevelExtendedTest {
     fun o1EliminatesDeadCode() {
         val module = buildModule {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             add(Constant.I32(1), Constant.I32(2))  // dead
             mul(Constant.I32(3), Constant.I32(4))  // dead
             ret(Constant.I32(99))
@@ -90,7 +90,7 @@ class OptLevelExtendedTest {
     fun o1CombinesAddZero() {
         val module = buildModule {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], Constant.I32(0))
             ret(a)
             finalizeFunction()
@@ -104,7 +104,7 @@ class OptLevelExtendedTest {
     fun o1CombinesMulOne() {
         val module = buildModule {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = mul(params[0], Constant.I32(1))
             ret(a)
             finalizeFunction()
@@ -118,7 +118,7 @@ class OptLevelExtendedTest {
     fun o1CombinesMulZero() {
         val module = buildModule {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = mul(params[0], Constant.I32(0))
             ret(a)
             finalizeFunction()
@@ -132,7 +132,7 @@ class OptLevelExtendedTest {
     fun o2FoldsChainedArithmetic() {
         val module = buildModule {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(Constant.I32(2), Constant.I32(3))   // 5
             val b = mul(a, Constant.I32(4))                  // 20
             val c = add(b, Constant.I32(2))                  // 22
@@ -148,7 +148,7 @@ class OptLevelExtendedTest {
     fun o0PreservesRedundantArithmetic() {
         val module = buildModule {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], Constant.I32(0))
             val b = mul(a, Constant.I32(1))
             ret(b)
@@ -164,7 +164,7 @@ class OptLevelExtendedTest {
         val module = buildModule {
             declareFunction("side_effect", listOf(Param("x", Type.I32)), Type.Void)
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             call("side_effect", listOf(params[0]), Type.Void)
             ret(params[0])
             finalizeFunction()
@@ -178,7 +178,7 @@ class OptLevelExtendedTest {
     fun o1FoldsI64Constants() {
         val module = buildModule {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(Constant.I64(100_000), Constant.I64(200_000))
             ret(a)
             finalizeFunction()
@@ -192,7 +192,7 @@ class OptLevelExtendedTest {
     fun o1SubSameValueIsZero() {
         val module = buildModule {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = sub(params[0], params[0])
             ret(a)
             finalizeFunction()
@@ -207,12 +207,12 @@ class OptLevelExtendedTest {
     fun o2PreservesFunctionCount() {
         val module = buildModule {
             val p1 = createFunction("f1", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(p1[0])
             finalizeFunction()
 
             val p2 = createFunction("f2", listOf(Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(p2[0], Constant.I32(0)))
             finalizeFunction()
         }
@@ -224,7 +224,7 @@ class OptLevelExtendedTest {
     fun o1HandlesEmptyFunction() {
         val module = buildModule {
             createFunction("f", emptyList(), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(null)
             finalizeFunction()
         }
@@ -237,7 +237,7 @@ class OptLevelExtendedTest {
     fun o2FoldsNestedExpressions() {
         val module = buildModule {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(Constant.I32(1), Constant.I32(1))  // 2
             val b = add(Constant.I32(2), Constant.I32(2))  // 4
             val c = mul(a, b)                                // 8
@@ -253,7 +253,7 @@ class OptLevelExtendedTest {
     fun o1AndRemovesDeadBranches() {
         val module = buildModule {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val dead1 = add(Constant.I32(1), Constant.I32(2))
             val dead2 = sub(Constant.I32(10), Constant.I32(5))
             val dead3 = mul(dead1, dead2)
@@ -269,7 +269,7 @@ class OptLevelExtendedTest {
     fun o1XorSameIsZero() {
         val module = buildModule {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = xor(params[0], params[0])
             ret(a)
             finalizeFunction()
@@ -284,7 +284,7 @@ class OptLevelExtendedTest {
     fun pipelineIsIdempotent() {
         val module = buildModule {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(params[0])
             finalizeFunction()
         }
@@ -298,7 +298,7 @@ class OptLevelExtendedTest {
     fun o1FoldsAndConstants() {
         val module = buildModule {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = and(Constant.I32(0xFF), Constant.I32(0x0F))
             ret(a)
             finalizeFunction()
@@ -312,7 +312,7 @@ class OptLevelExtendedTest {
     fun o1FoldsOrConstants() {
         val module = buildModule {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = or(Constant.I32(0xF0), Constant.I32(0x0F))
             ret(a)
             finalizeFunction()
@@ -326,7 +326,7 @@ class OptLevelExtendedTest {
     fun o1FoldsShlConstant() {
         val module = buildModule {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = shl(Constant.I32(1), Constant.I32(4))
             ret(a)
             finalizeFunction()
@@ -340,13 +340,13 @@ class OptLevelExtendedTest {
     fun o2MultipleFunctionsOptimized() {
         val module = buildModule {
             createFunction("f1", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val dead = add(Constant.I32(1), Constant.I32(2))
             ret(Constant.I32(0))
             finalizeFunction()
 
             createFunction("f2", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(Constant.I32(3), Constant.I32(4))
             ret(a)
             finalizeFunction()

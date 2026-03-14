@@ -407,7 +407,7 @@ class X86CodeGenerator : CodeGenerator {
                 for (inst in block.instructions) {
                     if (inst !is Phi) break // phis must be at start of block
                     for ((value, predLabel) in inst.incoming) {
-                        map.getOrPut(predLabel to block.label) { mutableListOf() }
+                        map.getOrPut(predLabel.label to block.label) { mutableListOf() }
                             .add(inst.dest to value)
                     }
                 }
@@ -1019,7 +1019,7 @@ class X86CodeGenerator : CodeGenerator {
                 is Not -> emitNot(inst)
                 is ZExt -> emitZExt(inst)
                 is SExt -> emitSExt(inst)
-                is Trunc -> emitTrunc(inst.dest, inst.operand, inst.dest.type)
+                is FTrunc -> emitTrunc(inst.dest, inst.operand, inst.dest.type)
                 is IntTrunc -> emitTrunc(inst.dest, inst.value, inst.toType)
                 is PtrToInt -> emitCopy64(inst.dest, inst.value)
                 is IntToPtr -> emitCopy64(inst.dest, inst.value)
@@ -1441,12 +1441,12 @@ class X86CodeGenerator : CodeGenerator {
             val callEnd = asm.position() - funcStartOffset
 
             // Determine action index from the landing pad's catch clauses
-            val actionIndex = resolveActionIndex(inst.unwindDest)
+            val actionIndex = resolveActionIndex(inst.unwindDest.label)
 
             ehCallSites.add(EhCallSite(
                 callOffset = callStart,
                 callLength = callEnd - callStart,
-                landingPadLabel = "${fn.name}.lp.${inst.unwindDest}",
+                landingPadLabel = "${fn.name}.lp.${inst.unwindDest.label}",
                 actionIndex = actionIndex,
             ))
 
@@ -1474,8 +1474,8 @@ class X86CodeGenerator : CodeGenerator {
             }
 
             // Normal path: branch to normalDest
-            emitPhiCopies(inst.normalDest)
-            asm.jmpLabel("${fn.name}.${inst.normalDest}")
+            emitPhiCopies(inst.normalDest.label)
+            asm.jmpLabel("${fn.name}.${inst.normalDest.label}")
         }
 
         private fun emitCallBr(inst: CallBr) {
@@ -1549,8 +1549,8 @@ class X86CodeGenerator : CodeGenerator {
             }
 
             // Fall through to fallthrough block
-            emitPhiCopies(inst.fallthrough)
-            asm.jmpLabel("${fn.name}.${inst.fallthrough}")
+            emitPhiCopies(inst.fallthrough.label)
+            asm.jmpLabel("${fn.name}.${inst.fallthrough.label}")
         }
 
         private fun emitLandingPad(inst: LandingPad) {
@@ -3912,15 +3912,15 @@ class X86CodeGenerator : CodeGenerator {
                         }
                     }
                 }
-                asm.jccLabel(0x04, "${fn.name}.$target") // JE
+                asm.jccLabel(0x04, "${fn.name}.${target.label}") // JE
             }
             // Default target
-            asm.jmpLabel("${fn.name}.${inst.defaultTarget}")
+            asm.jmpLabel("${fn.name}.${inst.defaultTarget.label}")
         }
 
         private fun emitBr(inst: Br) {
-            emitPhiCopies(inst.target)
-            asm.jmpLabel("${fn.name}.${inst.target}")
+            emitPhiCopies(inst.target.label)
+            asm.jmpLabel("${fn.name}.${inst.target.label}")
         }
 
         private fun emitIndirectBr(inst: IndirectBr) {
@@ -3929,16 +3929,16 @@ class X86CodeGenerator : CodeGenerator {
         }
 
         private fun emitCondBr(inst: CondBr, nextBlockLabel: String?) {
-            val truePhis = phiMoves[currentBlockLabel to inst.trueTarget]
-            val falsePhis = phiMoves[currentBlockLabel to inst.falseTarget]
+            val truePhis = phiMoves[currentBlockLabel to inst.trueTarget.label]
+            val falsePhis = phiMoves[currentBlockLabel to inst.falseTarget.label]
 
             if (truePhis == null && falsePhis == null) {
                 // No phi copies needed — simple case
                 val condReg = getOrLoad32(inst.condition.name, r11d32)
                 asm.cmp(condReg as X86Operand32, 0)
-                asm.jccLabel(0x05, "${fn.name}.${inst.trueTarget}") // JNE
-                if (inst.falseTarget != nextBlockLabel) {
-                    asm.jmpLabel("${fn.name}.${inst.falseTarget}")
+                asm.jccLabel(0x05, "${fn.name}.${inst.trueTarget.label}") // JNE
+                if (inst.falseTarget.label != nextBlockLabel) {
+                    asm.jmpLabel("${fn.name}.${inst.falseTarget.label}")
                 }
             } else {
                 // Phi copies needed — branch to intermediate labels
@@ -3946,16 +3946,16 @@ class X86CodeGenerator : CodeGenerator {
                 asm.cmp(condReg as X86Operand32, 0)
                 asm.jccLabel(0x05, "${fn.name}.${currentBlockLabel}.phi_true") // JNE
                 // False path: emit false phi copies, then jump to false target
-                emitPhiCopies(inst.falseTarget)
-                if (inst.falseTarget != nextBlockLabel) {
-                    asm.jmpLabel("${fn.name}.${inst.falseTarget}")
+                emitPhiCopies(inst.falseTarget.label)
+                if (inst.falseTarget.label != nextBlockLabel) {
+                    asm.jmpLabel("${fn.name}.${inst.falseTarget.label}")
                 } else {
                     // Fall through to false target (next block)
                 }
                 // True path
                 asm.label("${fn.name}.${currentBlockLabel}.phi_true")
-                emitPhiCopies(inst.trueTarget)
-                asm.jmpLabel("${fn.name}.${inst.trueTarget}")
+                emitPhiCopies(inst.trueTarget.label)
+                asm.jmpLabel("${fn.name}.${inst.trueTarget.label}")
             }
         }
 
@@ -4007,30 +4007,30 @@ class X86CodeGenerator : CodeGenerator {
 
             val cc = icmpCondCode(cmp.predicate)
 
-            val truePhis = phiMoves[currentBlockLabel to br.trueTarget]
-            val falsePhis = phiMoves[currentBlockLabel to br.falseTarget]
+            val truePhis = phiMoves[currentBlockLabel to br.trueTarget.label]
+            val falsePhis = phiMoves[currentBlockLabel to br.falseTarget.label]
 
             if (truePhis == null && falsePhis == null) {
-                asm.jccLabel(cc, "${fn.name}.${br.trueTarget}")
-                if (br.falseTarget != nextBlockLabel) {
-                    asm.jmpLabel("${fn.name}.${br.falseTarget}")
+                asm.jccLabel(cc, "${fn.name}.${br.trueTarget.label}")
+                if (br.falseTarget.label != nextBlockLabel) {
+                    asm.jmpLabel("${fn.name}.${br.falseTarget.label}")
                 }
             } else {
                 // With phi copies: jump on condition to true phi path
                 asm.jccLabel(cc, "${fn.name}.${currentBlockLabel}.phi_true")
                 // False path
-                emitPhiCopies(br.falseTarget)
-                if (br.falseTarget != nextBlockLabel) {
-                    asm.jmpLabel("${fn.name}.${br.falseTarget}")
+                emitPhiCopies(br.falseTarget.label)
+                if (br.falseTarget.label != nextBlockLabel) {
+                    asm.jmpLabel("${fn.name}.${br.falseTarget.label}")
                 } else {
                     // Need to skip past the true phi path
                     asm.jmpLabel("${fn.name}.${currentBlockLabel}.phi_done")
                 }
                 // True path
                 asm.label("${fn.name}.${currentBlockLabel}.phi_true")
-                emitPhiCopies(br.trueTarget)
-                asm.jmpLabel("${fn.name}.${br.trueTarget}")
-                if (br.falseTarget == nextBlockLabel) {
+                emitPhiCopies(br.trueTarget.label)
+                asm.jmpLabel("${fn.name}.${br.trueTarget.label}")
+                if (br.falseTarget.label == nextBlockLabel) {
                     asm.label("${fn.name}.${currentBlockLabel}.phi_done")
                 }
             }

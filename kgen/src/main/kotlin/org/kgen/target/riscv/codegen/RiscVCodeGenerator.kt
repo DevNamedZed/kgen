@@ -303,7 +303,7 @@ class RiscVCodeGenerator : CodeGenerator {
                 for (inst in block.instructions) {
                     if (inst !is Phi) break
                     for ((value, predLabel) in inst.incoming) {
-                        map.getOrPut(predLabel to block.label) { mutableListOf() }
+                        map.getOrPut(predLabel.label to block.label) { mutableListOf() }
                             .add(inst.dest to value)
                     }
                 }
@@ -480,7 +480,7 @@ class RiscVCodeGenerator : CodeGenerator {
                 is Select -> emitSelect(i)
                 is SExt -> emitSExt(i)
                 is ZExt -> emitZExt(i)
-                is Trunc -> emitTrunc(i)
+                is FTrunc -> emitFTrunc(i)
                 is Load -> emitLoad(i)
                 is Store -> emitStore(i)
                 is Alloca -> {}
@@ -1051,8 +1051,8 @@ class RiscVCodeGenerator : CodeGenerator {
         private fun emitFusedCmpBranch(cmp: ICmp, br: CondBr, nextBlockLabel: String?) {
             val lhsReg = getOrLoad(cmp.lhs)
             val rhsReg = getOrLoad(cmp.rhs)
-            val trueTarget = br.trueTarget
-            val falseTarget = br.falseTarget
+            val trueTarget = br.trueTarget.label
+            val falseTarget = br.falseTarget.label
             emitPhiMoves(trueTarget)
             emitPhiMoves(falseTarget)
 
@@ -1113,8 +1113,8 @@ class RiscVCodeGenerator : CodeGenerator {
 
         private fun emitCondBr(inst: CondBr, nextBlockLabel: String?) {
             val condReg = getOrLoad(inst.condition)
-            val trueTarget = inst.trueTarget
-            val falseTarget = inst.falseTarget
+            val trueTarget = inst.trueTarget.label
+            val falseTarget = inst.falseTarget.label
             emitPhiMoves(trueTarget)
             emitPhiMoves(falseTarget)
 
@@ -1138,8 +1138,8 @@ class RiscVCodeGenerator : CodeGenerator {
         }
 
         private fun emitBr(inst: Br) {
-            emitPhiMoves(inst.target)
-            asm.j("${fn.name}.${inst.target}")
+            emitPhiMoves(inst.target.label)
+            asm.j("${fn.name}.${inst.target.label}")
         }
 
         private fun emitIndirectBr(inst: IndirectBr) {
@@ -1151,9 +1151,9 @@ class RiscVCodeGenerator : CodeGenerator {
             val valReg = getOrLoad(inst.value)
             for ((caseVal, target) in inst.cases) {
                 val caseReg = getOrLoad(caseVal)
-                asm.beq(valReg, caseReg, "${fn.name}.$target")
+                asm.beq(valReg, caseReg, "${fn.name}.${target.label}")
             }
-            asm.j("${fn.name}.${inst.defaultTarget}")
+            asm.j("${fn.name}.${inst.defaultTarget.label}")
         }
 
         private fun emitCall(inst: Call) {
@@ -1199,11 +1199,11 @@ class RiscVCodeGenerator : CodeGenerator {
             asm.call(funcName)
             val callEnd = asm.size - funcStartOffset
 
-            val actionIndex = resolveActionIndex(inst.unwindDest)
+            val actionIndex = resolveActionIndex(inst.unwindDest.label)
             ehCallSites.add(EhCallSite(
                 callOffset = callStart,
                 callLength = callEnd - callStart,
-                landingPadLabel = "${fn.name}.lp.${inst.unwindDest}",
+                landingPadLabel = "${fn.name}.lp.${inst.unwindDest.label}",
                 actionIndex = actionIndex,
             ))
 
@@ -1216,8 +1216,8 @@ class RiscVCodeGenerator : CodeGenerator {
             }
 
             // Branch to normal destination
-            emitPhiMoves(inst.normalDest)
-            asm.j("${fn.name}.${inst.normalDest}")
+            emitPhiMoves(inst.normalDest.label)
+            asm.j("${fn.name}.${inst.normalDest.label}")
         }
 
         private fun emitCallBr(inst: CallBr) {
@@ -1247,8 +1247,8 @@ class RiscVCodeGenerator : CodeGenerator {
             }
 
             // Fall through to fallthrough block
-            emitPhiMoves(inst.fallthrough)
-            asm.j("${fn.name}.${inst.fallthrough}")
+            emitPhiMoves(inst.fallthrough.label)
+            asm.j("${fn.name}.${inst.fallthrough.label}")
         }
 
         private fun emitLandingPad(inst: LandingPad) {
@@ -1343,7 +1343,7 @@ class RiscVCodeGenerator : CodeGenerator {
             storeTo(inst.dest.name, destReg)
         }
 
-        private fun emitTrunc(inst: Trunc) {
+        private fun emitFTrunc(inst: FTrunc) {
             val src = getOrLoad(inst.operand)
             val destReg = getDest(inst.dest.name)
             // Truncate to 32-bit: just copy (upper bits ignored by word operations)

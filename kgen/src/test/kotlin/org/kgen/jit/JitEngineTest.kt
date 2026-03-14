@@ -20,7 +20,7 @@ class JitEngineTest {
     private fun buildAddModule(): Module {
         val ir = IrBuilder("add_module", Target.x86_64())
         ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)
         val b = Parameter("b", Type.I64, 1)
         val sum = ir.add(a, b)
@@ -32,7 +32,7 @@ class JitEngineTest {
     private fun buildConstantModule(name: String, funcName: String, value: Long): Module {
         val ir = IrBuilder(name, Target.x86_64())
         ir.createFunction(funcName, emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I64(value))
         ir.finalizeFunction()
         return ir.build()
@@ -41,7 +41,7 @@ class JitEngineTest {
     private fun buildMulModule(): Module {
         val ir = IrBuilder("mul_module", Target.x86_64())
         ir.createFunction("mul", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)
         val b = Parameter("b", Type.I64, 1)
         val product = ir.mul(a, b)
@@ -265,7 +265,7 @@ class JitEngineTest {
     fun subtractFunction() {
         val ir = IrBuilder("sub_module", Target.x86_64())
         ir.createFunction("sub", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)
         val b = Parameter("b", Type.I64, 1)
         val diff = ir.sub(a, b)
@@ -284,14 +284,14 @@ class JitEngineTest {
         val ir = IrBuilder("bitwise", Target.x86_64())
 
         ir.createFunction("bitand", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a1 = Parameter("a", Type.I64, 0)
         val b1 = Parameter("b", Type.I64, 1)
         ir.ret(ir.and(a1, b1))
         ir.finalizeFunction()
 
         ir.createFunction("bitor", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a2 = Parameter("a", Type.I64, 0)
         val b2 = Parameter("b", Type.I64, 1)
         ir.ret(ir.or(a2, b2))
@@ -310,17 +310,17 @@ class JitEngineTest {
         val ir = IrBuilder("multi", Target.x86_64())
 
         ir.createFunction("f1", emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I64(1))
         ir.finalizeFunction()
 
         ir.createFunction("f2", emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I64(2))
         ir.finalizeFunction()
 
         ir.createFunction("f3", emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I64(3))
         ir.finalizeFunction()
 
@@ -399,7 +399,7 @@ class JitEngineTest {
         // Function that returns a constant (doesn't actually use TLS at runtime,
         // but exercises the JIT tdata allocation path)
         ir.createFunction("get_value", emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I64(99))
         ir.finalizeFunction()
 

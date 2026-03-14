@@ -331,7 +331,7 @@ class RuntimeSubsetTest {
 
         // The caller should have Call instructions referencing "add"
         val instructions = callerModule.functions[0].blocks.flatMap { it.instructions }
-        val calls = instructions.filterIsInstance<org.kgen.ir.Call>()
+        val calls = instructions.filterIsInstance<Call>()
         assertTrue(calls.size >= 2, "Expected at least 2 call instructions, got ${calls.size}")
     }
 
@@ -387,7 +387,6 @@ class RuntimeSubsetTest {
         val thisClassIdx = cp.classEntry("org/kgen/runtime/test/LoadTest")
         val superClassIdx = cp.classEntry("java/lang/Object")
         val kgenLoadByte = cp.methodRef("org/kgen/unmanaged/Kgen", "loadByte", "(J)B")
-
         val methodNameIdx = cp.utf8("loadAndReturn")
         val methodDescIdx = cp.utf8("(J)I")
         val codeNameIdx = cp.utf8("Code")
@@ -437,6 +436,6 @@ class RuntimeSubsetTest {
         assertEquals("loadAndReturn", module.functions[0].name)
         // Should have a Load instruction from the intrinsic lowering
         val instructions = module.functions[0].blocks.flatMap { it.instructions }
-        assertTrue(instructions.any { it is org.kgen.ir.Load }, "Expected Load instruction from Kgen.loadByte intrinsic")
+        assertTrue(instructions.any { it is Load }, "Expected Load instruction from Kgen.loadByte intrinsic")
     }
 }

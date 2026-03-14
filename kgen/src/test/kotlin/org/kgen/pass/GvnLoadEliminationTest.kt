@@ -21,7 +21,7 @@ class GvnLoadEliminationTest {
     fun `eliminates redundant load from same pointer`() {
         val module = buildAndGvn {
             val params = createFunction("f", listOf(Param("ptr", Type.Pointer(Type.I32))), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = load(Type.I32, params[0])
             val b = load(Type.I32, params[0])  // redundant — same pointer, no store between
             val sum = add(a, b)
@@ -39,7 +39,7 @@ class GvnLoadEliminationTest {
     fun `does not eliminate load after intervening store to same pointer`() {
         val module = buildAndGvn {
             val params = createFunction("f", listOf(Param("ptr", Type.Pointer(Type.I32))), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = load(Type.I32, params[0])
             store(Constant.I32(42), params[0])  // invalidates
             val b = load(Type.I32, params[0])    // NOT redundant
@@ -56,7 +56,7 @@ class GvnLoadEliminationTest {
     fun `eliminates redundant load when intervening store is to different alloca`() {
         val module = buildAndGvn {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = alloca(Type.I32)
             val b = alloca(Type.I32)
             store(Constant.I32(10), a)
@@ -77,7 +77,7 @@ class GvnLoadEliminationTest {
     fun `does not eliminate volatile load`() {
         val module = buildAndGvn {
             val params = createFunction("f", listOf(Param("ptr", Type.Pointer(Type.I32))), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = load(Type.I32, params[0], volatile = true)
             val b = load(Type.I32, params[0], volatile = true)  // volatile — keep
             val sum = add(a, b)
@@ -95,7 +95,7 @@ class GvnLoadEliminationTest {
             addGlobal("g1", Type.I32, Constant.I32(0))
             addGlobal("g2", Type.I32, Constant.I32(0))
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val g1ref = GlobalRef("g1", Type.Pointer(Type.I32))
             val g2ref = GlobalRef("g2", Type.Pointer(Type.I32))
             val v1 = load(Type.I32, g1ref)
@@ -115,7 +115,7 @@ class GvnLoadEliminationTest {
         val module = buildAndGvn {
             declareFunction("sideEffect", emptyList(), Type.Void)
             val params = createFunction("f", listOf(Param("ptr", Type.Pointer(Type.I32))), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = load(Type.I32, params[0])
             call("sideEffect", emptyList(), Type.Void)
             val b = load(Type.I32, params[0])  // not redundant — call may modify *ptr
@@ -133,7 +133,7 @@ class GvnLoadEliminationTest {
     fun `eliminates three redundant loads from same alloca`() {
         val module = buildAndGvn {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = alloca(Type.I32)
             store(Constant.I32(42), a)
             val v1 = load(Type.I32, a)
@@ -152,15 +152,15 @@ class GvnLoadEliminationTest {
     fun `load elimination across dominator tree`() {
         val module = buildAndGvn {
             val params = createFunction("f", listOf(Param("ptr", Type.Pointer(Type.I32)), Param("c", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val v1 = load(Type.I32, params[0])
-            condBr(params[1], "left", "right")
+            condBr(params[1], BlockRef("left"), BlockRef("right"))
 
-            positionAtEnd(appendBlock("left"))
+            appendBlock("left")
             val v2 = load(Type.I32, params[0])  // redundant — dominated by entry's load, no store
             ret(v2)
 
-            positionAtEnd(appendBlock("right"))
+            appendBlock("right")
             val v3 = load(Type.I32, params[0])  // redundant
             ret(v3)
             finalizeFunction()
@@ -180,7 +180,7 @@ class GvnLoadEliminationTest {
         val module = buildAndGvn {
             val structType = Type.Struct(null, listOf(Type.I32, Type.I32))
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val s = alloca(structType)
             val f0 = gep(structType, s, Constant.I32(0), Constant.I32(0))
             val f1 = gep(structType, s, Constant.I32(0), Constant.I32(1))

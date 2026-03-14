@@ -26,7 +26,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates add with constant`() {
         val lines = buildAndDisassemble {
             val params = createFunction("addConst", listOf(Param("a", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = add(params[0], Constant.I32(10))
             ret(result)
             finalizeFunction()
@@ -38,7 +38,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates sub with constant`() {
         val lines = buildAndDisassemble {
             val params = createFunction("subConst", listOf(Param("a", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = sub(params[0], Constant.I32(5))
             ret(result)
             finalizeFunction()
@@ -50,7 +50,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates 64-bit mul`() {
         val lines = buildAndDisassemble {
             val params = createFunction("mul64", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = mul(params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -62,7 +62,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates 64-bit div`() {
         val lines = buildAndDisassemble {
             val params = createFunction("div64", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = sdiv(params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -74,7 +74,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates udiv`() {
         val lines = buildAndDisassemble {
             val params = createFunction("udiv_test", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = udiv(params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -86,7 +86,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates urem`() {
         val lines = buildAndDisassemble {
             val params = createFunction("urem_test", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = urem(params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -98,7 +98,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates icmp EQ with select`() {
         val lines = buildAndDisassemble {
             val params = createFunction("eq_test", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cond = icmp(ICmpPredicate.EQ, params[0], params[1])
             val result = select(cond, Constant.I32(1), Constant.I32(0))
             ret(result)
@@ -113,7 +113,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates icmp NE`() {
         val lines = buildAndDisassemble {
             val params = createFunction("ne_test", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I1)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = icmp(ICmpPredicate.NE, params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -126,7 +126,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates icmp SGE`() {
         val lines = buildAndDisassemble {
             val params = createFunction("sge_test", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I1)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = icmp(ICmpPredicate.SGE, params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -139,7 +139,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates icmp SGT`() {
         val lines = buildAndDisassemble {
             val params = createFunction("sgt_test", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I1)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = icmp(ICmpPredicate.SGT, params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -151,7 +151,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates icmp ULT`() {
         val lines = buildAndDisassemble {
             val params = createFunction("ult_test", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I1)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = icmp(ICmpPredicate.ULT, params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -163,7 +163,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates icmp UGE`() {
         val lines = buildAndDisassemble {
             val params = createFunction("uge_test", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I1)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = icmp(ICmpPredicate.UGE, params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -176,7 +176,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates 64-bit and`() {
         val lines = buildAndDisassemble {
             val params = createFunction("and64", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = and(params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -188,7 +188,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates 64-bit or`() {
         val lines = buildAndDisassemble {
             val params = createFunction("or64", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = or(params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -200,7 +200,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates 64-bit xor`() {
         val lines = buildAndDisassemble {
             val params = createFunction("xor64", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = xor(params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -212,7 +212,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates ashr`() {
         val lines = buildAndDisassemble {
             val params = createFunction("ashr_test", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = ashr(params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -225,7 +225,7 @@ class RiscVCodeGeneratorExtendedTest {
         val lines = buildAndDisassemble {
             declareFunction("compute", listOf(Param("a", Type.I32), Param("b", Type.I32), Param("c", Type.I32)), Type.I32)
             val params = createFunction("caller", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = call("compute", listOf(params[0], params[1], Constant.I32(42)), Type.I32)
             ret(result!!)
             finalizeFunction()
@@ -238,7 +238,7 @@ class RiscVCodeGeneratorExtendedTest {
         val lines = buildAndDisassemble {
             declareFunction("sideEffect", listOf(Param("x", Type.I32)), Type.Void)
             val params = createFunction("caller", listOf(Param("x", Type.I32)), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             call("sideEffect", listOf(params[0]), Type.Void)
             ret(null)
             finalizeFunction()
@@ -251,14 +251,14 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates conditional branch with NE`() {
         val lines = buildAndDisassemble {
             val params = createFunction("condNe", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cond = icmp(ICmpPredicate.NE, params[0], params[1])
-            condBr(cond, "notEqual", "equal")
+            condBr(cond, BlockRef("notEqual"), BlockRef("equal"))
 
-            positionAtEnd(appendBlock("notEqual"))
+            appendBlock("notEqual")
             ret(params[0])
 
-            positionAtEnd(appendBlock("equal"))
+            appendBlock("equal")
             ret(params[1])
 
             finalizeFunction()
@@ -270,14 +270,14 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates conditional branch with ULT`() {
         val lines = buildAndDisassemble {
             val params = createFunction("condUlt", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cond = icmp(ICmpPredicate.ULT, params[0], params[1])
-            condBr(cond, "less", "geq")
+            condBr(cond, BlockRef("less"), BlockRef("geq"))
 
-            positionAtEnd(appendBlock("less"))
+            appendBlock("less")
             ret(params[0])
 
-            positionAtEnd(appendBlock("geq"))
+            appendBlock("geq")
             ret(params[1])
 
             finalizeFunction()
@@ -289,21 +289,21 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates diamond control flow with phi`() {
         val lines = buildAndDisassemble {
             val params = createFunction("diamond", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val zero = Constant.I32(0)
             val cond = icmp(ICmpPredicate.SGT, params[0], zero)
-            condBr(cond, "positive", "negative")
+            condBr(cond, BlockRef("positive"), BlockRef("negative"))
 
-            positionAtEnd(appendBlock("positive"))
+            appendBlock("positive")
             val doubled = add(params[0], params[0])
-            br("merge")
+            br(BlockRef("merge"))
 
-            positionAtEnd(appendBlock("negative"))
+            appendBlock("negative")
             val negated = sub(zero, params[0])
-            br("merge")
+            br(BlockRef("merge"))
 
-            positionAtEnd(appendBlock("merge"))
-            val result = phi(Type.I32, listOf(doubled to "positive", negated to "negative"))
+            appendBlock("merge")
+            val result = phi(Type.I32, listOf(doubled to BlockRef("positive"), negated to BlockRef("negative")))
             ret(result)
 
             finalizeFunction()
@@ -316,19 +316,19 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates multi-block with unconditional and conditional branches`() {
         val lines = buildAndDisassemble {
             val params = createFunction("multiBlock", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val sum = add(params[0], params[1])
             val isZero = icmp(ICmpPredicate.EQ, sum, Constant.I32(0))
-            condBr(isZero, "zero", "nonzero")
+            condBr(isZero, BlockRef("zero"), BlockRef("nonzero"))
 
-            positionAtEnd(appendBlock("zero"))
+            appendBlock("zero")
             ret(Constant.I32(-1))
 
-            positionAtEnd(appendBlock("nonzero"))
+            appendBlock("nonzero")
             val doubled = add(sum, sum)
-            br("finish")
+            br(BlockRef("finish"))
 
-            positionAtEnd(appendBlock("finish"))
+            appendBlock("finish")
             ret(doubled)
 
             finalizeFunction()
@@ -341,7 +341,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates sext`() {
         val lines = buildAndDisassemble {
             val params = createFunction("sext_test", listOf(Param("a", Type.I32)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = sext(params[0], Type.I64)
             ret(result)
             finalizeFunction()
@@ -353,7 +353,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates zext`() {
         val lines = buildAndDisassemble {
             val params = createFunction("zext_test", listOf(Param("a", Type.I32)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = zext(params[0], Type.I64)
             ret(result)
             finalizeFunction()
@@ -366,7 +366,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates return constant`() {
         val lines = buildAndDisassemble {
             createFunction("const42", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I32(42))
             finalizeFunction()
         }
@@ -378,7 +378,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates return i64 constant`() {
         val lines = buildAndDisassemble {
             createFunction("constBig", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I64(100000))
             finalizeFunction()
         }
@@ -390,7 +390,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates chained arithmetic`() {
         val lines = buildAndDisassemble {
             val params = createFunction("chain", listOf(Param("a", Type.I32), Param("b", Type.I32), Param("c", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val t1 = add(params[0], params[1])
             val t2 = mul(t1, params[2])
             val t3 = sub(t2, params[0])
@@ -407,12 +407,12 @@ class RiscVCodeGeneratorExtendedTest {
         val ir = IrBuilder("test", Target.riscv64())
 
         val paramsA = ir.createFunction("funcA", listOf(Param("x", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.add(paramsA[0], Constant.I32(1)))
         ir.finalizeFunction()
 
         val paramsB = ir.createFunction("funcB", listOf(Param("y", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.sub(paramsB[0], Constant.I32(1)))
         ir.finalizeFunction()
 
@@ -432,7 +432,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates select with SLE`() {
         val lines = buildAndDisassemble {
             val params = createFunction("min_val", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cond = icmp(ICmpPredicate.SLE, params[0], params[1])
             val result = select(cond, params[0], params[1])
             ret(result)
@@ -445,7 +445,7 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates bitwise chain`() {
         val lines = buildAndDisassemble {
             val params = createFunction("bits", listOf(Param("a", Type.I32), Param("b", Type.I32), Param("c", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val t1 = and(params[0], params[1])
             val t2 = or(t1, params[2])
             val t3 = xor(t2, params[0])
@@ -463,20 +463,20 @@ class RiscVCodeGeneratorExtendedTest {
     fun `generates abs via branch pattern`() {
         val lines = buildAndDisassemble {
             val params = createFunction("myAbs", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val zero = Constant.I32(0)
             val isNeg = icmp(ICmpPredicate.SLT, params[0], zero)
-            condBr(isNeg, "negate", "done")
+            condBr(isNeg, BlockRef("negate"), BlockRef("done"))
 
-            positionAtEnd(appendBlock("negate"))
+            appendBlock("negate")
             val negated = sub(zero, params[0])
-            br("result")
+            br(BlockRef("result"))
 
-            positionAtEnd(appendBlock("done"))
-            br("result")
+            appendBlock("done")
+            br(BlockRef("result"))
 
-            positionAtEnd(appendBlock("result"))
-            val result = phi(Type.I32, listOf(negated to "negate", params[0] to "done"))
+            appendBlock("result")
+            val result = phi(Type.I32, listOf(negated to BlockRef("negate"), params[0] to BlockRef("done")))
             ret(result)
 
             finalizeFunction()

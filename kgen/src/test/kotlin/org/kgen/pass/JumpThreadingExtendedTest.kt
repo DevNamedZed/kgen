@@ -21,14 +21,14 @@ class JumpThreadingExtendedTest {
     fun `folds true then merges two blocks`() {
         val module = buildAndThread {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(Constant.I1(true), "a", "dead")
+            appendBlock("entry")
+            condBr(Constant.I1(true), BlockRef("a"), BlockRef("dead"))
 
-            positionAtEnd(appendBlock("a"))
+            appendBlock("a")
             val v = add(Constant.I32(1), Constant.I32(2))
             ret(v)
 
-            positionAtEnd(appendBlock("dead"))
+            appendBlock("dead")
             ret(Constant.I32(99))
 
             finalizeFunction()
@@ -42,19 +42,19 @@ class JumpThreadingExtendedTest {
     fun `merges long chain of unconditional branches`() {
         val module = buildAndThread {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            br("a")
+            appendBlock("entry")
+            br(BlockRef("a"))
 
-            positionAtEnd(appendBlock("a"))
-            br("b")
+            appendBlock("a")
+            br(BlockRef("b"))
 
-            positionAtEnd(appendBlock("b"))
-            br("c")
+            appendBlock("b")
+            br(BlockRef("c"))
 
-            positionAtEnd(appendBlock("c"))
-            br("d")
+            appendBlock("c")
+            br(BlockRef("d"))
 
-            positionAtEnd(appendBlock("d"))
+            appendBlock("d")
             ret(Constant.I32(42))
 
             finalizeFunction()
@@ -70,16 +70,16 @@ class JumpThreadingExtendedTest {
     fun `preserves blocks with multiple predecessors`() {
         val module = buildAndThread {
             val params = createFunction("f", listOf(Param("c", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(params[0], "a", "b")
+            appendBlock("entry")
+            condBr(params[0], BlockRef("a"), BlockRef("b"))
 
-            positionAtEnd(appendBlock("a"))
-            br("join")
+            appendBlock("a")
+            br(BlockRef("join"))
 
-            positionAtEnd(appendBlock("b"))
-            br("join")
+            appendBlock("b")
+            br(BlockRef("join"))
 
-            positionAtEnd(appendBlock("join"))
+            appendBlock("join")
             ret(Constant.I32(0))
 
             finalizeFunction()
@@ -92,19 +92,19 @@ class JumpThreadingExtendedTest {
     fun `removes both dead branches with constant true`() {
         val module = buildAndThread {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(Constant.I1(true), "live", "dead1")
+            appendBlock("entry")
+            condBr(Constant.I1(true), BlockRef("live"), BlockRef("dead1"))
 
-            positionAtEnd(appendBlock("live"))
+            appendBlock("live")
             ret(Constant.I32(1))
 
-            positionAtEnd(appendBlock("dead1"))
-            condBr(Constant.I1(false), "dead2", "dead3")
+            appendBlock("dead1")
+            condBr(Constant.I1(false), BlockRef("dead2"), BlockRef("dead3"))
 
-            positionAtEnd(appendBlock("dead2"))
+            appendBlock("dead2")
             ret(Constant.I32(2))
 
-            positionAtEnd(appendBlock("dead3"))
+            appendBlock("dead3")
             ret(Constant.I32(3))
 
             finalizeFunction()
@@ -121,19 +121,19 @@ class JumpThreadingExtendedTest {
     fun `preserves dynamic condition with multiple targets`() {
         val module = buildAndThread {
             val params = createFunction("f", listOf(Param("c1", Type.I1), Param("c2", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(params[0], "a", "b")
+            appendBlock("entry")
+            condBr(params[0], BlockRef("a"), BlockRef("b"))
 
-            positionAtEnd(appendBlock("a"))
-            condBr(params[1], "aa", "ab")
+            appendBlock("a")
+            condBr(params[1], BlockRef("aa"), BlockRef("ab"))
 
-            positionAtEnd(appendBlock("aa"))
+            appendBlock("aa")
             ret(Constant.I32(1))
 
-            positionAtEnd(appendBlock("ab"))
+            appendBlock("ab")
             ret(Constant.I32(2))
 
-            positionAtEnd(appendBlock("b"))
+            appendBlock("b")
             ret(Constant.I32(3))
 
             finalizeFunction()
@@ -146,16 +146,16 @@ class JumpThreadingExtendedTest {
     fun `merges block with single predecessor after folding`() {
         val module = buildAndThread {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(Constant.I1(false), "dead", "live")
+            appendBlock("entry")
+            condBr(Constant.I1(false), BlockRef("dead"), BlockRef("live"))
 
-            positionAtEnd(appendBlock("dead"))
+            appendBlock("dead")
             ret(Constant.I32(0))
 
-            positionAtEnd(appendBlock("live"))
-            br("end")
+            appendBlock("live")
+            br(BlockRef("end"))
 
-            positionAtEnd(appendBlock("end"))
+            appendBlock("end")
             ret(Constant.I32(42))
 
             finalizeFunction()
@@ -168,7 +168,7 @@ class JumpThreadingExtendedTest {
     fun `handles single block function`() {
         val module = buildAndThread {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I32(0))
             finalizeFunction()
         }
@@ -180,20 +180,20 @@ class JumpThreadingExtendedTest {
     fun `handles multiple functions`() {
         val module = buildAndThread {
             createFunction("f1", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(Constant.I1(true), "a", "b")
-            positionAtEnd(appendBlock("a"))
+            appendBlock("entry")
+            condBr(Constant.I1(true), BlockRef("a"), BlockRef("b"))
+            appendBlock("a")
             ret(Constant.I32(1))
-            positionAtEnd(appendBlock("b"))
+            appendBlock("b")
             ret(Constant.I32(2))
             finalizeFunction()
 
             createFunction("f2", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(Constant.I1(false), "a", "b")
-            positionAtEnd(appendBlock("a"))
+            appendBlock("entry")
+            condBr(Constant.I1(false), BlockRef("a"), BlockRef("b"))
+            appendBlock("a")
             ret(Constant.I32(3))
-            positionAtEnd(appendBlock("b"))
+            appendBlock("b")
             ret(Constant.I32(4))
             finalizeFunction()
         }
@@ -207,11 +207,11 @@ class JumpThreadingExtendedTest {
     fun `merges entry with single unconditional successor`() {
         val module = buildAndThread {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val v = add(Constant.I32(1), Constant.I32(2))
-            br("exit")
+            br(BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             ret(v)
 
             finalizeFunction()
@@ -226,15 +226,15 @@ class JumpThreadingExtendedTest {
     fun `preserves instructions in merged blocks`() {
         val module = buildAndThread {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(Constant.I32(1), Constant.I32(2))
-            br("middle")
+            br(BlockRef("middle"))
 
-            positionAtEnd(appendBlock("middle"))
+            appendBlock("middle")
             val b = mul(a, Constant.I32(3))
-            br("end")
+            br(BlockRef("end"))
 
-            positionAtEnd(appendBlock("end"))
+            appendBlock("end")
             ret(b)
 
             finalizeFunction()
@@ -251,13 +251,13 @@ class JumpThreadingExtendedTest {
     fun `false branch folding preserves code`() {
         val module = buildAndThread {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(Constant.I1(false), "dead", "live")
+            appendBlock("entry")
+            condBr(Constant.I1(false), BlockRef("dead"), BlockRef("live"))
 
-            positionAtEnd(appendBlock("dead"))
+            appendBlock("dead")
             ret(Constant.I32(0))
 
-            positionAtEnd(appendBlock("live"))
+            appendBlock("live")
             val v = add(Constant.I32(5), Constant.I32(10))
             ret(v)
 
@@ -272,11 +272,11 @@ class JumpThreadingExtendedTest {
     fun `same target condBr with instructions before branch`() {
         val module = buildAndThread {
             val params = createFunction("f", listOf(Param("c", Type.I1), Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val v = add(params[1], Constant.I32(1))
-            condBr(params[0], "target", "target")
+            condBr(params[0], BlockRef("target"), BlockRef("target"))
 
-            positionAtEnd(appendBlock("target"))
+            appendBlock("target")
             ret(v)
 
             finalizeFunction()
@@ -290,19 +290,19 @@ class JumpThreadingExtendedTest {
     fun `mixed constant and dynamic branches`() {
         val module = buildAndThread {
             val params = createFunction("f", listOf(Param("c", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(Constant.I1(true), "a", "dead")
+            appendBlock("entry")
+            condBr(Constant.I1(true), BlockRef("a"), BlockRef("dead"))
 
-            positionAtEnd(appendBlock("dead"))
+            appendBlock("dead")
             ret(Constant.I32(0))
 
-            positionAtEnd(appendBlock("a"))
-            condBr(params[0], "b", "c")
+            appendBlock("a")
+            condBr(params[0], BlockRef("b"), BlockRef("c"))
 
-            positionAtEnd(appendBlock("b"))
+            appendBlock("b")
             ret(Constant.I32(1))
 
-            positionAtEnd(appendBlock("c"))
+            appendBlock("c")
             ret(Constant.I32(2))
 
             finalizeFunction()
@@ -318,25 +318,25 @@ class JumpThreadingExtendedTest {
     fun `deeply nested constant folding`() {
         val module = buildAndThread {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(Constant.I1(true), "a", "d1")
+            appendBlock("entry")
+            condBr(Constant.I1(true), BlockRef("a"), BlockRef("d1"))
 
-            positionAtEnd(appendBlock("a"))
-            condBr(Constant.I1(true), "b", "d2")
+            appendBlock("a")
+            condBr(Constant.I1(true), BlockRef("b"), BlockRef("d2"))
 
-            positionAtEnd(appendBlock("b"))
-            condBr(Constant.I1(true), "c", "d3")
+            appendBlock("b")
+            condBr(Constant.I1(true), BlockRef("c"), BlockRef("d3"))
 
-            positionAtEnd(appendBlock("c"))
+            appendBlock("c")
             ret(Constant.I32(100))
 
-            positionAtEnd(appendBlock("d1"))
+            appendBlock("d1")
             ret(Constant.I32(0))
 
-            positionAtEnd(appendBlock("d2"))
+            appendBlock("d2")
             ret(Constant.I32(0))
 
-            positionAtEnd(appendBlock("d3"))
+            appendBlock("d3")
             ret(Constant.I32(0))
 
             finalizeFunction()
@@ -350,14 +350,14 @@ class JumpThreadingExtendedTest {
     fun `preserves loop structure with dynamic condition`() {
         val module = buildAndThread {
             val params = createFunction("f", listOf(Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            br("loop")
+            appendBlock("entry")
+            br(BlockRef("loop"))
 
-            positionAtEnd(appendBlock("loop"))
+            appendBlock("loop")
             val cmp = icmp(ICmpPredicate.SGT, params[0], Constant.I32(0))
-            condBr(cmp, "loop", "exit")
+            condBr(cmp, BlockRef("loop"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             ret(Constant.I32(0))
 
             finalizeFunction()
@@ -371,13 +371,13 @@ class JumpThreadingExtendedTest {
     fun `idempotent on already optimized code`() {
         val module = buildAndThread {
             val params = createFunction("f", listOf(Param("c", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(params[0], "a", "b")
+            appendBlock("entry")
+            condBr(params[0], BlockRef("a"), BlockRef("b"))
 
-            positionAtEnd(appendBlock("a"))
+            appendBlock("a")
             ret(Constant.I32(1))
 
-            positionAtEnd(appendBlock("b"))
+            appendBlock("b")
             ret(Constant.I32(2))
 
             finalizeFunction()
@@ -390,13 +390,13 @@ class JumpThreadingExtendedTest {
     fun `handles void return in merged block`() {
         val module = buildAndThread {
             createFunction("f", emptyList(), Type.Void)
-            positionAtEnd(appendBlock("entry"))
-            br("a")
+            appendBlock("entry")
+            br(BlockRef("a"))
 
-            positionAtEnd(appendBlock("a"))
-            br("b")
+            appendBlock("a")
+            br(BlockRef("b"))
 
-            positionAtEnd(appendBlock("b"))
+            appendBlock("b")
             ret(null)
 
             finalizeFunction()
@@ -410,19 +410,19 @@ class JumpThreadingExtendedTest {
     fun `constant false in nested branch`() {
         val module = buildAndThread {
             val params = createFunction("f", listOf(Param("c", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(params[0], "a", "b")
+            appendBlock("entry")
+            condBr(params[0], BlockRef("a"), BlockRef("b"))
 
-            positionAtEnd(appendBlock("a"))
-            condBr(Constant.I1(false), "dead", "live")
+            appendBlock("a")
+            condBr(Constant.I1(false), BlockRef("dead"), BlockRef("live"))
 
-            positionAtEnd(appendBlock("dead"))
+            appendBlock("dead")
             ret(Constant.I32(0))
 
-            positionAtEnd(appendBlock("live"))
+            appendBlock("live")
             ret(Constant.I32(1))
 
-            positionAtEnd(appendBlock("b"))
+            appendBlock("b")
             ret(Constant.I32(2))
 
             finalizeFunction()
@@ -435,16 +435,16 @@ class JumpThreadingExtendedTest {
     fun `preserves switch instruction`() {
         val module = buildAndThread {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            switch(params[0], "default", listOf(Constant.I32(0) to "c0", Constant.I32(1) to "c1"))
+            appendBlock("entry")
+            switch(params[0], BlockRef("default"), listOf(Constant.I32(0) to BlockRef("c0"), Constant.I32(1) to BlockRef("c1")))
 
-            positionAtEnd(appendBlock("c0"))
+            appendBlock("c0")
             ret(Constant.I32(10))
 
-            positionAtEnd(appendBlock("c1"))
+            appendBlock("c1")
             ret(Constant.I32(20))
 
-            positionAtEnd(appendBlock("default"))
+            appendBlock("default")
             ret(Constant.I32(30))
 
             finalizeFunction()
@@ -457,11 +457,11 @@ class JumpThreadingExtendedTest {
     fun `merges br target that is only reached from one place`() {
         val module = buildAndThread {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val v = add(params[0], Constant.I32(1))
-            br("only")
+            br(BlockRef("only"))
 
-            positionAtEnd(appendBlock("only"))
+            appendBlock("only")
             val w = mul(v, Constant.I32(2))
             ret(w)
 
@@ -475,10 +475,10 @@ class JumpThreadingExtendedTest {
     fun `folds same target condBr to unconditional br`() {
         val module = buildAndThread {
             val params = createFunction("f", listOf(Param("c", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(params[0], "same", "same")
+            appendBlock("entry")
+            condBr(params[0], BlockRef("same"), BlockRef("same"))
 
-            positionAtEnd(appendBlock("same"))
+            appendBlock("same")
             ret(Constant.I32(42))
 
             finalizeFunction()
@@ -491,13 +491,13 @@ class JumpThreadingExtendedTest {
     fun `folds constant false to false branch`() {
         val module = buildAndThread {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(Constant.I1(false), "dead", "live")
+            appendBlock("entry")
+            condBr(Constant.I1(false), BlockRef("dead"), BlockRef("live"))
 
-            positionAtEnd(appendBlock("dead"))
+            appendBlock("dead")
             ret(Constant.I32(0))
 
-            positionAtEnd(appendBlock("live"))
+            appendBlock("live")
             ret(Constant.I32(42))
 
             finalizeFunction()
@@ -511,16 +511,16 @@ class JumpThreadingExtendedTest {
     fun `preserves block used by switch and condBr`() {
         val module = buildAndThread {
             val params = createFunction("f", listOf(Param("x", Type.I32), Param("c", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(params[1], "a", "b")
+            appendBlock("entry")
+            condBr(params[1], BlockRef("a"), BlockRef("b"))
 
-            positionAtEnd(appendBlock("a"))
-            switch(params[0], "default", listOf(Constant.I32(0) to "b"))
+            appendBlock("a")
+            switch(params[0], BlockRef("default"), listOf(Constant.I32(0) to BlockRef("b")))
 
-            positionAtEnd(appendBlock("b"))
+            appendBlock("b")
             ret(Constant.I32(1))
 
-            positionAtEnd(appendBlock("default"))
+            appendBlock("default")
             ret(Constant.I32(2))
 
             finalizeFunction()
@@ -533,16 +533,16 @@ class JumpThreadingExtendedTest {
     fun `handles diamond with no constant folding`() {
         val module = buildAndThread {
             val params = createFunction("f", listOf(Param("c", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(params[0], "left", "right")
+            appendBlock("entry")
+            condBr(params[0], BlockRef("left"), BlockRef("right"))
 
-            positionAtEnd(appendBlock("left"))
-            br("exit")
+            appendBlock("left")
+            br(BlockRef("exit"))
 
-            positionAtEnd(appendBlock("right"))
-            br("exit")
+            appendBlock("right")
+            br(BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             ret(Constant.I32(0))
 
             finalizeFunction()
@@ -555,13 +555,13 @@ class JumpThreadingExtendedTest {
     fun `handles function with unreachable`() {
         val module = buildAndThread {
             createFunction("f", emptyList(), Type.Void)
-            positionAtEnd(appendBlock("entry"))
-            condBr(Constant.I1(true), "live", "dead")
+            appendBlock("entry")
+            condBr(Constant.I1(true), BlockRef("live"), BlockRef("dead"))
 
-            positionAtEnd(appendBlock("live"))
+            appendBlock("live")
             ret(null)
 
-            positionAtEnd(appendBlock("dead"))
+            appendBlock("dead")
             unreachable()
 
             finalizeFunction()

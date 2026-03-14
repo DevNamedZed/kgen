@@ -68,15 +68,12 @@ class InvokeDynamicTest {
 
         // Build the bootstrap method handle for StringConcatFactory.makeConcatWithConstants
         val bsmMethodRef = cp.methodRef(
-            "java/lang/invoke/StringConcatFactory",
-            "makeConcatWithConstants",
-            "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;")
+            "java/lang/invoke/StringConcatFactory", "makeConcatWithConstants", "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;")
         val bsmHandle = cp.methodHandle(6, bsmMethodRef) // REF_invokeStatic
         val recipe = cp.string("Hello, \u0001!")
 
         // The invokedynamic call: takes one String arg, returns String
         val indyIdx = cp.invokeDynamic(0, "makeConcatWithConstants", "(Ljava/lang/String;)Ljava/lang/String;")
-
         val nameIdx = cp.utf8("greet")
         val descIdx = cp.utf8("(Ljava/lang/String;)Ljava/lang/String;")
 
@@ -144,14 +141,11 @@ class InvokeDynamicTest {
         val bsmAttrIdx = cp.utf8("BootstrapMethods")
 
         val bsmMethodRef = cp.methodRef(
-            "java/lang/invoke/StringConcatFactory",
-            "makeConcatWithConstants",
-            "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;")
+            "java/lang/invoke/StringConcatFactory", "makeConcatWithConstants", "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;")
         val bsmHandle = cp.methodHandle(6, bsmMethodRef)
         val recipe = cp.string("value=\u0001")
 
         val indyIdx = cp.invokeDynamic(0, "makeConcatWithConstants", "(I)Ljava/lang/String;")
-
         val nameIdx = cp.utf8("intToStr")
         val descIdx = cp.utf8("(I)Ljava/lang/String;")
 
@@ -207,14 +201,11 @@ class InvokeDynamicTest {
         val bsmAttrIdx = cp.utf8("BootstrapMethods")
 
         val bsmMethodRef = cp.methodRef(
-            "java/lang/invoke/StringConcatFactory",
-            "makeConcatWithConstants",
-            "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;")
+            "java/lang/invoke/StringConcatFactory", "makeConcatWithConstants", "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;")
         val bsmHandle = cp.methodHandle(6, bsmMethodRef)
         val recipe = cp.string("count=\u0001")
 
         val indyIdx = cp.invokeDynamic(0, "makeConcatWithConstants", "(J)Ljava/lang/String;")
-
         val nameIdx = cp.utf8("longToStr")
         val descIdx = cp.utf8("(J)Ljava/lang/String;")
 
@@ -272,11 +263,8 @@ class InvokeDynamicTest {
 
         // Target method: test/Lambda.doWork()V
         val targetMethodRef = cp.methodRef("test/Lambda", "doWork", "()V")
-
         val bsmMethodRef = cp.methodRef(
-            "java/lang/invoke/LambdaMetafactory",
-            "metafactory",
-            "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;")
+            "java/lang/invoke/LambdaMetafactory", "metafactory", "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;")
         val bsmHandle = cp.methodHandle(6, bsmMethodRef) // REF_invokeStatic
 
         // BSM static args: [0] erased type, [1] target method handle, [2] specialized type
@@ -286,7 +274,6 @@ class InvokeDynamicTest {
 
         // invokedynamic: "run" ()Ljava/lang/Runnable;
         val indyIdx = cp.invokeDynamic(0, "run", "()Ljava/lang/Runnable;")
-
         val nameIdx = cp.utf8("makeLambda")
         val descIdx = cp.utf8("()Ljava/lang/Runnable;")
 
@@ -348,9 +335,7 @@ class InvokeDynamicTest {
 
         val targetMethodRef = cp.methodRef("test/CaptureLambda", "lambda\$main\$0", "(I)I")
         val bsmMethodRef = cp.methodRef(
-            "java/lang/invoke/LambdaMetafactory",
-            "metafactory",
-            "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;")
+            "java/lang/invoke/LambdaMetafactory", "metafactory", "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;")
         val bsmHandle = cp.methodHandle(6, bsmMethodRef)
 
         val erasedType = cp.methodType("()I")
@@ -359,7 +344,6 @@ class InvokeDynamicTest {
 
         // invokedynamic: "get" (I)Ljava/util/function/Supplier; — captures one int
         val indyIdx = cp.invokeDynamic(0, "get", "(I)Ljava/util/function/Supplier;")
-
         val nameIdx = cp.utf8("captureLambda")
         val descIdx = cp.utf8("(I)Ljava/util/function/Supplier;")
 
@@ -411,7 +395,6 @@ class InvokeDynamicTest {
         val bsmAttrIdx = cp.utf8("BootstrapMethods")
 
         val indyIdx = cp.invokeDynamic(0, "concat", "(I)Ljava/lang/String;")
-
         val nameIdx = cp.utf8("test")
         val descIdx = cp.utf8("(I)Ljava/lang/String;")
 
@@ -456,15 +439,11 @@ class InvokeDynamicTest {
         val bsmAttrIdx = cp.utf8("BootstrapMethods")
 
         val bsmMethodRef = cp.methodRef(
-            "java/lang/invoke/StringConcatFactory",
-            "makeConcatWithConstants",
-            "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;")
+            "java/lang/invoke/StringConcatFactory", "makeConcatWithConstants", "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;")
         val bsmHandle = cp.methodHandle(6, bsmMethodRef)
         val recipe = cp.string("a\u0001b\u0001c")
 
-        val indyIdx = cp.invokeDynamic(0, "makeConcatWithConstants",
-            "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;")
-
+        val indyIdx = cp.invokeDynamic(0, "makeConcatWithConstants", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;")
         val nameIdx = cp.utf8("multiConcat")
         val descIdx = cp.utf8("(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;")
 
@@ -531,15 +510,11 @@ class InvokeDynamicTest {
         val bsmAttrIdx = cp.utf8("BootstrapMethods")
 
         val bsmMethodRef = cp.methodRef(
-            "java/lang/invoke/StringConcatFactory",
-            "makeConcatWithConstants",
-            "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;")
+            "java/lang/invoke/StringConcatFactory", "makeConcatWithConstants", "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;")
         val bsmHandle = cp.methodHandle(6, bsmMethodRef)
         val recipe = cp.string("prefix\u0001middle\u0001suffix")
 
-        val indyIdx = cp.invokeDynamic(0, "makeConcatWithConstants",
-            "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;")
-
+        val indyIdx = cp.invokeDynamic(0, "makeConcatWithConstants", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;")
         val nameIdx = cp.utf8("twoStrConcat")
         val descIdx = cp.utf8("(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;")
 
@@ -595,14 +570,11 @@ class InvokeDynamicTest {
         val bsmAttrIdx = cp.utf8("BootstrapMethods")
 
         val bsmMethodRef = cp.methodRef(
-            "java/lang/invoke/StringConcatFactory",
-            "makeConcatWithConstants",
-            "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;")
+            "java/lang/invoke/StringConcatFactory", "makeConcatWithConstants", "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;")
         val bsmHandle = cp.methodHandle(6, bsmMethodRef)
         val recipe = cp.string("val=\u0001")
 
         val indyIdx = cp.invokeDynamic(0, "makeConcatWithConstants", "(D)Ljava/lang/String;")
-
         val nameIdx = cp.utf8("doubleToStr")
         val descIdx = cp.utf8("(D)Ljava/lang/String;")
 
@@ -658,15 +630,12 @@ class InvokeDynamicTest {
         val bsmAttrIdx = cp.utf8("BootstrapMethods")
 
         val bsmMethodRef = cp.methodRef(
-            "java/lang/invoke/StringConcatFactory",
-            "makeConcatWithConstants",
-            "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;")
+            "java/lang/invoke/StringConcatFactory", "makeConcatWithConstants", "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;")
         val bsmHandle = cp.methodHandle(6, bsmMethodRef)
         val recipe = cp.string("flag=\u0001")
 
         // boolean is Z which maps to int at invokedynamic level
         val indyIdx = cp.invokeDynamic(0, "makeConcatWithConstants", "(Z)Ljava/lang/String;")
-
         val nameIdx = cp.utf8("boolToStr")
         val descIdx = cp.utf8("(Z)Ljava/lang/String;")
 
@@ -718,9 +687,7 @@ class InvokeDynamicTest {
 
         val targetMethodRef = cp.methodRef("test/IntLambda", "lambda\$0", "(I)I")
         val bsmMethodRef = cp.methodRef(
-            "java/lang/invoke/LambdaMetafactory",
-            "metafactory",
-            "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;")
+            "java/lang/invoke/LambdaMetafactory", "metafactory", "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;")
         val bsmHandle = cp.methodHandle(6, bsmMethodRef)
 
         val erasedType = cp.methodType("(I)I")
@@ -728,7 +695,6 @@ class InvokeDynamicTest {
         val specializedType = cp.methodType("(I)I")
 
         val indyIdx = cp.invokeDynamic(0, "apply", "()Ljava/util/function/IntUnaryOperator;")
-
         val nameIdx = cp.utf8("makeFn")
         val descIdx = cp.utf8("()Ljava/util/function/IntUnaryOperator;")
 
@@ -783,14 +749,11 @@ class InvokeDynamicTest {
         val bsmAttrIdx = cp.utf8("BootstrapMethods")
 
         val bsmMethodRef = cp.methodRef(
-            "java/lang/invoke/StringConcatFactory",
-            "makeConcatWithConstants",
-            "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;")
+            "java/lang/invoke/StringConcatFactory", "makeConcatWithConstants", "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;")
         val bsmHandle = cp.methodHandle(6, bsmMethodRef)
         val recipe = cp.string("x=\u0001")
 
         val indyIdx = cp.invokeDynamic(0, "makeConcatWithConstants", "(I)Ljava/lang/String;")
-
         val nameIdx = cp.utf8("format")
         val descIdx = cp.utf8("(I)Ljava/lang/String;")
 

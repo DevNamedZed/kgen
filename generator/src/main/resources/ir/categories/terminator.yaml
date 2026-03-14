@@ -1,0 +1,96 @@
+name: Terminator
+interfaceName: TerminatorInstruction
+enumValue: TERMINATOR
+description: |-
+  Basic block terminator instructions.
+
+  Every basic block must end with exactly one terminator instruction.
+imports:
+- org.kgen.ir.BlockRef
+- org.kgen.ir.Constant
+sections:
+- comment: Terminator instructions
+  instructions:
+  - name: Ret
+    description: Return from the current function.
+    effects: RETURN
+    fields:
+    - name: value
+      type: Value?
+      role: operandNullable
+  - name: Br
+    description: 'Unconditional branch: transfers control to the target block.'
+    effects: BRANCH
+    fields:
+    - name: target
+      type: BlockRef
+      role: config
+  - name: CondBr
+    description: 'Conditional branch: branches based on a boolean condition.'
+    effects: CONDITIONAL_BRANCH
+    fields:
+    - name: condition
+      type: Value
+      role: operand
+    - name: trueTarget
+      type: BlockRef
+      role: config
+    - name: falseTarget
+      type: BlockRef
+      role: config
+    - name: trueWeight
+      type: Long
+      default: '0'
+      role: flag
+    - name: falseWeight
+      type: Long
+      default: '0'
+      role: flag
+  - name: Switch
+    description: 'Multi-way branch: switches on an integer value.'
+    effects: CONDITIONAL_BRANCH
+    fields:
+    - name: value
+      type: Value
+      role: operand
+    - name: defaultTarget
+      type: BlockRef
+      role: config
+    - name: cases
+      type: List<Pair<Constant, BlockRef>>
+      role: config
+  - name: IndirectBr
+    description: 'Indirect branch: transfers control to a computed address.'
+    effects: CONDITIONAL_BRANCH
+    fields:
+    - name: address
+      type: Value
+      role: operand
+    - name: targets
+      type: List<BlockRef>
+      role: config
+  - name: Unreachable
+    description: |-
+      Marks a point that is statically known to be unreachable.
+
+      If execution reaches this instruction, behavior is undefined.
+    effects: TRAP
+    fields: []
+  - name: Trap
+    description: |-
+      Unconditional program abort: immediately terminates execution.
+
+      Generates an illegal instruction or calls an abort intrinsic.
+    effects: TRAP
+    fields: []
+  - name: DebugTrap
+    description: |-
+      Debug breakpoint trap: triggers a debugger breakpoint.
+
+      Generates a debug break instruction (e.g., `int3` on x86).
+    effects: TRAP
+    fields:
+    - name: successor
+      type: BlockRef?
+      default: 'null'
+      role: config

@@ -38,11 +38,11 @@ class JumpThreading : ModulePass {
                     val cond = last.condition
                     if (cond is Constant.I1) {
                         val target = if (cond.value) last.trueTarget else last.falseTarget
-                        val newInsts = block.instructions.dropLast(1) + Br(target)
+                        val newInsts = block.instructions.dropLast(1) + Br(BlockRef(target.label))
                         changed = true
                         BasicBlock(block.label, newInsts)
                     } else if (last.trueTarget == last.falseTarget) {
-                        val newInsts = block.instructions.dropLast(1) + Br(last.trueTarget)
+                        val newInsts = block.instructions.dropLast(1) + Br(BlockRef(last.trueTarget.label))
                         changed = true
                         BasicBlock(block.label, newInsts)
                     } else {
@@ -69,11 +69,11 @@ class JumpThreading : ModulePass {
                                 val allTrue = condInst.incoming.all { (it.first as Constant.I1).value }
                                 val allFalse = condInst.incoming.all { !(it.first as Constant.I1).value }
                                 if (allTrue) {
-                                    val newInsts = block.instructions.dropLast(1) + Br(last.trueTarget)
+                                    val newInsts = block.instructions.dropLast(1) + Br(BlockRef(last.trueTarget.label))
                                     changed = true
                                     BasicBlock(block.label, newInsts)
                                 } else if (allFalse) {
-                                    val newInsts = block.instructions.dropLast(1) + Br(last.falseTarget)
+                                    val newInsts = block.instructions.dropLast(1) + Br(BlockRef(last.falseTarget.label))
                                     changed = true
                                     BasicBlock(block.label, newInsts)
                                 } else block
@@ -96,7 +96,7 @@ class JumpThreading : ModulePass {
                 while (true) {
                     val last = current.instructions.lastOrNull()
                     if (last !is Br) break
-                    val target = last.target
+                    val target = last.target.label
                     if ((predCounts[target] ?: 0) != 1) break
                     val successor = blockMap[target] ?: break
                     if (successor.label in merged) break
@@ -148,10 +148,10 @@ class JumpThreading : ModulePass {
     }
 
     private fun terminatorTargets(inst: Instruction): List<String> = when (inst) {
-        is Br -> listOf(inst.target)
-        is CondBr -> listOf(inst.trueTarget, inst.falseTarget)
-        is Switch -> listOf(inst.defaultTarget) + inst.cases.map { it.second }
-        is IndirectBr -> inst.targets
+        is Br -> listOf(inst.target.label)
+        is CondBr -> listOf(inst.trueTarget.label, inst.falseTarget.label)
+        is Switch -> listOf(inst.defaultTarget.label) + inst.cases.map { it.second.label }
+        is IndirectBr -> inst.targets.map { it.label }
         else -> emptyList()
     }
 }

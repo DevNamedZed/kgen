@@ -21,13 +21,13 @@ class InliningTest {
     fun `inlines simple add function`() {
         val module = buildAndInline {
             val addParams = createFunction("add_nums", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val sum = add(addParams[0], addParams[1])
             ret(sum)
             finalizeFunction()
 
             createFunction("main", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = call("add_nums", listOf(Constant.I32(10), Constant.I32(20)), Type.I32)!!
             ret(result)
             finalizeFunction()
@@ -42,13 +42,13 @@ class InliningTest {
     fun `inlined function uses correct arguments`() {
         val module = buildAndInline {
             val addParams = createFunction("double", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = add(addParams[0], addParams[0])
             ret(result)
             finalizeFunction()
 
             createFunction("main", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = call("double", listOf(Constant.I32(5)), Type.I32)!!
             ret(r)
             finalizeFunction()
@@ -65,7 +65,7 @@ class InliningTest {
         val module = buildAndInline {
             declareFunction("external_fn", listOf(Param("x", Type.I32)), Type.I32)
             createFunction("main", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = call("external_fn", listOf(Constant.I32(5)), Type.I32)!!
             ret(r)
             finalizeFunction()
@@ -78,13 +78,13 @@ class InliningTest {
     fun `does not inline recursive functions`() {
         val module = buildAndInline {
             val params = createFunction("rec", listOf(Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = call("rec", listOf(params[0]), Type.I32)!!
             ret(r)
             finalizeFunction()
 
             createFunction("main", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = call("rec", listOf(Constant.I32(5)), Type.I32)!!
             ret(result)
             finalizeFunction()
@@ -98,7 +98,7 @@ class InliningTest {
         val smallInliner = Inlining(maxInstructionCount = 2)
         val ir = IrBuilder("test", Target.x86_64())
         val params = ir.createFunction("big", listOf(Param("x", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = ir.add(params[0], Constant.I32(1))
         val b = ir.add(a, Constant.I32(2))
         val c = ir.add(b, Constant.I32(3))
@@ -106,7 +106,7 @@ class InliningTest {
         ir.finalizeFunction()
 
         ir.createFunction("main", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val r = ir.call("big", listOf(Constant.I32(0)), Type.I32)!!
         ir.ret(r)
         ir.finalizeFunction()
@@ -120,13 +120,13 @@ class InliningTest {
     fun `inlines chain of calls`() {
         val module = buildAndInline {
             val p1 = createFunction("inc", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r1 = add(p1[0], Constant.I32(1))
             ret(r1)
             finalizeFunction()
 
             createFunction("main", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = call("inc", listOf(Constant.I32(0)), Type.I32)!!
             val b = call("inc", listOf(a), Type.I32)!!
             ret(b)
@@ -142,12 +142,12 @@ class InliningTest {
     fun `inlines void function`() {
         val module = buildAndInline {
             val p1 = createFunction("noop", emptyList(), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(null)
             finalizeFunction()
 
             createFunction("main", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             call("noop", emptyList(), Type.Void)
             ret(Constant.I32(0))
             finalizeFunction()
@@ -161,12 +161,12 @@ class InliningTest {
     fun `preserves callee function`() {
         val module = buildAndInline {
             val p1 = createFunction("helper", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(p1[0])
             finalizeFunction()
 
             createFunction("main", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = call("helper", listOf(Constant.I32(42)), Type.I32)!!
             ret(r)
             finalizeFunction()
@@ -179,13 +179,13 @@ class InliningTest {
     fun `inlined return value is used correctly`() {
         val module = buildAndInline {
             val p1 = createFunction("square", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val sq = mul(p1[0], p1[0])
             ret(sq)
             finalizeFunction()
 
             val p2 = createFunction("main", listOf(Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = call("square", listOf(p2[0]), Type.I32)!!
             val result = add(r, Constant.I32(1))
             ret(result)

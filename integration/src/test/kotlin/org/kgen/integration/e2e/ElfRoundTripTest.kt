@@ -28,7 +28,7 @@ class ElfRoundTripTest {
     private fun buildAddModule(target: Target): Module {
         val ir = IrBuilder("elf_test", target)
         val params = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.add(params[0], params[1]))
         ir.finalizeFunction()
         return ir.build()
@@ -38,17 +38,17 @@ class ElfRoundTripTest {
         val ir = IrBuilder("multi_test", target)
 
         val addParams = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.add(addParams[0], addParams[1]))
         ir.finalizeFunction()
 
         val mulParams = ir.createFunction("mul", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.mul(mulParams[0], mulParams[1]))
         ir.finalizeFunction()
 
         ir.createFunction("answer", emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I64(42))
         ir.finalizeFunction()
 
@@ -191,14 +191,14 @@ class ElfRoundTripTest {
     fun twoObjectFilesLinkedIntoStaticExecutable() {
         val ir1 = IrBuilder("mod1", Target.x86_64())
         val p1 = ir1.createFunction("compute", listOf(Param("x", Type.I64)), Type.I64)
-        ir1.positionAtEnd(ir1.appendBlock("entry"))
+        ir1.appendBlock("entry")
         ir1.ret(ir1.mul(p1[0], Constant.I64(2)))
         ir1.finalizeFunction()
         val obj1 = X86CodeGenerator().generateObjectFile(ir1.build())
 
         val ir2 = IrBuilder("mod2", Target.x86_64())
         ir2.createFunction("_start", emptyList(), Type.I64)
-        ir2.positionAtEnd(ir2.appendBlock("entry"))
+        ir2.appendBlock("entry")
         ir2.ret(Constant.I64(0))
         ir2.finalizeFunction()
         val obj2 = X86CodeGenerator().generateObjectFile(ir2.build())

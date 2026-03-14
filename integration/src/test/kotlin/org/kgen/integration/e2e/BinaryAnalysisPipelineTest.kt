@@ -184,7 +184,7 @@ class BinaryAnalysisPipelineTest {
         ir.addGlobal("msg", strType, Constant.StringConst("Hello, World!"),
             isConstant = true, linkage = Linkage.INTERNAL)
         ir.createFunction("_start", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I32(0))
         ir.finalizeFunction()
 
@@ -202,7 +202,7 @@ class BinaryAnalysisPipelineTest {
     private fun buildModule(): Module {
         val ir = IrBuilder("analysis_test", Target.x86_64())
         val p = ir.createFunction("compute", listOf(Param("x", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val doubled = ir.add(p[0], p[0])
         val result = ir.add(doubled, Constant.I64(1))
         ir.ret(result)
@@ -214,7 +214,7 @@ class BinaryAnalysisPipelineTest {
         val ir = IrBuilder("reloc_test", Target.x86_64())
         ir.declareFunction("external_fn", listOf(Param("x", Type.I64)), Type.I64)
         ir.createFunction("caller", listOf(Param("x", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val result = ir.call("external_fn", listOf(Parameter("x", Type.I64, 0)), Type.I64)
         ir.ret(result)
         ir.finalizeFunction()

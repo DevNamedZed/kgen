@@ -115,18 +115,18 @@ class AutoVectorization(
             .firstOrNull { it.result?.name == (condBr.condition as? InstructionRef)?.name } ?: return null
 
         // Determine exit and body targets
-        val trueInLoop = condBr.trueTarget in loop.body
-        val falseInLoop = condBr.falseTarget in loop.body
+        val trueInLoop = condBr.trueTarget.label in loop.body
+        val falseInLoop = condBr.falseTarget.label in loop.body
         if (trueInLoop == falseInLoop) return null // both in or both out — not a simple loop
 
-        val bodyTarget = if (trueInLoop) condBr.trueTarget else condBr.falseTarget
-        val exitTarget = if (trueInLoop) condBr.falseTarget else condBr.trueTarget
+        val bodyTarget = if (trueInLoop) condBr.trueTarget.label else condBr.falseTarget.label
+        val exitTarget = if (trueInLoop) condBr.falseTarget.label else condBr.trueTarget.label
         val predicate = if (trueInLoop) icmp.predicate else invertPredicate(icmp.predicate)
 
         // Determine start value and step
         val inductionVarName = inductionPhi.dest.name
-        val externalIncoming = inductionPhi.incoming.firstOrNull { it.second !in loop.body }
-        val loopIncoming = inductionPhi.incoming.firstOrNull { it.second in loop.body }
+        val externalIncoming = inductionPhi.incoming.firstOrNull { it.second.label !in loop.body }
+        val loopIncoming = inductionPhi.incoming.firstOrNull { it.second.label in loop.body }
         if (externalIncoming == null || loopIncoming == null) return null
 
         val startValue = externalIncoming.first
@@ -143,7 +143,7 @@ class AutoVectorization(
         } else return null
 
         // Find latch block (the block with the back edge)
-        val latchLabel = loopIncoming.second
+        val latchLabel = loopIncoming.second.label
 
         // Collect body instructions
         val bodyInstructions = mutableListOf<Instruction>()
@@ -202,7 +202,7 @@ class AutoVectorization(
         blocks: List<BasicBlock>,
     ): Phi? {
         for (phi in phis) {
-            val loopUpdate = phi.incoming.firstOrNull { it.second in bodyBlocks } ?: continue
+            val loopUpdate = phi.incoming.firstOrNull { it.second.label in bodyBlocks } ?: continue
             val updateValue = loopUpdate.first
             if (updateValue !is InstructionRef) continue
             // Check if the update is an add/sub with constant step
@@ -266,7 +266,7 @@ class AutoVectorization(
     }
 
     private fun detectReduction(phi: Phi, blocks: List<BasicBlock>, loop: NaturalLoop): Reduction? {
-        val loopIncoming = phi.incoming.firstOrNull { it.second in loop.body } ?: return null
+        val loopIncoming = phi.incoming.firstOrNull { it.second.label in loop.body } ?: return null
         val updateRef = loopIncoming.first as? InstructionRef ?: return null
 
         for (blockLabel in loop.body) {
@@ -341,11 +341,11 @@ class AutoVectorization(
         // Initialize reduction accumulators as vector splats
         val reductionVecPhis = mutableListOf<Pair<Reduction, InstructionRef>>()
 
-        vecPreheaderInsts.add(Br(vecHeaderLabel))
+        vecPreheaderInsts.add(Br(BlockRef(vecHeaderLabel)))
 
         // Vec header: phi for induction + check
         val vecIndPhi = Phi(vecIndRef, listOf(
-            analysis.start to vecPreheaderLabel,
+            analysis.start to BlockRef(vecPreheaderLabel),
         ))
         vecHeaderInsts.add(vecIndPhi)
 
@@ -353,7 +353,7 @@ class AutoVectorization(
         for (red in analysis.reductions) {
             val vecType = Type.Vector(red.phiInst.dest.type, vf)
             val vecAccRef = nextRef(vecType)
-            val initScalar = red.phiInst.incoming.firstOrNull { it.second !in loop.body }?.first
+            val initScalar = red.phiInst.incoming.firstOrNull { it.second.label !in loop.body }?.first
                 ?: continue
             reductionVecPhis.add(red to vecAccRef)
             // We'll create phis with placeholders — to be updated
@@ -365,7 +365,7 @@ class AutoVectorization(
         // Compare: vecInd < vecLimit
         val vecCmpRef = nextRef(Type.I1)
         vecHeaderInsts.add(ICmp(vecCmpRef, analysis.predicate, vecIndRef, vecLimitRef))
-        vecHeaderInsts.add(CondBr(vecCmpRef, vecBodyLabel, scalarPreheaderLabel))
+        vecHeaderInsts.add(CondBr(vecCmpRef, BlockRef(vecBodyLabel), BlockRef(scalarPreheaderLabel)))
 
         // Vec body: widen loads, compute arithmetic, widen stores
         // Map from scalar instruction result name → widened vector value
@@ -459,7 +459,7 @@ class AutoVectorization(
         // Vec latch: increment induction by VF
         val vecNextIndRef = nextRef(Type.I32)
         vecLatchInsts.add(Add(vecNextIndRef, vecIndRef, vecStepConst))
-        vecLatchInsts.add(Br(vecHeaderLabel))
+        vecLatchInsts.add(Br(BlockRef(vecHeaderLabel)))
 
         // Build new blocks
         val newBlocks = mutableListOf<BasicBlock>()
@@ -468,17 +468,17 @@ class AutoVectorization(
                 // Insert vector preheader and vector loop before scalar loop
                 newBlocks.add(BasicBlock(vecPreheaderLabel, vecPreheaderInsts))
                 newBlocks.add(BasicBlock(vecHeaderLabel, vecHeaderInsts))
-                newBlocks.add(BasicBlock(vecBodyLabel, vecBodyInsts + Br(vecLatchLabel)))
+                newBlocks.add(BasicBlock(vecBodyLabel, vecBodyInsts + Br(BlockRef(vecLatchLabel))))
                 newBlocks.add(BasicBlock(vecLatchLabel, vecLatchInsts))
 
                 // Scalar preheader: branch to original header
-                newBlocks.add(BasicBlock(scalarPreheaderLabel, listOf(Br(analysis.headerLabel))))
+                newBlocks.add(BasicBlock(scalarPreheaderLabel, listOf(Br(BlockRef(analysis.headerLabel)))))
 
                 // Update original header's phi: start from vecLimit instead of original start
                 val updatedInsts = block.instructions.map { inst ->
                     if (inst is Phi && inst.dest.name == analysis.inductionVar) {
                         Phi(inst.dest, inst.incoming.map { (v, label) ->
-                            if (label !in loop.body) vecLimitRef to scalarPreheaderLabel
+                            if (label.label !in loop.body) vecLimitRef to BlockRef(scalarPreheaderLabel)
                             else v to label
                         })
                     } else inst
@@ -838,10 +838,10 @@ class AutoVectorization(
     }
 
     private fun terminatorTargets(inst: Instruction): List<String> = when (inst) {
-        is Br -> listOf(inst.target)
-        is CondBr -> listOf(inst.trueTarget, inst.falseTarget)
-        is Switch -> listOf(inst.defaultTarget) + inst.cases.map { it.second }
-        is IndirectBr -> inst.targets
+        is Br -> listOf(inst.target.label)
+        is CondBr -> listOf(inst.trueTarget.label, inst.falseTarget.label)
+        is Switch -> listOf(inst.defaultTarget.label) + inst.cases.map { it.second.label }
+        is IndirectBr -> inst.targets.map { it.label }
         else -> emptyList()
     }
 

@@ -13,7 +13,7 @@ class OptLevelTest {
     fun `O0 does nothing`() {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val dead = ir.add(Constant.I32(1), Constant.I32(2))
         ir.ret(Constant.I32(0))
         ir.finalizeFunction()
@@ -27,7 +27,7 @@ class OptLevelTest {
     fun `O1 folds constants and eliminates dead code`() {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = ir.add(Constant.I32(10), Constant.I32(20))
         val dead = ir.mul(Constant.I32(3), Constant.I32(4)) // dead
         ir.ret(a)
@@ -44,7 +44,7 @@ class OptLevelTest {
     fun `O1 combines identity operations`() {
         val ir = IrBuilder("test", Target.x86_64())
         val params = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = ir.add(params[0], Constant.I32(0))
         val b = ir.mul(a, Constant.I32(1))
         ir.ret(b)
@@ -61,7 +61,7 @@ class OptLevelTest {
     fun `O2 catches multi-pass opportunities`() {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         // Chain that benefits from second constant folding pass
         val a = ir.add(Constant.I32(5), Constant.I32(5))   // → 10
         val b = ir.mul(a, Constant.I32(3))                  // after fold: 10*3=30
@@ -81,7 +81,7 @@ class OptLevelTest {
         val ir = IrBuilder("test", Target.x86_64())
         ir.declareFunction("external_fn", listOf(Param("x", Type.I32)), Type.I32)
         val params = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val sum = ir.add(params[0], Constant.I32(5))
         val result = ir.call("external_fn", listOf(sum), Type.I32)
         ir.ret(result)

@@ -21,7 +21,7 @@ class DeadCodeEliminationTest {
     fun `removes unused arithmetic`() {
         val module = buildAndDCE {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             add(Constant.I32(1), Constant.I32(2)) // dead
             mul(Constant.I32(3), Constant.I32(4)) // dead
             ret(Constant.I32(42))
@@ -36,7 +36,7 @@ class DeadCodeEliminationTest {
     fun `preserves used values`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val sum = add(params[0], Constant.I32(1))
             ret(sum)
             finalizeFunction()
@@ -50,7 +50,7 @@ class DeadCodeEliminationTest {
         val module = buildAndDCE {
             declareFunction("side_effect", emptyList(), Type.I32)
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             call("side_effect", emptyList(), Type.I32) // result unused, but call has side effects
             ret(Constant.I32(0))
             finalizeFunction()
@@ -64,7 +64,7 @@ class DeadCodeEliminationTest {
     fun `preserves stores`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("ptr", Type.OpaquePointer)), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             store(Constant.I32(42), params[0])
             ret(null)
             finalizeFunction()
@@ -77,7 +77,7 @@ class DeadCodeEliminationTest {
     fun `removes chains of dead code`() {
         val module = buildAndDCE {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(Constant.I32(1), Constant.I32(2))
             val b = mul(a, Constant.I32(3)) // uses a, but b itself is dead
             val c = sub(b, Constant.I32(4)) // uses b, but c is dead too
@@ -92,14 +92,14 @@ class DeadCodeEliminationTest {
     fun `preserves branch instructions`() {
         val module = buildAndDCE {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cmp = icmp(ICmpPredicate.SGT, params[0], Constant.I32(0))
-            condBr(cmp, "pos", "neg")
+            condBr(cmp, BlockRef("pos"), BlockRef("neg"))
 
-            positionAtEnd(appendBlock("pos"))
+            appendBlock("pos")
             ret(Constant.I32(1))
 
-            positionAtEnd(appendBlock("neg"))
+            appendBlock("neg")
             ret(Constant.I32(-1))
 
             finalizeFunction()
@@ -113,7 +113,7 @@ class DeadCodeEliminationTest {
         val module = buildAndDCE {
             declareFunction("external", emptyList(), Type.I32)
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I32(0))
             finalizeFunction()
         }

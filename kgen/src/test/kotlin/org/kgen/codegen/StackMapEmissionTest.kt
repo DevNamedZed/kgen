@@ -21,7 +21,7 @@ class StackMapEmissionTest {
             Type.I64,
             gc = "statepoint",
         )
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.gcSafepoint()
         val sum = ir.add(params[0], params[1])
         ir.ret(sum)
@@ -37,7 +37,7 @@ class StackMapEmissionTest {
             Type.I64,
             gc = "statepoint",
         )
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val slot = ir.alloca(Type.I64)
         ir.gcRoot(slot)
         ir.gcSafepoint()
@@ -53,7 +53,7 @@ class StackMapEmissionTest {
             listOf(Param("a", Type.I32), Param("b", Type.I32)),
             Type.I32,
         )
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.gcSafepoint()
         val sum = ir.add(params[0], params[1])
         ir.ret(sum)
@@ -69,7 +69,7 @@ class StackMapEmissionTest {
             Type.I64,
             gc = "statepoint",
         )
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.gcSafepoint()
         ir.gcSafepoint()
         val sum = ir.add(params[0], params[1])
@@ -193,7 +193,7 @@ class StackMapEmissionTest {
             Type.I64,
             gc = "shadow-stack",
         )
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.gcSafepoint()
         ir.ret(params[0])
         ir.finalizeFunction()

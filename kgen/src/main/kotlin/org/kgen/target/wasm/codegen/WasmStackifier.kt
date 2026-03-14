@@ -144,9 +144,9 @@ class WasmStackifier(private val fn: IrFunction) {
         fun successors(block: BasicBlock): List<String> {
             val last = block.instructions.lastOrNull() ?: return emptyList()
             return when (last) {
-                is Br -> listOf(last.target)
-                is CondBr -> listOf(last.trueTarget, last.falseTarget)
-                is Switch -> listOf(last.defaultTarget) + last.cases.map { it.second }
+                is Br -> listOf(last.target.label)
+                is CondBr -> listOf(last.trueTarget.label, last.falseTarget.label)
+                is Switch -> listOf(last.defaultTarget.label) + last.cases.map { it.second.label }
                 else -> emptyList()
             }
         }

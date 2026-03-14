@@ -21,7 +21,6 @@ class ComplexNativeProgramTest {
         val superClass = cp.classEntry("java/lang/Object")
         val codeIdx = cp.utf8("Code")
         val countField = cp.fieldRef("org/kgen/test/Counter", "count", "I")
-
         // static { count = 0; } → <clinit>
         val clinitName = cp.utf8("<clinit>")
         val clinitDesc = cp.utf8("()V")

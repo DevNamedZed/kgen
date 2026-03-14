@@ -205,9 +205,9 @@ class WasmCodeGenerator : CodeGenerator {
         locals: Map<String, Int>,
         asm: WasmAssembler,
     ) {
-        emitPhiCopies(currentBlock, inst.target, phiMoves, locals, asm)
-        if (inst.target != nextLabel) {
-            asm.br(findLabel(inst.target, labelStack))
+        emitPhiCopies(currentBlock, inst.target.label, phiMoves, locals, asm)
+        if (inst.target.label != nextLabel) {
+            asm.br(findLabel(inst.target.label, labelStack))
         }
         // If target is next block, fall through
     }
@@ -223,32 +223,32 @@ class WasmCodeGenerator : CodeGenerator {
         savedSpSlot: Int,
         asm: WasmAssembler,
     ) {
-        if (inst.trueTarget == inst.falseTarget) {
-            emitPhiCopies(currentBlock, inst.trueTarget, phiMoves, locals, asm)
-            if (inst.trueTarget != nextLabel) {
-                asm.br(findLabel(inst.trueTarget, labelStack))
+        if (inst.trueTarget.label == inst.falseTarget.label) {
+            emitPhiCopies(currentBlock, inst.trueTarget.label, phiMoves, locals, asm)
+            if (inst.trueTarget.label != nextLabel) {
+                asm.br(findLabel(inst.trueTarget.label, labelStack))
             }
             return
         }
 
-        val truePhis = phiMoves[currentBlock to inst.trueTarget] ?: emptyList()
-        val falsePhis = phiMoves[currentBlock to inst.falseTarget] ?: emptyList()
-        val trueIsNext = inst.trueTarget == nextLabel
-        val falseIsNext = inst.falseTarget == nextLabel
+        val truePhis = phiMoves[currentBlock to inst.trueTarget.label] ?: emptyList()
+        val falsePhis = phiMoves[currentBlock to inst.falseTarget.label] ?: emptyList()
+        val trueIsNext = inst.trueTarget.label == nextLabel
+        val falseIsNext = inst.falseTarget.label == nextLabel
 
         if (truePhis.isEmpty() && falsePhis.isEmpty()) {
             // No phi copies — use br_if
             if (falseIsNext) {
                 pushValue(inst.condition, locals, asm)
-                asm.brIf(findLabel(inst.trueTarget, labelStack))
+                asm.brIf(findLabel(inst.trueTarget.label, labelStack))
             } else if (trueIsNext) {
                 pushValue(inst.condition, locals, asm)
                 asm.i32Eqz()
-                asm.brIf(findLabel(inst.falseTarget, labelStack))
+                asm.brIf(findLabel(inst.falseTarget.label, labelStack))
             } else {
                 pushValue(inst.condition, locals, asm)
-                asm.brIf(findLabel(inst.trueTarget, labelStack))
-                asm.br(findLabel(inst.falseTarget, labelStack))
+                asm.brIf(findLabel(inst.trueTarget.label, labelStack))
+                asm.br(findLabel(inst.falseTarget.label, labelStack))
             }
             return
         }
@@ -263,7 +263,7 @@ class WasmCodeGenerator : CodeGenerator {
             asm.localSet(locals[dest]!!)
         }
         if (!trueIsNext) {
-            asm.br(findLabel(inst.trueTarget, labelStack))
+            asm.br(findLabel(inst.trueTarget.label, labelStack))
         }
         // If true target is next block, fall through past else/end
 
@@ -275,7 +275,7 @@ class WasmCodeGenerator : CodeGenerator {
             asm.localSet(locals[dest]!!)
         }
         if (!falseIsNext) {
-            asm.br(findLabel(inst.falseTarget, labelStack))
+            asm.br(findLabel(inst.falseTarget.label, labelStack))
         }
 
         asm.endIf()
@@ -291,7 +291,8 @@ class WasmCodeGenerator : CodeGenerator {
         asm: WasmAssembler,
     ) {
         // Emit as chain of comparisons (like other backends)
-        for ((caseValue, target) in inst.cases) {
+        for ((caseValue, targetRef) in inst.cases) {
+            val target = targetRef.label
             pushValue(inst.value, locals, asm)
             pushValue(caseValue, locals, asm)
             when (inst.value.type) {
@@ -334,9 +335,9 @@ class WasmCodeGenerator : CodeGenerator {
             }
         }
         // Default case
-        emitPhiCopies(currentBlock, inst.defaultTarget, phiMoves, locals, asm)
-        if (inst.defaultTarget != nextLabel) {
-            asm.br(findLabel(inst.defaultTarget, labelStack))
+        emitPhiCopies(currentBlock, inst.defaultTarget.label, phiMoves, locals, asm)
+        if (inst.defaultTarget.label != nextLabel) {
+            asm.br(findLabel(inst.defaultTarget.label, labelStack))
         }
     }
 
@@ -399,8 +400,8 @@ class WasmCodeGenerator : CodeGenerator {
         for (block in fn.blocks) {
             for (inst in block.instructions) {
                 if (inst is Phi) {
-                    for ((value, sourceBlock) in inst.incoming) {
-                        result.getOrPut(sourceBlock to block.label) { mutableListOf() }
+                    for ((value, sourceBlockRef) in inst.incoming) {
+                        result.getOrPut(sourceBlockRef.label to block.label) { mutableListOf() }
                             .add(inst.dest.name to value)
                     }
                 }
@@ -596,7 +597,7 @@ class WasmCodeGenerator : CodeGenerator {
                 asm.localSet(locals[inst.dest.name]!!)
             }
 
-            is Trunc -> {
+            is FTrunc -> {
                 pushValue(inst.operand, locals, asm)
                 when (inst.operand.type) { Type.F32 -> asm.f32Trunc(); Type.F64 -> asm.f64Trunc(); else -> error("Unsupported trunc type") }
                 asm.localSet(locals[inst.dest.name]!!)

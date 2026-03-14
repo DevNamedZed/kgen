@@ -23,7 +23,7 @@ class BasicAliasAnalysisTest {
         fun `same parameter is MustAlias`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("ptr", Type.OpaquePointer)), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -36,7 +36,7 @@ class BasicAliasAnalysisTest {
         fun `same alloca result is MustAlias`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = alloca(Type.I32)
                 store(Constant.I32(1), a)
                 ret()
@@ -52,7 +52,7 @@ class BasicAliasAnalysisTest {
             val fn = buildFunction {
                 addGlobal("g", Type.I32, Constant.I32(0))
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -70,7 +70,7 @@ class BasicAliasAnalysisTest {
         fun `two different allocas are NoAlias`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = alloca(Type.I32)
                 val b = alloca(Type.I64)
                 store(Constant.I32(1), a)
@@ -88,7 +88,7 @@ class BasicAliasAnalysisTest {
         fun `three allocas are pairwise NoAlias`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = alloca(Type.I32)
                 val b = alloca(Type.I32)
                 val c = alloca(Type.I32)
@@ -116,7 +116,7 @@ class BasicAliasAnalysisTest {
             val fn = buildFunction {
                 addGlobal("g", Type.I32, Constant.I32(0))
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = alloca(Type.I32)
                 store(Constant.I32(1), a)
                 ret()
@@ -139,7 +139,7 @@ class BasicAliasAnalysisTest {
                 addGlobal("g1", Type.I32, Constant.I32(0))
                 addGlobal("g2", Type.I64, Constant.I64(0))
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -158,7 +158,7 @@ class BasicAliasAnalysisTest {
             val fn = buildFunction {
                 addGlobal("g", Type.I32, Constant.I32(0))
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -172,7 +172,7 @@ class BasicAliasAnalysisTest {
         fun `null vs parameter is NoAlias`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("p", Type.OpaquePointer)), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -184,7 +184,7 @@ class BasicAliasAnalysisTest {
         fun `null vs null is MustAlias by identity`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -200,7 +200,7 @@ class BasicAliasAnalysisTest {
         fun `parameter vs alloca is NoAlias both directions`() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("p", Type.OpaquePointer)), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = alloca(Type.I32)
                 store(Constant.I32(1), a)
                 ret()
@@ -222,7 +222,7 @@ class BasicAliasAnalysisTest {
             val fn = buildFunction {
                 val structType = Type.Struct(null, listOf(Type.I32, Type.I64, Type.F32))
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val s = alloca(structType)
                 val f0 = gep(structType, s, Constant.I32(0), Constant.I32(0))
                 val f2 = gep(structType, s, Constant.I32(0), Constant.I32(2))
@@ -242,7 +242,7 @@ class BasicAliasAnalysisTest {
             val fn = buildFunction {
                 val structType = Type.Struct(null, listOf(Type.I32, Type.I64))
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val s = alloca(structType)
                 val f0a = gep(structType, s, Constant.I32(0), Constant.I32(1))
                 val f0b = gep(structType, s, Constant.I32(0), Constant.I32(1))
@@ -261,7 +261,7 @@ class BasicAliasAnalysisTest {
         fun `GEP from different allocas are NoAlias via base decomposition`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = alloca(Type.I32)
                 val b = alloca(Type.I32)
                 val ga = gep(Type.I32, a, Constant.I32(0))
@@ -282,7 +282,7 @@ class BasicAliasAnalysisTest {
             val fn = buildFunction {
                 val structType = Type.Struct(null, listOf(Type.I32, Type.I64))
                 val params = createFunction("f", listOf(Param("s", Type.Pointer(structType))), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val f0 = gep(structType, params[0], Constant.I32(0), Constant.I32(0))
                 store(Constant.I32(42), f0)
                 ret()
@@ -305,7 +305,7 @@ class BasicAliasAnalysisTest {
                     Param("p", Type.OpaquePointer),
                     Param("q", Type.OpaquePointer)
                 ), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -320,7 +320,7 @@ class BasicAliasAnalysisTest {
                     Param("a", Type.Pointer(Type.I32)),
                     Param("b", Type.Pointer(Type.I32))
                 ), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -336,7 +336,7 @@ class BasicAliasAnalysisTest {
         fun `readsMemory identifies loads`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -349,7 +349,7 @@ class BasicAliasAnalysisTest {
         fun `readsMemory is false for stores`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -362,7 +362,7 @@ class BasicAliasAnalysisTest {
         fun `readsMemory is false for arithmetic`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -375,7 +375,7 @@ class BasicAliasAnalysisTest {
         fun `writesMemory identifies stores`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -388,7 +388,7 @@ class BasicAliasAnalysisTest {
         fun `writesMemory is false for loads`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -401,7 +401,7 @@ class BasicAliasAnalysisTest {
         fun `readsMemory is true for calls`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -415,7 +415,7 @@ class BasicAliasAnalysisTest {
         fun `memoryPointer extracts pointer from load`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -429,7 +429,7 @@ class BasicAliasAnalysisTest {
         fun `memoryPointer extracts pointer from store`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -443,7 +443,7 @@ class BasicAliasAnalysisTest {
         fun `memoryPointer returns null for non-memory instruction`() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }

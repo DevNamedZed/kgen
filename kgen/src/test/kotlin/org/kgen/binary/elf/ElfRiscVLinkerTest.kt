@@ -30,7 +30,7 @@ class ElfRiscVLinkerTest {
     fun `ElfObjectWriter produces RISC-V object file`() {
         val obj = compileRiscVModule {
             createFunction("start", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I32(0))
             finalizeFunction()
         }
@@ -46,7 +46,7 @@ class ElfRiscVLinkerTest {
     fun `ElfObjectWriter preserves RISC-V relocations`() {
         val obj = compileRiscVModule {
             createFunction("caller", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = call("callee", emptyList(), Type.I32)
             ret(result)
             finalizeFunction()
@@ -65,7 +65,7 @@ class ElfRiscVLinkerTest {
     fun `ElfStaticLinker links single RISC-V object`() {
         val obj = compileRiscVModule {
             createFunction("_start", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I32(0))
             finalizeFunction()
         }
@@ -82,13 +82,13 @@ class ElfRiscVLinkerTest {
     fun `ElfStaticLinker resolves RISC-V CALL_PLT relocation`() {
         val obj = compileRiscVModule {
             createFunction("_start", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = call("helper", emptyList(), Type.I32)
             ret(r)
             finalizeFunction()
 
             createFunction("helper", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I32(42))
             finalizeFunction()
         }
@@ -103,7 +103,7 @@ class ElfRiscVLinkerTest {
     fun `ElfStaticLinker links two RISC-V objects with cross-reference`() {
         val mainObj = compileRiscVModule {
             createFunction("_start", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = call("helper", emptyList(), Type.I32)
             ret(r)
             finalizeFunction()
@@ -111,7 +111,7 @@ class ElfRiscVLinkerTest {
 
         val helperObj = compileRiscVModule {
             createFunction("helper", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I32(100))
             finalizeFunction()
         }
@@ -127,7 +127,7 @@ class ElfRiscVLinkerTest {
     fun `ElfStaticLinker round-trips through ElfReader`() {
         val obj = compileRiscVModule {
             createFunction("_start", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I32(0))
             finalizeFunction()
         }
@@ -146,7 +146,7 @@ class ElfRiscVLinkerTest {
     fun `ElfLinker links RISC-V dynamic executable`() {
         val obj = compileRiscVModule {
             createFunction("main", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I32(0))
             finalizeFunction()
         }
@@ -161,13 +161,13 @@ class ElfRiscVLinkerTest {
     fun `ElfLinker resolves RISC-V internal calls`() {
         val obj = compileRiscVModule {
             createFunction("main", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = call("compute", emptyList(), Type.I32)
             ret(r)
             finalizeFunction()
 
             createFunction("compute", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I32(7))
             finalizeFunction()
         }
@@ -182,7 +182,7 @@ class ElfRiscVLinkerTest {
     fun `ElfSharedLinker links RISC-V shared library`() {
         val obj = compileRiscVModule {
             val p = createFunction("mylib_add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(p[0], p[1]))
             finalizeFunction()
         }
@@ -198,7 +198,7 @@ class ElfRiscVLinkerTest {
     fun `ElfSharedLinker exports RISC-V symbols`() {
         val obj = compileRiscVModule {
             createFunction("exported_fn", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I32(99))
             finalizeFunction()
         }
@@ -214,13 +214,13 @@ class ElfRiscVLinkerTest {
     fun `ElfSharedLinker resolves internal RISC-V calls`() {
         val obj = compileRiscVModule {
             createFunction("public_fn", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = call("internal_fn", emptyList(), Type.I32)
             ret(r)
             finalizeFunction()
 
             createFunction("internal_fn", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I32(55))
             finalizeFunction()
         }

@@ -25,7 +25,7 @@ class CilCodeGeneratorTest {
     fun returnConstant() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("getFortyTwo", emptyList(), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.I32(42))
             ir.finalizeFunction()
         }
@@ -41,7 +41,7 @@ class CilCodeGeneratorTest {
     fun addTwoArgs() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val a = Parameter("a", Type.I32, 0)
             val b = Parameter("b", Type.I32, 1)
             val sum = ir.add(a, b)
@@ -60,7 +60,7 @@ class CilCodeGeneratorTest {
     fun subtractInts() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("sub", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val a = Parameter("a", Type.I32, 0)
             val b = Parameter("b", Type.I32, 1)
             ir.ret(ir.sub(a, b))
@@ -74,7 +74,7 @@ class CilCodeGeneratorTest {
     fun multiplyInts() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("mul", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val a = Parameter("a", Type.I32, 0)
             val b = Parameter("b", Type.I32, 1)
             ir.ret(ir.mul(a, b))
@@ -88,7 +88,7 @@ class CilCodeGeneratorTest {
     fun divideInts() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("div", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val a = Parameter("a", Type.I32, 0)
             val b = Parameter("b", Type.I32, 1)
             ir.ret(ir.sdiv(a, b))
@@ -102,7 +102,7 @@ class CilCodeGeneratorTest {
     fun voidReturn() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("doNothing", emptyList(), Type.Void)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret()
             ir.finalizeFunction()
         }
@@ -115,7 +115,7 @@ class CilCodeGeneratorTest {
     fun longConstant() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("getLong", emptyList(), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.I64(123456789L))
             ir.finalizeFunction()
         }
@@ -129,7 +129,7 @@ class CilCodeGeneratorTest {
     fun floatConstant() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("getFloat", emptyList(), Type.F32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.F32(3.14f))
             ir.finalizeFunction()
         }
@@ -141,7 +141,7 @@ class CilCodeGeneratorTest {
     fun doubleConstant() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("getDouble", emptyList(), Type.F64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.F64(2.718))
             ir.finalizeFunction()
         }
@@ -153,7 +153,7 @@ class CilCodeGeneratorTest {
     fun negation() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("neg", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val x = Parameter("x", Type.I32, 0)
             ir.ret(ir.neg(x))
             ir.finalizeFunction()
@@ -166,7 +166,7 @@ class CilCodeGeneratorTest {
     fun bitwiseAnd() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("bitand", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val a = Parameter("a", Type.I32, 0)
             val b = Parameter("b", Type.I32, 1)
             ir.ret(ir.and(a, b))
@@ -180,7 +180,7 @@ class CilCodeGeneratorTest {
     fun icmpEqual() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("eq", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val a = Parameter("a", Type.I32, 0)
             val b = Parameter("b", Type.I32, 1)
             val cmp = ir.icmp(ICmpPredicate.EQ, a, b)
@@ -195,7 +195,7 @@ class CilCodeGeneratorTest {
     fun icmpLessThan() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("lt", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val a = Parameter("a", Type.I32, 0)
             val b = Parameter("b", Type.I32, 1)
             val cmp = ir.icmp(ICmpPredicate.SLT, a, b)
@@ -210,7 +210,7 @@ class CilCodeGeneratorTest {
     fun icmpGreaterEqual() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("ge", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val a = Parameter("a", Type.I32, 0)
             val b = Parameter("b", Type.I32, 1)
             val cmp = ir.icmp(ICmpPredicate.SGE, a, b)
@@ -227,16 +227,16 @@ class CilCodeGeneratorTest {
     fun conditionalBranch() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("abs", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val x = Parameter("x", Type.I32, 0)
             val zero = Constant.I32(0)
             val cmp = ir.icmp(ICmpPredicate.SGE, x, zero)
-            ir.condBr(cmp, "positive", "negative")
+            ir.condBr(cmp, BlockRef("positive"), BlockRef("negative"))
 
-            ir.positionAtEnd(ir.appendBlock("positive"))
+            ir.appendBlock("positive")
             ir.ret(x)
 
-            ir.positionAtEnd(ir.appendBlock("negative"))
+            ir.appendBlock("negative")
             val negVal = ir.neg(x)
             ir.ret(negVal)
 
@@ -252,7 +252,7 @@ class CilCodeGeneratorTest {
     fun sextI32ToI64() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("widen", listOf(Param("x", Type.I32)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val x = Parameter("x", Type.I32, 0)
             val wide = ir.sext(x, Type.I64)
             ir.ret(wide)
@@ -266,7 +266,7 @@ class CilCodeGeneratorTest {
     fun truncI64ToI32() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("narrow", listOf(Param("x", Type.I64)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val x = Parameter("x", Type.I64, 0)
             val narrow = ir.trunc(x, Type.I32)
             ir.ret(narrow)
@@ -280,7 +280,7 @@ class CilCodeGeneratorTest {
     fun floatArithmetic() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("fadd", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val a = Parameter("a", Type.F64, 0)
             val b = Parameter("b", Type.F64, 1)
             ir.ret(ir.fadd(a, b))
@@ -294,7 +294,7 @@ class CilCodeGeneratorTest {
     fun intToFloat() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("convert", listOf(Param("x", Type.I32)), Type.F64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val x = Parameter("x", Type.I32, 0)
             val f = ir.sitofp(x, Type.F64)
             ir.ret(f)
@@ -308,7 +308,7 @@ class CilCodeGeneratorTest {
     fun floatToInt() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("convert", listOf(Param("x", Type.F64)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val x = Parameter("x", Type.F64, 0)
             val i = ir.fptosi(x, Type.I32)
             ir.ret(i)
@@ -323,12 +323,12 @@ class CilCodeGeneratorTest {
         val ir = IrBuilder("test", Target.msil())
 
         ir.createFunction("helper", listOf(Param("x", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Parameter("x", Type.I32, 0))
         ir.finalizeFunction()
 
         ir.createFunction("caller", listOf(Param("a", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
         val result = ir.call("helper", listOf(a), Type.I32)
         ir.ret(result)
@@ -347,7 +347,7 @@ class CilCodeGeneratorTest {
     fun singleMethodGenerate() {
         val ir = IrBuilder("test", Target.msil())
         ir.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
         val b = Parameter("b", Type.I32, 1)
         val sum = ir.add(a, b)
@@ -369,7 +369,7 @@ class CilCodeGeneratorTest {
     fun select() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("max", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val a = Parameter("a", Type.I32, 0)
             val b = Parameter("b", Type.I32, 1)
             val cmp = ir.icmp(ICmpPredicate.SGT, a, b)
@@ -385,7 +385,7 @@ class CilCodeGeneratorTest {
     fun constantOptimization() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("consts", emptyList(), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val a = ir.add(Constant.I32(-1), Constant.I32(0))
             ir.ret(a)
             ir.finalizeFunction()
@@ -399,7 +399,7 @@ class CilCodeGeneratorTest {
     fun floatCompare() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("feq", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I1)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val a = Parameter("a", Type.F64, 0)
             val b = Parameter("b", Type.F64, 1)
             val cmp = ir.fcmp(FCmpPredicate.OEQ, a, b)
@@ -414,7 +414,7 @@ class CilCodeGeneratorTest {
     fun unsignedIntToFloat() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("toFloat", listOf(Param("a", Type.I32)), Type.F32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val a = Parameter("a", Type.I32, 0)
             val f = ir.uitofp(a, Type.F32)
             ir.ret(f)
@@ -428,7 +428,7 @@ class CilCodeGeneratorTest {
     fun loadAndStore() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("loadstore", listOf(Param("ptr", Type.OpaquePointer)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val ptr = Parameter("ptr", Type.OpaquePointer, 0)
             ir.store(Constant.I32(42), ptr)
             val loaded = ir.load(Type.I32, ptr)
@@ -444,20 +444,20 @@ class CilCodeGeneratorTest {
     fun switchCases() {
         val instructions = buildAndDisassemble { ir ->
             ir.createFunction("sw", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val x = Parameter("x", Type.I32, 0)
             ir.switch(x, "default", listOf(
                 Constant.I32(1) to "case1",
                 Constant.I32(2) to "case2"
             ))
 
-            ir.positionAtEnd(ir.appendBlock("case1"))
+            ir.appendBlock("case1")
             ir.ret(Constant.I32(10))
 
-            ir.positionAtEnd(ir.appendBlock("case2"))
+            ir.appendBlock("case2")
             ir.ret(Constant.I32(20))
 
-            ir.positionAtEnd(ir.appendBlock("default"))
+            ir.appendBlock("default")
             ir.ret(Constant.I32(0))
 
             ir.finalizeFunction()

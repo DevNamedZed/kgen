@@ -43,7 +43,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i32 add`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(Constant.I32(3), Constant.I32(7)))
             finalizeFunction()
         })
@@ -54,7 +54,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i32 sub`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sub(Constant.I32(100), Constant.I32(37)))
             finalizeFunction()
         })
@@ -65,7 +65,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i32 mul`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(mul(Constant.I32(13), Constant.I32(7)))
             finalizeFunction()
         })
@@ -76,7 +76,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i32 sdiv`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sdiv(Constant.I32(99), Constant.I32(10)))
             finalizeFunction()
         })
@@ -87,7 +87,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i32 udiv`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(udiv(Constant.I32(255), Constant.I32(16)))
             finalizeFunction()
         })
@@ -98,7 +98,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i32 srem`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(srem(Constant.I32(17), Constant.I32(5)))
             finalizeFunction()
         })
@@ -109,7 +109,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i32 urem`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(urem(Constant.I32(17), Constant.I32(5)))
             finalizeFunction()
         })
@@ -120,7 +120,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - does not fold sdiv by zero`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sdiv(Constant.I32(10), Constant.I32(0)))
             finalizeFunction()
         })
@@ -131,7 +131,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - does not fold udiv by zero`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(udiv(Constant.I32(10), Constant.I32(0)))
             finalizeFunction()
         })
@@ -142,7 +142,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds negative sdiv`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sdiv(Constant.I32(-100), Constant.I32(7)))
             finalizeFunction()
         })
@@ -153,7 +153,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds negative srem`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(srem(Constant.I32(-17), Constant.I32(5)))
             finalizeFunction()
         })
@@ -166,7 +166,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i64 add`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(Constant.I64(5000000000L), Constant.I64(3000000000L)))
             finalizeFunction()
         })
@@ -177,7 +177,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i64 sub`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sub(Constant.I64(9000000000L), Constant.I64(4000000000L)))
             finalizeFunction()
         })
@@ -188,7 +188,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i64 mul`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(mul(Constant.I64(1000000L), Constant.I64(1000000L)))
             finalizeFunction()
         })
@@ -199,7 +199,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i64 sdiv`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sdiv(Constant.I64(9000000000L), Constant.I64(3000000000L)))
             finalizeFunction()
         })
@@ -210,7 +210,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i64 srem`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(srem(Constant.I64(10000000003L), Constant.I64(10000000000L)))
             finalizeFunction()
         })
@@ -223,7 +223,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds icmp eq true`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cmp = icmp(ICmpPredicate.EQ, Constant.I32(42), Constant.I32(42))
             ret(zext(cmp, Type.I32))
             finalizeFunction()
@@ -235,7 +235,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds icmp eq false`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cmp = icmp(ICmpPredicate.EQ, Constant.I32(42), Constant.I32(43))
             ret(zext(cmp, Type.I32))
             finalizeFunction()
@@ -247,7 +247,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds icmp ne`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cmp = icmp(ICmpPredicate.NE, Constant.I32(1), Constant.I32(2))
             ret(zext(cmp, Type.I32))
             finalizeFunction()
@@ -259,7 +259,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds icmp slt`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cmp = icmp(ICmpPredicate.SLT, Constant.I32(-1), Constant.I32(0))
             ret(zext(cmp, Type.I32))
             finalizeFunction()
@@ -271,7 +271,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds icmp sle`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cmp = icmp(ICmpPredicate.SLE, Constant.I32(5), Constant.I32(5))
             ret(zext(cmp, Type.I32))
             finalizeFunction()
@@ -283,7 +283,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds icmp sgt`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cmp = icmp(ICmpPredicate.SGT, Constant.I32(10), Constant.I32(5))
             ret(zext(cmp, Type.I32))
             finalizeFunction()
@@ -295,7 +295,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds icmp sge`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cmp = icmp(ICmpPredicate.SGE, Constant.I32(5), Constant.I32(5))
             ret(zext(cmp, Type.I32))
             finalizeFunction()
@@ -307,7 +307,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds icmp ult`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cmp = icmp(ICmpPredicate.ULT, Constant.I32(5), Constant.I32(10))
             ret(zext(cmp, Type.I32))
             finalizeFunction()
@@ -319,7 +319,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds icmp ule`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cmp = icmp(ICmpPredicate.ULE, Constant.I32(10), Constant.I32(10))
             ret(zext(cmp, Type.I32))
             finalizeFunction()
@@ -331,7 +331,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds icmp ugt`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cmp = icmp(ICmpPredicate.UGT, Constant.I32(10), Constant.I32(5))
             ret(zext(cmp, Type.I32))
             finalizeFunction()
@@ -343,7 +343,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds icmp uge`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cmp = icmp(ICmpPredicate.UGE, Constant.I32(3), Constant.I32(3))
             ret(zext(cmp, Type.I32))
             finalizeFunction()
@@ -357,7 +357,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i32 and`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(and(Constant.I32(0b1100), Constant.I32(0b1010)))
             finalizeFunction()
         })
@@ -368,7 +368,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i32 or`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(or(Constant.I32(0b1100), Constant.I32(0b1010)))
             finalizeFunction()
         })
@@ -379,7 +379,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i32 xor`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(xor(Constant.I32(0b1100), Constant.I32(0b1010)))
             finalizeFunction()
         })
@@ -390,7 +390,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i64 and`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(and(Constant.I64(0xFFFF0000L), Constant.I64(0x0000FFFFL)))
             finalizeFunction()
         })
@@ -401,7 +401,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i64 or`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(or(Constant.I64(0xFF00L), Constant.I64(0x00FFL)))
             finalizeFunction()
         })
@@ -412,7 +412,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i64 xor`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(xor(Constant.I64(0xFFL), Constant.I64(0xFFL)))
             finalizeFunction()
         })
@@ -425,7 +425,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i32 shl`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(shl(Constant.I32(1), Constant.I32(8)))
             finalizeFunction()
         })
@@ -436,7 +436,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i32 lshr`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(lshr(Constant.I32(256), Constant.I32(4)))
             finalizeFunction()
         })
@@ -447,7 +447,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i32 ashr`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(ashr(Constant.I32(-16), Constant.I32(2)))
             finalizeFunction()
         })
@@ -458,7 +458,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i64 shl`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(shl(Constant.I64(1L), Constant.I64(32)))
             finalizeFunction()
         })
@@ -469,7 +469,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i64 lshr`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(lshr(Constant.I64(4294967296L), Constant.I64(16)))
             finalizeFunction()
         })
@@ -480,7 +480,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i64 ashr`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(ashr(Constant.I64(-256L), Constant.I64(4)))
             finalizeFunction()
         })
@@ -493,7 +493,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds zext i32 to i64`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(zext(Constant.I32(42), Type.I64))
             finalizeFunction()
         })
@@ -504,7 +504,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds sext i32 to i64`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sext(Constant.I32(-5), Type.I64))
             finalizeFunction()
         })
@@ -515,7 +515,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds trunc i64 to i32`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(trunc(Constant.I64(42L), Type.I32))
             finalizeFunction()
         })
@@ -526,7 +526,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds zext i1 true to i32`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(zext(Constant.I1(true), Type.I32))
             finalizeFunction()
         })
@@ -537,7 +537,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds sext i1 true to i32`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sext(Constant.I1(true), Type.I32))
             finalizeFunction()
         })
@@ -548,7 +548,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds zext i8 to i32`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(zext(Constant.I8(200.toByte()), Type.I32))
             finalizeFunction()
         })
@@ -559,7 +559,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds sext i8 to i32`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sext(Constant.I8((-10).toByte()), Type.I32))
             finalizeFunction()
         })
@@ -570,7 +570,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds trunc i32 to i8`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I8)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(trunc(Constant.I32(255), Type.I8))
             finalizeFunction()
         })
@@ -583,7 +583,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds f64 add`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(fadd(Constant.F64(1.5), Constant.F64(2.25)))
             finalizeFunction()
         })
@@ -594,7 +594,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds f64 sub`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(fsub(Constant.F64(10.0), Constant.F64(3.5)))
             finalizeFunction()
         })
@@ -605,7 +605,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds f64 mul`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(fmul(Constant.F64(2.5), Constant.F64(4.0)))
             finalizeFunction()
         })
@@ -616,7 +616,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds f64 div`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(fdiv(Constant.F64(10.0), Constant.F64(4.0)))
             finalizeFunction()
         })
@@ -627,7 +627,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds f64 neg`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(fneg(Constant.F64(3.14)))
             finalizeFunction()
         })
@@ -638,7 +638,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i32 neg`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(neg(Constant.I32(99)))
             finalizeFunction()
         })
@@ -649,7 +649,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i64 neg`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(neg(Constant.I64(1000000000L)))
             finalizeFunction()
         })
@@ -662,7 +662,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds chained add-mul-sub`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(Constant.I32(3), Constant.I32(7))
             val b = mul(a, Constant.I32(5))
             val c = sub(b, Constant.I32(8))
@@ -677,7 +677,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds deeply chained constants`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(Constant.I32(1), Constant.I32(1))
             val b = add(a, a)
             val c = mul(b, b)
@@ -692,7 +692,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - preserves non-constant operands`() {
         val m = fold.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(params[0], Constant.I32(1)))
             finalizeFunction()
         })
@@ -704,7 +704,7 @@ class OptimizationPassComprehensiveTest {
         val m = fold.run(build {
             declareFunction("ext", listOf(Param("x", Type.I32)), Type.I32)
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(call("ext", listOf(Constant.I32(42)), Type.I32)!!)
             finalizeFunction()
         })
@@ -717,7 +717,7 @@ class OptimizationPassComprehensiveTest {
     fun `dce - removes single unused instruction`() {
         val m = dce.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             add(Constant.I32(1), Constant.I32(2))
             ret(Constant.I32(0))
             finalizeFunction()
@@ -729,7 +729,7 @@ class OptimizationPassComprehensiveTest {
     fun `dce - removes multiple unused instructions`() {
         val m = dce.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             add(Constant.I32(1), Constant.I32(2))
             mul(Constant.I32(3), Constant.I32(4))
             sub(Constant.I32(5), Constant.I32(6))
@@ -743,7 +743,7 @@ class OptimizationPassComprehensiveTest {
     fun `dce - removes transitive dead chains`() {
         val m = dce.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(Constant.I32(1), Constant.I32(2))
             val b = mul(a, Constant.I32(3))
             sub(b, Constant.I32(4))
@@ -757,7 +757,7 @@ class OptimizationPassComprehensiveTest {
     fun `dce - preserves used values`() {
         val m = dce.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], Constant.I32(1))
             ret(a)
             finalizeFunction()
@@ -770,7 +770,7 @@ class OptimizationPassComprehensiveTest {
         val m = dce.run(build {
             declareFunction("sideeffect", emptyList(), Type.I32)
             createFunction("f", emptyList(), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             call("sideeffect", emptyList(), Type.I32)
             ret(null)
             finalizeFunction()
@@ -782,7 +782,7 @@ class OptimizationPassComprehensiveTest {
     fun `dce - preserves stores`() {
         val m = dce.run(build {
             val params = createFunction("f", listOf(Param("ptr", Type.OpaquePointer)), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             store(Constant.I32(42), params[0])
             ret(null)
             finalizeFunction()
@@ -794,11 +794,11 @@ class OptimizationPassComprehensiveTest {
     fun `dce - preserves branch instructions`() {
         val m = dce.run(build {
             val params = createFunction("f", listOf(Param("c", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(params[0], "a", "b")
-            positionAtEnd(appendBlock("a"))
+            appendBlock("entry")
+            condBr(params[0], BlockRef("a"), BlockRef("b"))
+            appendBlock("a")
             ret(Constant.I32(1))
-            positionAtEnd(appendBlock("b"))
+            appendBlock("b")
             ret(Constant.I32(0))
             finalizeFunction()
         })
@@ -809,7 +809,7 @@ class OptimizationPassComprehensiveTest {
     fun `dce - removes unused arithmetic but keeps used`() {
         val m = dce.run(build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val used = add(params[0], Constant.I32(1))
             mul(params[0], Constant.I32(2)) // dead
             ret(used)
@@ -824,7 +824,7 @@ class OptimizationPassComprehensiveTest {
         val m = dce.run(build {
             declareFunction("ext", emptyList(), Type.I32)
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I32(0))
             finalizeFunction()
         })
@@ -838,12 +838,12 @@ class OptimizationPassComprehensiveTest {
     fun `inlining - inlines simple function`() {
         val m = inliner.run(build {
             val p = createFunction("addOne", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(p[0], Constant.I32(1)))
             finalizeFunction()
 
             createFunction("main", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(call("addOne", listOf(Constant.I32(5)), Type.I32)!!)
             finalizeFunction()
         })
@@ -854,12 +854,12 @@ class OptimizationPassComprehensiveTest {
     fun `inlining - does not inline recursive function`() {
         val m = inliner.run(build {
             val p = createFunction("rec", listOf(Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(call("rec", listOf(p[0]), Type.I32)!!)
             finalizeFunction()
 
             createFunction("main", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(call("rec", listOf(Constant.I32(5)), Type.I32)!!)
             finalizeFunction()
         })
@@ -871,7 +871,7 @@ class OptimizationPassComprehensiveTest {
         val m = inliner.run(build {
             declareFunction("ext", listOf(Param("x", Type.I32)), Type.I32)
             createFunction("main", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(call("ext", listOf(Constant.I32(5)), Type.I32)!!)
             finalizeFunction()
         })
@@ -883,7 +883,7 @@ class OptimizationPassComprehensiveTest {
         val smallInliner = Inlining(maxInstructionCount = 2)
         val m = smallInliner.run(build {
             val p = createFunction("big", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(p[0], Constant.I32(1))
             val b = add(a, Constant.I32(2))
             val c = add(b, Constant.I32(3))
@@ -891,7 +891,7 @@ class OptimizationPassComprehensiveTest {
             finalizeFunction()
 
             createFunction("main", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(call("big", listOf(Constant.I32(0)), Type.I32)!!)
             finalizeFunction()
         })
@@ -902,12 +902,12 @@ class OptimizationPassComprehensiveTest {
     fun `inlining - inlines multiple call sites`() {
         val m = inliner.run(build {
             val p = createFunction("inc", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(p[0], Constant.I32(1)))
             finalizeFunction()
 
             createFunction("main", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = call("inc", listOf(Constant.I32(0)), Type.I32)!!
             val b = call("inc", listOf(a), Type.I32)!!
             ret(b)
@@ -922,12 +922,12 @@ class OptimizationPassComprehensiveTest {
     fun `inlining - inlines void function`() {
         val m = inliner.run(build {
             createFunction("noop", emptyList(), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(null)
             finalizeFunction()
 
             createFunction("main", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             call("noop", emptyList(), Type.Void)
             ret(Constant.I32(0))
             finalizeFunction()
@@ -939,12 +939,12 @@ class OptimizationPassComprehensiveTest {
     fun `inlining - preserves callee`() {
         val m = inliner.run(build {
             val p = createFunction("helper", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(p[0])
             finalizeFunction()
 
             createFunction("main", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(call("helper", listOf(Constant.I32(42)), Type.I32)!!)
             finalizeFunction()
         })
@@ -955,12 +955,12 @@ class OptimizationPassComprehensiveTest {
     fun `inlining - substitutes arguments correctly`() {
         val m = inliner.run(build {
             val p = createFunction("double", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(p[0], p[0]))
             finalizeFunction()
 
             createFunction("main", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(call("double", listOf(Constant.I32(21)), Type.I32)!!)
             finalizeFunction()
         })
@@ -973,12 +973,12 @@ class OptimizationPassComprehensiveTest {
     fun `inlining - return value used in computation`() {
         val m = inliner.run(build {
             val p = createFunction("sq", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(mul(p[0], p[0]))
             finalizeFunction()
 
             val p2 = createFunction("main", listOf(Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = call("sq", listOf(p2[0]), Type.I32)!!
             ret(add(r, Constant.I32(1)))
             finalizeFunction()
@@ -993,7 +993,7 @@ class OptimizationPassComprehensiveTest {
     fun `mem2reg - promotes simple store-load`() {
         val m = mem2reg.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(42), ptr)
             ret(load(Type.I32, ptr))
@@ -1007,7 +1007,7 @@ class OptimizationPassComprehensiveTest {
     fun `mem2reg - promotes parameter store-load`() {
         val m = mem2reg.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(p[0], ptr)
             ret(load(Type.I32, ptr))
@@ -1021,7 +1021,7 @@ class OptimizationPassComprehensiveTest {
     fun `mem2reg - promotes multiple allocas`() {
         val m = mem2reg.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = alloca(Type.I32)
             val b = alloca(Type.I32)
             store(Constant.I32(10), a)
@@ -1039,7 +1039,7 @@ class OptimizationPassComprehensiveTest {
     fun `mem2reg - last store wins in single block`() {
         val m = mem2reg.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(1), ptr)
             store(Constant.I32(2), ptr)
@@ -1054,20 +1054,20 @@ class OptimizationPassComprehensiveTest {
     fun `mem2reg - inserts phi for diamond control flow`() {
         val m = mem2reg.run(build {
             val p = createFunction("f", listOf(Param("c", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(0), ptr)
-            condBr(p[0], "then", "else")
+            condBr(p[0], BlockRef("then"), BlockRef("else"))
 
-            positionAtEnd(appendBlock("then"))
+            appendBlock("then")
             store(Constant.I32(10), ptr)
-            br("merge")
+            br(BlockRef("merge"))
 
-            positionAtEnd(appendBlock("else"))
+            appendBlock("else")
             store(Constant.I32(20), ptr)
-            br("merge")
+            br(BlockRef("merge"))
 
-            positionAtEnd(appendBlock("merge"))
+            appendBlock("merge")
             ret(load(Type.I32, ptr))
             finalizeFunction()
         })
@@ -1083,7 +1083,7 @@ class OptimizationPassComprehensiveTest {
     fun `mem2reg - load before store gives zero`() {
         val m = mem2reg.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             ret(load(Type.I32, ptr))
             finalizeFunction()
@@ -1096,7 +1096,7 @@ class OptimizationPassComprehensiveTest {
         val m = mem2reg.run(build {
             declareFunction("use_ptr", listOf(Param("p", Type.Pointer(Type.I32))), Type.Void)
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(42), ptr)
             call("use_ptr", listOf(ptr), Type.Void)
@@ -1112,7 +1112,7 @@ class OptimizationPassComprehensiveTest {
     fun `mem2reg - does not promote volatile load`() {
         val m = mem2reg.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(42), ptr)
             ret(load(Type.I32, ptr, volatile = true))
@@ -1125,7 +1125,7 @@ class OptimizationPassComprehensiveTest {
     fun `mem2reg - promotes i64 alloca`() {
         val m = mem2reg.run(build {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I64)
             store(Constant.I64(999L), ptr)
             ret(load(Type.I64, ptr))
@@ -1138,7 +1138,7 @@ class OptimizationPassComprehensiveTest {
     fun `mem2reg - promotes f64 alloca`() {
         val m = mem2reg.run(build {
             createFunction("f", emptyList(), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.F64)
             store(Constant.F64(3.14), ptr)
             ret(load(Type.F64, ptr))
@@ -1151,7 +1151,7 @@ class OptimizationPassComprehensiveTest {
     fun `mem2reg - load used in computation`() {
         val m = mem2reg.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(10), ptr)
             ret(add(load(Type.I32, ptr), p[0]))
@@ -1168,7 +1168,7 @@ class OptimizationPassComprehensiveTest {
     fun `gvn - eliminates redundant add`() {
         val m = gvn.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(p[0], p[1])
             val b = add(p[0], p[1])
             ret(add(a, b))
@@ -1184,7 +1184,7 @@ class OptimizationPassComprehensiveTest {
     fun `gvn - eliminates redundant mul`() {
         val m = gvn.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = mul(p[0], p[1])
             val b = mul(p[0], p[1])
             ret(add(a, b))
@@ -1198,7 +1198,7 @@ class OptimizationPassComprehensiveTest {
     fun `gvn - eliminates redundant sub`() {
         val m = gvn.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = sub(p[0], p[1])
             val b = sub(p[0], p[1])
             ret(add(a, b))
@@ -1212,7 +1212,7 @@ class OptimizationPassComprehensiveTest {
     fun `gvn - does not eliminate different operations`() {
         val m = gvn.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(p[0], p[1])
             val b = sub(p[0], p[1])
             ret(add(a, b))
@@ -1226,7 +1226,7 @@ class OptimizationPassComprehensiveTest {
     fun `gvn - does not eliminate operations with different operands`() {
         val m = gvn.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(p[0], p[1])
             val b = add(p[1], p[0])
             ret(add(a, b))
@@ -1241,7 +1241,7 @@ class OptimizationPassComprehensiveTest {
     fun `gvn - eliminates redundant bitwise and`() {
         val m = gvn.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = and(p[0], p[1])
             val b = and(p[0], p[1])
             ret(or(a, b))
@@ -1255,7 +1255,7 @@ class OptimizationPassComprehensiveTest {
     fun `gvn - eliminates redundant comparison`() {
         val m = gvn.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = icmp(ICmpPredicate.SLT, p[0], p[1])
             val b = icmp(ICmpPredicate.SLT, p[0], p[1])
             val za = zext(a, Type.I32)
@@ -1272,7 +1272,7 @@ class OptimizationPassComprehensiveTest {
         val m = gvn.run(build {
             declareFunction("rand", emptyList(), Type.I32)
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = call("rand", emptyList(), Type.I32)!!
             val b = call("rand", emptyList(), Type.I32)!!
             ret(add(a, b))
@@ -1286,7 +1286,7 @@ class OptimizationPassComprehensiveTest {
     fun `gvn - eliminates redundant conversion`() {
         val m = gvn.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = zext(p[0], Type.I64)
             val b = zext(p[0], Type.I64)
             ret(add(a, b))
@@ -1302,19 +1302,19 @@ class OptimizationPassComprehensiveTest {
     fun `licm - hoists loop-invariant add`() {
         val m = licm.run(build {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            br("header")
+            appendBlock("entry")
+            br(BlockRef("header"))
 
-            positionAtEnd(appendBlock("header"))
-            val i = phi(Type.I32, listOf(Constant.I32(0) to "entry", Constant.I32(0) to "body"))
+            appendBlock("header")
+            val i = phi(Type.I32, listOf(Constant.I32(0) to BlockRef("entry"), Constant.I32(0) to BlockRef("body")))
             val cond = icmp(ICmpPredicate.SLT, i, Constant.I32(10))
-            condBr(cond, "body", "exit")
+            condBr(cond, BlockRef("body"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("body"))
+            appendBlock("body")
             val invariant = add(p[0], p[1]) // loop-invariant: both from params
-            br("header")
+            br(BlockRef("header"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             ret(Constant.I32(0))
             finalizeFunction()
         })
@@ -1328,19 +1328,19 @@ class OptimizationPassComprehensiveTest {
     fun `licm - does not hoist loop-varying computation`() {
         val m = licm.run(build {
             val p = createFunction("f", listOf(Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            br("header")
+            appendBlock("entry")
+            br(BlockRef("header"))
 
-            positionAtEnd(appendBlock("header"))
-            val i = phi(Type.I32, listOf(Constant.I32(0) to "entry", Constant.I32(0) to "body"))
+            appendBlock("header")
+            val i = phi(Type.I32, listOf(Constant.I32(0) to BlockRef("entry"), Constant.I32(0) to BlockRef("body")))
             val cond = icmp(ICmpPredicate.SLT, i, p[0])
-            condBr(cond, "body", "exit")
+            condBr(cond, BlockRef("body"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("body"))
+            appendBlock("body")
             add(i, Constant.I32(1)) // not invariant: uses phi 'i'
-            br("header")
+            br(BlockRef("header"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             ret(Constant.I32(0))
             finalizeFunction()
         })
@@ -1353,19 +1353,19 @@ class OptimizationPassComprehensiveTest {
     fun `licm - does not hoist stores`() {
         val m = licm.run(build {
             val p = createFunction("f", listOf(Param("ptr", Type.OpaquePointer)), Type.Void)
-            positionAtEnd(appendBlock("entry"))
-            br("header")
+            appendBlock("entry")
+            br(BlockRef("header"))
 
-            positionAtEnd(appendBlock("header"))
-            val i = phi(Type.I32, listOf(Constant.I32(0) to "entry", Constant.I32(0) to "body"))
+            appendBlock("header")
+            val i = phi(Type.I32, listOf(Constant.I32(0) to BlockRef("entry"), Constant.I32(0) to BlockRef("body")))
             val cond = icmp(ICmpPredicate.SLT, i, Constant.I32(10))
-            condBr(cond, "body", "exit")
+            condBr(cond, BlockRef("body"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("body"))
+            appendBlock("body")
             store(Constant.I32(42), p[0])
-            br("header")
+            br(BlockRef("header"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             ret(null)
             finalizeFunction()
         })
@@ -1379,19 +1379,19 @@ class OptimizationPassComprehensiveTest {
         val m = licm.run(build {
             declareFunction("ext", emptyList(), Type.I32)
             createFunction("f", emptyList(), Type.Void)
-            positionAtEnd(appendBlock("entry"))
-            br("header")
+            appendBlock("entry")
+            br(BlockRef("header"))
 
-            positionAtEnd(appendBlock("header"))
-            val i = phi(Type.I32, listOf(Constant.I32(0) to "entry", Constant.I32(0) to "body"))
+            appendBlock("header")
+            val i = phi(Type.I32, listOf(Constant.I32(0) to BlockRef("entry"), Constant.I32(0) to BlockRef("body")))
             val cond = icmp(ICmpPredicate.SLT, i, Constant.I32(10))
-            condBr(cond, "body", "exit")
+            condBr(cond, BlockRef("body"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("body"))
+            appendBlock("body")
             call("ext", emptyList(), Type.I32)
-            br("header")
+            br(BlockRef("header"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             ret(null)
             finalizeFunction()
         })
@@ -1404,20 +1404,20 @@ class OptimizationPassComprehensiveTest {
     fun `licm - hoists chained invariant computations`() {
         val m = licm.run(build {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            br("header")
+            appendBlock("entry")
+            br(BlockRef("header"))
 
-            positionAtEnd(appendBlock("header"))
-            val i = phi(Type.I32, listOf(Constant.I32(0) to "entry", Constant.I32(0) to "body"))
+            appendBlock("header")
+            val i = phi(Type.I32, listOf(Constant.I32(0) to BlockRef("entry"), Constant.I32(0) to BlockRef("body")))
             val cond = icmp(ICmpPredicate.SLT, i, Constant.I32(10))
-            condBr(cond, "body", "exit")
+            condBr(cond, BlockRef("body"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("body"))
+            appendBlock("body")
             val x = add(p[0], p[1])
             mul(x, Constant.I32(2)) // also invariant: uses x (invariant) and constant
-            br("header")
+            br(BlockRef("header"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             ret(Constant.I32(0))
             finalizeFunction()
         })
@@ -1432,7 +1432,7 @@ class OptimizationPassComprehensiveTest {
     fun `licm - no-op on function without loops`() {
         val m = licm.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(p[0], Constant.I32(1)))
             finalizeFunction()
         })
@@ -1445,13 +1445,13 @@ class OptimizationPassComprehensiveTest {
     fun `jt - folds constant true condition`() {
         val m = jt.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(Constant.I1(true), "then", "else")
+            appendBlock("entry")
+            condBr(Constant.I1(true), BlockRef("then"), BlockRef("else"))
 
-            positionAtEnd(appendBlock("then"))
+            appendBlock("then")
             ret(Constant.I32(1))
 
-            positionAtEnd(appendBlock("else"))
+            appendBlock("else")
             ret(Constant.I32(0))
             finalizeFunction()
         })
@@ -1463,13 +1463,13 @@ class OptimizationPassComprehensiveTest {
     fun `jt - folds constant false condition`() {
         val m = jt.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(Constant.I1(false), "then", "else")
+            appendBlock("entry")
+            condBr(Constant.I1(false), BlockRef("then"), BlockRef("else"))
 
-            positionAtEnd(appendBlock("then"))
+            appendBlock("then")
             ret(Constant.I32(1))
 
-            positionAtEnd(appendBlock("else"))
+            appendBlock("else")
             ret(Constant.I32(0))
             finalizeFunction()
         })
@@ -1481,13 +1481,13 @@ class OptimizationPassComprehensiveTest {
     fun `jt - removes unreachable blocks`() {
         val m = jt.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            br("live")
+            appendBlock("entry")
+            br(BlockRef("live"))
 
-            positionAtEnd(appendBlock("dead"))
+            appendBlock("dead")
             ret(Constant.I32(-1))
 
-            positionAtEnd(appendBlock("live"))
+            appendBlock("live")
             ret(Constant.I32(42))
             finalizeFunction()
         })
@@ -1498,13 +1498,13 @@ class OptimizationPassComprehensiveTest {
     fun `jt - merges single-successor single-predecessor blocks`() {
         val m = jt.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("a"))
-            br("b")
+            appendBlock("a")
+            br(BlockRef("b"))
 
-            positionAtEnd(appendBlock("b"))
-            br("c")
+            appendBlock("b")
+            br(BlockRef("c"))
 
-            positionAtEnd(appendBlock("c"))
+            appendBlock("c")
             ret(Constant.I32(42))
             finalizeFunction()
         })
@@ -1516,10 +1516,10 @@ class OptimizationPassComprehensiveTest {
     fun `jt - folds same-target condBr`() {
         val m = jt.run(build {
             val p = createFunction("f", listOf(Param("c", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(p[0], "target", "target")
+            appendBlock("entry")
+            condBr(p[0], BlockRef("target"), BlockRef("target"))
 
-            positionAtEnd(appendBlock("target"))
+            appendBlock("target")
             ret(Constant.I32(42))
             finalizeFunction()
         })
@@ -1531,13 +1531,13 @@ class OptimizationPassComprehensiveTest {
     fun `jt - preserves non-constant condBr`() {
         val m = jt.run(build {
             val p = createFunction("f", listOf(Param("c", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(p[0], "then", "else")
+            appendBlock("entry")
+            condBr(p[0], BlockRef("then"), BlockRef("else"))
 
-            positionAtEnd(appendBlock("then"))
+            appendBlock("then")
             ret(Constant.I32(1))
 
-            positionAtEnd(appendBlock("else"))
+            appendBlock("else")
             ret(Constant.I32(0))
             finalizeFunction()
         })
@@ -1548,13 +1548,13 @@ class OptimizationPassComprehensiveTest {
     fun `jt - chains of unconditional branches collapse`() {
         val m = jt.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("a"))
-            br("b")
-            positionAtEnd(appendBlock("b"))
-            br("c")
-            positionAtEnd(appendBlock("c"))
-            br("d")
-            positionAtEnd(appendBlock("d"))
+            appendBlock("a")
+            br(BlockRef("b"))
+            appendBlock("b")
+            br(BlockRef("c"))
+            appendBlock("c")
+            br(BlockRef("d"))
+            appendBlock("d")
             ret(Constant.I32(99))
             finalizeFunction()
         })
@@ -1568,7 +1568,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies add zero right`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(p[0], Constant.I32(0)))
             finalizeFunction()
         })
@@ -1580,7 +1580,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies add zero left`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(Constant.I32(0), p[0]))
             finalizeFunction()
         })
@@ -1592,7 +1592,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies sub zero`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sub(p[0], Constant.I32(0)))
             finalizeFunction()
         })
@@ -1604,7 +1604,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies sub self to zero`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sub(p[0], p[0]))
             finalizeFunction()
         })
@@ -1616,7 +1616,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies mul one right`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(mul(p[0], Constant.I32(1)))
             finalizeFunction()
         })
@@ -1628,7 +1628,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies mul one left`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(mul(Constant.I32(1), p[0]))
             finalizeFunction()
         })
@@ -1640,7 +1640,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies mul zero`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(mul(p[0], Constant.I32(0)))
             finalizeFunction()
         })
@@ -1652,7 +1652,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies and zero`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(and(p[0], Constant.I32(0)))
             finalizeFunction()
         })
@@ -1664,7 +1664,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies and all-ones`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(and(p[0], Constant.I32(-1)))
             finalizeFunction()
         })
@@ -1676,7 +1676,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies and self`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(and(p[0], p[0]))
             finalizeFunction()
         })
@@ -1688,7 +1688,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies or zero`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(or(p[0], Constant.I32(0)))
             finalizeFunction()
         })
@@ -1700,7 +1700,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies or self`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(or(p[0], p[0]))
             finalizeFunction()
         })
@@ -1712,7 +1712,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies xor zero`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(xor(p[0], Constant.I32(0)))
             finalizeFunction()
         })
@@ -1724,7 +1724,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies xor self to zero`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(xor(p[0], p[0]))
             finalizeFunction()
         })
@@ -1736,7 +1736,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies shl by zero`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(shl(p[0], Constant.I32(0)))
             finalizeFunction()
         })
@@ -1748,7 +1748,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies lshr by zero`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(lshr(p[0], Constant.I32(0)))
             finalizeFunction()
         })
@@ -1760,7 +1760,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies ashr by zero`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(ashr(p[0], Constant.I32(0)))
             finalizeFunction()
         })
@@ -1772,7 +1772,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies select true`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(select(Constant.I1(true), p[0], p[1]))
             finalizeFunction()
         })
@@ -1785,7 +1785,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies select false`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(select(Constant.I1(false), p[0], p[1]))
             finalizeFunction()
         })
@@ -1798,7 +1798,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies select same values`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("c", Type.I1), Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(select(p[0], p[1], p[1]))
             finalizeFunction()
         })
@@ -1810,7 +1810,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies i64 add zero`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(p[0], Constant.I64(0L)))
             finalizeFunction()
         })
@@ -1822,7 +1822,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - simplifies i64 mul one`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(mul(p[0], Constant.I64(1L)))
             finalizeFunction()
         })
@@ -1834,7 +1834,7 @@ class OptimizationPassComprehensiveTest {
     fun `ic - chain of identities collapses`() {
         val m = instcombine.run(build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(p[0], Constant.I32(0))
             val b = mul(a, Constant.I32(1))
             val c = sub(b, Constant.I32(0))
@@ -1852,7 +1852,7 @@ class OptimizationPassComprehensiveTest {
         val structType = Type.Struct(null, listOf(Type.I32, Type.I64))
         val m = sroa.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(structType)
             val field0Ptr = gep(structType, ptr, Constant.I32(0), Constant.I32(0))
             store(Constant.I32(42), field0Ptr)
@@ -1872,7 +1872,7 @@ class OptimizationPassComprehensiveTest {
         val arrayType = Type.Array(Type.I32, 4)
         val m = sroa.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(arrayType)
             val elemPtr = gep(arrayType, ptr, Constant.I32(0), Constant.I32(2))
             store(Constant.I32(99), elemPtr)
@@ -1890,7 +1890,7 @@ class OptimizationPassComprehensiveTest {
     fun `sroa - preserves non-aggregate alloca`() {
         val m = sroa.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(42), ptr)
             ret(load(Type.I32, ptr))
@@ -1907,7 +1907,7 @@ class OptimizationPassComprehensiveTest {
         val m = sroa.run(build {
             declareFunction("use_ptr", listOf(Param("p", Type.OpaquePointer)), Type.Void)
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(structType)
             call("use_ptr", listOf(ptr), Type.Void) // address escapes
             ret(Constant.I32(0))
@@ -1923,7 +1923,7 @@ class OptimizationPassComprehensiveTest {
         val structType = Type.Struct(null, listOf(Type.I32, Type.I64))
         val module = build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(structType)
             val field0Ptr = gep(structType, ptr, Constant.I32(0), Constant.I32(0))
             store(Constant.I32(42), field0Ptr)
@@ -1949,7 +1949,7 @@ class OptimizationPassComprehensiveTest {
             .add(DeadCodeElimination())
             .execute(build {
                 createFunction("f", emptyList(), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = add(Constant.I32(10), Constant.I32(20))
                 mul(Constant.I32(3), Constant.I32(4)) // dead
                 ret(a)
@@ -1967,7 +1967,7 @@ class OptimizationPassComprehensiveTest {
             .add(DeadCodeElimination())
             .execute(build {
                 createFunction("f", emptyList(), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = add(Constant.I32(3), Constant.I32(7))
                 val b = mul(a, Constant.I32(1)) // instcombine removes mul-by-1
                 ret(b)
@@ -1984,14 +1984,14 @@ class OptimizationPassComprehensiveTest {
             .add(JumpThreading())
             .execute(build {
                 createFunction("f", emptyList(), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val cond = icmp(ICmpPredicate.SGT, Constant.I32(10), Constant.I32(5))
-                condBr(cond, "then", "else")
+                condBr(cond, BlockRef("then"), BlockRef("else"))
 
-                positionAtEnd(appendBlock("then"))
+                appendBlock("then")
                 ret(Constant.I32(1))
 
-                positionAtEnd(appendBlock("else"))
+                appendBlock("else")
                 ret(Constant.I32(0))
                 finalizeFunction()
             })
@@ -2007,12 +2007,12 @@ class OptimizationPassComprehensiveTest {
             .add(DeadCodeElimination())
             .execute(build {
                 val p = createFunction("add2", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(add(p[0], p[1]))
                 finalizeFunction()
 
                 createFunction("main", emptyList(), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(call("add2", listOf(Constant.I32(10), Constant.I32(20)), Type.I32)!!)
                 finalizeFunction()
             })
@@ -2027,7 +2027,7 @@ class OptimizationPassComprehensiveTest {
             .add(DeadCodeElimination())
             .execute(build {
                 val p = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = add(p[0], p[1])
                 val b = add(p[0], p[1]) // GVN replaces uses of b with a
                 ret(add(a, b))
@@ -2045,7 +2045,7 @@ class OptimizationPassComprehensiveTest {
             .add(DeadCodeElimination())
             .execute(build {
                 createFunction("f", emptyList(), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val ptr = alloca(Type.I32)
                 store(Constant.I32(10), ptr)
                 val v = load(Type.I32, ptr)
@@ -2062,7 +2062,7 @@ class OptimizationPassComprehensiveTest {
     fun `O0 does not optimize`() {
         val m = OptLevel.O0.pipeline().execute(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(Constant.I32(1), Constant.I32(2)))
             finalizeFunction()
         })
@@ -2074,7 +2074,7 @@ class OptimizationPassComprehensiveTest {
     fun `O1 folds and eliminates`() {
         val m = OptLevel.O1.pipeline().execute(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(Constant.I32(10), Constant.I32(20))
             add(Constant.I32(3), Constant.I32(4)) // dead
             ret(a)
@@ -2088,15 +2088,15 @@ class OptimizationPassComprehensiveTest {
     fun `O2 collapses constant branch`() {
         val m = OptLevel.O2.pipeline().execute(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(Constant.I32(5), Constant.I32(5))
             val cond = icmp(ICmpPredicate.SGT, a, Constant.I32(0))
-            condBr(cond, "then", "else")
+            condBr(cond, BlockRef("then"), BlockRef("else"))
 
-            positionAtEnd(appendBlock("then"))
+            appendBlock("then")
             ret(Constant.I32(1))
 
-            positionAtEnd(appendBlock("else"))
+            appendBlock("else")
             ret(Constant.I32(0))
             finalizeFunction()
         })
@@ -2108,7 +2108,7 @@ class OptimizationPassComprehensiveTest {
     fun `O2 handles mem2reg plus constant folding`() {
         val m = OptLevel.O2.pipeline().execute(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(21), ptr)
             val v = load(Type.I32, ptr)
@@ -2123,7 +2123,7 @@ class OptimizationPassComprehensiveTest {
     fun `Os is same as O1`() {
         val module = build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(Constant.I32(10), Constant.I32(20))
             add(Constant.I32(3), Constant.I32(4))
             ret(a)
@@ -2143,7 +2143,7 @@ class OptimizationPassComprehensiveTest {
     fun `constant folding is idempotent`() {
         val module = build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(Constant.I32(3), Constant.I32(7)))
             finalizeFunction()
         }
@@ -2159,7 +2159,7 @@ class OptimizationPassComprehensiveTest {
     fun `DCE is idempotent`() {
         val module = build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             add(Constant.I32(1), Constant.I32(2))
             ret(Constant.I32(0))
             finalizeFunction()
@@ -2173,7 +2173,7 @@ class OptimizationPassComprehensiveTest {
     fun `instruction combining is idempotent`() {
         val module = build {
             val p = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(p[0], Constant.I32(0)))
             finalizeFunction()
         }
@@ -2186,7 +2186,7 @@ class OptimizationPassComprehensiveTest {
     fun `GVN is idempotent`() {
         val module = build {
             val p = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(p[0], p[1])
             val b = add(p[0], p[1])
             ret(add(a, b))
@@ -2201,11 +2201,11 @@ class OptimizationPassComprehensiveTest {
     fun `jump threading is idempotent`() {
         val module = build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(Constant.I1(true), "then", "else")
-            positionAtEnd(appendBlock("then"))
+            appendBlock("entry")
+            condBr(Constant.I1(true), BlockRef("then"), BlockRef("else"))
+            appendBlock("then")
             ret(Constant.I32(1))
-            positionAtEnd(appendBlock("else"))
+            appendBlock("else")
             ret(Constant.I32(0))
             finalizeFunction()
         }
@@ -2220,7 +2220,7 @@ class OptimizationPassComprehensiveTest {
     fun `empty pipeline is identity`() {
         val module = build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(Constant.I32(1), Constant.I32(2)))
             finalizeFunction()
         }
@@ -2236,7 +2236,7 @@ class OptimizationPassComprehensiveTest {
             .execute(build {
                 declareFunction("ext", listOf(Param("x", Type.I32)), Type.I32)
                 createFunction("f", emptyList(), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(Constant.I32(0))
                 finalizeFunction()
             })
@@ -2251,12 +2251,12 @@ class OptimizationPassComprehensiveTest {
             .add(DeadCodeElimination())
             .execute(build {
                 createFunction("f1", emptyList(), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(add(Constant.I32(1), Constant.I32(2)))
                 finalizeFunction()
 
                 createFunction("f2", emptyList(), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(mul(Constant.I32(3), Constant.I32(4)))
                 finalizeFunction()
             })
@@ -2273,7 +2273,7 @@ class OptimizationPassComprehensiveTest {
             .add(JumpThreading())
             .execute(build {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(null)
                 finalizeFunction()
             })
@@ -2287,7 +2287,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds f32 add`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.F32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(fadd(Constant.F32(1.5f), Constant.F32(2.5f)))
             finalizeFunction()
         })
@@ -2298,7 +2298,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds f32 neg`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.F32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(fneg(Constant.F32(7.0f)))
             finalizeFunction()
         })
@@ -2311,7 +2311,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds i32 overflow wraps`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(Constant.I32(Int.MAX_VALUE), Constant.I32(1)))
             finalizeFunction()
         })
@@ -2322,7 +2322,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds trunc i64 to i1`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I1)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(trunc(Constant.I64(3L), Type.I1))
             finalizeFunction()
         })
@@ -2333,7 +2333,7 @@ class OptimizationPassComprehensiveTest {
     fun `cf - folds zext i16 to i32`() {
         val m = fold.run(build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(zext(Constant.I16(1000.toShort()), Type.I32))
             finalizeFunction()
         })
@@ -2352,7 +2352,7 @@ class OptimizationPassComprehensiveTest {
             .add(DeadCodeElimination())
             .execute(build {
                 createFunction("f", emptyList(), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val ptr = alloca(structType)
                 val f0 = gep(structType, ptr, Constant.I32(0), Constant.I32(0))
                 val f1 = gep(structType, ptr, Constant.I32(0), Constant.I32(1))
@@ -2371,7 +2371,7 @@ class OptimizationPassComprehensiveTest {
     fun `pipeline - all passes on complex function`() {
         val m = OptLevel.O2.pipeline().execute(build {
             val p = createFunction("f", listOf(Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(0), ptr)
             val constExpr = add(Constant.I32(5), Constant.I32(5)) // folds to 10

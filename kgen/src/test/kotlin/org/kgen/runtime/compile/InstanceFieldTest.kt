@@ -18,7 +18,6 @@ class InstanceFieldTest {
         // Field refs
         val xFieldRef = cp.fieldRef("org/kgen/test/Point", "x", "I")
         val yFieldRef = cp.fieldRef("org/kgen/test/Point", "y", "I")
-
         val jvmMethods = methods.map { spec ->
             val nameIdx = cp.utf8(spec.name)
             val descIdx = cp.utf8(spec.descriptor)
@@ -194,7 +193,6 @@ class InstanceFieldTest {
         val superClass = cp.classEntry("java/lang/Object")
         val codeIdx = cp.utf8("Code")
         val countRef = cp.fieldRef("org/kgen/test/Counter", "count", "J")
-
         // static long getCount(Counter c) { return c.count; }
         val nameIdx = cp.utf8("getCount")
         val descIdx = cp.utf8("(Lorg/kgen/test/Counter;)J")

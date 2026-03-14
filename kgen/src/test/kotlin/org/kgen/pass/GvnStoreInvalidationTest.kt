@@ -25,7 +25,7 @@ class GvnStoreInvalidationTest {
         fun `store between loads invalidates second load`() {
             val module = buildAndGvn {
                 val params = createFunction("f", listOf(Param("p", Type.Pointer(Type.I32))), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = load(Type.I32, params[0])
                 store(Constant.I32(99), params[0])
                 val b = load(Type.I32, params[0])
@@ -42,7 +42,7 @@ class GvnStoreInvalidationTest {
         fun `store to different alloca does not invalidate load`() {
             val module = buildAndGvn {
                 createFunction("f", emptyList(), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = alloca(Type.I32)
                 val b = alloca(Type.I32)
                 store(Constant.I32(10), a)
@@ -68,7 +68,7 @@ class GvnStoreInvalidationTest {
             val module = buildAndGvn {
                 declareFunction("side_effect", emptyList(), Type.Void)
                 val params = createFunction("f", listOf(Param("p", Type.Pointer(Type.I32))), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = load(Type.I32, params[0])
                 call("side_effect", emptyList(), Type.Void)
                 val b = load(Type.I32, params[0])
@@ -89,7 +89,7 @@ class GvnStoreInvalidationTest {
         fun `consecutive loads from same pointer eliminate second`() {
             val module = buildAndGvn {
                 val params = createFunction("f", listOf(Param("p", Type.Pointer(Type.I32))), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = load(Type.I32, params[0])
                 val b = load(Type.I32, params[0])
                 val sum = add(a, b)
@@ -107,7 +107,7 @@ class GvnStoreInvalidationTest {
                 val params = createFunction("f", listOf(
                     Param("p", Type.Pointer(Type.I32)), Param("x", Type.I32)
                 ), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = load(Type.I32, params[0])
                 val temp = add(params[1], Constant.I32(42))
                 val b = load(Type.I32, params[0])
@@ -128,7 +128,7 @@ class GvnStoreInvalidationTest {
         fun `redundant sub in same block is eliminated`() {
             val module = buildAndGvn {
                 val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = sub(params[0], params[1])
                 val b = sub(params[0], params[1])
                 val sum = add(a, b)
@@ -144,7 +144,7 @@ class GvnStoreInvalidationTest {
         fun `redundant and in same block is eliminated`() {
             val module = buildAndGvn {
                 val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = and(params[0], params[1])
                 val b = and(params[0], params[1])
                 val sum = add(a, b)
@@ -160,7 +160,7 @@ class GvnStoreInvalidationTest {
         fun `redundant or is eliminated`() {
             val module = buildAndGvn {
                 val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = or(params[0], params[1])
                 val b = or(params[0], params[1])
                 val sum = add(a, b)
@@ -176,7 +176,7 @@ class GvnStoreInvalidationTest {
         fun `redundant xor is eliminated`() {
             val module = buildAndGvn {
                 val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = xor(params[0], params[1])
                 val b = xor(params[0], params[1])
                 val sum = add(a, b)
@@ -192,7 +192,7 @@ class GvnStoreInvalidationTest {
         fun `redundant shl is eliminated`() {
             val module = buildAndGvn {
                 val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = shl(params[0], params[1])
                 val b = shl(params[0], params[1])
                 val sum = add(a, b)
@@ -214,15 +214,15 @@ class GvnStoreInvalidationTest {
                 val params = createFunction("f", listOf(
                     Param("x", Type.I32), Param("y", Type.I32), Param("c", Type.I1)
                 ), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = add(params[0], params[1])
-                condBr(params[2], "left", "right")
+                condBr(params[2], BlockRef("left"), BlockRef("right"))
 
-                positionAtEnd(appendBlock("left"))
+                appendBlock("left")
                 val b = add(params[0], params[1])
                 ret(b)
 
-                positionAtEnd(appendBlock("right"))
+                appendBlock("right")
                 val c = add(params[0], params[1])
                 ret(c)
 
@@ -240,14 +240,14 @@ class GvnStoreInvalidationTest {
                 val params = createFunction("f", listOf(
                     Param("x", Type.I32), Param("y", Type.I32), Param("c", Type.I1)
                 ), Type.I32)
-                positionAtEnd(appendBlock("entry"))
-                condBr(params[2], "left", "right")
+                appendBlock("entry")
+                condBr(params[2], BlockRef("left"), BlockRef("right"))
 
-                positionAtEnd(appendBlock("left"))
+                appendBlock("left")
                 val a = mul(params[0], params[1])
                 ret(a)
 
-                positionAtEnd(appendBlock("right"))
+                appendBlock("right")
                 val b = mul(params[0], params[1])
                 ret(b)
 

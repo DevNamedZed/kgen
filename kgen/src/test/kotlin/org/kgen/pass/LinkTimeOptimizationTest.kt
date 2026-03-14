@@ -12,7 +12,7 @@ class LinkTimeOptimizationTest {
         val builder = IrBuilder("moduleA", Target.x86_64())
         // add(a, b) = a + b
         val params = builder.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val result = builder.add(params[0], params[1])
         builder.ret(result)
         builder.finalizeFunction()
@@ -23,7 +23,7 @@ class LinkTimeOptimizationTest {
         val builder = IrBuilder("moduleB", Target.x86_64())
         // sub(a, b) = a - b
         val params = builder.createFunction("sub", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val result = builder.sub(params[0], params[1])
         builder.ret(result)
         builder.finalizeFunction()
@@ -40,7 +40,7 @@ class LinkTimeOptimizationTest {
         // compute(x) = add(x, x)
         val params = builder.createFunction("compute", listOf(Param("x", Type.I32)), Type.I32,
             linkage = Linkage.EXTERNAL)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val result = builder.call("add", listOf(params[0], params[0]), Type.I32)
         builder.ret(result!!)
         builder.finalizeFunction()
@@ -141,18 +141,18 @@ class LinkTimeOptimizationTest {
 
         // unused_func — internal, never called
         val unusedParams = builder.createFunction("unused_func", listOf(Param("x", Type.I32)), Type.I32, linkage = Linkage.INTERNAL)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret(unusedParams[0])
         builder.finalizeFunction()
 
         // helper — internal, called by main
         val helperParams = builder.createFunction("helper", listOf(Param("x", Type.I32)), Type.I32, linkage = Linkage.INTERNAL)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret(helperParams[0])
         builder.finalizeFunction()
 
         builder.createFunction("main", emptyList(), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val result = builder.call("helper", listOf(Constant.I32(42)), Type.I32)
         builder.ret(result!!)
         builder.finalizeFunction()

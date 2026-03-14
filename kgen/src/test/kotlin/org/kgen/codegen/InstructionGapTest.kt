@@ -20,7 +20,7 @@ class InstructionGapTest {
     private fun buildI64Module(target: Target, block: (IrBuilder, List<Value>) -> Unit): Module {
         val ir = IrBuilder("test", target)
         val params = ir.createFunction("test_func", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         block(ir, params)
         ir.finalizeFunction()
         return ir.build()
@@ -29,7 +29,7 @@ class InstructionGapTest {
     private fun buildF64Module(target: Target, block: (IrBuilder, List<Value>) -> Unit): Module {
         val ir = IrBuilder("test", target)
         val params = ir.createFunction("test_func", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         block(ir, params)
         ir.finalizeFunction()
         return ir.build()
@@ -38,7 +38,7 @@ class InstructionGapTest {
     private fun buildVoidModule(target: Target, block: (IrBuilder, List<Value>) -> Unit): Module {
         val ir = IrBuilder("test", target)
         val params = ir.createFunction("test_func", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         block(ir, params)
         ir.finalizeFunction()
         return ir.build()
@@ -47,7 +47,7 @@ class InstructionGapTest {
     private fun buildPtrModule(target: Target, block: (IrBuilder, List<Value>) -> Unit): Module {
         val ir = IrBuilder("test", target)
         val params = ir.createFunction("test_func", listOf(Param("ptr", Type.OpaquePointer), Param("n", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         block(ir, params)
         ir.finalizeFunction()
         return ir.build()
@@ -56,7 +56,7 @@ class InstructionGapTest {
     private fun buildPtrRetModule(target: Target, block: (IrBuilder, List<Value>) -> Unit): Module {
         val ir = IrBuilder("test", target)
         val params = ir.createFunction("test_func", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.OpaquePointer)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         block(ir, params)
         ir.finalizeFunction()
         return ir.build()
@@ -778,7 +778,7 @@ class InstructionGapTest {
         val ir = IrBuilder("test", target)
         val params = ir.createFunction("test_func",
             listOf(Param("a", Type.F64), Param("b", Type.F64), Param("c", Type.F64)), Type.F64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         block(ir, params)
         ir.finalizeFunction()
         return ir.build()

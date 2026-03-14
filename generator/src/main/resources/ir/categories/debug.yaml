@@ -1,0 +1,77 @@
+name: Debug
+interfaceName: DebugInstruction
+enumValue: DEBUG
+description: |-
+  Debug metadata and optimizer hint instructions.
+
+  Debug instructions carry source-level information without affecting program semantics.
+imports:
+- org.kgen.ir.Constant
+sections:
+- comment: Debug instructions
+  instructions:
+  - name: DebugLoc
+    description: Records source location metadata.
+    effects: NONE
+    fields:
+    - name: line
+      type: Int
+      role: config
+    - name: col
+      type: Int
+      role: config
+    - name: scope
+      type: String
+      role: config
+    - name: inlinedAt
+      type: String?
+      default: 'null'
+      role: config
+  - name: DebugValue
+    description: Associates a source-level variable with an SSA value.
+    effects: NONE
+    fields:
+    - name: variable
+      type: String
+      role: config
+    - name: value
+      type: Value
+      role: operand
+    - name: expression
+      type: String?
+      default: 'null'
+      role: config
+  - name: DebugDeclare
+    description: Associates a source-level variable with a memory address.
+    effects: NONE
+    fields:
+    - name: variable
+      type: String
+      role: config
+    - name: address
+      type: Value
+      role: operand
+    - name: expression
+      type: String?
+      default: 'null'
+      role: config
+  - name: Assume
+    description: Optimizer hint asserting that a condition is always true.
+    effects: NONE
+    fields:
+    - name: condition
+      type: Value
+      role: operand
+  - name: Expect
+    description: 'Branch prediction hint: tells the optimizer that value is likely equal to expected.'
+    effects: NONE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+    - name: expected
+      type: Constant
+      role: operand

@@ -35,16 +35,16 @@ class IrParserTest {
             function("max", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32) {
                 block("entry") {
                     val cmp = icmp(ICmpPredicate.SGT, param(0), param(1))
-                    condBr(cmp, "then", "else")
+                    condBr(cmp, BlockRef("then"), BlockRef("else"))
                 }
                 block("then") {
-                    br("merge")
+                    br(BlockRef("merge"))
                 }
                 block("else") {
-                    br("merge")
+                    br(BlockRef("merge"))
                 }
                 block("merge") {
-                    val result = phi(Type.I32, listOf(param(0) to "then", param(1) to "else"))
+                    val result = phi(Type.I32, listOf(param(0) to BlockRef("then"), param(1) to BlockRef("else")))
                     ret(result)
                 }
             }

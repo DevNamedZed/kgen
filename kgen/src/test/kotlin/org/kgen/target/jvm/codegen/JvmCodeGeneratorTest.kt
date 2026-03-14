@@ -29,7 +29,7 @@ class JvmCodeGeneratorTest {
     fun generateClassBytes() {
         val ir = IrBuilder("TestModule", Target.jvm())
         ir.createFunction("getFortyTwo", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I32(42))
         ir.finalizeFunction()
 
@@ -48,7 +48,7 @@ class JvmCodeGeneratorTest {
     fun loadAndCallConstant() {
         val ir = IrBuilder("ConstTest", Target.jvm())
         ir.createFunction("getFortyTwo", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I32(42))
         ir.finalizeFunction()
 
@@ -62,7 +62,7 @@ class JvmCodeGeneratorTest {
     fun addTwoInts() {
         val ir = IrBuilder("AddTest", Target.jvm())
         ir.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
         val b = Parameter("b", Type.I32, 1)
         ir.ret(ir.add(a, b))
@@ -79,7 +79,7 @@ class JvmCodeGeneratorTest {
     fun subtractInts() {
         val ir = IrBuilder("SubTest", Target.jvm())
         ir.createFunction("sub", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
         val b = Parameter("b", Type.I32, 1)
         ir.ret(ir.sub(a, b))
@@ -94,7 +94,7 @@ class JvmCodeGeneratorTest {
     fun multiplyInts() {
         val ir = IrBuilder("MulTest", Target.jvm())
         ir.createFunction("mul", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
         val b = Parameter("b", Type.I32, 1)
         ir.ret(ir.mul(a, b))
@@ -109,7 +109,7 @@ class JvmCodeGeneratorTest {
     fun divideInts() {
         val ir = IrBuilder("DivTest", Target.jvm())
         ir.createFunction("div", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
         val b = Parameter("b", Type.I32, 1)
         ir.ret(ir.sdiv(a, b))
@@ -125,7 +125,7 @@ class JvmCodeGeneratorTest {
     fun longArithmetic() {
         val ir = IrBuilder("LongTest", Target.jvm())
         ir.createFunction("addLong", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)
         val b = Parameter("b", Type.I64, 1)
         ir.ret(ir.add(a, b))
@@ -141,7 +141,7 @@ class JvmCodeGeneratorTest {
     fun voidReturn() {
         val ir = IrBuilder("VoidTest", Target.jvm())
         ir.createFunction("doNothing", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret()
         ir.finalizeFunction()
 
@@ -155,12 +155,12 @@ class JvmCodeGeneratorTest {
         val ir = IrBuilder("MultiFunc", Target.jvm())
 
         ir.createFunction("f1", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I32(1))
         ir.finalizeFunction()
 
         ir.createFunction("f2", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I32(2))
         ir.finalizeFunction()
 
@@ -173,7 +173,7 @@ class JvmCodeGeneratorTest {
     fun negation() {
         val ir = IrBuilder("NegTest", Target.jvm())
         ir.createFunction("neg", listOf(Param("x", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val x = Parameter("x", Type.I32, 0)
         ir.ret(ir.neg(x))
         ir.finalizeFunction()
@@ -188,7 +188,7 @@ class JvmCodeGeneratorTest {
     fun bitwiseOps() {
         val ir = IrBuilder("BitTest", Target.jvm())
         ir.createFunction("bitand", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
         val b = Parameter("b", Type.I32, 1)
         ir.ret(ir.and(a, b))
@@ -202,17 +202,17 @@ class JvmCodeGeneratorTest {
     fun constantVariants() {
         val ir = IrBuilder("ConstVar", Target.jvm())
         ir.createFunction("bipush", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I32(42))
         ir.finalizeFunction()
 
         ir.createFunction("sipush", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I32(1000))
         ir.finalizeFunction()
 
         ir.createFunction("ldcInt", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I32(100000))
         ir.finalizeFunction()
 
@@ -226,17 +226,17 @@ class JvmCodeGeneratorTest {
     fun longConstants() {
         val ir = IrBuilder("LongConst", Target.jvm())
         ir.createFunction("zero", emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I64(0))
         ir.finalizeFunction()
 
         ir.createFunction("one", emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I64(1))
         ir.finalizeFunction()
 
         ir.createFunction("big", emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I64(999999999999L))
         ir.finalizeFunction()
 
@@ -250,15 +250,15 @@ class JvmCodeGeneratorTest {
     fun conditionalBranchWithStackMap() {
         val ir = IrBuilder("CondTest", Target.jvm())
         ir.createFunction("abs", listOf(Param("x", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val x = Parameter("x", Type.I32, 0)
         val cmp = ir.icmp(ICmpPredicate.SGE, x, Constant.I32(0))
-        ir.condBr(cmp, "positive", "negative")
+        ir.condBr(cmp, BlockRef("positive"), BlockRef("negative"))
 
-        ir.positionAtEnd(ir.appendBlock("positive"))
+        ir.appendBlock("positive")
         ir.ret(x)
 
-        ir.positionAtEnd(ir.appendBlock("negative"))
+        ir.appendBlock("negative")
         ir.ret(ir.neg(x))
 
         ir.finalizeFunction()
@@ -275,7 +275,7 @@ class JvmCodeGeneratorTest {
     fun selectWithStackMap() {
         val ir = IrBuilder("SelTest", Target.jvm())
         ir.createFunction("max", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
         val b = Parameter("b", Type.I32, 1)
         val cmp = ir.icmp(ICmpPredicate.SGT, a, b)
@@ -295,19 +295,19 @@ class JvmCodeGeneratorTest {
         // Build: if x >= 0 then result = x else result = -x (using phi)
         val ir = IrBuilder("PhiTest", Target.jvm())
         ir.createFunction("absPhi", listOf(Param("x", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val x = Parameter("x", Type.I32, 0)
         val cmp = ir.icmp(ICmpPredicate.SGE, x, Constant.I32(0))
-        ir.condBr(cmp, "positive", "negative")
+        ir.condBr(cmp, BlockRef("positive"), BlockRef("negative"))
 
-        ir.positionAtEnd(ir.appendBlock("positive"))
-        ir.br("merge")
+        ir.appendBlock("positive")
+        ir.br(BlockRef("merge"))
 
-        ir.positionAtEnd(ir.appendBlock("negative"))
+        ir.appendBlock("negative")
         val negX = ir.neg(x)
-        ir.br("merge")
+        ir.br(BlockRef("merge"))
 
-        ir.positionAtEnd(ir.appendBlock("merge"))
+        ir.appendBlock("merge")
         val phi = ir.phi(Type.I32, listOf(
             Pair(x as Value, "positive"),
             Pair(negX, "negative")
@@ -327,13 +327,13 @@ class JvmCodeGeneratorTest {
     fun callAcrossFunctions() {
         val ir = IrBuilder("CallTest", Target.jvm())
         ir.createFunction("double", listOf(Param("x", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val x = Parameter("x", Type.I32, 0)
         ir.ret(ir.add(x, x))
         ir.finalizeFunction()
 
         ir.createFunction("quadruple", listOf(Param("y", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val y = Parameter("y", Type.I32, 0)
         val d = ir.call("double", listOf(y), Type.I32)!!
         ir.ret(ir.call("double", listOf(d), Type.I32)!!)
@@ -351,31 +351,31 @@ class JvmCodeGeneratorTest {
 
         // thrower: if x < 0 throw RuntimeException, else return x
         ir.createFunction("thrower", listOf(Param("x", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val x = Parameter("x", Type.I32, 0)
         val cmp = ir.icmp(ICmpPredicate.SLT, x, Constant.I32(0))
-        ir.condBr(cmp, "doThrow", "doReturn")
+        ir.condBr(cmp, BlockRef("doThrow"), BlockRef("doReturn"))
 
-        ir.positionAtEnd(ir.appendBlock("doThrow"))
+        ir.appendBlock("doThrow")
         ir.ret(Constant.I32(-1)) // placeholder — real throw handled below
-        ir.positionAtEnd(ir.appendBlock("doReturn"))
+        ir.appendBlock("doReturn")
         ir.ret(x)
         ir.finalizeFunction()
 
         // safeCaller: calls thrower with invoke, catches exception
         ir.createFunction("safeCaller", listOf(Param("y", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val y = Parameter("y", Type.I32, 0)
         val funcRef = GlobalRef("thrower", Type.Function(listOf(Type.I32), Type.I32))
-        ir.invoke(funcRef, listOf(y), Type.I32, "normal", "handler")
+        ir.invoke(funcRef, listOf(y), Type.I32, BlockRef("normal"), BlockRef("handler"))
 
-        ir.positionAtEnd(ir.appendBlock("normal"))
+        ir.appendBlock("normal")
         // The invoke result is on the normal path — but we need the dest from invoke
         // Actually, the result is stored in dest. Let me re-check.
         // For now, test that the code compiles and loads
         ir.ret(Constant.I32(1))
 
-        ir.positionAtEnd(ir.appendBlock("handler"))
+        ir.appendBlock("handler")
         val lp = ir.landingPad(Type.OpaquePointer, emptyList(), cleanup = true)
         ir.ret(Constant.I32(-99)) // Return sentinel on exception
         ir.finalizeFunction()
@@ -390,7 +390,7 @@ class JvmCodeGeneratorTest {
     fun unsignedDivision() {
         val ir = IrBuilder("UDivTest", Target.jvm())
         ir.createFunction("udiv", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
         val b = Parameter("b", Type.I32, 1)
         ir.ret(ir.udiv(a, b))
@@ -407,7 +407,7 @@ class JvmCodeGeneratorTest {
     fun unsignedRemainder() {
         val ir = IrBuilder("URemTest", Target.jvm())
         ir.createFunction("urem", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
         val b = Parameter("b", Type.I32, 1)
         ir.ret(ir.urem(a, b))
@@ -422,7 +422,7 @@ class JvmCodeGeneratorTest {
     fun bitwiseNot() {
         val ir = IrBuilder("NotTest", Target.jvm())
         ir.createFunction("bitnot", listOf(Param("a", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
         ir.ret(ir.not(a))
         ir.finalizeFunction()
@@ -437,7 +437,7 @@ class JvmCodeGeneratorTest {
     fun floatCompareOrdered() {
         val ir = IrBuilder("FCmpTest", Target.jvm())
         ir.createFunction("feq", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I1)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.F64, 0)
         val b = Parameter("b", Type.F64, 1)
         ir.ret(ir.fcmp(FCmpPredicate.OEQ, a, b))
@@ -453,7 +453,7 @@ class JvmCodeGeneratorTest {
     fun signedIntToFloat() {
         val ir = IrBuilder("SIToFPTest", Target.jvm())
         ir.createFunction("toDouble", listOf(Param("a", Type.I32)), Type.F64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
         ir.ret(ir.sitofp(a, Type.F64))
         ir.finalizeFunction()
@@ -467,7 +467,7 @@ class JvmCodeGeneratorTest {
     fun floatToSignedInt() {
         val ir = IrBuilder("FPToSITest", Target.jvm())
         ir.createFunction("toInt", listOf(Param("a", Type.F64)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.F64, 0)
         ir.ret(ir.fptosi(a, Type.I32))
         ir.finalizeFunction()
@@ -481,7 +481,7 @@ class JvmCodeGeneratorTest {
     fun floatExtend() {
         val ir = IrBuilder("FPExtTest", Target.jvm())
         ir.createFunction("extend", listOf(Param("a", Type.F32)), Type.F64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.F32, 0)
         ir.ret(ir.fpext(a, Type.F64))
         ir.finalizeFunction()
@@ -496,20 +496,20 @@ class JvmCodeGeneratorTest {
     fun switchInstruction() {
         val ir = IrBuilder("SwitchTest", Target.jvm())
         ir.createFunction("choose", listOf(Param("a", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
         ir.switch(a, "default", listOf(
             Constant.I32(1) to "case1",
             Constant.I32(2) to "case2"
         ))
 
-        ir.positionAtEnd(ir.appendBlock("case1"))
+        ir.appendBlock("case1")
         ir.ret(Constant.I32(10))
 
-        ir.positionAtEnd(ir.appendBlock("case2"))
+        ir.appendBlock("case2")
         ir.ret(Constant.I32(20))
 
-        ir.positionAtEnd(ir.appendBlock("default"))
+        ir.appendBlock("default")
         ir.ret(Constant.I32(0))
 
         ir.finalizeFunction()

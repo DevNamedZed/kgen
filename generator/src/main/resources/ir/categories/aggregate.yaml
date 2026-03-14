@@ -1,0 +1,46 @@
+name: Aggregate
+interfaceName: AggregateInstruction
+enumValue: AGGREGATE
+description: Instructions that operate on aggregate types (structs and arrays).
+imports:
+- org.kgen.ir.Type
+sections:
+- comment: Aggregate instructions
+  instructions:
+  - name: ExtractValue
+    description: Extracts a value from a nested aggregate at compile-time indices.
+    effects: PURE
+    emit:
+      resultType: fieldType
+      extraParams:
+      - name: fieldType
+        type: Type
+        description: the type of the extracted field
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: aggregate
+      type: Value
+      role: operand
+    - name: indices
+      type: List<Int>
+      role: config
+  - name: InsertValue
+    description: Inserts a value into a nested aggregate at compile-time indices.
+    effects: PURE
+    emit:
+      resultType: aggregate.type
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: aggregate
+      type: Value
+      role: operand
+    - name: element
+      type: Value
+      role: operand
+    - name: indices
+      type: List<Int>
+      role: config

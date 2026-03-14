@@ -35,7 +35,7 @@ public class JavaInteropTest {
         var params = builder.createFunction("add",
             List.of(new Param("a", I32), new Param("b", I32)), I32);
 
-        builder.positionAtEnd(builder.appendBlock("entry"));
+        builder.appendBlock("entry");
         // @JvmOverloads allows omitting nuw/nsw defaults
         Value result = builder.add(params.get(0), params.get(1));
         builder.ret(result);
@@ -113,7 +113,7 @@ public class JavaInteropTest {
         var builder = new IrBuilder("verify_test", Target.x86_64());
         var params = builder.createFunction("identity",
             List.of(new Param("x", I32)), I32);
-        builder.positionAtEnd(builder.appendBlock("entry"));
+        builder.appendBlock("entry");
         builder.ret(params.get(0));
         builder.finalizeFunction();
 
@@ -129,7 +129,7 @@ public class JavaInteropTest {
         var builder = new IrBuilder("print_test", Target.x86_64());
         var params = builder.createFunction("square",
             List.of(new Param("x", I32)), I32);
-        builder.positionAtEnd(builder.appendBlock("entry"));
+        builder.appendBlock("entry");
         Value squared = builder.mul(params.get(0), params.get(0));
         builder.ret(squared);
         builder.finalizeFunction();
@@ -147,7 +147,7 @@ public class JavaInteropTest {
         var builder = new IrBuilder("arith", Target.x86_64());
         var params = builder.createFunction("compute",
             List.of(new Param("a", I32), new Param("b", I32)), I32);
-        builder.positionAtEnd(builder.appendBlock("entry"));
+        builder.appendBlock("entry");
 
         Value a = params.get(0);
         Value b = params.get(1);
@@ -169,14 +169,14 @@ public class JavaInteropTest {
         var params = builder.createFunction("abs",
             List.of(new Param("x", I32)), I32);
 
-        builder.positionAtEnd(builder.appendBlock("entry"));
+        builder.appendBlock("entry");
         Value cmp = builder.icmp(ICmpPredicate.SGE, params.get(0), new Constant.I32(0));
-        builder.condBr(cmp, "positive", "negative");
+        builder.condBr(cmp, new BlockRef("positive"), new BlockRef("negative"));
 
-        builder.positionAtEnd(builder.appendBlock("positive"));
+        builder.appendBlock("positive");
         builder.ret(params.get(0));
 
-        builder.positionAtEnd(builder.appendBlock("negative"));
+        builder.appendBlock("negative");
         Value negated = builder.neg(params.get(0));
         builder.ret(negated);
 
@@ -193,7 +193,7 @@ public class JavaInteropTest {
             List.of(new Param("fmt", Type.pointer(I8))), I32);
 
         var params = builder.createFunction("main", List.of(), I32);
-        builder.positionAtEnd(builder.appendBlock("entry"));
+        builder.appendBlock("entry");
         builder.ret(new Constant.I32(0));
         builder.finalizeFunction();
 
@@ -207,7 +207,7 @@ public class JavaInteropTest {
         var builder = new IrBuilder("pipeline", Target.x86_64());
         var params = builder.createFunction("test",
             List.of(new Param("x", I32)), I32);
-        builder.positionAtEnd(builder.appendBlock("entry"));
+        builder.appendBlock("entry");
         Value result = builder.add(params.get(0), new Constant.I32(0));
         builder.ret(result);
         builder.finalizeFunction();
@@ -240,7 +240,7 @@ public class JavaInteropTest {
             List.of(new Param("x", I32)), I32,
             Linkage.EXTERNAL, Visibility.DEFAULT, CallingConvention.C,
             Set.of(FnAttribute.HOT, FnAttribute.NOUNWIND));
-        builder.positionAtEnd(builder.appendBlock("entry"));
+        builder.appendBlock("entry");
         builder.ret(params.get(0));
         builder.finalizeFunction();
 
@@ -271,7 +271,7 @@ public class JavaInteropTest {
 
         var params = builder.createFunction("caller",
             List.of(new Param("x", I32)), I32);
-        builder.positionAtEnd(builder.appendBlock("entry"));
+        builder.appendBlock("entry");
         // @JvmOverloads allows omitting CallingConvention default
         Value result = builder.call("helper", List.of((Value) params.get(0)), I32);
         assertNotNull(result);
@@ -287,7 +287,7 @@ public class JavaInteropTest {
         var builder = new IrBuilder("fp", Target.x86_64());
         var params = builder.createFunction("fma",
             List.of(new Param("a", F64), new Param("b", F64), new Param("c", F64)), F64);
-        builder.positionAtEnd(builder.appendBlock("entry"));
+        builder.appendBlock("entry");
 
         // @JvmOverloads allows omitting FastMathFlags default
         Value prod = builder.fmul(params.get(0), params.get(1));
@@ -306,7 +306,7 @@ public class JavaInteropTest {
         var builder = new IrBuilder("mem", Target.x86_64());
         var params = builder.createFunction("loadStore",
             List.of(new Param("ptr", Type.pointer(I32))), I32);
-        builder.positionAtEnd(builder.appendBlock("entry"));
+        builder.appendBlock("entry");
 
         // @JvmOverloads allows omitting align/volatile/ordering defaults
         Value loaded = builder.load(I32, params.get(0));

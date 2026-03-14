@@ -28,7 +28,7 @@ class JitEngineComprehensiveTest {
     private fun buildAddModule(): Module {
         val ir = IrBuilder("add_module", Target.x86_64())
         ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)
         val b = Parameter("b", Type.I64, 1)
         ir.ret(ir.add(a, b))
@@ -39,7 +39,7 @@ class JitEngineComprehensiveTest {
     private fun buildConstantModule(name: String, funcName: String, value: Long): Module {
         val ir = IrBuilder(name, Target.x86_64())
         ir.createFunction(funcName, emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I64(value))
         ir.finalizeFunction()
         return ir.build()
@@ -48,7 +48,7 @@ class JitEngineComprehensiveTest {
     private fun buildMulModule(): Module {
         val ir = IrBuilder("mul_module", Target.x86_64())
         ir.createFunction("mul", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)
         val b = Parameter("b", Type.I64, 1)
         ir.ret(ir.mul(a, b))
@@ -59,7 +59,7 @@ class JitEngineComprehensiveTest {
     private fun buildSubModule(): Module {
         val ir = IrBuilder("sub_module", Target.x86_64())
         ir.createFunction("sub", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)
         val b = Parameter("b", Type.I64, 1)
         ir.ret(ir.sub(a, b))
@@ -70,7 +70,7 @@ class JitEngineComprehensiveTest {
     private fun buildNegModule(): Module {
         val ir = IrBuilder("neg_module", Target.x86_64())
         ir.createFunction("negate", listOf(Param("a", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)
         ir.ret(ir.neg(a))
         ir.finalizeFunction()
@@ -81,7 +81,7 @@ class JitEngineComprehensiveTest {
         val ir = IrBuilder(name, Target.x86_64())
         for (i in 1..funcCount) {
             ir.createFunction("func$i", emptyList(), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.I64(i.toLong()))
             ir.finalizeFunction()
         }
@@ -91,7 +91,7 @@ class JitEngineComprehensiveTest {
     private fun buildIdentityModule(name: String, funcName: String): Module {
         val ir = IrBuilder(name, Target.x86_64())
         ir.createFunction(funcName, listOf(Param("x", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Parameter("x", Type.I64, 0))
         ir.finalizeFunction()
         return ir.build()
@@ -100,7 +100,7 @@ class JitEngineComprehensiveTest {
     private fun buildAndModule(): Module {
         val ir = IrBuilder("and_module", Target.x86_64())
         ir.createFunction("bitand", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)
         val b = Parameter("b", Type.I64, 1)
         ir.ret(ir.and(a, b))
@@ -111,7 +111,7 @@ class JitEngineComprehensiveTest {
     private fun buildOrModule(): Module {
         val ir = IrBuilder("or_module", Target.x86_64())
         ir.createFunction("bitor", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)
         val b = Parameter("b", Type.I64, 1)
         ir.ret(ir.or(a, b))
@@ -122,7 +122,7 @@ class JitEngineComprehensiveTest {
     private fun buildXorModule(): Module {
         val ir = IrBuilder("xor_module", Target.x86_64())
         ir.createFunction("bitxor", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)
         val b = Parameter("b", Type.I64, 1)
         ir.ret(ir.xor(a, b))
@@ -133,7 +133,7 @@ class JitEngineComprehensiveTest {
     private fun buildShlModule(): Module {
         val ir = IrBuilder("shl_module", Target.x86_64())
         ir.createFunction("shl", listOf(Param("a", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)
         ir.ret(ir.shl(a, Constant.I64(3L)))
         ir.finalizeFunction()
@@ -1188,7 +1188,7 @@ class JitEngineComprehensiveTest {
         fun `module without target triple gets auto-assigned`() {
             val ir = IrBuilder("no_triple", Target.x86_64())
             ir.createFunction("f", emptyList(), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.I64(42))
             ir.finalizeFunction()
             val module = ir.build()
@@ -1205,7 +1205,7 @@ class JitEngineComprehensiveTest {
         fun `module with explicit target triple is preserved`() {
             val ir = IrBuilder("explicit_triple", Target.x86_64())
             ir.createFunction("f", emptyList(), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.I64(42))
             ir.finalizeFunction()
             val module = ir.build().copy(targetTriple = JitEngine.hostTriple)
@@ -1662,7 +1662,7 @@ class JitEngineComprehensiveTest {
             val ir = IrBuilder("many_constants", Target.x86_64())
             for (i in 1..10) {
                 ir.createFunction("const$i", emptyList(), Type.I64)
-                ir.positionAtEnd(ir.appendBlock("entry"))
+                ir.appendBlock("entry")
                 ir.ret(Constant.I64(i.toLong() * 100))
                 ir.finalizeFunction()
             }
@@ -1681,7 +1681,7 @@ class JitEngineComprehensiveTest {
                 listOf(Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64)),
                 Type.I64
             )
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val a = Parameter("a", Type.I64, 0)
             val b = Parameter("b", Type.I64, 1)
             val c = Parameter("c", Type.I64, 2)
@@ -1708,7 +1708,7 @@ class JitEngineComprehensiveTest {
                 ),
                 Type.I64
             )
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val a = Parameter("a", Type.I64, 0)
             val b = Parameter("b", Type.I64, 1)
             val c = Parameter("c", Type.I64, 2)
@@ -1729,7 +1729,7 @@ class JitEngineComprehensiveTest {
         fun `chained arithmetic operations`() {
             val ir = IrBuilder("chain", Target.x86_64())
             ir.createFunction("chain", listOf(Param("x", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val x = Parameter("x", Type.I64, 0)
             val doubled = ir.add(x, x)
             val quadrupled = ir.add(doubled, doubled)
@@ -1751,7 +1751,7 @@ class JitEngineComprehensiveTest {
                 listOf(Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64)),
                 Type.I64
             )
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val a = Parameter("a", Type.I64, 0)
             val b = Parameter("b", Type.I64, 1)
             val c = Parameter("c", Type.I64, 2)

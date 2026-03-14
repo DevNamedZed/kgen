@@ -364,7 +364,7 @@ class JitRuntimeIntegrationTest {
     private fun buildAddModule(): Module {
         val ir = IrBuilder("add_module", Target.x86_64())
         ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.add(Parameter("a", Type.I64, 0), Parameter("b", Type.I64, 1)))
         ir.finalizeFunction()
         return ir.build()
@@ -373,7 +373,7 @@ class JitRuntimeIntegrationTest {
     private fun buildMulModule(): Module {
         val ir = IrBuilder("mul_module", Target.x86_64())
         ir.createFunction("mul", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.mul(Parameter("a", Type.I64, 0), Parameter("b", Type.I64, 1)))
         ir.finalizeFunction()
         return ir.build()
@@ -382,7 +382,7 @@ class JitRuntimeIntegrationTest {
     private fun buildConstantFunction(name: String, value: Long): Module {
         val ir = IrBuilder("${name}_module", Target.x86_64())
         ir.createFunction(name, emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I64(value))
         ir.finalizeFunction()
         return ir.build()
@@ -393,7 +393,7 @@ class JitRuntimeIntegrationTest {
         ir.declareFunction(externName, emptyList(), Type.I64)
 
         ir.createFunction("test_increment", emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.call(externName, emptyList(), Type.I64)
         ir.call(externName, emptyList(), Type.I64)
         val result = ir.call(externName, emptyList(), Type.I64)

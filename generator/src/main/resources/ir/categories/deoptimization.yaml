@@ -1,0 +1,151 @@
+name: Deoptimization
+interfaceName: DeoptimizationInstruction
+enumValue: DEOPTIMIZATION
+description: |-
+  Speculative optimization and deoptimization instructions.
+
+  Deoptimization instructions support JIT compilation with speculative
+  optimization. FrameState captures interpreter state; Guard and FixedGuard
+  provide conditional deoptimization; Deoptimize is unconditional.
+  OSREntry enables on-stack replacement at loop headers.
+imports:
+- org.kgen.ir.types.MethodRef
+- org.kgen.ir.MonitorId
+- org.kgen.ir.VirtualObjectState
+- org.kgen.ir.DeoptReason
+- org.kgen.ir.DeoptAction
+- org.kgen.ir.SpeculationId
+sections:
+- comment: Frame state
+  instructions:
+  - name: FrameState
+    description: |-
+      Pseudo-instruction capturing interpreter state for deoptimization.
+
+      Not emitted as machine code. Must exist for every instruction with
+      mayDeopt=true or isSafepoint=true in managed compilation contexts.
+    effects: PURE
+    fields:
+    - name: method
+      type: MethodRef
+      role: config
+    - name: bci
+      type: Int
+      role: config
+    - name: locals
+      type: List<Value>
+      role: operandList
+    - name: stack
+      type: List<Value>
+      role: operandList
+    - name: locks
+      type: List<MonitorId>
+      role: config
+    - name: outer
+      type: FrameState?
+      role: config
+    - name: virtualObjects
+      type: List<VirtualObjectState>
+      role: config
+- comment: Guards
+  instructions:
+  - name: Guard
+    description: |-
+      Floating conditional deoptimization.
+
+      Deoptimize if condition is false (or true if negated). May float
+      freely between its anchor and the first use of any value it protects.
+    effects:
+      bits:
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: condition
+      type: Value
+      role: operand
+    - name: negated
+      type: Boolean
+      default: 'false'
+      role: flag
+    - name: reason
+      type: DeoptReason
+      role: config
+    - name: action
+      type: DeoptAction
+      role: config
+    - name: speculation
+      type: SpeculationId?
+      default: 'null'
+      role: config
+    - name: frameState
+      type: Value
+      role: operand
+  - name: FixedGuard
+    description: |-
+      Control-flow-fixed guard.
+
+      Unlike Guard, FixedGuard is structurally fixed in the control flow
+      and cannot float. Must be lowered to an explicit conditional branch.
+    effects:
+      bits:
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: condition
+      type: Value
+      role: operand
+    - name: negated
+      type: Boolean
+      default: 'false'
+      role: flag
+    - name: reason
+      type: DeoptReason
+      role: config
+    - name: action
+      type: DeoptAction
+      role: config
+    - name: frameState
+      type: Value
+      role: operand
+- comment: Deoptimization
+  instructions:
+  - name: Deoptimize
+    description: |-
+      Unconditional deoptimization terminator.
+
+      Must be the last instruction in a basic block. Immediately triggers
+      deoptimization with the attached frame state.
+    effects:
+      bits:
+      - IS_TERMINATOR
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: reason
+      type: DeoptReason
+      role: config
+    - name: action
+      type: DeoptAction
+      role: config
+    - name: speculation
+      type: SpeculationId?
+      default: 'null'
+      role: config
+    - name: frameState
+      type: Value
+      role: operand
+  - name: OSREntry
+    description: |-
+      On-stack replacement entry at a loop header.
+
+      Used to transition from the interpreter to compiled code at a safe
+      point. The localMappings provide SSA values corresponding to
+      interpreter locals at the OSR point.
+    effects: PURE
+    fields:
+    - name: targetBci
+      type: Int
+      role: config
+    - name: locals
+      type: List<Value>
+      role: operandList
+    - name: frameState
+      type: Value
+      role: operand

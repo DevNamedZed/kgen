@@ -353,7 +353,7 @@ class IrPrinterExtendedTest {
             function("multi", listOf(Param("x", Type.I32)), Type.I32) {
                 block("entry") {
                     val c = icmp(ICmpPredicate.SGT, param(0), i32(10))
-                    condBr(c, "big", "small")
+                    condBr(c, BlockRef("big"), BlockRef("small"))
                 }
                 block("big") {
                     ret(i32(1))

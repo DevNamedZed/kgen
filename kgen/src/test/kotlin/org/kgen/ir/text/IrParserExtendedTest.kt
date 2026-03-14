@@ -349,14 +349,14 @@ class IrParserExtendedTest {
             function("abs", listOf(Param("x", Type.I32)), Type.I32) {
                 block("entry") {
                     val neg = icmp(ICmpPredicate.SLT, param(0), i32(0))
-                    condBr(neg, "negate", "done")
+                    condBr(neg, BlockRef("negate"), BlockRef("done"))
                 }
                 block("negate") {
                     val negated = sub(i32(0), param(0))
-                    br("done")
+                    br(BlockRef("done"))
                 }
                 block("done") {
-                    val result = phi(Type.I32, listOf(param(0) to "entry", i32(0) to "negate"))
+                    val result = phi(Type.I32, listOf(param(0) to BlockRef("entry"), i32(0) to BlockRef("negate")))
                     ret(result)
                 }
             }

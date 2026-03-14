@@ -1,0 +1,402 @@
+name: Compute
+interfaceName: ComputeInstruction
+enumValue: COMPUTE
+description: |-
+  GPU and general-purpose compute instructions.
+
+  Compute instructions represent operations specific to massively parallel
+  execution contexts: thread/block identification, synchronization barriers,
+  warp-level shuffles and votes, shared memory allocation, and kernel launch.
+imports:
+- org.kgen.ir.BlockRef
+- org.kgen.ir.ThreadDim
+- org.kgen.ir.ComputeScope
+- org.kgen.ir.MemorySpace
+- org.kgen.ir.AtomicOrdering
+- org.kgen.ir.VoteOp
+sections:
+- comment: Thread identification
+  instructions:
+  - name: ThreadId
+    description: Returns the thread ID within the current block along the specified dimension.
+    effects: PURE
+    emit:
+      resultType: Type.I32
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: dim
+      type: ThreadDim
+      role: config
+  - name: BlockId
+    description: Returns the block ID within the grid along the specified dimension.
+    effects: PURE
+    emit:
+      resultType: Type.I32
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: dim
+      type: ThreadDim
+      role: config
+  - name: WarpId
+    description: Returns the warp/wavefront ID within the current block.
+    effects: PURE
+    emit:
+      resultType: Type.I32
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+  - name: LaneId
+    description: Returns the lane ID within the current warp/wavefront.
+    effects: PURE
+    emit:
+      resultType: Type.I32
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+- comment: Grid dimensions
+  instructions:
+  - name: BlockDim
+    description: Returns the number of threads per block in the specified dimension.
+    effects: PURE
+    emit:
+      resultType: Type.I32
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: dim
+      type: ThreadDim
+      role: config
+  - name: GridDim
+    description: Returns the number of blocks in the grid in the specified dimension.
+    effects: PURE
+    emit:
+      resultType: Type.I32
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: dim
+      type: ThreadDim
+      role: config
+- comment: Synchronization
+  instructions:
+  - name: ComputeBarrier
+    description: |-
+      Synchronizes all threads within the specified scope.
+
+      All threads must reach the barrier before any can proceed.
+    effects:
+      bits:
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: scope
+      type: ComputeScope
+      role: config
+  - name: ComputeFence
+    description: |-
+      Memory ordering fence within compute hierarchy.
+
+      Ensures memory operations are visible to threads at the specified scope.
+    effects:
+      bits:
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: scope
+      type: ComputeScope
+      role: config
+    - name: memSpace
+      type: MemorySpace
+      role: config
+- comment: Kernel launch
+  instructions:
+  - name: KernelLaunch
+    description: |-
+      Launches a compute kernel asynchronously.
+
+      Host-side instruction. The kernel function must have KernelEntry attribute.
+      The stream operand is opaque to the IR.
+    effects:
+      bits:
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: fn
+      type: Value
+      role: operand
+    - name: grid
+      type: Value
+      role: operand
+    - name: block
+      type: Value
+      role: operand
+    - name: sharedMem
+      type: Value
+      role: operand
+    - name: stream
+      type: Value
+      role: operand
+    - name: args
+      type: List<Value>
+      role: operandList
+- comment: Compute atomics
+  instructions:
+  - name: ComputeAtomicAdd
+    description: GPU-native atomic add on global or shared memory.
+    effects:
+      bits:
+      - READS_HEAP_MEMORY
+      - WRITES_HEAP_MEMORY
+      - HAS_SIDE_EFFECTS
+    emit:
+      resultType: value.type
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: ptr
+      type: Value
+      role: operand
+    - name: value
+      type: Value
+      role: operand
+    - name: ordering
+      type: AtomicOrdering
+      role: config
+    - name: memSpace
+      type: MemorySpace
+      role: config
+  - name: ComputeAtomicMin
+    description: GPU-native atomic min on global or shared memory.
+    effects:
+      bits:
+      - READS_HEAP_MEMORY
+      - WRITES_HEAP_MEMORY
+      - HAS_SIDE_EFFECTS
+    emit:
+      resultType: value.type
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: ptr
+      type: Value
+      role: operand
+    - name: value
+      type: Value
+      role: operand
+    - name: ordering
+      type: AtomicOrdering
+      role: config
+    - name: memSpace
+      type: MemorySpace
+      role: config
+  - name: ComputeAtomicMax
+    description: GPU-native atomic max on global or shared memory.
+    effects:
+      bits:
+      - READS_HEAP_MEMORY
+      - WRITES_HEAP_MEMORY
+      - HAS_SIDE_EFFECTS
+    emit:
+      resultType: value.type
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: ptr
+      type: Value
+      role: operand
+    - name: value
+      type: Value
+      role: operand
+    - name: ordering
+      type: AtomicOrdering
+      role: config
+    - name: memSpace
+      type: MemorySpace
+      role: config
+  - name: ComputeAtomicCAS
+    description: GPU-native atomic compare-and-swap on global or shared memory.
+    effects:
+      bits:
+      - READS_HEAP_MEMORY
+      - WRITES_HEAP_MEMORY
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: ptr
+      type: Value
+      role: operand
+    - name: cmp
+      type: Value
+      role: operand
+    - name: new
+      type: Value
+      role: operand
+    - name: ordering
+      type: AtomicOrdering
+      role: config
+    - name: memSpace
+      type: MemorySpace
+      role: config
+- comment: Warp shuffle
+  instructions:
+  - name: WarpShuffle
+    description: 'Warp-level data exchange: read value from an arbitrary source lane.'
+    effects: PURE
+    emit:
+      resultType: value.type
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+    - name: srcLane
+      type: Value
+      role: operand
+    - name: width
+      type: Int
+      default: '32'
+      role: config
+  - name: WarpShuffleDown
+    description: 'Warp shuffle: read from lane + delta.'
+    effects: PURE
+    emit:
+      resultType: value.type
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+    - name: delta
+      type: Value
+      role: operand
+    - name: width
+      type: Int
+      default: '32'
+      role: config
+  - name: WarpShuffleUp
+    description: 'Warp shuffle: read from lane - delta.'
+    effects: PURE
+    emit:
+      resultType: value.type
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+    - name: delta
+      type: Value
+      role: operand
+    - name: width
+      type: Int
+      default: '32'
+      role: config
+  - name: WarpShuffleXor
+    description: 'Warp shuffle: read from lane XOR mask.'
+    effects: PURE
+    emit:
+      resultType: value.type
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+    - name: mask
+      type: Value
+      role: operand
+    - name: width
+      type: Int
+      default: '32'
+      role: config
+- comment: Warp vote
+  instructions:
+  - name: Ballot
+    description: Returns a bitmask of lanes where the predicate is true.
+    effects: PURE
+    emit:
+      resultType: Type.I32
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: predicate
+      type: Value
+      role: operand
+  - name: WarpVote
+    description: 'Lane-predicate reduction: All (all lanes true?) or Any (any lane true?).'
+    effects: PURE
+    emit:
+      resultType: Type.I1
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: predicate
+      type: Value
+      role: operand
+    - name: op
+      type: VoteOp
+      role: config
+- comment: Shared memory
+  instructions:
+  - name: SharedMemAlloc
+    description: |-
+      Allocates shared (workgroup-local) memory.
+
+      The memory is shared among all threads in the block.
+    effects:
+      bits:
+      - HAS_SIDE_EFFECTS
+    emit:
+      resultType: Type.OpaquePointer
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: size
+      type: Value
+      role: operand
+    - name: alignment
+      type: Int
+      role: config
+- comment: Divergence
+  instructions:
+  - name: DivergentBranch
+    description: |-
+      Branch with expected lane divergence.
+
+      Signals to the backend that different lanes may take different paths.
+      May be lowered to predicated instructions.
+    effects:
+      bits:
+      - IS_TERMINATOR
+      - IS_BRANCH
+      - IS_DIVERGENT
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: condition
+      type: Value
+      role: operand
+    - name: trueTarget
+      type: BlockRef
+      role: config
+    - name: falseTarget
+      type: BlockRef
+      role: config

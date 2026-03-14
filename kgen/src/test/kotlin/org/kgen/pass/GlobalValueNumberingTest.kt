@@ -21,7 +21,7 @@ class GlobalValueNumberingTest {
     fun `eliminates redundant add`() {
         val module = buildAndGvn {
             val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], params[1])
             val b = add(params[0], params[1])  // redundant
             val sum = add(a, b)
@@ -38,7 +38,7 @@ class GlobalValueNumberingTest {
     fun `eliminates redundant mul`() {
         val module = buildAndGvn {
             val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = mul(params[0], params[1])
             val b = mul(params[0], params[1])  // redundant
             val sum = add(a, b)
@@ -53,7 +53,7 @@ class GlobalValueNumberingTest {
     fun `eliminates redundant icmp`() {
         val module = buildAndGvn {
             val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = icmp(ICmpPredicate.EQ, params[0], params[1])
             val b = icmp(ICmpPredicate.EQ, params[0], params[1])  // redundant
             val result = select(a, Constant.I32(1), Constant.I32(0))
@@ -71,7 +71,7 @@ class GlobalValueNumberingTest {
     fun `does not eliminate different operations`() {
         val module = buildAndGvn {
             val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], params[1])
             val b = sub(params[0], params[1])
             val sum = add(a, b)
@@ -86,7 +86,7 @@ class GlobalValueNumberingTest {
     fun `does not eliminate different operand order`() {
         val module = buildAndGvn {
             val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = sub(params[0], params[1])
             val b = sub(params[1], params[0])  // different order, different result
             val sum = add(a, b)
@@ -102,7 +102,7 @@ class GlobalValueNumberingTest {
         val module = buildAndGvn {
             declareFunction("side_effect", listOf(Param("x", Type.I32)), Type.I32)
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = call("side_effect", listOf(params[0]), Type.I32)!!
             val b = call("side_effect", listOf(params[0]), Type.I32)!!
             val sum = add(a, b)
@@ -118,15 +118,15 @@ class GlobalValueNumberingTest {
     fun `eliminates across dominating blocks`() {
         val module = buildAndGvn {
             val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32), Param("cond", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], params[1])
-            condBr(params[2], "then", "else")
+            condBr(params[2], BlockRef("then"), BlockRef("else"))
 
-            positionAtEnd(appendBlock("then"))
+            appendBlock("then")
             val b = add(params[0], params[1])  // redundant, dominated by entry's add
             ret(b)
 
-            positionAtEnd(appendBlock("else"))
+            appendBlock("else")
             val c = add(params[0], params[1])  // redundant, dominated by entry's add
             ret(c)
 
@@ -143,14 +143,14 @@ class GlobalValueNumberingTest {
     fun `scopes correctly across non-dominating blocks`() {
         val module = buildAndGvn {
             val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32), Param("cond", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            condBr(params[2], "then", "else")
+            appendBlock("entry")
+            condBr(params[2], BlockRef("then"), BlockRef("else"))
 
-            positionAtEnd(appendBlock("then"))
+            appendBlock("then")
             val a = add(params[0], params[1])
             ret(a)
 
-            positionAtEnd(appendBlock("else"))
+            appendBlock("else")
             val b = add(params[0], params[1])
             ret(b)
 
@@ -167,7 +167,7 @@ class GlobalValueNumberingTest {
     fun `eliminates chained redundancies`() {
         val module = buildAndGvn {
             val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], params[1])
             val b = mul(a, params[0])
             val c = add(params[0], params[1])  // same as a
@@ -187,7 +187,7 @@ class GlobalValueNumberingTest {
     fun `eliminates redundant zext`() {
         val module = buildAndGvn {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = zext(params[0], Type.I64)
             val b = zext(params[0], Type.I64)  // redundant
             val sum = add(a, b)
@@ -205,7 +205,7 @@ class GlobalValueNumberingTest {
         // are redundant — the second can be eliminated via alias analysis.
         val module = buildAndGvn {
             val params = createFunction("f", listOf(Param("p", Type.Pointer(Type.I32))), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = load(Type.I32, params[0])
             val b = load(Type.I32, params[0])  // redundant — no intervening store
             val sum = add(a, b)

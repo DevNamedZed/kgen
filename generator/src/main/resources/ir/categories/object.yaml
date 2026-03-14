@@ -1,0 +1,657 @@
+name: Object
+interfaceName: ObjectInstruction
+enumValue: OBJECT
+description: |-
+  Object-oriented and high-level data structure instructions.
+
+  Object instructions model heap allocation, field access, method dispatch,
+  array operations, exception handling, closures, and tagged unions.
+imports:
+- org.kgen.ir.BlockRef
+- org.kgen.ir.BootstrapMethod
+- org.kgen.ir.CatchHandler
+- org.kgen.ir.Type
+sections:
+- comment: Exception and control flow
+  instructions:
+  - name: Throw
+    description: Throws an exception, transferring control to the nearest catch handler.
+    effects: MANAGED_THROW
+    fields:
+    - name: exception
+      type: Value
+      role: operand
+    emit:
+      name: throwException
+  - name: TryCatchRegion
+    description: Declares a try/catch/finally region for structured exception handling.
+    effects:
+      bits:
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: tryBlock
+      type: BlockRef
+      role: config
+    - name: catches
+      type: List<CatchHandler>
+      role: config
+    - name: finallyBlock
+      type: BlockRef?
+      default: 'null'
+      role: config
+    emit:
+      name: tryCatch
+- comment: Object allocation
+  instructions:
+  - name: NewObject
+    description: Allocates a new object instance of the given class on the managed heap.
+    effects: OBJECT_ALLOC
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: className
+      type: String
+      role: config
+    - name: typeArgs
+      type: List<Type>
+      default: emptyList()
+      role: config
+    emit:
+      resultType: Type.OpaquePointer
+  - name: NewArray
+    description: Allocates a new single-dimension array on the managed heap.
+    effects: OBJECT_ALLOC
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: elementType
+      type: Type
+      role: config
+    - name: size
+      type: Value
+      role: operand
+    emit:
+      resultType: Type.OpaquePointer
+  - name: NewMultiArray
+    description: Allocates a new multi-dimensional array on the managed heap.
+    effects: OBJECT_ALLOC
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: elementType
+      type: Type
+      role: config
+    - name: dimensions
+      type: List<Value>
+      role: operandList
+    emit:
+      resultType: Type.OpaquePointer
+- comment: Field access
+  instructions:
+  - name: GetField
+    description: Reads an instance field from an object.
+    effects:
+      bits:
+      - READS_HEAP_MEMORY
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: obj
+      type: Value
+      role: operand
+    - name: className
+      type: String
+      role: config
+    - name: fieldName
+      type: String
+      role: config
+    - name: fieldType
+      type: Type
+      role: config
+    emit:
+      resultType: fieldType
+  - name: PutField
+    description: Writes a value to an instance field of an object.
+    effects:
+      bits:
+      - WRITES_HEAP_MEMORY
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: obj
+      type: Value
+      role: operand
+    - name: className
+      type: String
+      role: config
+    - name: fieldName
+      type: String
+      role: config
+    - name: fieldType
+      type: Type
+      role: config
+    - name: value
+      type: Value
+      role: operand
+  - name: GetStatic
+    description: Reads a static (class-level) field.
+    effects:
+      bits:
+      - READS_HEAP_MEMORY
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: className
+      type: String
+      role: config
+    - name: fieldName
+      type: String
+      role: config
+    - name: fieldType
+      type: Type
+      role: config
+    emit:
+      resultType: fieldType
+  - name: PutStatic
+    description: Writes a value to a static (class-level) field.
+    effects:
+      bits:
+      - WRITES_HEAP_MEMORY
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: className
+      type: String
+      role: config
+    - name: fieldName
+      type: String
+      role: config
+    - name: fieldType
+      type: Type
+      role: config
+    - name: value
+      type: Value
+      role: operand
+- comment: Method dispatch
+  instructions:
+  - name: VirtualCall
+    description: Dispatches a virtual method call on an object using vtable lookup.
+    effects: CALL
+    emit:
+      resultType: methodType.ret
+    fields:
+    - name: dest
+      type: InstructionRef?
+      role: resultNullable
+    - name: obj
+      type: Value
+      role: operand
+    - name: className
+      type: String
+      role: config
+    - name: methodName
+      type: String
+      role: config
+    - name: methodType
+      type: Type.Function
+      role: config
+    - name: args
+      type: List<Value>
+      role: operandList
+  - name: InterfaceCall
+    description: Dispatches an interface method call on an object using itable lookup.
+    effects: CALL
+    emit:
+      resultType: methodType.ret
+    fields:
+    - name: dest
+      type: InstructionRef?
+      role: resultNullable
+    - name: obj
+      type: Value
+      role: operand
+    - name: interfaceName
+      type: String
+      role: config
+    - name: methodName
+      type: String
+      role: config
+    - name: methodType
+      type: Type.Function
+      role: config
+    - name: args
+      type: List<Value>
+      role: operandList
+  - name: SpecialCall
+    description: Invokes a method with special (non-virtual) dispatch.
+    effects: CALL
+    emit:
+      resultType: methodType.ret
+    fields:
+    - name: dest
+      type: InstructionRef?
+      role: resultNullable
+    - name: obj
+      type: Value
+      role: operand
+    - name: className
+      type: String
+      role: config
+    - name: methodName
+      type: String
+      role: config
+    - name: methodType
+      type: Type.Function
+      role: config
+    - name: args
+      type: List<Value>
+      role: operandList
+  - name: StaticCall
+    description: Invokes a static method (no receiver object).
+    effects: CALL
+    emit:
+      resultType: methodType.ret
+    fields:
+    - name: dest
+      type: InstructionRef?
+      role: resultNullable
+    - name: className
+      type: String
+      role: config
+    - name: methodName
+      type: String
+      role: config
+    - name: methodType
+      type: Type.Function
+      role: config
+    - name: args
+      type: List<Value>
+      role: operandList
+  - name: DynamicCall
+    description: Invokes a dynamically-linked call site via a bootstrap method.
+    effects: CALL
+    emit:
+      resultType: methodType.ret
+    fields:
+    - name: dest
+      type: InstructionRef?
+      role: resultNullable
+    - name: bootstrapMethod
+      type: BootstrapMethod
+      role: config
+    - name: name
+      type: String
+      role: config
+    - name: methodType
+      type: Type.Function
+      role: config
+    - name: args
+      type: List<Value>
+      role: operandList
+  - name: ConstructorCall
+    description: Invokes a constructor on an already-allocated object.
+    effects: CALL
+    fields:
+    - name: obj
+      type: Value
+      role: operand
+    - name: className
+      type: String
+      role: config
+    - name: constructorType
+      type: Type.Function
+      role: config
+    - name: args
+      type: List<Value>
+      role: operandList
+- comment: Type checking
+  instructions:
+  - name: InstanceOf
+    description: Tests whether an object is an instance of a given type.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: obj
+      type: Value
+      role: operand
+    - name: checkType
+      type: Type
+      role: config
+    emit:
+      resultType: Type.I1
+  - name: CheckCast
+    description: Casts an object reference to a target type, throwing if invalid.
+    effects:
+      bits:
+      - CAN_THROW
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: obj
+      type: Value
+      role: operand
+    - name: castType
+      type: Type
+      role: config
+  - name: TypeId
+    description: Retrieves the runtime type identifier of an object.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: obj
+      type: Value
+      role: operand
+    emit:
+      resultType: Type.I32
+- comment: Array operations
+  instructions:
+  - name: ArrayGet
+    description: Reads an element from an array at the given index.
+    effects:
+      bits:
+      - READS_HEAP_MEMORY
+      - CAN_THROW
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: array
+      type: Value
+      role: operand
+    - name: index
+      type: Value
+      role: operand
+    - name: elementType
+      type: Type
+      role: config
+  - name: ArraySet
+    description: Writes a value to an array at the given index.
+    effects:
+      bits:
+      - WRITES_HEAP_MEMORY
+      - CAN_THROW
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: array
+      type: Value
+      role: operand
+    - name: index
+      type: Value
+      role: operand
+    - name: value
+      type: Value
+      role: operand
+    - name: elementType
+      type: Type
+      role: config
+  - name: ArrayLength
+    description: Retrieves the length of an array.
+    effects:
+      bits:
+      - READS_HEAP_MEMORY
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: array
+      type: Value
+      role: operand
+    emit:
+      resultType: Type.I32
+- comment: Monitors
+  instructions:
+  - name: MonitorEnter
+    description: Acquires the monitor (intrinsic lock) of an object.
+    effects: MONITOR
+    fields:
+    - name: obj
+      type: Value
+      role: operand
+  - name: MonitorExit
+    description: Releases the monitor (intrinsic lock) of an object.
+    effects: MONITOR
+    fields:
+    - name: obj
+      type: Value
+      role: operand
+- comment: Boxing and closures
+  instructions:
+  - name: Box
+    description: Boxes a primitive value into a managed object.
+    effects: OBJECT_ALLOC
+    emit:
+      resultType: boxType
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+    - name: boxType
+      type: Type
+      role: config
+  - name: Unbox
+    description: Unboxes a managed wrapper object back to a primitive value.
+    effects:
+      bits:
+      - READS_HEAP_MEMORY
+      - CAN_THROW
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: obj
+      type: Value
+      role: operand
+    - name: unboxType
+      type: Type
+      role: config
+  - name: ClosureCreate
+    description: |-
+      Creates a closure by capturing a function pointer and a set of captured values.
+
+      If `escaping` is false, the captured environment may be stack-allocated.
+      If a stack-allocated closure escapes (assigned to a heap field, returned,
+      or passed to a function that captures it), the verifier reports an error.
+    effects: OBJECT_ALLOC
+    emit:
+      resultType: closureType
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: function
+      type: Value
+      role: operand
+    - name: captures
+      type: List<Value>
+      role: operandList
+    - name: closureType
+      type: Type.Function
+      role: config
+    - name: escaping
+      type: Boolean
+      default: 'true'
+      role: flag
+  - name: ClosureInvoke
+    description: Invokes a closure with the given arguments.
+    effects: CALL
+    fields:
+    - name: dest
+      type: InstructionRef?
+      role: resultNullable
+    - name: closure
+      type: Value
+      role: operand
+    - name: args
+      type: List<Value>
+      role: operandList
+    - name: returnType
+      type: Type
+      role: config
+  - name: ClosureInvokeOnce
+    description: |-
+      Invoke a closure with move semantics (FnOnce).
+
+      The closure value is consumed on invocation — no further uses are legal.
+      The verifier checks that the closure SSA value has no uses after
+      ClosureInvokeOnce. Lowers to the same indirect call as ClosureInvoke.
+    effects: CALL
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: closure
+      type: Value
+      role: operand
+    - name: args
+      type: List<Value>
+      role: operandList
+    emit:
+      resultType: returnType
+      extraParams:
+      - name: returnType
+        type: Type
+        description: the return type of the closure
+- comment: Tagged unions
+  instructions:
+  - name: ConstructVariant
+    description: Constructs a variant of a tagged union with the given field values.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: unionType
+      type: Type.TaggedUnion
+      role: config
+    - name: variantName
+      type: String
+      role: config
+    - name: fields
+      type: List<Value>
+      role: operandList
+    emit:
+      resultType: unionType
+  - name: GetTag
+    description: Extracts the tag (discriminant) from a tagged union value.
+    effects: PURE
+    emit:
+      resultType: tagType
+      extraParams:
+      - name: tagType
+        type: Type
+        description: the type of the tag field (typically Type.I32)
+        default: Type.I32
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: union
+      type: Value
+      role: operand
+  - name: GetVariantField
+    description: Extracts a field from a specific variant of a tagged union.
+    effects: PURE
+    emit:
+      resultType: fieldType
+      extraParams:
+      - name: fieldType
+        type: Type
+        description: the type of the variant field being extracted
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: union
+      type: Value
+      role: operand
+    - name: variantName
+      type: String
+      role: config
+    - name: fieldIndex
+      type: Int
+      role: config
+  - name: TagSwitch
+    description: Branches to different basic blocks based on the tag of a tagged union.
+    effects: CONDITIONAL_BRANCH
+    fields:
+    - name: union
+      type: Value
+      role: operand
+    - name: cases
+      type: List<Pair<String, BlockRef>>
+      role: config
+    - name: defaultTarget
+      type: BlockRef?
+      default: 'null'
+      role: config
+- comment: Catch and weak references
+  instructions:
+  - name: CatchValue
+    description: Retrieves the caught exception value inside a catch handler.
+    effects:
+      bits:
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: exceptionType
+      type: Type
+      role: config
+    emit:
+      resultType: exceptionType
+  - name: MakeWeakRef
+    description: Creates a weak reference to a managed object.
+    effects:
+      bits:
+      - WRITES_HEAP_MEMORY
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: obj
+      type: Value
+      role: operand
+    emit:
+      resultType: Type.OpaquePointer
+  - name: ReadWeakRef
+    description: Reads the referent of a weak reference. Returns null if the referent has been collected.
+    effects:
+      bits:
+      - READS_HEAP_MEMORY
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: weakRef
+      type: Value
+      role: operand
+    emit:
+      resultType: referentType
+      extraParams:
+      - name: referentType
+        type: Type
+        description: the type of the weak reference's referent
+  - name: ClearWeakRef
+    description: Clears a weak reference, breaking the association with its referent.
+    effects:
+      bits:
+      - WRITES_HEAP_MEMORY
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: weakRef
+      type: Value
+      role: operand

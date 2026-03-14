@@ -195,17 +195,17 @@ class NativeCompiler(
         // done:        call __user_main(arrayPtr), ret
 
         val loopI = InstructionRef("%loop_i", Type.I64)
-        instructions.add(Br("loop_header"))
+        instructions.add(Br(BlockRef("loop_header")))
 
         // loop_header block
         val headerInsts = mutableListOf<Instruction>()
         headerInsts.add(Phi(loopI, listOf(
-            Constant.I64(0) to "entry",
-            InstructionRef("%next_i", Type.I64) to "loop_body",
+            Constant.I64(0) to BlockRef("entry"),
+            InstructionRef("%next_i", Type.I64) to BlockRef("loop_body"),
         )))
         val loopCond = ref(Type.I1)
         headerInsts.add(ICmp(loopCond, ICmpPredicate.SLT, loopI, argcExt))
-        headerInsts.add(CondBr(loopCond, "loop_body", "done"))
+        headerInsts.add(CondBr(loopCond, BlockRef("loop_body"), BlockRef("done")))
 
         // loop_body block
         val bodyInsts = mutableListOf<Instruction>()
@@ -227,7 +227,7 @@ class NativeCompiler(
         // i + 1
         val nextI = InstructionRef("%next_i", Type.I64)
         bodyInsts.add(Add(nextI, loopI, Constant.I64(1)))
-        bodyInsts.add(Br("loop_header"))
+        bodyInsts.add(Br(BlockRef("loop_header")))
 
         // done block: call __user_main(arrayPtr) and return
         val doneInsts = mutableListOf<Instruction>()

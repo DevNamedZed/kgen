@@ -93,12 +93,12 @@ class IrVerifierComprehensiveTest {
             function("maxval", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32) {
                 block("entry") {
                     val cmp = icmp(ICmpPredicate.SGT, param(0), param(1))
-                    condBr(cmp, "then", "else")
+                    condBr(cmp, BlockRef("then"), BlockRef("else"))
                 }
-                block("then") { br("merge") }
-                block("else") { br("merge") }
+                block("then") { br(BlockRef("merge")) }
+                block("else") { br(BlockRef("merge")) }
                 block("merge") {
-                    val result = phi(Type.I32, listOf(param(0) to "then", param(1) to "else"))
+                    val result = phi(Type.I32, listOf(param(0) to BlockRef("then"), param(1) to BlockRef("else")))
                     ret(result)
                 }
             }
@@ -130,7 +130,7 @@ class IrVerifierComprehensiveTest {
         val mod = Module(name = "test", functions = listOf(
             IrFunction("sw", listOf(a), Type.Void, listOf(
                 BasicBlock("entry", listOf(
-                    Switch(a, "default", listOf(Constant.I32(0) to "case0", Constant.I32(1) to "case1")),
+                    Switch(a, BlockRef("default"), listOf(Constant.I32(0) to BlockRef("case0"), Constant.I32(1) to BlockRef("case1"))),
                 )),
                 BasicBlock("case0", listOf(Ret(null))),
                 BasicBlock("case1", listOf(Ret(null))),
@@ -340,7 +340,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Br("entry"),
+                        Br(BlockRef("entry")),
                         Ret(null),
                     )),
                 ))
@@ -476,14 +476,14 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `rotl with mismatched types fails`() {
         assertInvalid(singleInstrFunc(
-            RotateLeft(ref("%0"), Constant.I32(1), Constant.I64(2)),
+            Rotl(ref("%0"), Constant.I32(1), Constant.I64(2)),
         ), "rotl operands have different types")
     }
 
     @Test
     fun `rotr with float operands fails`() {
         assertInvalid(singleInstrFunc(
-            RotateRight(ref("%0"), Constant.F32(1.0f), Constant.F32(2.0f)),
+            Rotr(ref("%0"), Constant.F32(1.0f), Constant.F32(2.0f)),
         ), "rotr operands must be integer type")
     }
 
@@ -768,8 +768,8 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `trunc with integer operand fails`() {
         assertInvalid(singleInstrFunc(
-            Trunc(ref("%0"), Constant.I32(1)),
-        ), "trunc operand must be float type")
+            FTrunc(ref("%0"), Constant.I32(1)),
+        ), "ftrunc operand must be float type")
     }
 
     @Test
@@ -963,7 +963,7 @@ class IrVerifierComprehensiveTest {
         assertInvalid(
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
-                    BasicBlock("entry", listOf(Br("nonexistent"))),
+                    BasicBlock("entry", listOf(Br(BlockRef("nonexistent")))),
                 ))
             )),
             "br references undefined block"
@@ -976,7 +976,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(param32("a", 0)), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        CondBr(param32("a", 0), "t", "f"),
+                        CondBr(param32("a", 0), BlockRef("t"), BlockRef("f")),
                     )),
                     BasicBlock("t", listOf(Ret(null))),
                     BasicBlock("f", listOf(Ret(null))),
@@ -992,7 +992,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(paramI1("c", 0)), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        CondBr(paramI1("c", 0), "missing", "ok"),
+                        CondBr(paramI1("c", 0), BlockRef("missing"), BlockRef("ok")),
                     )),
                     BasicBlock("ok", listOf(Ret(null))),
                 ))
@@ -1007,7 +1007,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(paramI1("c", 0)), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        CondBr(paramI1("c", 0), "ok", "missing"),
+                        CondBr(paramI1("c", 0), BlockRef("ok"), BlockRef("missing")),
                     )),
                     BasicBlock("ok", listOf(Ret(null))),
                 ))
@@ -1023,7 +1023,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(a), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Switch(a, "missing", emptyList()),
+                        Switch(a, BlockRef("missing"), emptyList()),
                     )),
                 ))
             )),
@@ -1038,7 +1038,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(a), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Switch(a, "default", listOf(Constant.I64(0) to "case0")),
+                        Switch(a, BlockRef("default"), listOf(Constant.I64(0) to BlockRef("case0"))),
                     )),
                     BasicBlock("case0", listOf(Ret(null))),
                     BasicBlock("default", listOf(Ret(null))),
@@ -1054,7 +1054,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        IndirectBr(Constant.I32(0), listOf("entry")),
+                        IndirectBr(Constant.I32(0), listOf(BlockRef("entry"))),
                     )),
                 ))
             )),
@@ -1068,7 +1068,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(paramPtr("p", 0)), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        IndirectBr(paramPtr("p", 0), listOf("missing")),
+                        IndirectBr(paramPtr("p", 0), listOf(BlockRef("missing"))),
                     )),
                 ))
             )),
@@ -1137,11 +1137,11 @@ class IrVerifierComprehensiveTest {
         assertInvalid(
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(c), Type.Void, listOf(
-                    BasicBlock("entry", listOf(CondBr(c, "left", "right"))),
-                    BasicBlock("left", listOf(Br("merge"))),
-                    BasicBlock("right", listOf(Br("merge"))),
+                    BasicBlock("entry", listOf(CondBr(c, BlockRef("left"), BlockRef("right")))),
+                    BasicBlock("left", listOf(Br(BlockRef("merge")))),
+                    BasicBlock("right", listOf(Br(BlockRef("merge")))),
                     BasicBlock("merge", listOf(
-                        Phi(ref("%0"), listOf(Constant.I32(1) to "left", Constant.I64(2) to "right")),
+                        Phi(ref("%0"), listOf(Constant.I32(1) to BlockRef("left"), Constant.I64(2) to BlockRef("right"))),
                         Ret(null),
                     )),
                 ))
@@ -1156,7 +1156,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Phi(ref("%0"), listOf(Constant.I32(1) to "nonexistent")),
+                        Phi(ref("%0"), listOf(Constant.I32(1) to BlockRef("nonexistent"))),
                         Ret(null),
                     )),
                 ))
@@ -1171,12 +1171,12 @@ class IrVerifierComprehensiveTest {
         assertInvalid(
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(c), Type.Void, listOf(
-                    BasicBlock("entry", listOf(CondBr(c, "left", "right"))),
-                    BasicBlock("left", listOf(Br("merge"))),
-                    BasicBlock("right", listOf(Br("merge"))),
+                    BasicBlock("entry", listOf(CondBr(c, BlockRef("left"), BlockRef("right")))),
+                    BasicBlock("left", listOf(Br(BlockRef("merge")))),
+                    BasicBlock("right", listOf(Br(BlockRef("merge")))),
                     BasicBlock("merge", listOf(
                         Add(ref("%0"), Constant.I32(1), Constant.I32(2)),
-                        Phi(ref("%1"), listOf(Constant.I32(1) to "left", Constant.I32(2) to "right")),
+                        Phi(ref("%1"), listOf(Constant.I32(1) to BlockRef("left"), Constant.I32(2) to BlockRef("right"))),
                         Ret(null),
                     )),
                 ))
@@ -1191,12 +1191,12 @@ class IrVerifierComprehensiveTest {
         assertInvalid(
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(c), Type.Void, listOf(
-                    BasicBlock("entry", listOf(CondBr(c, "left", "right"))),
-                    BasicBlock("left", listOf(Br("merge"))),
-                    BasicBlock("right", listOf(Br("merge"))),
-                    BasicBlock("other", listOf(Br("merge"))),
+                    BasicBlock("entry", listOf(CondBr(c, BlockRef("left"), BlockRef("right")))),
+                    BasicBlock("left", listOf(Br(BlockRef("merge")))),
+                    BasicBlock("right", listOf(Br(BlockRef("merge")))),
+                    BasicBlock("other", listOf(Br(BlockRef("merge")))),
                     BasicBlock("merge", listOf(
-                        Phi(ref("%0"), listOf(Constant.I32(1) to "left", Constant.I32(2) to "other")),
+                        Phi(ref("%0"), listOf(Constant.I32(1) to BlockRef("left"), Constant.I32(2) to BlockRef("other"))),
                         Ret(null),
                     )),
                 ))
@@ -1211,11 +1211,11 @@ class IrVerifierComprehensiveTest {
         assertInvalid(
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(c), Type.Void, listOf(
-                    BasicBlock("entry", listOf(CondBr(c, "left", "right"))),
-                    BasicBlock("left", listOf(Br("merge"))),
-                    BasicBlock("right", listOf(Br("merge"))),
+                    BasicBlock("entry", listOf(CondBr(c, BlockRef("left"), BlockRef("right")))),
+                    BasicBlock("left", listOf(Br(BlockRef("merge")))),
+                    BasicBlock("right", listOf(Br(BlockRef("merge")))),
                     BasicBlock("merge", listOf(
-                        Phi(ref("%0"), listOf(Constant.I32(1) to "left", Constant.I32(3) to "left", Constant.I32(2) to "right")),
+                        Phi(ref("%0"), listOf(Constant.I32(1) to BlockRef("left"), Constant.I32(3) to BlockRef("left"), Constant.I32(2) to BlockRef("right"))),
                         Ret(null),
                     )),
                 ))
@@ -1477,7 +1477,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Invoke(null, FunctionRef("callee", funcType), emptyList(), Type.Void, "missing", "unwind"),
+                        Invoke(null, FunctionRef("callee", funcType), emptyList(), Type.Void, BlockRef("missing"), BlockRef("unwind")),
                     )),
                     BasicBlock("unwind", listOf(Ret(null))),
                 ))
@@ -1493,7 +1493,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        Invoke(null, FunctionRef("callee", funcType), emptyList(), Type.Void, "normal", "missing"),
+                        Invoke(null, FunctionRef("callee", funcType), emptyList(), Type.Void, BlockRef("normal"), BlockRef("missing")),
                     )),
                     BasicBlock("normal", listOf(Ret(null))),
                 ))
@@ -1619,15 +1619,15 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", listOf(c), Type.I32, listOf(
                     BasicBlock("entry", listOf(
-                        CondBr(c, "left", "right"),
+                        CondBr(c, BlockRef("left"), BlockRef("right")),
                     )),
                     BasicBlock("left", listOf(
                         Add(ref("%x"), Constant.I32(1), Constant.I32(2)),
-                        Br("merge"),
+                        Br(BlockRef("merge")),
                     )),
                     BasicBlock("right", listOf(
                         Add(ref("%y"), ref("%x"), Constant.I32(3)),
-                        Br("merge"),
+                        Br(BlockRef("merge")),
                     )),
                     BasicBlock("merge", listOf(
                         Ret(Constant.I32(0)),
@@ -1646,7 +1646,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        CatchSwitch(ref("%0", Type.Token), null, listOf("missing"), null),
+                        CatchSwitch(ref("%0", Type.Token), null, listOf(BlockRef("missing")), null),
                     )),
                 ))
             )),
@@ -1660,7 +1660,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        CatchRet(ref("%tok", Type.Token), "missing"),
+                        CatchRet(ref("%tok", Type.Token), BlockRef("missing")),
                     )),
                 ))
             )),
@@ -1674,7 +1674,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        CleanupRet(ref("%tok", Type.Token), "missing"),
+                        CleanupRet(ref("%tok", Type.Token), BlockRef("missing")),
                     )),
                 ))
             )),
@@ -1690,7 +1690,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        TagSwitch(Constant.I32(0), listOf("A" to "missing"), null),
+                        TagSwitch(Constant.I32(0), listOf("A" to BlockRef("missing")), null),
                     )),
                 ))
             )),
@@ -1771,9 +1771,9 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `isTerminator recognizes all terminators`() {
         assertTrue(IrVerifier.isTerminator(Ret(null)))
-        assertTrue(IrVerifier.isTerminator(Br("label")))
-        assertTrue(IrVerifier.isTerminator(CondBr(Constant.I1(true), "t", "f")))
-        assertTrue(IrVerifier.isTerminator(Switch(Constant.I32(0), "default", emptyList())))
+        assertTrue(IrVerifier.isTerminator(Br(BlockRef("label"))))
+        assertTrue(IrVerifier.isTerminator(CondBr(Constant.I1(true), BlockRef("t"), BlockRef("f"))))
+        assertTrue(IrVerifier.isTerminator(Switch(Constant.I32(0), BlockRef("default"), emptyList())))
         assertTrue(IrVerifier.isTerminator(Unreachable()))
         assertTrue(IrVerifier.isTerminator(Trap()))
         assertFalse(IrVerifier.isTerminator(Add(ref("%0"), Constant.I32(1), Constant.I32(2))))
@@ -1900,7 +1900,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        CallBr(null, FunctionRef("callee", funcType), emptyList(), Type.Void, "missing", emptyList()),
+                        CallBr(null, FunctionRef("callee", funcType), emptyList(), Type.Void, BlockRef("missing"), emptyList()),
                     )),
                 ))
             )),
@@ -1915,7 +1915,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        CallBr(null, FunctionRef("callee", funcType), emptyList(), Type.Void, "ft", listOf("missing")),
+                        CallBr(null, FunctionRef("callee", funcType), emptyList(), Type.Void, BlockRef("ft"), listOf(BlockRef("missing"))),
                     )),
                     BasicBlock("ft", listOf(Ret(null))),
                 ))
@@ -1930,7 +1930,7 @@ class IrVerifierComprehensiveTest {
             Module(name = "test", functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(
                     BasicBlock("entry", listOf(
-                        TryCatchRegion("missing", listOf(CatchHandler(Type.ClassRef("Exception"), "handler"))),
+                        TryCatchRegion(BlockRef("missing"), listOf(CatchHandler(Type.ClassRef("Exception"), "handler"))),
                         Ret(null),
                     )),
                     BasicBlock("handler", listOf(Ret(null))),
@@ -1945,13 +1945,13 @@ class IrVerifierComprehensiveTest {
         val c = paramI1("c", 0)
         val mod = Module(name = "test", functions = listOf(
             IrFunction("f", listOf(c), Type.I32, listOf(
-                BasicBlock("entry", listOf(CondBr(c, "left", "right"))),
-                BasicBlock("left", listOf(Br("merge"))),
-                BasicBlock("right", listOf(Br("merge"))),
+                BasicBlock("entry", listOf(CondBr(c, BlockRef("left"), BlockRef("right")))),
+                BasicBlock("left", listOf(Br(BlockRef("merge")))),
+                BasicBlock("right", listOf(Br(BlockRef("merge")))),
                 BasicBlock("merge", listOf(
-                    Phi(ref("%0"), listOf(Constant.I32(1) to "left", Constant.I32(2) to "right")),
+                    Phi(ref("%0"), listOf(Constant.I32(1) to BlockRef("left"), Constant.I32(2) to BlockRef("right"))),
                     DebugLoc(1, 1, "test.kt"),
-                    Phi(ref("%1"), listOf(Constant.I32(3) to "left", Constant.I32(4) to "right")),
+                    Phi(ref("%1"), listOf(Constant.I32(3) to BlockRef("left"), Constant.I32(4) to BlockRef("right"))),
                     Add(ref("%2"), ref("%0"), ref("%1")),
                     Ret(ref("%2")),
                 )),

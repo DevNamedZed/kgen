@@ -289,7 +289,6 @@ class BytecodeToIrLoweringExtendedTest {
         val codeIdx = cp.utf8("Code")
         val sysOutRef = cp.fieldRef("java/lang/System", "out", "Ljava/io/PrintStream;")
         val printlnRef = cp.methodRef("java/io/PrintStream", "println", "()V")
-
         val nameIdx = cp.utf8("test")
         val descIdx = cp.utf8("()V")
         val code = byteArrayOf(
@@ -331,7 +330,6 @@ class BytecodeToIrLoweringExtendedTest {
         val sysOutRef = cp.fieldRef("java/lang/System", "out", "Ljava/io/PrintStream;")
         val strIdx = cp.string("hello")
         val printlnRef = cp.methodRef("java/io/PrintStream", "println", "(Ljava/lang/String;)V")
-
         val nameIdx = cp.utf8("printHello")
         val descIdx = cp.utf8("()V")
         val code = byteArrayOf(
@@ -372,7 +370,6 @@ class BytecodeToIrLoweringExtendedTest {
         val superClass = cp.classEntry("java/lang/Object")
         val codeIdx = cp.utf8("Code")
         val absRef = cp.methodRef("java/lang/Math", "abs", "(I)I")
-
         val nameIdx = cp.utf8("absVal")
         val descIdx = cp.utf8("(I)I")
         val code = byteArrayOf(
@@ -411,7 +408,6 @@ class BytecodeToIrLoweringExtendedTest {
         val superClass = cp.classEntry("java/lang/Object")
         val codeIdx = cp.utf8("Code")
         val lengthRef = cp.methodRef("java/lang/String", "length", "()I")
-
         val nameIdx = cp.utf8("len")
         val descIdx = cp.utf8("(Ljava/lang/String;)I")
         val code = byteArrayOf(
@@ -471,7 +467,6 @@ class BytecodeToIrLoweringExtendedTest {
         val superClass = cp.classEntry("java/lang/Object")
         val codeIdx = cp.utf8("Code")
         val fieldRef = cp.fieldRef("test/StaticField", "counter", "I")
-
         val nameIdx = cp.utf8("getCounter")
         val descIdx = cp.utf8("()I")
         // getstatic test/StaticField.counter:I, ireturn
@@ -509,7 +504,6 @@ class BytecodeToIrLoweringExtendedTest {
         val superClass = cp.classEntry("java/lang/Object")
         val codeIdx = cp.utf8("Code")
         val fieldRef = cp.fieldRef("test/FieldAccess", "value", "I")
-
         val nameIdx = cp.utf8("getValue")
         val descIdx = cp.utf8("(Ljava/lang/Object;)I")
         // aload_0, getfield test/FieldAccess.value:I, ireturn

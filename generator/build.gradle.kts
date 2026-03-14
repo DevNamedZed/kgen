@@ -50,6 +50,15 @@ tasks.register<JavaExec>("runCil") {
     workingDir = rootProject.projectDir
 }
 
+tasks.register<JavaExec>("runIr") {
+    group = "application"
+    description = "Generate IR instruction data classes and visitors from JSON spec"
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("org.kgen.generator.IrCodeGenMainKt")
+    workingDir = rootProject.projectDir
+}
+
 dependencies {
     implementation("com.google.code.gson:gson:2.11.0")
+    implementation("org.yaml:snakeyaml:2.3")
 }

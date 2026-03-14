@@ -40,7 +40,7 @@ class Arm64AllocatorTest {
         fun `single i64 param uses x0`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = add(params[0], Constant.I64(1))
                 ret(result)
                 finalizeFunction()
@@ -53,7 +53,7 @@ class Arm64AllocatorTest {
         fun `single i32 param uses w0`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = add(params[0], Constant.I32(1))
                 ret(result)
                 finalizeFunction()
@@ -66,7 +66,7 @@ class Arm64AllocatorTest {
         fun `pointer param uses 64-bit x register`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("p", Type.OpaquePointer)), Type.OpaquePointer)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(params[0])
                 finalizeFunction()
             }
@@ -78,7 +78,7 @@ class Arm64AllocatorTest {
         fun `f64 param uses d register`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("x", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(params[0])
                 finalizeFunction()
             }
@@ -91,7 +91,7 @@ class Arm64AllocatorTest {
         fun `f32 param uses s register`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("x", Type.F32)), Type.F32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(params[0])
                 finalizeFunction()
             }
@@ -103,7 +103,7 @@ class Arm64AllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = add(params[0], params[1])
                 ret(sum)
                 finalizeFunction()
@@ -119,7 +119,7 @@ class Arm64AllocatorTest {
             val code = generateCode {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = add(params[0], params[1])
                 val result = add(sum, params[2])
                 ret(result)
@@ -136,7 +136,7 @@ class Arm64AllocatorTest {
         fun `first param in x0`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = add(params[0], Constant.I64(1))
                 ret(result)
                 finalizeFunction()
@@ -149,7 +149,7 @@ class Arm64AllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = add(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -162,7 +162,7 @@ class Arm64AllocatorTest {
         fun `eight gp params use x0 through x7`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", (0 until 8).map { Param("p$it", Type.I64) }, Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 var sum = add(params[0], params[1])
                 for (i in 2 until 8) sum = add(sum, params[i])
                 ret(sum)
@@ -178,7 +178,7 @@ class Arm64AllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("x", Type.F64), Param("y", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = fadd(params[0], params[1])
                 ret(sum)
                 finalizeFunction()
@@ -194,7 +194,7 @@ class Arm64AllocatorTest {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("x", Type.F64),
                     Param("b", Type.I64), Param("y", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = fadd(params[1], params[3])
                 ret(sum)
                 finalizeFunction()
@@ -207,7 +207,7 @@ class Arm64AllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = add(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -220,7 +220,7 @@ class Arm64AllocatorTest {
         fun `params beyond eight are spilled`() {
             val code = generateCode {
                 val params = createFunction("f", (0 until 10).map { Param("p$it", Type.I64) }, Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 var sum = add(params[0], params[1])
                 for (i in 2 until 8) sum = add(sum, params[i])
                 ret(sum)
@@ -237,7 +237,7 @@ class Arm64AllocatorTest {
         fun `identity function`() {
             val code = generateCode {
                 val params = createFunction("id", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(params[0])
                 finalizeFunction()
             }
@@ -250,7 +250,7 @@ class Arm64AllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("add", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = add(params[0], params[1])
                 ret(sum)
                 finalizeFunction()
@@ -263,7 +263,7 @@ class Arm64AllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val ab = add(params[0], params[1])
                 val result = add(ab, params[2])
                 ret(result)
@@ -277,7 +277,7 @@ class Arm64AllocatorTest {
         fun `constant operand with add immediate`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = add(params[0], Constant.I64(42))
                 ret(result)
                 finalizeFunction()
@@ -291,7 +291,7 @@ class Arm64AllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = sub(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -304,7 +304,7 @@ class Arm64AllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = mul(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -317,7 +317,7 @@ class Arm64AllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = and(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -330,7 +330,7 @@ class Arm64AllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = or(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -346,7 +346,7 @@ class Arm64AllocatorTest {
         fun `many live i64 values cause spilling`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val values = (1..25).map { add(params[0], Constant.I64(it.toLong())) }
                 var sum = add(values[0], values[1])
                 for (i in 2 until values.size) sum = add(sum, values[i])
@@ -360,7 +360,7 @@ class Arm64AllocatorTest {
         fun `many live i32 values cause spilling`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val values = (1..25).map { add(params[0], Constant.I32(it)) }
                 var sum = add(values[0], values[1])
                 for (i in 2 until values.size) sum = add(sum, values[i])
@@ -374,7 +374,7 @@ class Arm64AllocatorTest {
         fun `fp values under pressure`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("x", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val values = (1..20).map { fadd(params[0], Constant.F64(it.toDouble())) }
                 var sum = fadd(values[0], values[1])
                 for (i in 2 until values.size) sum = fadd(sum, values[i])
@@ -388,7 +388,7 @@ class Arm64AllocatorTest {
         fun `spilled values produce str and ldr instructions`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val values = (1..25).map { add(params[0], Constant.I64(it.toLong())) }
                 var sum = add(values[0], values[1])
                 for (i in 2 until values.size) sum = add(sum, values[i])
@@ -404,7 +404,7 @@ class Arm64AllocatorTest {
         fun `chained operations reuse registers`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 var v: Value = params[0]
                 for (i in 1..20) v = add(v, Constant.I64(i.toLong()))
                 ret(v)
@@ -422,7 +422,7 @@ class Arm64AllocatorTest {
             val code = generateCode {
                 declareFunction("ext", emptyList(), Type.I64)
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = call("ext", emptyList(), Type.I64)!!
                 val sum = add(params[0], r)
                 ret(sum)
@@ -436,7 +436,7 @@ class Arm64AllocatorTest {
             val lines = generateAndDisassemble {
                 declareFunction("ext", emptyList(), Type.Void)
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 call("ext", emptyList(), Type.Void)
                 ret(params[0])
                 finalizeFunction()
@@ -449,7 +449,7 @@ class Arm64AllocatorTest {
             val lines = generateAndDisassemble {
                 declareFunction("ext", emptyList(), Type.Void)
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 call("ext", emptyList(), Type.Void)
                 ret(params[0])
                 finalizeFunction()
@@ -463,7 +463,7 @@ class Arm64AllocatorTest {
                 declareFunction("ext", emptyList(), Type.I64)
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r = call("ext", emptyList(), Type.I64)!!
                 val sum = add(params[0], params[1])
                 val result = add(sum, params[2])
@@ -479,7 +479,7 @@ class Arm64AllocatorTest {
             val code = generateCode {
                 declareFunction("ext", emptyList(), Type.Void)
                 val params = createFunction("f", listOf(Param("x", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 call("ext", emptyList(), Type.Void)
                 ret(params[0])
                 finalizeFunction()
@@ -493,7 +493,7 @@ class Arm64AllocatorTest {
                 declareFunction("ext1", emptyList(), Type.I64)
                 declareFunction("ext2", listOf(Param("v", Type.I64)), Type.I64)
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r1 = call("ext1", emptyList(), Type.I64)!!
                 val r2 = call("ext2", listOf(r1), Type.I64)
                 ret(r2)
@@ -507,7 +507,7 @@ class Arm64AllocatorTest {
             val code = generateCode {
                 declareFunction("ext", listOf(Param("v", Type.I64)), Type.I64)
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v = add(params[0], Constant.I64(1))
                 val result = call("ext", listOf(v), Type.I64)
                 ret(result)
@@ -525,7 +525,7 @@ class Arm64AllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = add(params[0], params[1])
                 ret(sum)
                 finalizeFunction()
@@ -541,7 +541,7 @@ class Arm64AllocatorTest {
             val lines = generateAndDisassemble {
                 declareFunction("ext", emptyList(), Type.Void)
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 call("ext", emptyList(), Type.Void)
                 ret(params[0])
                 finalizeFunction()
@@ -556,7 +556,7 @@ class Arm64AllocatorTest {
             val lines = generateAndDisassemble {
                 declareFunction("ext", emptyList(), Type.Void)
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 call("ext", emptyList(), Type.Void)
                 ret(params[0])
                 finalizeFunction()
@@ -575,7 +575,7 @@ class Arm64AllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = fadd(params[0], params[1])
                 ret(sum)
                 finalizeFunction()
@@ -588,7 +588,7 @@ class Arm64AllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = fsub(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -601,7 +601,7 @@ class Arm64AllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = fmul(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -614,7 +614,7 @@ class Arm64AllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = fdiv(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -627,7 +627,7 @@ class Arm64AllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.F64), Param("b", Type.F64), Param("c", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val ab = fadd(params[0], params[1])
                 val result = fadd(ab, params[2])
                 ret(result)
@@ -642,7 +642,7 @@ class Arm64AllocatorTest {
             val code = generateCode {
                 declareFunction("ext", emptyList(), Type.Void)
                 val params = createFunction("f", listOf(Param("x", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 call("ext", emptyList(), Type.Void)
                 ret(params[0])
                 finalizeFunction()
@@ -655,7 +655,7 @@ class Arm64AllocatorTest {
             val code = generateCode {
                 val params = createFunction("f", listOf(
                     Param("n", Type.I64), Param("x", Type.F64), Param("y", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = fadd(params[1], params[2])
                 ret(sum)
                 finalizeFunction()
@@ -671,7 +671,7 @@ class Arm64AllocatorTest {
         fun `spilled values use stack offsets`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val values = (1..25).map { add(params[0], Constant.I64(it.toLong())) }
                 var sum = add(values[0], values[1])
                 for (i in 2 until values.size) sum = add(sum, values[i])
@@ -687,7 +687,7 @@ class Arm64AllocatorTest {
         fun `frame size accounts for spill slots`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val values = (1..25).map { add(params[0], Constant.I64(it.toLong())) }
                 var sum = add(values[0], values[1])
                 for (i in 2 until values.size) sum = add(sum, values[i])
@@ -704,7 +704,7 @@ class Arm64AllocatorTest {
         fun `short-lived values reuse slots`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 var v: Value = params[0]
                 for (i in 1..15) v = add(v, Constant.I64(i.toLong()))
                 ret(v)
@@ -721,7 +721,7 @@ class Arm64AllocatorTest {
         fun `unused param does not waste register`() {
             val code = generateCode {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(Constant.I64(42))
                 finalizeFunction()
             }
@@ -732,7 +732,7 @@ class Arm64AllocatorTest {
         fun `value used multiple times extends live range`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val d = add(params[0], params[0])
                 val t = add(d, params[0])
                 val q = add(t, params[0])
@@ -747,12 +747,12 @@ class Arm64AllocatorTest {
             val code = generateCode {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val cond = icmp(ICmpPredicate.SGT, params[0], params[1])
-                condBr(cond, "then", "else_")
-                positionAtEnd(appendBlock("then"))
+                condBr(cond, BlockRef("then"), BlockRef("else_"))
+                appendBlock("then")
                 ret(params[0])
-                positionAtEnd(appendBlock("else_"))
+                appendBlock("else_")
                 ret(params[1])
                 finalizeFunction()
             }
@@ -763,17 +763,17 @@ class Arm64AllocatorTest {
         fun `phi in diamond merges different paths`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("n", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val cond = icmp(ICmpPredicate.SGT, params[0], Constant.I64(0))
-                condBr(cond, "pos", "neg")
-                positionAtEnd(appendBlock("pos"))
+                condBr(cond, BlockRef("pos"), BlockRef("neg"))
+                appendBlock("pos")
                 val posVal = add(params[0], Constant.I64(1))
-                br("merge")
-                positionAtEnd(appendBlock("neg"))
+                br(BlockRef("merge"))
+                appendBlock("neg")
                 val negVal = sub(Constant.I64(0), params[0])
-                br("merge")
-                positionAtEnd(appendBlock("merge"))
-                val result = phi(Type.I64, listOf(posVal to "pos", negVal to "neg"))
+                br(BlockRef("merge"))
+                appendBlock("merge")
+                val result = phi(Type.I64, listOf(posVal to BlockRef("pos"), negVal to BlockRef("neg")))
                 ret(result)
                 finalizeFunction()
             }
@@ -788,12 +788,12 @@ class Arm64AllocatorTest {
         fun `two functions get independent allocation`() {
             val module = buildModule {
                 val p1 = createFunction("f1", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(add(p1[0], Constant.I64(1)))
                 finalizeFunction()
 
                 val p2 = createFunction("f2", listOf(Param("y", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(add(p2[0], Constant.I64(2)))
                 finalizeFunction()
             }
@@ -807,12 +807,12 @@ class Arm64AllocatorTest {
         fun `caller and callee`() {
             val code = generateCode {
                 val hp = createFunction("helper", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(add(hp[0], Constant.I64(1)))
                 finalizeFunction()
 
                 createFunction("main", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = call("helper", listOf(Constant.I64(41)), Type.I64)
                 ret(result)
                 finalizeFunction()
@@ -828,7 +828,7 @@ class Arm64AllocatorTest {
         fun `void return function`() {
             val code = generateCode {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -840,7 +840,7 @@ class Arm64AllocatorTest {
         fun `function returning constant`() {
             val code = generateCode {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(Constant.I64(42))
                 finalizeFunction()
             }
@@ -851,7 +851,7 @@ class Arm64AllocatorTest {
         fun `select instruction`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val neg = sub(Constant.I64(0), params[0])
                 val cond = icmp(ICmpPredicate.SGT, params[0], Constant.I64(0))
                 val result = select(cond, params[0], neg)
@@ -865,7 +865,7 @@ class Arm64AllocatorTest {
         fun `load and store with pointer`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("p", Type.OpaquePointer)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v = load(Type.I64, params[0])
                 val result = add(v, Constant.I64(1))
                 store(result, params[0])
@@ -880,7 +880,7 @@ class Arm64AllocatorTest {
             val code = generateCode {
                 declareFunction("ext", (0 until 8).map { Param("p$it", Type.I64) }, Type.I64)
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = call("ext", (1L..8L).map { Constant.I64(it) }, Type.I64)
                 ret(result)
                 finalizeFunction()
@@ -893,7 +893,7 @@ class Arm64AllocatorTest {
             val code = generateCode {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = sdiv(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -905,12 +905,12 @@ class Arm64AllocatorTest {
         fun `multiple basic blocks`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("n", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val cond = icmp(ICmpPredicate.SGT, params[0], Constant.I64(10))
-                condBr(cond, "big", "small")
-                positionAtEnd(appendBlock("big"))
+                condBr(cond, BlockRef("big"), BlockRef("small"))
+                appendBlock("big")
                 ret(add(params[0], Constant.I64(100)))
-                positionAtEnd(appendBlock("small"))
+                appendBlock("small")
                 ret(add(params[0], Constant.I64(1)))
                 finalizeFunction()
             }
@@ -922,7 +922,7 @@ class Arm64AllocatorTest {
             val code = generateCode {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val cmp = icmp(ICmpPredicate.EQ, params[0], params[1])
                 val result = zext(cmp, Type.I32)
                 ret(result)
@@ -935,7 +935,7 @@ class Arm64AllocatorTest {
         fun `function with no params returning zero`() {
             val code = generateCode {
                 createFunction("f", emptyList(), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(Constant.I32(0))
                 finalizeFunction()
             }

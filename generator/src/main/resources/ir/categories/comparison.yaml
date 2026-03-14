@@ -1,0 +1,58 @@
+name: Comparison
+interfaceName: ComparisonInstruction
+enumValue: COMPARISON
+description: |-
+  Integer and floating-point comparison instructions.
+
+  Comparison instructions compare two operands and produce a boolean (`i1`) result.
+imports:
+- org.kgen.ir.ICmpPredicate
+- org.kgen.ir.FCmpPredicate
+- org.kgen.ir.FastMathFlags
+sections:
+- comment: Integer comparison
+  instructions:
+  - name: ICmp
+    description: 'Integer comparison: `dest = lhs <predicate> rhs` (result is `i1`).'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: predicate
+      type: ICmpPredicate
+      role: config
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    emit:
+      name: icmp
+      resultType: Type.I1
+- comment: Floating-point comparison
+  instructions:
+  - name: FCmp
+    description: 'Floating-point comparison: `dest = lhs <predicate> rhs` (result is `i1`).'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: predicate
+      type: FCmpPredicate
+      role: config
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    - name: fastMath
+      type: FastMathFlags
+      default: FastMathFlags.NONE
+      role: flag
+    emit:
+      name: fcmp
+      resultType: Type.I1

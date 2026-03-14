@@ -38,13 +38,13 @@ class ProcessSymbolsTest {
         val ir = IrBuilder("testlib", Target.x86_64())
         val addParams = ir.createFunction("kgen_add",
             listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.add(addParams[0], addParams[1]))
         ir.finalizeFunction()
 
         val mulParams = ir.createFunction("kgen_mul",
             listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.mul(mulParams[0], mulParams[1]))
         ir.finalizeFunction()
 

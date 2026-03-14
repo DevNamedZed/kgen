@@ -236,7 +236,7 @@ class ConstantFolding : ModulePass {
             is ZExt -> inst.copy(value = rw(inst.value))
             is SExt -> inst.copy(value = rw(inst.value))
             is IntTrunc -> inst.copy(value = rw(inst.value))
-            is Trunc -> inst.copy(operand = rw(inst.operand))
+            is FTrunc -> inst.copy(operand = rw(inst.operand))
             is Ret -> inst.copy(value = inst.value?.let { rw(it) })
             is Call -> inst.copy(args = inst.args.map { rw(it) })
             is Select -> inst.copy(condition = rw(inst.condition), trueValue = rw(inst.trueValue), falseValue = rw(inst.falseValue))

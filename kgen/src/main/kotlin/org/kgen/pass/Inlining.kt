@@ -281,7 +281,7 @@ class Inlining(private val maxInstructionCount: Int = 20) : ModulePass {
             is Store -> inst.copy(value = rv(inst.value), ptr = rv(inst.ptr))
             is ZExt -> inst.copy(value = rv(inst.value))
             is SExt -> inst.copy(value = rv(inst.value))
-            is Trunc -> inst.copy(operand = rv(inst.operand))
+            is FTrunc -> inst.copy(operand = rv(inst.operand))
             is IntTrunc -> inst.copy(value = rv(inst.value))
             is GetElementPtr -> inst.copy(ptr = rv(inst.ptr), indices = inst.indices.map { rv(it) })
             is Phi -> inst.copy(incoming = inst.incoming.map { (v, l) -> rv(v) to l })
@@ -346,16 +346,16 @@ class Inlining(private val maxInstructionCount: Int = 20) : ModulePass {
             is BitCast -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
             is PtrToInt -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
             is IntToPtr -> inst.copy(dest = remapDest(inst.dest), value = rv(inst.value))
-            is Br -> inst.copy(target = rl(inst.target))
-            is CondBr -> inst.copy(condition = rv(inst.condition), trueTarget = rl(inst.trueTarget), falseTarget = rl(inst.falseTarget))
+            is Br -> inst.copy(target = BlockRef(rl(inst.target.label)))
+            is CondBr -> inst.copy(condition = rv(inst.condition), trueTarget = BlockRef(rl(inst.trueTarget.label)), falseTarget = BlockRef(rl(inst.falseTarget.label)))
             is Switch -> inst.copy(
                 value = rv(inst.value),
-                defaultTarget = rl(inst.defaultTarget),
-                cases = inst.cases.map { (v, label) -> v to rl(label) },
+                defaultTarget = BlockRef(rl(inst.defaultTarget.label)),
+                cases = inst.cases.map { (v, label) -> v to BlockRef(rl(label.label)) },
             )
             is Phi -> inst.copy(
                 dest = remapDest(inst.dest),
-                incoming = inst.incoming.map { (v, label) -> rv(v) to rl(label) },
+                incoming = inst.incoming.map { (v, label) -> rv(v) to BlockRef(rl(label.label)) },
             )
             else -> null
         }

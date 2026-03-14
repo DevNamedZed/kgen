@@ -5,7 +5,6 @@ import org.kgen.target.wasm.asm.*
 import org.kgen.target.wasm.module.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
-import org.kgen.ir.instructions.*
 
 class WasmDisassemblerExtendedTest {
 

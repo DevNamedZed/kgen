@@ -28,20 +28,20 @@ class X86CodeGenExtraTest {
     fun compilesPhiNode() {
         val code = generateCode { ir ->
             val params = ir.createFunction("phi_test", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cond = ir.icmp(ICmpPredicate.SGT, params[0], Constant.I32(0))
-            ir.condBr(cond, "pos", "neg")
+            ir.condBr(cond, BlockRef("pos"), BlockRef("neg"))
 
-            ir.positionAtEnd(ir.appendBlock("pos"))
+            ir.appendBlock("pos")
             val posVal = ir.add(params[0], Constant.I32(1))
-            ir.br("merge")
+            ir.br(BlockRef("merge"))
 
-            ir.positionAtEnd(ir.appendBlock("neg"))
+            ir.appendBlock("neg")
             val negVal = ir.sub(Constant.I32(0), params[0])
-            ir.br("merge")
+            ir.br(BlockRef("merge"))
 
-            ir.positionAtEnd(ir.appendBlock("merge"))
-            val phi = ir.phi(Type.I32, listOf(posVal to "pos", negVal to "neg"))
+            ir.appendBlock("merge")
+            val phi = ir.phi(Type.I32, listOf(posVal to BlockRef("pos"), negVal to BlockRef("neg")))
             ir.ret(phi)
             ir.finalizeFunction()
         }
@@ -71,21 +71,21 @@ class X86CodeGenExtraTest {
     fun compilesMultiBlockFunction() {
         val code = generateCode { ir ->
             val params = ir.createFunction("classify", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val isNeg = ir.icmp(ICmpPredicate.SLT, params[0], Constant.I32(0))
-            ir.condBr(isNeg, "negative", "check_zero")
+            ir.condBr(isNeg, BlockRef("negative"), BlockRef("check_zero"))
 
-            ir.positionAtEnd(ir.appendBlock("negative"))
+            ir.appendBlock("negative")
             ir.ret(Constant.I32(-1))
 
-            ir.positionAtEnd(ir.appendBlock("check_zero"))
+            ir.appendBlock("check_zero")
             val isZero = ir.icmp(ICmpPredicate.EQ, params[0], Constant.I32(0))
-            ir.condBr(isZero, "zero", "positive")
+            ir.condBr(isZero, BlockRef("zero"), BlockRef("positive"))
 
-            ir.positionAtEnd(ir.appendBlock("zero"))
+            ir.appendBlock("zero")
             ir.ret(Constant.I32(0))
 
-            ir.positionAtEnd(ir.appendBlock("positive"))
+            ir.appendBlock("positive")
             ir.ret(Constant.I32(1))
             ir.finalizeFunction()
         }
@@ -96,7 +96,7 @@ class X86CodeGenExtraTest {
     fun compilesBitwiseAndImm() {
         val code = generateCode { ir ->
             val params = ir.createFunction("mask", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.and(params[0], Constant.I32(0xFF)))
             ir.finalizeFunction()
         }
@@ -107,7 +107,7 @@ class X86CodeGenExtraTest {
     fun compilesBitwiseOrImm() {
         val code = generateCode { ir ->
             val params = ir.createFunction("set_bit", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.or(params[0], Constant.I32(0x80)))
             ir.finalizeFunction()
         }
@@ -118,7 +118,7 @@ class X86CodeGenExtraTest {
     fun compilesBitwiseXorImm() {
         val code = generateCode { ir ->
             val params = ir.createFunction("toggle", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.xor(params[0], Constant.I32(-1)))
             ir.finalizeFunction()
         }
@@ -129,12 +129,12 @@ class X86CodeGenExtraTest {
     fun compilesMultipleReturnPaths() {
         val code = generateCode { ir ->
             val params = ir.createFunction("abs", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val isNeg = ir.icmp(ICmpPredicate.SLT, params[0], Constant.I32(0))
-            ir.condBr(isNeg, "negate", "done")
-            ir.positionAtEnd(ir.appendBlock("negate"))
+            ir.condBr(isNeg, BlockRef("negate"), BlockRef("done"))
+            ir.appendBlock("negate")
             ir.ret(ir.neg(params[0]))
-            ir.positionAtEnd(ir.appendBlock("done"))
+            ir.appendBlock("done")
             ir.ret(params[0])
             ir.finalizeFunction()
         }
@@ -148,7 +148,7 @@ class X86CodeGenExtraTest {
     fun compilesConstantReturn() {
         val code = generateCode { ir ->
             ir.createFunction("const42", emptyList(), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.I32(42))
             ir.finalizeFunction()
         }
@@ -159,7 +159,7 @@ class X86CodeGenExtraTest {
     fun compilesZeroReturn() {
         val code = generateCode { ir ->
             ir.createFunction("zero", emptyList(), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.I32(0))
             ir.finalizeFunction()
         }
@@ -170,7 +170,7 @@ class X86CodeGenExtraTest {
     fun compilesLargeI64Constant() {
         val code = generateCode { ir ->
             ir.createFunction("large", emptyList(), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(Constant.I64(0x123456789ABCDEF0L))
             ir.finalizeFunction()
         }
@@ -183,7 +183,7 @@ class X86CodeGenExtraTest {
             val code = generateCode { ir ->
                 val params = ir.createFunction("cmp_$pred",
                     listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-                ir.positionAtEnd(ir.appendBlock("entry"))
+                ir.appendBlock("entry")
                 val cmp = ir.icmp(pred, params[0], params[1])
                 ir.ret(ir.zext(cmp, Type.I32))
                 ir.finalizeFunction()
@@ -196,17 +196,17 @@ class X86CodeGenExtraTest {
     fun compilesMultipleFunctions() {
         val ir = IrBuilder("multi", Target.x86_64())
         val p1 = ir.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.add(p1[0], p1[1]))
         ir.finalizeFunction()
 
         val p2 = ir.createFunction("sub", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.sub(p2[0], p2[1]))
         ir.finalizeFunction()
 
         val p3 = ir.createFunction("mul", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.mul(p3[0], p3[1]))
         ir.finalizeFunction()
 
@@ -219,7 +219,7 @@ class X86CodeGenExtraTest {
     fun compilesVoidFunction() {
         val code = generateCode { ir ->
             ir.createFunction("noop", emptyList(), Type.Void)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret()
             ir.finalizeFunction()
         }
@@ -233,7 +233,7 @@ class X86CodeGenExtraTest {
         val code = generateCode { ir ->
             val params = ir.createFunction("byte_add",
                 listOf(Param("a", Type.I8), Param("b", Type.I8)), Type.I8)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.add(params[0], params[1]))
             ir.finalizeFunction()
         }
@@ -244,7 +244,7 @@ class X86CodeGenExtraTest {
     fun compilesLongExpressionChain() {
         val code = generateCode { ir ->
             val params = ir.createFunction("chain", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             var v: Value = params[0]
             v = ir.add(v, Constant.I32(1))
             v = ir.sub(v, Constant.I32(2))
@@ -261,7 +261,7 @@ class X86CodeGenExtraTest {
     fun compilesAllocaLoadStore() {
         val code = generateCode { ir ->
             val params = ir.createFunction("stack_var", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val alloca = ir.alloca(Type.I32)
             ir.store(params[0], alloca)
             val loaded = ir.load(Type.I32, alloca)
@@ -276,7 +276,7 @@ class X86CodeGenExtraTest {
         val code = generateCode { ir ->
             val params = ir.createFunction("multi_alloca",
                 listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val a = ir.alloca(Type.I32)
             val b = ir.alloca(Type.I32)
             ir.store(params[0], a)
@@ -291,7 +291,7 @@ class X86CodeGenExtraTest {
     fun compilesSelectGE() {
         val code = generateCode { ir ->
             val params = ir.createFunction("clamp_pos", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cond = ir.icmp(ICmpPredicate.SGE, params[0], Constant.I32(0))
             ir.ret(ir.select(cond, params[0], Constant.I32(0)))
             ir.finalizeFunction()
@@ -304,7 +304,7 @@ class X86CodeGenExtraTest {
         val code = generateCode { ir ->
             val paramList = (0 until 6).map { Param("p$it", Type.I32) }
             val params = ir.createFunction("sum6", paramList, Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             var sum: Value = params[0]
             for (i in 1 until 6) sum = ir.add(sum, params[i])
             ir.ret(sum)
@@ -318,7 +318,7 @@ class X86CodeGenExtraTest {
         val code = generateCode { ir ->
             val paramList = (0 until 8).map { Param("p$it", Type.I32) }
             val params = ir.createFunction("sum8", paramList, Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             var sum: Value = params[0]
             for (i in 1 until 8) sum = ir.add(sum, params[i])
             ir.ret(sum)
@@ -331,7 +331,7 @@ class X86CodeGenExtraTest {
     fun generatedObjectFileHasTextSection() {
         val ir = IrBuilder("objfile", Target.x86_64())
         ir.createFunction("f", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret()
         ir.finalizeFunction()
         val obj = X86CodeGenerator().generateObjectFile(ir.build())
@@ -342,7 +342,7 @@ class X86CodeGenExtraTest {
     fun generatedObjectFileHasSymbol() {
         val ir = IrBuilder("sym_test", Target.x86_64())
         ir.createFunction("my_func", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I32(0))
         ir.finalizeFunction()
         val obj = X86CodeGenerator().generateObjectFile(ir.build())
@@ -353,7 +353,7 @@ class X86CodeGenExtraTest {
     fun codeEndsWithRet() {
         val code = generateCode { ir ->
             val params = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.add(params[0], Constant.I32(1)))
             ir.finalizeFunction()
         }
@@ -364,7 +364,7 @@ class X86CodeGenExtraTest {
     fun identityIsCompact() {
         val code = generateCode { ir ->
             val params = ir.createFunction("id", listOf(Param("x", Type.I32)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(params[0])
             ir.finalizeFunction()
         }
@@ -377,7 +377,7 @@ class X86CodeGenExtraTest {
         val code = generateCode { ir ->
             val params = ir.createFunction("arith64",
                 listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val sum = ir.add(params[0], params[1])
             val diff = ir.sub(sum, params[1])
             ir.ret(ir.mul(diff, params[0]))
@@ -391,7 +391,7 @@ class X86CodeGenExtraTest {
         val code = generateCode { ir ->
             val params = ir.createFunction("cmp64",
                 listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.zext(ir.icmp(ICmpPredicate.SGT, params[0], params[1]), Type.I32))
             ir.finalizeFunction()
         }

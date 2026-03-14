@@ -405,7 +405,6 @@ class NativeCompilerTest {
         val superClass = cp.classEntry("java/lang/Object")
         val codeIdx = cp.utf8("Code")
         val fieldRef = cp.fieldRef("test/Clinit", "x", "I")
-
         val clinitName = cp.utf8("<clinit>")
         val clinitDesc = cp.utf8("()V")
         val clinitCode = byteArrayOf(

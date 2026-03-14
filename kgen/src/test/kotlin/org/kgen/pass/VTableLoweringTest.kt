@@ -20,7 +20,7 @@ class VTableLoweringTest {
         ))
 
         val params = builder.createFunction("callSpeak", listOf(Param("obj", Type.OpaquePointer)), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val methodType = Type.Function(listOf(Type.OpaquePointer), Type.I32)
         builder.virtualCall(params[0], "Animal", "speak", methodType, emptyList())
         builder.ret(Constant.I32(0))
@@ -60,7 +60,7 @@ class VTableLoweringTest {
             Param("a", Type.OpaquePointer),
             Param("b", Type.OpaquePointer),
         ), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val methodType = Type.Function(listOf(Type.OpaquePointer, Type.OpaquePointer), Type.I32)
         builder.interfaceCall(params[0], "Comparable", "compareTo", methodType, listOf(params[1]))
         builder.ret(Constant.I32(0))
@@ -81,7 +81,7 @@ class VTableLoweringTest {
         val builder = IrBuilder("test", Target.x86_64())
 
         val params = builder.createFunction("callUnknown", listOf(Param("obj", Type.OpaquePointer)), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val methodType = Type.Function(listOf(Type.OpaquePointer), Type.I32)
         builder.virtualCall(params[0], "Unknown", "doStuff", methodType, emptyList())
         builder.ret(Constant.I32(0))
@@ -112,7 +112,7 @@ class VTableLoweringTest {
         ))
 
         val params = builder.createFunction("test", listOf(Param("obj", Type.OpaquePointer)), Type.Void)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val voidMethod = Type.Function(listOf(Type.OpaquePointer), Type.Void)
         builder.virtualCall(params[0], "Base", "methodA", voidMethod, emptyList())
         builder.virtualCall(params[0], "Base", "methodB", voidMethod, emptyList())
@@ -152,7 +152,7 @@ class VTableLoweringTest {
         ))
 
         val params = builder.createFunction("test", listOf(Param("obj", Type.OpaquePointer)), Type.Void)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val voidMethod = Type.Function(listOf(Type.OpaquePointer), Type.Void)
         builder.virtualCall(params[0], "Child", "greet", voidMethod, emptyList())
         builder.virtualCall(params[0], "Child", "extra", voidMethod, emptyList())
@@ -175,7 +175,7 @@ class VTableLoweringTest {
     fun noVirtualCallsNoChange() {
         val builder = IrBuilder("test", Target.x86_64())
         builder.createFunction("noop", emptyList(), Type.Void)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret()
         builder.finalizeFunction()
 
@@ -198,7 +198,7 @@ class VTableLoweringTest {
         ))
 
         val params = builder.createFunction("measure", listOf(Param("obj", Type.OpaquePointer)), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val intMethod = Type.Function(listOf(Type.OpaquePointer), Type.I32)
         val area = builder.virtualCall(params[0], "Shape", "area", intMethod, emptyList())
         val perim = builder.virtualCall(params[0], "Shape", "perimeter", intMethod, emptyList())
@@ -228,7 +228,7 @@ class VTableLoweringTest {
         ))
 
         val params = builder.createFunction("test", listOf(Param("obj", Type.OpaquePointer)), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val intMethod = Type.Function(listOf(Type.OpaquePointer), Type.I32)
         val result = builder.virtualCall(params[0], "Getter", "getValue", intMethod, emptyList())
         builder.ret(result ?: Constant.I32(0))
@@ -273,7 +273,7 @@ class VTableLoweringTest {
         ))
 
         val params = builder.createFunction("test", listOf(Param("obj", Type.OpaquePointer)), Type.Void)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val voidMethod = Type.Function(listOf(Type.OpaquePointer), Type.Void)
         builder.virtualCall(params[0], "B", "foo", voidMethod, emptyList())
         builder.virtualCall(params[0], "C", "baz", voidMethod, emptyList())
@@ -308,7 +308,7 @@ class VTableLoweringTest {
             Param("y", Type.I32),
             Param("z", Type.I32),
         ), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val fnType = Type.Function(listOf(Type.OpaquePointer, Type.I32, Type.I32, Type.I32), Type.I32)
         val result = builder.interfaceCall(
             params[0], "BiFunction", "apply", fnType,
@@ -336,7 +336,7 @@ class VTableLoweringTest {
         ))
 
         builder.createFunction("test", emptyList(), Type.Void)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret()
         builder.finalizeFunction()
 
@@ -367,7 +367,7 @@ class VTableLoweringTest {
             Param("a", Type.I32),
             Param("b", Type.I32),
         ), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val addType = Type.Function(listOf(Type.OpaquePointer, Type.I32, Type.I32), Type.I32)
         val result = builder.virtualCall(params[0], "Calculator", "add", addType, listOf(params[1], params[2]))
         builder.ret(result ?: Constant.I32(0))

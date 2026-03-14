@@ -205,7 +205,7 @@ class GraphColoringAllocator : RegisterAllocator {
                     // Copy-like instructions
                     val copyPair = when (inst) {
                         is BitCast -> inst.value.name to inst.dest.name
-                        is Trunc -> inst.operand.name to inst.dest.name
+                        is FTrunc -> inst.operand.name to inst.dest.name
                         is ZExt -> inst.value.name to inst.dest.name
                         is SExt -> inst.value.name to inst.dest.name
                         is IntTrunc -> inst.value.name to inst.dest.name

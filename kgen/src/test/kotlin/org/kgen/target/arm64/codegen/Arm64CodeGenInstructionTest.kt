@@ -34,7 +34,7 @@ class Arm64CodeGenInstructionTest {
     fun `add i32`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = add(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -46,7 +46,7 @@ class Arm64CodeGenInstructionTest {
     fun `add i64`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = add(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -58,7 +58,7 @@ class Arm64CodeGenInstructionTest {
     fun `sub i32`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = sub(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -70,7 +70,7 @@ class Arm64CodeGenInstructionTest {
     fun `sub i64`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = sub(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -82,7 +82,7 @@ class Arm64CodeGenInstructionTest {
     fun `mul i32`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = mul(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -94,7 +94,7 @@ class Arm64CodeGenInstructionTest {
     fun `mul i64`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = mul(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -106,7 +106,7 @@ class Arm64CodeGenInstructionTest {
     fun `sdiv i32`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = sdiv(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -118,7 +118,7 @@ class Arm64CodeGenInstructionTest {
     fun `sdiv i64`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = sdiv(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -130,7 +130,7 @@ class Arm64CodeGenInstructionTest {
     fun `udiv i32`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = udiv(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -142,7 +142,7 @@ class Arm64CodeGenInstructionTest {
     fun `udiv i64`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = udiv(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -154,7 +154,7 @@ class Arm64CodeGenInstructionTest {
     fun `srem i32`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = srem(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -165,7 +165,7 @@ class Arm64CodeGenInstructionTest {
     fun `srem i64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = srem(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -176,7 +176,7 @@ class Arm64CodeGenInstructionTest {
     fun `urem i32`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = urem(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -187,7 +187,7 @@ class Arm64CodeGenInstructionTest {
     fun `urem i64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = urem(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -198,7 +198,7 @@ class Arm64CodeGenInstructionTest {
     fun `and i32`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = and(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -210,7 +210,7 @@ class Arm64CodeGenInstructionTest {
     fun `and i64`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = and(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -222,7 +222,7 @@ class Arm64CodeGenInstructionTest {
     fun `or i32`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = or(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -234,7 +234,7 @@ class Arm64CodeGenInstructionTest {
     fun `or i64`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = or(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -246,7 +246,7 @@ class Arm64CodeGenInstructionTest {
     fun `xor i32`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = xor(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -258,7 +258,7 @@ class Arm64CodeGenInstructionTest {
     fun `xor i64`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = xor(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -270,7 +270,7 @@ class Arm64CodeGenInstructionTest {
     fun `shl i32`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = shl(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -282,7 +282,7 @@ class Arm64CodeGenInstructionTest {
     fun `shl i64`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = shl(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -294,7 +294,7 @@ class Arm64CodeGenInstructionTest {
     fun `lshr i32`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = lshr(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -306,7 +306,7 @@ class Arm64CodeGenInstructionTest {
     fun `lshr i64`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = lshr(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -318,7 +318,7 @@ class Arm64CodeGenInstructionTest {
     fun `ashr i32`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = ashr(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -330,7 +330,7 @@ class Arm64CodeGenInstructionTest {
     fun `ashr i64`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = ashr(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -342,7 +342,7 @@ class Arm64CodeGenInstructionTest {
     fun `neg i32`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = neg(p[0])
             ret(r)
             finalizeFunction()
@@ -354,7 +354,7 @@ class Arm64CodeGenInstructionTest {
     fun `neg i64`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = neg(p[0])
             ret(r)
             finalizeFunction()
@@ -366,7 +366,7 @@ class Arm64CodeGenInstructionTest {
     fun `not i32`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = not(p[0])
             ret(r)
             finalizeFunction()
@@ -378,7 +378,7 @@ class Arm64CodeGenInstructionTest {
     fun `not i64`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = not(p[0])
             ret(r)
             finalizeFunction()
@@ -390,7 +390,7 @@ class Arm64CodeGenInstructionTest {
     fun `fadd f64`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = fadd(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -402,7 +402,7 @@ class Arm64CodeGenInstructionTest {
     fun `fadd f32`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = fadd(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -414,7 +414,7 @@ class Arm64CodeGenInstructionTest {
     fun `fsub f64`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = fsub(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -426,7 +426,7 @@ class Arm64CodeGenInstructionTest {
     fun `fsub f32`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = fsub(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -438,7 +438,7 @@ class Arm64CodeGenInstructionTest {
     fun `fmul f64`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = fmul(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -450,7 +450,7 @@ class Arm64CodeGenInstructionTest {
     fun `fmul f32`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = fmul(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -462,7 +462,7 @@ class Arm64CodeGenInstructionTest {
     fun `fdiv f64`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = fdiv(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -474,7 +474,7 @@ class Arm64CodeGenInstructionTest {
     fun `fdiv f32`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = fdiv(p[0], p[1])
             ret(r)
             finalizeFunction()
@@ -486,7 +486,7 @@ class Arm64CodeGenInstructionTest {
     fun `fneg f64`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = fneg(p[0])
             ret(r)
             finalizeFunction()
@@ -498,7 +498,7 @@ class Arm64CodeGenInstructionTest {
     fun `fneg f32`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.F32)), Type.F32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = fneg(p[0])
             ret(r)
             finalizeFunction()
@@ -510,7 +510,7 @@ class Arm64CodeGenInstructionTest {
     fun `icmp eq`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = icmp(ICmpPredicate.EQ, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -522,7 +522,7 @@ class Arm64CodeGenInstructionTest {
     fun `icmp ne`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = icmp(ICmpPredicate.NE, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -534,7 +534,7 @@ class Arm64CodeGenInstructionTest {
     fun `icmp sgt`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = icmp(ICmpPredicate.SGT, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -546,7 +546,7 @@ class Arm64CodeGenInstructionTest {
     fun `icmp sge`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = icmp(ICmpPredicate.SGE, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -558,7 +558,7 @@ class Arm64CodeGenInstructionTest {
     fun `icmp slt`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = icmp(ICmpPredicate.SLT, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -570,7 +570,7 @@ class Arm64CodeGenInstructionTest {
     fun `icmp sle`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = icmp(ICmpPredicate.SLE, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -582,7 +582,7 @@ class Arm64CodeGenInstructionTest {
     fun `icmp ugt`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = icmp(ICmpPredicate.UGT, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -594,7 +594,7 @@ class Arm64CodeGenInstructionTest {
     fun `icmp uge`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = icmp(ICmpPredicate.UGE, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -606,7 +606,7 @@ class Arm64CodeGenInstructionTest {
     fun `icmp ult`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = icmp(ICmpPredicate.ULT, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -618,7 +618,7 @@ class Arm64CodeGenInstructionTest {
     fun `icmp ule`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = icmp(ICmpPredicate.ULE, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -630,7 +630,7 @@ class Arm64CodeGenInstructionTest {
     fun `icmp eq i64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = icmp(ICmpPredicate.EQ, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -642,7 +642,7 @@ class Arm64CodeGenInstructionTest {
     fun `icmp sgt i64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = icmp(ICmpPredicate.SGT, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -654,7 +654,7 @@ class Arm64CodeGenInstructionTest {
     fun `fcmp oeq f64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = fcmp(FCmpPredicate.OEQ, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -666,7 +666,7 @@ class Arm64CodeGenInstructionTest {
     fun `fcmp ogt f64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = fcmp(FCmpPredicate.OGT, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -678,7 +678,7 @@ class Arm64CodeGenInstructionTest {
     fun `fcmp olt f64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = fcmp(FCmpPredicate.OLT, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -690,7 +690,7 @@ class Arm64CodeGenInstructionTest {
     fun `fcmp ole f64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = fcmp(FCmpPredicate.OLE, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -702,7 +702,7 @@ class Arm64CodeGenInstructionTest {
     fun `fcmp oge f64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = fcmp(FCmpPredicate.OGE, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -714,7 +714,7 @@ class Arm64CodeGenInstructionTest {
     fun `fcmp one f64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = fcmp(FCmpPredicate.ONE, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -726,7 +726,7 @@ class Arm64CodeGenInstructionTest {
     fun `fcmp ueq f64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = fcmp(FCmpPredicate.UEQ, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -738,7 +738,7 @@ class Arm64CodeGenInstructionTest {
     fun `fcmp une f64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = fcmp(FCmpPredicate.UNE, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -750,7 +750,7 @@ class Arm64CodeGenInstructionTest {
     fun `fcmp ord f64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = fcmp(FCmpPredicate.ORD, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -762,7 +762,7 @@ class Arm64CodeGenInstructionTest {
     fun `fcmp uno f64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = fcmp(FCmpPredicate.UNO, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -774,7 +774,7 @@ class Arm64CodeGenInstructionTest {
     fun `fcmp oeq f32`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = fcmp(FCmpPredicate.OEQ, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -786,7 +786,7 @@ class Arm64CodeGenInstructionTest {
     fun `zext i32 to i64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = zext(p[0], Type.I64)
             ret(r)
             finalizeFunction()
@@ -797,7 +797,7 @@ class Arm64CodeGenInstructionTest {
     fun `sext i32 to i64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = sext(p[0], Type.I64)
             ret(r)
             finalizeFunction()
@@ -808,7 +808,7 @@ class Arm64CodeGenInstructionTest {
     fun `trunc i64 to i32`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = trunc(p[0], Type.I32)
             ret(r)
             finalizeFunction()
@@ -819,7 +819,7 @@ class Arm64CodeGenInstructionTest {
     fun `sitofp i32 to f64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = sitofp(p[0], Type.F64)
             ret(r)
             finalizeFunction()
@@ -830,7 +830,7 @@ class Arm64CodeGenInstructionTest {
     fun `sitofp i64 to f64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = sitofp(p[0], Type.F64)
             ret(r)
             finalizeFunction()
@@ -841,7 +841,7 @@ class Arm64CodeGenInstructionTest {
     fun `sitofp i32 to f32`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32)), Type.F32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = sitofp(p[0], Type.F32)
             ret(r)
             finalizeFunction()
@@ -852,7 +852,7 @@ class Arm64CodeGenInstructionTest {
     fun `uitofp i32 to f64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = uitofp(p[0], Type.F64)
             ret(r)
             finalizeFunction()
@@ -863,7 +863,7 @@ class Arm64CodeGenInstructionTest {
     fun `fptosi f64 to i32`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = fptosi(p[0], Type.I32)
             ret(r)
             finalizeFunction()
@@ -874,7 +874,7 @@ class Arm64CodeGenInstructionTest {
     fun `fptosi f64 to i64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = fptosi(p[0], Type.I64)
             ret(r)
             finalizeFunction()
@@ -885,7 +885,7 @@ class Arm64CodeGenInstructionTest {
     fun `fptoui f64 to i32`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = fptoui(p[0], Type.I32)
             ret(r)
             finalizeFunction()
@@ -896,7 +896,7 @@ class Arm64CodeGenInstructionTest {
     fun `fpext f32 to f64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F32)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = fpext(p[0], Type.F64)
             ret(r)
             finalizeFunction()
@@ -907,7 +907,7 @@ class Arm64CodeGenInstructionTest {
     fun `fptrunc f64 to f32`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64)), Type.F32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = fptrunc(p[0], Type.F32)
             ret(r)
             finalizeFunction()
@@ -918,7 +918,7 @@ class Arm64CodeGenInstructionTest {
     fun `select i32`() {
         val lines = compileAndDisassemble {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = icmp(ICmpPredicate.SGT, p[0], p[1])
             val r = select(c, p[0], p[1])
             ret(r)
@@ -931,7 +931,7 @@ class Arm64CodeGenInstructionTest {
     fun `select i64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = icmp(ICmpPredicate.SGT, p[0], p[1])
             val r = select(c, p[0], p[1])
             ret(r)
@@ -943,7 +943,7 @@ class Arm64CodeGenInstructionTest {
     fun `alloca and load and store i32`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val slot = alloca(Type.I32)
             store(p[0], slot)
             val r = load(Type.I32, slot)
@@ -956,7 +956,7 @@ class Arm64CodeGenInstructionTest {
     fun `alloca and load and store i64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val slot = alloca(Type.I64)
             store(p[0], slot)
             val r = load(Type.I64, slot)
@@ -969,7 +969,7 @@ class Arm64CodeGenInstructionTest {
     fun `alloca and load and store f64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val slot = alloca(Type.F64)
             store(p[0], slot)
             val r = load(Type.F64, slot)
@@ -982,7 +982,7 @@ class Arm64CodeGenInstructionTest {
     fun `load and store f32`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F32)), Type.F32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val slot = alloca(Type.F32)
             store(p[0], slot)
             val r = load(Type.F32, slot)
@@ -996,7 +996,7 @@ class Arm64CodeGenInstructionTest {
         assertCompiles {
             declareFunction("other", listOf(Param("x", Type.I32)), Type.I32)
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = call("other", listOf(Constant.I32(42)), Type.I32)
             ret(r)
             finalizeFunction()
@@ -1008,7 +1008,7 @@ class Arm64CodeGenInstructionTest {
         assertCompiles {
             declareFunction("sideEffect", listOf(Param("x", Type.I32)), Type.Void)
             createFunction("f", emptyList(), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             call("sideEffect", listOf(Constant.I32(1)), Type.Void)
             ret(null)
             finalizeFunction()
@@ -1023,7 +1023,7 @@ class Arm64CodeGenInstructionTest {
                 Param("c", Type.I32), Param("d", Type.I32)
             ), Type.I32)
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = call("multi", listOf(
                 Constant.I32(1), Constant.I32(2),
                 Constant.I32(3), Constant.I32(4)
@@ -1037,7 +1037,7 @@ class Arm64CodeGenInstructionTest {
     fun `ret void`() {
         val lines = compileAndDisassemble {
             createFunction("f", emptyList(), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(null)
             finalizeFunction()
         }
@@ -1048,7 +1048,7 @@ class Arm64CodeGenInstructionTest {
     fun `ret i32 constant`() {
         assertCompiles {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I32(42))
             finalizeFunction()
         }
@@ -1058,7 +1058,7 @@ class Arm64CodeGenInstructionTest {
     fun `ret i64 constant`() {
         assertCompiles {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I64(100))
             finalizeFunction()
         }
@@ -1068,7 +1068,7 @@ class Arm64CodeGenInstructionTest {
     fun `ret f64 constant`() {
         assertCompiles {
             createFunction("f", emptyList(), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.F64(3.14))
             finalizeFunction()
         }
@@ -1078,9 +1078,9 @@ class Arm64CodeGenInstructionTest {
     fun `unconditional br`() {
         assertCompiles {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            br("target")
-            positionAtEnd(appendBlock("target"))
+            appendBlock("entry")
+            br(BlockRef("target"))
+            appendBlock("target")
             ret(Constant.I32(0))
             finalizeFunction()
         }
@@ -1090,12 +1090,12 @@ class Arm64CodeGenInstructionTest {
     fun `conditional br`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = icmp(ICmpPredicate.EQ, p[0], Constant.I32(0))
-            condBr(c, "then", "else")
-            positionAtEnd(appendBlock("then"))
+            condBr(c, BlockRef("then"), BlockRef("else"))
+            appendBlock("then")
             ret(Constant.I32(1))
-            positionAtEnd(appendBlock("else"))
+            appendBlock("else")
             ret(Constant.I32(0))
             finalizeFunction()
         }
@@ -1105,12 +1105,12 @@ class Arm64CodeGenInstructionTest {
     fun `icmp fused with condBr`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = icmp(ICmpPredicate.SGT, p[0], p[1])
-            condBr(c, "then", "else")
-            positionAtEnd(appendBlock("then"))
+            condBr(c, BlockRef("then"), BlockRef("else"))
+            appendBlock("then")
             ret(p[0])
-            positionAtEnd(appendBlock("else"))
+            appendBlock("else")
             ret(p[1])
             finalizeFunction()
         }
@@ -1120,19 +1120,19 @@ class Arm64CodeGenInstructionTest {
     fun `switch i32`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             switch(p[0], "default", listOf(
                 Constant.I32(0) to "case0",
                 Constant.I32(1) to "case1",
                 Constant.I32(2) to "case2"
             ))
-            positionAtEnd(appendBlock("case0"))
+            appendBlock("case0")
             ret(Constant.I32(10))
-            positionAtEnd(appendBlock("case1"))
+            appendBlock("case1")
             ret(Constant.I32(20))
-            positionAtEnd(appendBlock("case2"))
+            appendBlock("case2")
             ret(Constant.I32(30))
-            positionAtEnd(appendBlock("default"))
+            appendBlock("default")
             ret(Constant.I32(-1))
             finalizeFunction()
         }
@@ -1142,7 +1142,7 @@ class Arm64CodeGenInstructionTest {
     fun `gc safepoint`() {
         assertCompiles {
             createFunction("f", emptyList(), Type.Void, gc = "statepoint")
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             gcSafepoint()
             ret(null)
             finalizeFunction()
@@ -1153,7 +1153,7 @@ class Arm64CodeGenInstructionTest {
     fun `gc root`() {
         assertCompiles {
             createFunction("f", emptyList(), Type.Void, gc = "statepoint")
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val slot = alloca(Type.OpaquePointer)
             gcRoot(slot)
             ret(null)
@@ -1165,7 +1165,7 @@ class Arm64CodeGenInstructionTest {
     fun `add with constant operand`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = add(p[0], Constant.I32(10))
             ret(r)
             finalizeFunction()
@@ -1176,7 +1176,7 @@ class Arm64CodeGenInstructionTest {
     fun `sub with constant operand`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = sub(p[0], Constant.I32(5))
             ret(r)
             finalizeFunction()
@@ -1187,7 +1187,7 @@ class Arm64CodeGenInstructionTest {
     fun `chain of arithmetic`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val sum = add(p[0], p[1])
             val prod = mul(sum, p[0])
             val diff = sub(prod, p[1])
@@ -1200,7 +1200,7 @@ class Arm64CodeGenInstructionTest {
     fun `chain of float arithmetic`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val sum = fadd(p[0], p[1])
             val prod = fmul(sum, p[0])
             val diff = fsub(prod, p[1])
@@ -1213,18 +1213,18 @@ class Arm64CodeGenInstructionTest {
     fun `multiple blocks with branches`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val isZero = icmp(ICmpPredicate.EQ, p[0], Constant.I32(0))
-            condBr(isZero, "zero", "nonzero")
-            positionAtEnd(appendBlock("zero"))
+            condBr(isZero, BlockRef("zero"), BlockRef("nonzero"))
+            appendBlock("zero")
             ret(Constant.I32(0))
-            positionAtEnd(appendBlock("nonzero"))
+            appendBlock("nonzero")
             val isNeg = icmp(ICmpPredicate.SLT, p[0], Constant.I32(0))
-            condBr(isNeg, "negative", "positive")
-            positionAtEnd(appendBlock("negative"))
+            condBr(isNeg, BlockRef("negative"), BlockRef("positive"))
+            appendBlock("negative")
             val negated = neg(p[0])
             ret(negated)
-            positionAtEnd(appendBlock("positive"))
+            appendBlock("positive")
             ret(p[0])
             finalizeFunction()
         }
@@ -1234,16 +1234,16 @@ class Arm64CodeGenInstructionTest {
     fun `complex control flow diamond`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = icmp(ICmpPredicate.SGT, p[0], p[1])
-            condBr(c, "left", "right")
-            positionAtEnd(appendBlock("left"))
+            condBr(c, BlockRef("left"), BlockRef("right"))
+            appendBlock("left")
             val sum = add(p[0], Constant.I32(1))
-            br("merge")
-            positionAtEnd(appendBlock("right"))
+            br(BlockRef("merge"))
+            appendBlock("right")
             val diff = sub(p[1], Constant.I32(1))
-            br("merge")
-            positionAtEnd(appendBlock("merge"))
+            br(BlockRef("merge"))
+            appendBlock("merge")
             ret(p[0])
             finalizeFunction()
         }
@@ -1253,12 +1253,12 @@ class Arm64CodeGenInstructionTest {
     fun `multiple functions in module`() {
         assertCompiles {
             val p1 = createFunction("add1", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r1 = add(p1[0], Constant.I32(1))
             ret(r1)
             finalizeFunction()
             val p2 = createFunction("sub1", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r2 = sub(p2[0], Constant.I32(1))
             ret(r2)
             finalizeFunction()
@@ -1269,7 +1269,7 @@ class Arm64CodeGenInstructionTest {
     fun `load pointer`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("ptr", Type.OpaquePointer)), Type.OpaquePointer)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = load(Type.OpaquePointer, p[0])
             ret(r)
             finalizeFunction()
@@ -1280,7 +1280,7 @@ class Arm64CodeGenInstructionTest {
     fun `store and load pointer`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("ptr", Type.OpaquePointer)), Type.OpaquePointer)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val slot = alloca(Type.OpaquePointer)
             store(p[0], slot)
             val r = load(Type.OpaquePointer, slot)
@@ -1293,7 +1293,7 @@ class Arm64CodeGenInstructionTest {
     fun `select f64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = fcmp(FCmpPredicate.OGT, p[0], p[1])
             val r = select(c, p[0], p[1])
             ret(r)
@@ -1305,7 +1305,7 @@ class Arm64CodeGenInstructionTest {
     fun `zext i1 to i32`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = icmp(ICmpPredicate.EQ, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -1317,7 +1317,7 @@ class Arm64CodeGenInstructionTest {
     fun `sext i1 to i32`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = icmp(ICmpPredicate.EQ, p[0], p[1])
             val r = sext(c, Type.I32)
             ret(r)
@@ -1329,7 +1329,7 @@ class Arm64CodeGenInstructionTest {
     fun `uitofp i64 to f64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = uitofp(p[0], Type.F64)
             ret(r)
             finalizeFunction()
@@ -1340,7 +1340,7 @@ class Arm64CodeGenInstructionTest {
     fun `fptoui f64 to i64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = fptoui(p[0], Type.I64)
             ret(r)
             finalizeFunction()
@@ -1351,7 +1351,7 @@ class Arm64CodeGenInstructionTest {
     fun `fptosi f32 to i32`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = fptosi(p[0], Type.I32)
             ret(r)
             finalizeFunction()
@@ -1362,7 +1362,7 @@ class Arm64CodeGenInstructionTest {
     fun `fcmp ugt f64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = fcmp(FCmpPredicate.UGT, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -1374,7 +1374,7 @@ class Arm64CodeGenInstructionTest {
     fun `fcmp ult f64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = fcmp(FCmpPredicate.ULT, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -1386,7 +1386,7 @@ class Arm64CodeGenInstructionTest {
     fun `fcmp ule f64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = fcmp(FCmpPredicate.ULE, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -1398,7 +1398,7 @@ class Arm64CodeGenInstructionTest {
     fun `fcmp uge f64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val c = fcmp(FCmpPredicate.UGE, p[0], p[1])
             val r = zext(c, Type.I32)
             ret(r)
@@ -1410,16 +1410,16 @@ class Arm64CodeGenInstructionTest {
     fun `switch i64`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             switch(p[0], "default", listOf(
                 Constant.I64(0) to "case0",
                 Constant.I64(1) to "case1"
             ))
-            positionAtEnd(appendBlock("case0"))
+            appendBlock("case0")
             ret(Constant.I64(100))
-            positionAtEnd(appendBlock("case1"))
+            appendBlock("case1")
             ret(Constant.I64(200))
-            positionAtEnd(appendBlock("default"))
+            appendBlock("default")
             ret(Constant.I64(-1))
             finalizeFunction()
         }
@@ -1429,7 +1429,7 @@ class Arm64CodeGenInstructionTest {
     fun `intTrunc i64 to i32`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("a", Type.I64)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = trunc(p[0], Type.I32)
             ret(r)
             finalizeFunction()
@@ -1440,7 +1440,7 @@ class Arm64CodeGenInstructionTest {
     fun `load i32 from pointer param`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("ptr", Type.OpaquePointer)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = load(Type.I32, p[0])
             ret(r)
             finalizeFunction()
@@ -1451,7 +1451,7 @@ class Arm64CodeGenInstructionTest {
     fun `store i32 to pointer param`() {
         assertCompiles {
             val p = createFunction("f", listOf(Param("val", Type.I32), Param("ptr", Type.OpaquePointer)), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             store(p[0], p[1])
             ret(null)
             finalizeFunction()

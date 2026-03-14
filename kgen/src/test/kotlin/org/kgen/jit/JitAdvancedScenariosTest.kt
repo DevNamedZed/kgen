@@ -15,7 +15,7 @@ class JitAdvancedScenariosTest {
     private fun buildConstantModule(name: String, funcName: String, value: Long): Module {
         val ir = IrBuilder(name, Target.x86_64())
         ir.createFunction(funcName, emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I64(value))
         ir.finalizeFunction()
         return ir.build()
@@ -24,7 +24,7 @@ class JitAdvancedScenariosTest {
     private fun buildAddModule(moduleName: String, funcName: String): Module {
         val ir = IrBuilder(moduleName, Target.x86_64())
         ir.createFunction(funcName, listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)
         val b = Parameter("b", Type.I64, 1)
         ir.ret(ir.add(a, b))

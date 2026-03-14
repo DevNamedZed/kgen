@@ -59,7 +59,7 @@ class CrossTargetCodegenExtendedTest {
     fun udivCompilesOnX86() {
         compileX86 {
             val params = createFunction("udiv_fn", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(udiv(params[0], params[1]))
             finalizeFunction()
         }
@@ -69,7 +69,7 @@ class CrossTargetCodegenExtendedTest {
     fun udivCompilesOnArm64() {
         compileArm64 {
             val params = createFunction("udiv_fn", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(udiv(params[0], params[1]))
             finalizeFunction()
         }
@@ -79,7 +79,7 @@ class CrossTargetCodegenExtendedTest {
     fun udivCompilesOnRiscV() {
         compileRiscV {
             val params = createFunction("udiv_fn", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(udiv(params[0], params[1]))
             finalizeFunction()
         }
@@ -91,7 +91,7 @@ class CrossTargetCodegenExtendedTest {
     fun uremCompilesOnX86() {
         compileX86 {
             val params = createFunction("urem_fn", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(urem(params[0], params[1]))
             finalizeFunction()
         }
@@ -101,7 +101,7 @@ class CrossTargetCodegenExtendedTest {
     fun uremCompilesOnArm64() {
         compileArm64 {
             val params = createFunction("urem_fn", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(urem(params[0], params[1]))
             finalizeFunction()
         }
@@ -111,7 +111,7 @@ class CrossTargetCodegenExtendedTest {
     fun uremCompilesOnRiscV() {
         compileRiscV {
             val params = createFunction("urem_fn", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(urem(params[0], params[1]))
             finalizeFunction()
         }
@@ -123,7 +123,7 @@ class CrossTargetCodegenExtendedTest {
     fun sremCompilesOnX86() {
         compileX86 {
             val params = createFunction("srem_fn", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(srem(params[0], params[1]))
             finalizeFunction()
         }
@@ -133,7 +133,7 @@ class CrossTargetCodegenExtendedTest {
     fun sremCompilesOnArm64() {
         compileArm64 {
             val params = createFunction("srem_fn", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(srem(params[0], params[1]))
             finalizeFunction()
         }
@@ -143,7 +143,7 @@ class CrossTargetCodegenExtendedTest {
     fun sremCompilesOnRiscV() {
         compileRiscV {
             val params = createFunction("srem_fn", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(srem(params[0], params[1]))
             finalizeFunction()
         }
@@ -155,7 +155,7 @@ class CrossTargetCodegenExtendedTest {
     fun lshrCompilesOnX86() {
         compileX86 {
             val params = createFunction("lshr_fn", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(lshr(params[0], params[1]))
             finalizeFunction()
         }
@@ -165,7 +165,7 @@ class CrossTargetCodegenExtendedTest {
     fun lshrCompilesOnArm64() {
         compileArm64 {
             val params = createFunction("lshr_fn", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(lshr(params[0], params[1]))
             finalizeFunction()
         }
@@ -175,7 +175,7 @@ class CrossTargetCodegenExtendedTest {
     fun lshrCompilesOnRiscV() {
         compileRiscV {
             val params = createFunction("lshr_fn", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(lshr(params[0], params[1]))
             finalizeFunction()
         }
@@ -187,7 +187,7 @@ class CrossTargetCodegenExtendedTest {
     fun ashrCompilesOnX86() {
         compileX86 {
             val params = createFunction("ashr_fn", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(ashr(params[0], params[1]))
             finalizeFunction()
         }
@@ -197,7 +197,7 @@ class CrossTargetCodegenExtendedTest {
     fun ashrCompilesOnArm64() {
         compileArm64 {
             val params = createFunction("ashr_fn", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(ashr(params[0], params[1]))
             finalizeFunction()
         }
@@ -207,7 +207,7 @@ class CrossTargetCodegenExtendedTest {
     fun ashrCompilesOnRiscV() {
         compileRiscV {
             val params = createFunction("ashr_fn", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(ashr(params[0], params[1]))
             finalizeFunction()
         }
@@ -219,7 +219,7 @@ class CrossTargetCodegenExtendedTest {
     fun selectCompilesOnX86() {
         compileX86 {
             val params = createFunction("max", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cond = icmp(ICmpPredicate.SGT, params[0], params[1])
             val result = select(cond, params[0], params[1])
             ret(result)
@@ -231,7 +231,7 @@ class CrossTargetCodegenExtendedTest {
     fun selectCompilesOnArm64() {
         compileArm64 {
             val params = createFunction("max", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cond = icmp(ICmpPredicate.SGT, params[0], params[1])
             val result = select(cond, params[0], params[1])
             ret(result)
@@ -245,12 +245,12 @@ class CrossTargetCodegenExtendedTest {
     fun icmpSgtCondBrCompilesOnX86AndArm64() {
         compileX86AndArm64 {
             val params = createFunction("cmp_sgt", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cond = icmp(ICmpPredicate.SGT, params[0], params[1])
-            condBr(cond, "then", "else")
-            positionAtEnd(appendBlock("then"))
+            condBr(cond, BlockRef("then"), BlockRef("else"))
+            appendBlock("then")
             ret(Constant.I32(1))
-            positionAtEnd(appendBlock("else"))
+            appendBlock("else")
             ret(Constant.I32(0))
             finalizeFunction()
         }
@@ -260,12 +260,12 @@ class CrossTargetCodegenExtendedTest {
     fun icmpSltCondBrCompilesOnX86AndArm64() {
         compileX86AndArm64 {
             val params = createFunction("cmp_slt", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cond = icmp(ICmpPredicate.SLT, params[0], params[1])
-            condBr(cond, "then", "else")
-            positionAtEnd(appendBlock("then"))
+            condBr(cond, BlockRef("then"), BlockRef("else"))
+            appendBlock("then")
             ret(Constant.I32(1))
-            positionAtEnd(appendBlock("else"))
+            appendBlock("else")
             ret(Constant.I32(0))
             finalizeFunction()
         }
@@ -275,12 +275,12 @@ class CrossTargetCodegenExtendedTest {
     fun icmpSgeCondBrCompilesOnX86AndArm64() {
         compileX86AndArm64 {
             val params = createFunction("cmp_sge", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cond = icmp(ICmpPredicate.SGE, params[0], params[1])
-            condBr(cond, "then", "else")
-            positionAtEnd(appendBlock("then"))
+            condBr(cond, BlockRef("then"), BlockRef("else"))
+            appendBlock("then")
             ret(Constant.I32(1))
-            positionAtEnd(appendBlock("else"))
+            appendBlock("else")
             ret(Constant.I32(0))
             finalizeFunction()
         }
@@ -290,12 +290,12 @@ class CrossTargetCodegenExtendedTest {
     fun icmpSleCondBrCompilesOnX86AndArm64() {
         compileX86AndArm64 {
             val params = createFunction("cmp_sle", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cond = icmp(ICmpPredicate.SLE, params[0], params[1])
-            condBr(cond, "then", "else")
-            positionAtEnd(appendBlock("then"))
+            condBr(cond, BlockRef("then"), BlockRef("else"))
+            appendBlock("then")
             ret(Constant.I32(1))
-            positionAtEnd(appendBlock("else"))
+            appendBlock("else")
             ret(Constant.I32(0))
             finalizeFunction()
         }
@@ -305,12 +305,12 @@ class CrossTargetCodegenExtendedTest {
     fun icmpEqCondBrCompilesOnX86AndArm64() {
         compileX86AndArm64 {
             val params = createFunction("cmp_eq", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cond = icmp(ICmpPredicate.EQ, params[0], params[1])
-            condBr(cond, "then", "else")
-            positionAtEnd(appendBlock("then"))
+            condBr(cond, BlockRef("then"), BlockRef("else"))
+            appendBlock("then")
             ret(Constant.I32(1))
-            positionAtEnd(appendBlock("else"))
+            appendBlock("else")
             ret(Constant.I32(0))
             finalizeFunction()
         }
@@ -320,12 +320,12 @@ class CrossTargetCodegenExtendedTest {
     fun icmpNeCondBrCompilesOnX86AndArm64() {
         compileX86AndArm64 {
             val params = createFunction("cmp_ne", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cond = icmp(ICmpPredicate.NE, params[0], params[1])
-            condBr(cond, "then", "else")
-            positionAtEnd(appendBlock("then"))
+            condBr(cond, BlockRef("then"), BlockRef("else"))
+            appendBlock("then")
             ret(Constant.I32(1))
-            positionAtEnd(appendBlock("else"))
+            appendBlock("else")
             ret(Constant.I32(0))
             finalizeFunction()
         }
@@ -337,20 +337,20 @@ class CrossTargetCodegenExtendedTest {
     fun multiplePhiNodesOnX86() {
         compileX86 {
             val params = createFunction("multi_phi", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cond = icmp(ICmpPredicate.SGT, params[0], params[1])
-            condBr(cond, "left", "right")
-            positionAtEnd(appendBlock("left"))
+            condBr(cond, BlockRef("left"), BlockRef("right"))
+            appendBlock("left")
             val leftSum = add(params[0], Constant.I32(1))
             val leftDiff = sub(params[0], Constant.I32(1))
-            br("merge")
-            positionAtEnd(appendBlock("right"))
+            br(BlockRef("merge"))
+            appendBlock("right")
             val rightSum = add(params[1], Constant.I32(2))
             val rightDiff = sub(params[1], Constant.I32(2))
-            br("merge")
-            positionAtEnd(appendBlock("merge"))
-            val phiSum = phi(Type.I32, listOf(leftSum to "left", rightSum to "right"))
-            val phiDiff = phi(Type.I32, listOf(leftDiff to "left", rightDiff to "right"))
+            br(BlockRef("merge"))
+            appendBlock("merge")
+            val phiSum = phi(Type.I32, listOf(leftSum to BlockRef("left"), rightSum to BlockRef("right")))
+            val phiDiff = phi(Type.I32, listOf(leftDiff to BlockRef("left"), rightDiff to BlockRef("right")))
             val result = add(phiSum, phiDiff)
             ret(result)
             finalizeFunction()
@@ -361,20 +361,20 @@ class CrossTargetCodegenExtendedTest {
     fun multiplePhiNodesOnArm64() {
         compileArm64 {
             val params = createFunction("multi_phi", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cond = icmp(ICmpPredicate.SGT, params[0], params[1])
-            condBr(cond, "left", "right")
-            positionAtEnd(appendBlock("left"))
+            condBr(cond, BlockRef("left"), BlockRef("right"))
+            appendBlock("left")
             val leftSum = add(params[0], Constant.I32(1))
             val leftDiff = sub(params[0], Constant.I32(1))
-            br("merge")
-            positionAtEnd(appendBlock("right"))
+            br(BlockRef("merge"))
+            appendBlock("right")
             val rightSum = add(params[1], Constant.I32(2))
             val rightDiff = sub(params[1], Constant.I32(2))
-            br("merge")
-            positionAtEnd(appendBlock("merge"))
-            val phiSum = phi(Type.I32, listOf(leftSum to "left", rightSum to "right"))
-            val phiDiff = phi(Type.I32, listOf(leftDiff to "left", rightDiff to "right"))
+            br(BlockRef("merge"))
+            appendBlock("merge")
+            val phiSum = phi(Type.I32, listOf(leftSum to BlockRef("left"), rightSum to BlockRef("right")))
+            val phiDiff = phi(Type.I32, listOf(leftDiff to BlockRef("left"), rightDiff to BlockRef("right")))
             val result = add(phiSum, phiDiff)
             ret(result)
             finalizeFunction()
@@ -390,7 +390,7 @@ class CrossTargetCodegenExtendedTest {
                 Param("a", Type.I32), Param("b", Type.I32),
                 Param("c", Type.I32), Param("d", Type.I32)
             ), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val bc = mul(params[1], params[2])
             val abc = add(params[0], bc)
             val result = sub(abc, params[3])
@@ -406,7 +406,7 @@ class CrossTargetCodegenExtendedTest {
                 Param("a", Type.I32), Param("b", Type.I32),
                 Param("c", Type.I32), Param("d", Type.I32)
             ), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val bc = mul(params[1], params[2])
             val abc = add(params[0], bc)
             val result = sub(abc, params[3])
@@ -422,7 +422,7 @@ class CrossTargetCodegenExtendedTest {
                 Param("a", Type.I32), Param("b", Type.I32),
                 Param("c", Type.I32), Param("d", Type.I32)
             ), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val bc = mul(params[1], params[2])
             val abc = add(params[0], bc)
             val result = sub(abc, params[3])
@@ -437,17 +437,17 @@ class CrossTargetCodegenExtendedTest {
     fun nestedBranchesCompilesOnX86() {
         compileX86 {
             val params = createFunction("classify", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val isPositive = icmp(ICmpPredicate.SGT, params[0], Constant.I32(0))
-            condBr(isPositive, "positive", "check_neg")
-            positionAtEnd(appendBlock("check_neg"))
+            condBr(isPositive, BlockRef("positive"), BlockRef("check_neg"))
+            appendBlock("check_neg")
             val isNegative = icmp(ICmpPredicate.SLT, params[0], Constant.I32(0))
-            condBr(isNegative, "negative", "zero")
-            positionAtEnd(appendBlock("positive"))
+            condBr(isNegative, BlockRef("negative"), BlockRef("zero"))
+            appendBlock("positive")
             ret(Constant.I32(1))
-            positionAtEnd(appendBlock("negative"))
+            appendBlock("negative")
             ret(Constant.I32(-1))
-            positionAtEnd(appendBlock("zero"))
+            appendBlock("zero")
             ret(Constant.I32(0))
             finalizeFunction()
         }
@@ -457,17 +457,17 @@ class CrossTargetCodegenExtendedTest {
     fun nestedBranchesCompilesOnArm64() {
         compileArm64 {
             val params = createFunction("classify", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val isPositive = icmp(ICmpPredicate.SGT, params[0], Constant.I32(0))
-            condBr(isPositive, "positive", "check_neg")
-            positionAtEnd(appendBlock("check_neg"))
+            condBr(isPositive, BlockRef("positive"), BlockRef("check_neg"))
+            appendBlock("check_neg")
             val isNegative = icmp(ICmpPredicate.SLT, params[0], Constant.I32(0))
-            condBr(isNegative, "negative", "zero")
-            positionAtEnd(appendBlock("positive"))
+            condBr(isNegative, BlockRef("negative"), BlockRef("zero"))
+            appendBlock("positive")
             ret(Constant.I32(1))
-            positionAtEnd(appendBlock("negative"))
+            appendBlock("negative")
             ret(Constant.I32(-1))
-            positionAtEnd(appendBlock("zero"))
+            appendBlock("zero")
             ret(Constant.I32(0))
             finalizeFunction()
         }
@@ -479,7 +479,7 @@ class CrossTargetCodegenExtendedTest {
     fun i64SubCompilesOnAllNative() {
         compileAllNative {
             val params = createFunction("sub64", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sub(params[0], params[1]))
             finalizeFunction()
         }
@@ -489,7 +489,7 @@ class CrossTargetCodegenExtendedTest {
     fun i64MulCompilesOnAllNative() {
         compileAllNative {
             val params = createFunction("mul64", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(mul(params[0], params[1]))
             finalizeFunction()
         }
@@ -499,7 +499,7 @@ class CrossTargetCodegenExtendedTest {
     fun i64SdivCompilesOnAllNative() {
         compileAllNative {
             val params = createFunction("sdiv64", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sdiv(params[0], params[1]))
             finalizeFunction()
         }
@@ -511,7 +511,7 @@ class CrossTargetCodegenExtendedTest {
     fun constantZeroReturnOnX86AndArm64() {
         compileX86AndArm64 {
             createFunction("zero", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I32(0))
             finalizeFunction()
         }
@@ -521,7 +521,7 @@ class CrossTargetCodegenExtendedTest {
     fun constantNegOneReturnOnX86AndArm64() {
         compileX86AndArm64 {
             createFunction("neg_one", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I32(-1))
             finalizeFunction()
         }
@@ -531,7 +531,7 @@ class CrossTargetCodegenExtendedTest {
     fun constantMaxIntReturnOnX86AndArm64() {
         compileX86AndArm64 {
             createFunction("max_int", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I32(Int.MAX_VALUE))
             finalizeFunction()
         }
@@ -541,7 +541,7 @@ class CrossTargetCodegenExtendedTest {
     fun constantMinIntReturnOnX86AndArm64() {
         compileX86AndArm64 {
             createFunction("min_int", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I32(Int.MIN_VALUE))
             finalizeFunction()
         }
@@ -553,7 +553,7 @@ class CrossTargetCodegenExtendedTest {
     fun fsubCompilesOnX86() {
         compileX86 {
             val params = createFunction("fsub_fn", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(fsub(params[0], params[1]))
             finalizeFunction()
         }
@@ -563,7 +563,7 @@ class CrossTargetCodegenExtendedTest {
     fun fsubCompilesOnArm64() {
         compileArm64 {
             val params = createFunction("fsub_fn", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(fsub(params[0], params[1]))
             finalizeFunction()
         }
@@ -575,7 +575,7 @@ class CrossTargetCodegenExtendedTest {
     fun fdivCompilesOnX86() {
         compileX86 {
             val params = createFunction("fdiv_fn", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(fdiv(params[0], params[1]))
             finalizeFunction()
         }
@@ -585,7 +585,7 @@ class CrossTargetCodegenExtendedTest {
     fun fdivCompilesOnArm64() {
         compileArm64 {
             val params = createFunction("fdiv_fn", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(fdiv(params[0], params[1]))
             finalizeFunction()
         }
@@ -597,7 +597,7 @@ class CrossTargetCodegenExtendedTest {
     fun f32AddCompilesOnX86() {
         compileX86 {
             val params = createFunction("f32add", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(fadd(params[0], params[1]))
             finalizeFunction()
         }
@@ -607,7 +607,7 @@ class CrossTargetCodegenExtendedTest {
     fun f32AddCompilesOnArm64() {
         compileArm64 {
             val params = createFunction("f32add", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(fadd(params[0], params[1]))
             finalizeFunction()
         }
@@ -617,7 +617,7 @@ class CrossTargetCodegenExtendedTest {
     fun f32MulCompilesOnX86() {
         compileX86 {
             val params = createFunction("f32mul", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(fmul(params[0], params[1]))
             finalizeFunction()
         }
@@ -627,7 +627,7 @@ class CrossTargetCodegenExtendedTest {
     fun f32MulCompilesOnArm64() {
         compileArm64 {
             val params = createFunction("f32mul", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(fmul(params[0], params[1]))
             finalizeFunction()
         }
@@ -639,12 +639,12 @@ class CrossTargetCodegenExtendedTest {
     fun functionCallCompilesOnX86() {
         val mod = buildModule(Target.x86_64()) {
             val helperParams = createFunction("helper", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(helperParams[0], Constant.I32(1)))
             finalizeFunction()
 
             val mainParams = createFunction("main_fn", listOf(Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = call("helper", listOf(mainParams[0]), Type.I32)
             ret(result!!)
             finalizeFunction()
@@ -659,12 +659,12 @@ class CrossTargetCodegenExtendedTest {
     fun functionCallCompilesOnArm64() {
         val mod = buildModule(Target.arm64()) {
             val helperParams = createFunction("helper", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(helperParams[0], Constant.I32(1)))
             finalizeFunction()
 
             val mainParams = createFunction("main_fn", listOf(Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = call("helper", listOf(mainParams[0]), Type.I32)
             ret(result!!)
             finalizeFunction()
@@ -684,7 +684,7 @@ class CrossTargetCodegenExtendedTest {
                 Param("a", Type.I32), Param("b", Type.I32), Param("c", Type.I32),
                 Param("d", Type.I32), Param("e", Type.I32), Param("f", Type.I32)
             ), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ab = add(params[0], params[1])
             val abc = add(ab, params[2])
             val abcd = add(abc, params[3])
@@ -701,7 +701,7 @@ class CrossTargetCodegenExtendedTest {
     fun emptyVoidFunctionCompilesOnAllNative() {
         compileAllNative {
             createFunction("empty", emptyList(), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret()
             finalizeFunction()
         }
@@ -713,7 +713,7 @@ class CrossTargetCodegenExtendedTest {
     fun wasmI64Add() {
         compileWasm {
             val params = createFunction("add64", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(params[0], params[1]))
             finalizeFunction()
         }
@@ -723,7 +723,7 @@ class CrossTargetCodegenExtendedTest {
     fun wasmI64Sub() {
         compileWasm {
             val params = createFunction("sub64", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sub(params[0], params[1]))
             finalizeFunction()
         }
@@ -733,7 +733,7 @@ class CrossTargetCodegenExtendedTest {
     fun wasmI64Mul() {
         compileWasm {
             val params = createFunction("mul64", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(mul(params[0], params[1]))
             finalizeFunction()
         }
@@ -745,7 +745,7 @@ class CrossTargetCodegenExtendedTest {
     fun wasmFaddF64() {
         compileWasm {
             val params = createFunction("fadd64", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(fadd(params[0], params[1]))
             finalizeFunction()
         }
@@ -755,7 +755,7 @@ class CrossTargetCodegenExtendedTest {
     fun wasmFmulF64() {
         compileWasm {
             val params = createFunction("fmul64", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(fmul(params[0], params[1]))
             finalizeFunction()
         }
@@ -767,7 +767,7 @@ class CrossTargetCodegenExtendedTest {
     fun i64UdivCompilesOnAllNative() {
         compileAllNative {
             val params = createFunction("udiv64", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(udiv(params[0], params[1]))
             finalizeFunction()
         }
@@ -777,7 +777,7 @@ class CrossTargetCodegenExtendedTest {
     fun i64ShlCompilesOnX86() {
         compileX86 {
             val params = createFunction("shl64", listOf(Param("a", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(shl(params[0], Constant.I64(4)))
             finalizeFunction()
         }
@@ -787,7 +787,7 @@ class CrossTargetCodegenExtendedTest {
     fun i64LshrCompilesOnX86() {
         compileX86 {
             val params = createFunction("lshr64", listOf(Param("a", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(lshr(params[0], Constant.I64(4)))
             finalizeFunction()
         }
@@ -797,7 +797,7 @@ class CrossTargetCodegenExtendedTest {
     fun i64AshrCompilesOnX86() {
         compileX86 {
             val params = createFunction("ashr64", listOf(Param("a", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(ashr(params[0], Constant.I64(4)))
             finalizeFunction()
         }
@@ -809,7 +809,7 @@ class CrossTargetCodegenExtendedTest {
             val params = createFunction("bitwise_chain", listOf(
                 Param("a", Type.I32), Param("b", Type.I32), Param("c", Type.I32)
             ), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ab = and(params[0], params[1])
             val result = or(ab, xor(params[1], params[2]))
             ret(result)
@@ -823,7 +823,7 @@ class CrossTargetCodegenExtendedTest {
             val params = createFunction("bitwise_chain", listOf(
                 Param("a", Type.I32), Param("b", Type.I32), Param("c", Type.I32)
             ), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ab = and(params[0], params[1])
             val result = or(ab, xor(params[1], params[2]))
             ret(result)
@@ -835,7 +835,7 @@ class CrossTargetCodegenExtendedTest {
     fun selectWithConstantsOnX86() {
         compileX86 {
             val params = createFunction("clamp_sign", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val isNeg = icmp(ICmpPredicate.SLT, params[0], Constant.I32(0))
             val result = select(isNeg, Constant.I32(0), params[0])
             ret(result)
@@ -847,7 +847,7 @@ class CrossTargetCodegenExtendedTest {
     fun selectWithConstantsOnArm64() {
         compileArm64 {
             val params = createFunction("clamp_sign", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val isNeg = icmp(ICmpPredicate.SLT, params[0], Constant.I32(0))
             val result = select(isNeg, Constant.I32(0), params[0])
             ret(result)
@@ -859,7 +859,7 @@ class CrossTargetCodegenExtendedTest {
     fun constantI64ReturnOnX86AndArm64() {
         compileX86AndArm64 {
             createFunction("big_const", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I64(0x1_0000_0000L))
             finalizeFunction()
         }
@@ -869,7 +869,7 @@ class CrossTargetCodegenExtendedTest {
     fun wasmAndOrXorI32() {
         compileWasm {
             val params = createFunction("bitops", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r1 = and(params[0], params[1])
             val r2 = or(r1, params[1])
             val result = xor(r2, params[0])
@@ -882,7 +882,7 @@ class CrossTargetCodegenExtendedTest {
     fun wasmFsubF64() {
         compileWasm {
             val params = createFunction("fsub64", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(fsub(params[0], params[1]))
             finalizeFunction()
         }
@@ -892,7 +892,7 @@ class CrossTargetCodegenExtendedTest {
     fun wasmFdivF64() {
         compileWasm {
             val params = createFunction("fdiv64", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(fdiv(params[0], params[1]))
             finalizeFunction()
         }
@@ -902,7 +902,7 @@ class CrossTargetCodegenExtendedTest {
     fun wasmConstantReturn() {
         compileWasm {
             createFunction("const42", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I32(42))
             finalizeFunction()
         }
@@ -912,17 +912,17 @@ class CrossTargetCodegenExtendedTest {
     fun diamondCfgWithArithmeticOnX86() {
         compileX86 {
             val params = createFunction("abs_diff", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cond = icmp(ICmpPredicate.SGT, params[0], params[1])
-            condBr(cond, "a_greater", "b_greater")
-            positionAtEnd(appendBlock("a_greater"))
+            condBr(cond, BlockRef("a_greater"), BlockRef("b_greater"))
+            appendBlock("a_greater")
             val diffA = sub(params[0], params[1])
-            br("done")
-            positionAtEnd(appendBlock("b_greater"))
+            br(BlockRef("done"))
+            appendBlock("b_greater")
             val diffB = sub(params[1], params[0])
-            br("done")
-            positionAtEnd(appendBlock("done"))
-            val result = phi(Type.I32, listOf(diffA to "a_greater", diffB to "b_greater"))
+            br(BlockRef("done"))
+            appendBlock("done")
+            val result = phi(Type.I32, listOf(diffA to BlockRef("a_greater"), diffB to BlockRef("b_greater")))
             ret(result)
             finalizeFunction()
         }
@@ -932,17 +932,17 @@ class CrossTargetCodegenExtendedTest {
     fun diamondCfgWithArithmeticOnArm64() {
         compileArm64 {
             val params = createFunction("abs_diff", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cond = icmp(ICmpPredicate.SGT, params[0], params[1])
-            condBr(cond, "a_greater", "b_greater")
-            positionAtEnd(appendBlock("a_greater"))
+            condBr(cond, BlockRef("a_greater"), BlockRef("b_greater"))
+            appendBlock("a_greater")
             val diffA = sub(params[0], params[1])
-            br("done")
-            positionAtEnd(appendBlock("b_greater"))
+            br(BlockRef("done"))
+            appendBlock("b_greater")
             val diffB = sub(params[1], params[0])
-            br("done")
-            positionAtEnd(appendBlock("done"))
-            val result = phi(Type.I32, listOf(diffA to "a_greater", diffB to "b_greater"))
+            br(BlockRef("done"))
+            appendBlock("done")
+            val result = phi(Type.I32, listOf(diffA to BlockRef("a_greater"), diffB to BlockRef("b_greater")))
             ret(result)
             finalizeFunction()
         }
@@ -954,7 +954,7 @@ class CrossTargetCodegenExtendedTest {
             val params = createFunction("fp_expr", listOf(
                 Param("a", Type.F64), Param("b", Type.F64), Param("c", Type.F64)
             ), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ab = fmul(params[0], params[1])
             val result = fadd(ab, params[2])
             ret(result)
@@ -968,7 +968,7 @@ class CrossTargetCodegenExtendedTest {
             val params = createFunction("fp_expr", listOf(
                 Param("a", Type.F64), Param("b", Type.F64), Param("c", Type.F64)
             ), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ab = fmul(params[0], params[1])
             val result = fadd(ab, params[2])
             ret(result)

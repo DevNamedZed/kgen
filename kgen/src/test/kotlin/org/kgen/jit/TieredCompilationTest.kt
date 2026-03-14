@@ -18,7 +18,7 @@ class TieredCompilationTest {
     private fun buildAddModule(): Module {
         val ir = IrBuilder("add_module", Target.x86_64())
         ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)
         val b = Parameter("b", Type.I64, 1)
         ir.ret(ir.add(a, b))
@@ -29,7 +29,7 @@ class TieredCompilationTest {
     private fun buildConstantModule(name: String, funcName: String, value: Long): Module {
         val ir = IrBuilder(name, Target.x86_64())
         ir.createFunction(funcName, emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I64(value))
         ir.finalizeFunction()
         return ir.build()
@@ -144,12 +144,12 @@ class TieredCompilationTest {
 
         val ir = IrBuilder("multi", Target.x86_64())
         ir.createFunction("f1", emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I64(1))
         ir.finalizeFunction()
 
         ir.createFunction("f2", emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I64(2))
         ir.finalizeFunction()
 

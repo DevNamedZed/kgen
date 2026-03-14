@@ -29,20 +29,20 @@ class LoopInvariantCodeMotionTest {
         val module = buildWithMem2Reg {
             val params = createFunction("f", listOf(
                 Param("a", Type.I32), Param("b", Type.I32), Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val iSlot = alloca(Type.I32)
             store(Constant.I32(0), iSlot)
-            br("loop")
+            br(BlockRef("loop"))
 
-            positionAtEnd(appendBlock("loop"))
+            appendBlock("loop")
             val i = load(Type.I32, iSlot)
             val invariant = add(params[0], params[1]) // loop-invariant
             val iNext = add(i, invariant)
             store(iNext, iSlot)
             val cond = icmp(ICmpPredicate.SLT, iNext, params[2])
-            condBr(cond, "loop", "exit")
+            condBr(cond, BlockRef("loop"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             val result = load(Type.I32, iSlot)
             ret(result)
             finalizeFunction()
@@ -69,19 +69,19 @@ class LoopInvariantCodeMotionTest {
     fun `does not hoist loop-variant instruction`() {
         val module = buildWithMem2Reg {
             val params = createFunction("f", listOf(Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val iSlot = alloca(Type.I32)
             store(Constant.I32(0), iSlot)
-            br("loop")
+            br(BlockRef("loop"))
 
-            positionAtEnd(appendBlock("loop"))
+            appendBlock("loop")
             val i = load(Type.I32, iSlot)
             val iNext = add(i, Constant.I32(1)) // depends on loop-variant i
             store(iNext, iSlot)
             val cond = icmp(ICmpPredicate.SLT, iNext, params[0])
-            condBr(cond, "loop", "exit")
+            condBr(cond, BlockRef("loop"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             val result = load(Type.I32, iSlot)
             ret(result)
             finalizeFunction()
@@ -101,20 +101,20 @@ class LoopInvariantCodeMotionTest {
         val module = buildWithMem2Reg {
             val params = createFunction("f", listOf(
                 Param("x", Type.I32), Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val iSlot = alloca(Type.I32)
             store(Constant.I32(0), iSlot)
-            br("loop")
+            br(BlockRef("loop"))
 
-            positionAtEnd(appendBlock("loop"))
+            appendBlock("loop")
             val i = load(Type.I32, iSlot)
             val stride = mul(params[0], Constant.I32(4)) // loop-invariant
             val iNext = add(i, stride)
             store(iNext, iSlot)
             val cond = icmp(ICmpPredicate.SLT, iNext, params[1])
-            condBr(cond, "loop", "exit")
+            condBr(cond, BlockRef("loop"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             val result = load(Type.I32, iSlot)
             ret(result)
             finalizeFunction()
@@ -132,7 +132,7 @@ class LoopInvariantCodeMotionTest {
     fun `no change for function without loops`() {
         val module = buildModule {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = add(params[0], Constant.I32(1))
             ret(result)
             finalizeFunction()
@@ -158,21 +158,21 @@ class LoopInvariantCodeMotionTest {
         val module = buildWithMem2Reg {
             val params = createFunction("f", listOf(
                 Param("a", Type.I32), Param("b", Type.I32), Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val iSlot = alloca(Type.I32)
             store(Constant.I32(0), iSlot)
-            br("loop")
+            br(BlockRef("loop"))
 
-            positionAtEnd(appendBlock("loop"))
+            appendBlock("loop")
             val i = load(Type.I32, iSlot)
             val sum = add(params[0], params[1])   // invariant
             val doubled = mul(sum, Constant.I32(2)) // invariant (depends on invariant)
             val iNext = add(i, doubled)
             store(iNext, iSlot)
             val cond = icmp(ICmpPredicate.SLT, iNext, params[2])
-            condBr(cond, "loop", "exit")
+            condBr(cond, BlockRef("loop"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             val result = load(Type.I32, iSlot)
             ret(result)
             finalizeFunction()
@@ -193,20 +193,20 @@ class LoopInvariantCodeMotionTest {
         val module = buildWithMem2Reg {
             declareFunction("side_effect", listOf(Param("x", Type.I32)), Type.I32)
             val params = createFunction("f", listOf(Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val iSlot = alloca(Type.I32)
             store(Constant.I32(0), iSlot)
-            br("loop")
+            br(BlockRef("loop"))
 
-            positionAtEnd(appendBlock("loop"))
+            appendBlock("loop")
             val i = load(Type.I32, iSlot)
             call("side_effect", listOf(Constant.I32(42)), Type.I32)
             val iNext = add(i, Constant.I32(1))
             store(iNext, iSlot)
             val cond = icmp(ICmpPredicate.SLT, iNext, params[0])
-            condBr(cond, "loop", "exit")
+            condBr(cond, BlockRef("loop"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             val result = load(Type.I32, iSlot)
             ret(result)
             finalizeFunction()
@@ -228,20 +228,20 @@ class LoopInvariantCodeMotionTest {
         val module = buildWithMem2Reg {
             val params = createFunction("f", listOf(
                 Param("ptr", Type.Pointer(Type.I32)), Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val iSlot = alloca(Type.I32)
             store(Constant.I32(0), iSlot)
-            br("loop")
+            br(BlockRef("loop"))
 
-            positionAtEnd(appendBlock("loop"))
+            appendBlock("loop")
             val i = load(Type.I32, iSlot)
             val loaded = load(Type.I32, params[0])
             val iNext = add(i, loaded)
             store(iNext, iSlot)
             val cond = icmp(ICmpPredicate.SLT, iNext, params[1])
-            condBr(cond, "loop", "exit")
+            condBr(cond, BlockRef("loop"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             val result = load(Type.I32, iSlot)
             ret(result)
             finalizeFunction()

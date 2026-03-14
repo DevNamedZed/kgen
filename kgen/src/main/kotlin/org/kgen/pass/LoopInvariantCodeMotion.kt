@@ -111,7 +111,7 @@ class LoopInvariantCodeMotion : ModulePass {
         }
 
         // Create preheader block: hoisted instructions + br to header
-        val preheader = BasicBlock(preheaderLabel, hoistedInsts + Br(header))
+        val preheader = BasicBlock(preheaderLabel, hoistedInsts + Br(BlockRef(header)))
 
         // Redirect external predecessors to preheader
         val result = mutableListOf<BasicBlock>()
@@ -137,7 +137,7 @@ class LoopInvariantCodeMotion : ModulePass {
             val newInsts = block.instructions.map { inst ->
                 if (inst !is Phi) return@map inst
                 val newIncoming = inst.incoming.map { (value, pred) ->
-                    if (pred in extPredSet) value to preheaderLabel
+                    if (pred.label in extPredSet) value to BlockRef(preheaderLabel)
                     else value to pred
                 }
                 Phi(inst.dest, newIncoming)
@@ -150,31 +150,22 @@ class LoopInvariantCodeMotion : ModulePass {
         inst: Instruction,
         loopStores: List<Instruction>,
         aa: AliasAnalysis,
-    ): Boolean = when (inst) {
-        // Pure computation instructions can always be hoisted
-        is Add, is Sub, is Mul,
-        is SDiv, is UDiv, is SRem, is URem,
-        is And, is Or, is Xor,
-        is Shl, is LShr, is AShr,
-        is ICmp, is Neg,
-        is ZExt, is SExt, is Trunc, is IntTrunc,
-        is FAdd, is FSub, is FMul, is FDiv,
-        is FNeg, is FCmp,
-        is SIToFP, is UIToFP, is FPToSI, is FPToUI,
-        is FPTrunc, is FPExt,
-        is Select, is GetElementPtr -> true
-
-        // Loads can be hoisted if they don't alias any memory write in the loop
-        is Load -> {
-            !inst.volatile && loopStores.all { store ->
+    ): Boolean {
+        if (inst is Phi) {
+            return false
+        }
+        val effects = inst.effects
+        if (effects.hasSideEffects() || effects.writesMemory() || effects.isTerminator()
+            || effects.isCall() || effects.isBarrier() || effects.isSafepoint()) {
+            return false
+        }
+        if (effects.readsMemory() && inst is Load) {
+            return !inst.volatile && loopStores.all { store ->
                 val storePtr = aa.memoryPointer(store)
-                // If we can't determine the write target (e.g., calls), assume it may alias
                 storePtr != null && aa.alias(inst.ptr, storePtr) == AliasResult.NoAlias
             }
         }
-
-        // Cannot hoist: stores, calls, branches, phis, allocas
-        else -> false
+        return !effects.readsMemory()
     }
 
     private fun allOperandsInvariant(
@@ -182,7 +173,7 @@ class LoopInvariantCodeMotion : ModulePass {
         loopDefs: Set<String>,
         invariant: Set<String>,
     ): Boolean {
-        for (operand in operands(inst)) {
+        for (operand in inst.operands) {
             if (operand is Constant) continue
             if (operand is GlobalRef) continue
             if (operand is FunctionRef) continue
@@ -196,57 +187,19 @@ class LoopInvariantCodeMotion : ModulePass {
         return true
     }
 
-    private fun operands(inst: Instruction): List<Value> = when (inst) {
-        is Add -> listOf(inst.lhs, inst.rhs)
-        is Sub -> listOf(inst.lhs, inst.rhs)
-        is Mul -> listOf(inst.lhs, inst.rhs)
-        is SDiv -> listOf(inst.lhs, inst.rhs)
-        is UDiv -> listOf(inst.lhs, inst.rhs)
-        is SRem -> listOf(inst.lhs, inst.rhs)
-        is URem -> listOf(inst.lhs, inst.rhs)
-        is And -> listOf(inst.lhs, inst.rhs)
-        is Or -> listOf(inst.lhs, inst.rhs)
-        is Xor -> listOf(inst.lhs, inst.rhs)
-        is Shl -> listOf(inst.lhs, inst.rhs)
-        is LShr -> listOf(inst.lhs, inst.rhs)
-        is AShr -> listOf(inst.lhs, inst.rhs)
-        is ICmp -> listOf(inst.lhs, inst.rhs)
-        is Neg -> listOf(inst.operand)
-        is ZExt -> listOf(inst.value)
-        is SExt -> listOf(inst.value)
-        is Trunc -> listOf(inst.operand)
-        is IntTrunc -> listOf(inst.value)
-        is FAdd -> listOf(inst.lhs, inst.rhs)
-        is FSub -> listOf(inst.lhs, inst.rhs)
-        is FMul -> listOf(inst.lhs, inst.rhs)
-        is FDiv -> listOf(inst.lhs, inst.rhs)
-        is FNeg -> listOf(inst.operand)
-        is FCmp -> listOf(inst.lhs, inst.rhs)
-        is SIToFP -> listOf(inst.value)
-        is UIToFP -> listOf(inst.value)
-        is FPToSI -> listOf(inst.value)
-        is FPToUI -> listOf(inst.value)
-        is FPTrunc -> listOf(inst.value)
-        is FPExt -> listOf(inst.value)
-        is Select -> listOf(inst.condition, inst.trueValue, inst.falseValue)
-        is GetElementPtr -> listOf(inst.ptr) + inst.indices
-        is Load -> listOf(inst.ptr)
-        else -> emptyList()
-    }
-
     private fun redirectTerminator(block: BasicBlock, from: String, to: String): BasicBlock {
         val last = block.instructions.lastOrNull() ?: return block
         val newLast = when (last) {
-            is Br -> if (last.target == from) Br(to) else last
+            is Br -> if (last.target.label == from) Br(BlockRef(to)) else last
             is CondBr -> CondBr(
                 last.condition,
-                if (last.trueTarget == from) to else last.trueTarget,
-                if (last.falseTarget == from) to else last.falseTarget,
+                if (last.trueTarget.label == from) BlockRef(to) else last.trueTarget,
+                if (last.falseTarget.label == from) BlockRef(to) else last.falseTarget,
             )
             is Switch -> Switch(
                 last.value,
-                if (last.defaultTarget == from) to else last.defaultTarget,
-                last.cases.map { (c, t) -> c to (if (t == from) to else t) },
+                if (last.defaultTarget.label == from) BlockRef(to) else last.defaultTarget,
+                last.cases.map { (c, t) -> c to (if (t.label == from) BlockRef(to) else t) },
             )
             else -> last
         }
@@ -283,10 +236,10 @@ class LoopInvariantCodeMotion : ModulePass {
     }
 
     private fun terminatorTargets(inst: Instruction): List<String> = when (inst) {
-        is Br -> listOf(inst.target)
-        is CondBr -> listOf(inst.trueTarget, inst.falseTarget)
-        is Switch -> listOf(inst.defaultTarget) + inst.cases.map { it.second }
-        is IndirectBr -> inst.targets
+        is Br -> listOf(inst.target.label)
+        is CondBr -> listOf(inst.trueTarget.label, inst.falseTarget.label)
+        is Switch -> listOf(inst.defaultTarget.label) + inst.cases.map { it.second.label }
+        is IndirectBr -> inst.targets.map { it.label }
         else -> emptyList()
     }
 

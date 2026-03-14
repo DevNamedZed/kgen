@@ -41,7 +41,7 @@ class NativeCodeTest {
 
         val params = ir.createFunction("add3",
             listOf(Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val ab = ir.add(params[0], params[1])
         ir.ret(ir.add(ab, params[2]))
         ir.finalizeFunction()
@@ -60,12 +60,12 @@ class NativeCodeTest {
         if (isWindows) ir.targetTriple = "x86_64-unknown-windows-msvc"
 
         val addParams = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.add(addParams[0], addParams[1]))
         ir.finalizeFunction()
 
         val subParams = ir.createFunction("sub", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.sub(subParams[0], subParams[1]))
         ir.finalizeFunction()
 

@@ -83,13 +83,13 @@ class NativeLibraryEndToEndTest {
         val ir = IrBuilder("header_test", Target.x86_64())
         val p = ir.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32,
             linkage = Linkage.EXTERNAL)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.add(p[0], p[1]))
         ir.finalizeFunction()
 
         ir.createFunction("negate", listOf(Param("x", Type.I32)), Type.I32,
             linkage = Linkage.EXTERNAL)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.sub(Constant.I32(0), Parameter("x", Type.I32, 0)))
         ir.finalizeFunction()
 

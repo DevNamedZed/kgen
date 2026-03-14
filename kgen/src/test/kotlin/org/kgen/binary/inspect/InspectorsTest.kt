@@ -16,7 +16,7 @@ class InspectorsTest {
     private fun buildSimpleModule(): Module {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("noop", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret()
         ir.finalizeFunction()
         return ir.build()
@@ -30,7 +30,7 @@ class InspectorsTest {
             linkage = Linkage.INTERNAL)
         ir.declareFunction("puts", listOf(Param("s", Type.OpaquePointer)), Type.I32)
         ir.createFunction("main", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.call("puts", listOf(strRef), Type.I32)
         ir.ret(Constant.I32(0))
         ir.finalizeFunction()

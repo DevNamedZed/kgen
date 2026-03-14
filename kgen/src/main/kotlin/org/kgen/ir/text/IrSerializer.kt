@@ -219,6 +219,7 @@ class IrSerializer {
             is InstructionRef -> { out.writeByte(V_INST_REF); writeString(out, v.name); writeType(out, v.type) }
             is GlobalRef -> { out.writeByte(V_GLOBAL_REF); writeString(out, v.name); writeType(out, v.type) }
             is FunctionRef -> { out.writeByte(V_FUNC_REF); writeString(out, v.name); writeType(out, v.type) as Unit }
+            is DefinedFunction -> { out.writeByte(V_FUNC_REF); writeString(out, v.name); writeType(out, v.type) as Unit }
             is BlockRef -> { out.writeByte(V_BLOCK_REF); writeString(out, v.label) }
             is Constant -> { out.writeByte(V_CONSTANT); writeConstant(out, v) }
         }
@@ -355,7 +356,7 @@ class IrSerializer {
             is Ceil -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
             is Floor -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
             is Round -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
-            is Trunc -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
+            is FTrunc -> { writeValue(out, inst.dest); writeValue(out, inst.operand) }
             is CopySign -> { writeValue(out, inst.dest); writeValue(out, inst.magnitude); writeValue(out, inst.sign) }
 
             is And -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs) }
@@ -365,8 +366,6 @@ class IrSerializer {
             is Shl -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); out.writeBoolean(inst.nuw); out.writeBoolean(inst.nsw) }
             is LShr -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); out.writeBoolean(inst.exact) }
             is AShr -> { writeValue(out, inst.dest); writeValue(out, inst.lhs); writeValue(out, inst.rhs); out.writeBoolean(inst.exact) }
-            is RotateLeft -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeValue(out, inst.amount) }
-            is RotateRight -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeValue(out, inst.amount) }
             is Rotl -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeValue(out, inst.amount) }
             is Rotr -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeValue(out, inst.amount) }
 
@@ -411,10 +410,10 @@ class IrSerializer {
             is AddrSpaceCast -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.toType) }
 
             is Ret -> writeNullableValue(out, inst.value)
-            is Br -> writeString(out, inst.target)
-            is CondBr -> { writeValue(out, inst.condition); writeString(out, inst.trueTarget); writeString(out, inst.falseTarget) }
-            is Switch -> { writeValue(out, inst.value); writeString(out, inst.defaultTarget); writeList(out, inst.cases) { writeConstant(out, it.first); writeString(out, it.second) } }
-            is IndirectBr -> { writeValue(out, inst.address); writeList(out, inst.targets) { writeString(out, it) } }
+            is Br -> writeString(out, inst.target.label)
+            is CondBr -> { writeValue(out, inst.condition); writeString(out, inst.trueTarget.label); writeString(out, inst.falseTarget.label) }
+            is Switch -> { writeValue(out, inst.value); writeString(out, inst.defaultTarget.label); writeList(out, inst.cases) { writeConstant(out, it.first); writeString(out, it.second.label) } }
+            is IndirectBr -> { writeValue(out, inst.address); writeList(out, inst.targets) { writeString(out, it.label) } }
             is Unreachable -> {}
             is Trap -> {}
             is DebugTrap -> {}
@@ -425,11 +424,11 @@ class IrSerializer {
             }
             is Invoke -> {
                 writeNullableValue(out, inst.dest); writeValue(out, inst.function); writeList(out, inst.args) { writeValue(out, it) }
-                writeType(out, inst.returnType); writeString(out, inst.normalDest); writeString(out, inst.unwindDest); out.writeInt(inst.callingConv.ordinal)
+                writeType(out, inst.returnType); writeString(out, inst.normalDest.label); writeString(out, inst.unwindDest.label); out.writeInt(inst.callingConv.ordinal)
             }
             is CallBr -> {
                 writeNullableValue(out, inst.dest); writeValue(out, inst.function); writeList(out, inst.args) { writeValue(out, it) }
-                writeType(out, inst.returnType); writeString(out, inst.fallthrough); writeList(out, inst.indirectDests) { writeString(out, it) }
+                writeType(out, inst.returnType); writeString(out, inst.fallthrough.label); writeList(out, inst.indirectDests) { writeString(out, it.label) }
             }
 
             is VAStart -> writeValue(out, inst.argList)
@@ -439,13 +438,13 @@ class IrSerializer {
 
             is LandingPad -> { writeValue(out, inst.dest); writeType(out, inst.resultType); writeList(out, inst.clauses) { writeLandingPadClause(out, it) }; out.writeBoolean(inst.cleanup) }
             is Resume -> writeValue(out, inst.value)
-            is CatchSwitch -> { writeValue(out, inst.dest); writeNullableValue(out, inst.parentPad); writeList(out, inst.handlers) { writeString(out, it) }; writeNullableString(out, inst.unwindDest) }
+            is CatchSwitch -> { writeValue(out, inst.dest); writeNullableValue(out, inst.parentPad); writeList(out, inst.handlers) { writeString(out, it.label) }; writeNullableString(out, inst.unwindDest?.label) }
             is CatchPad -> { writeValue(out, inst.dest); writeValue(out, inst.catchSwitch); writeList(out, inst.args) { writeValue(out, it) } }
             is CleanupPad -> { writeValue(out, inst.dest); writeNullableValue(out, inst.parentPad); writeList(out, inst.args) { writeValue(out, it) } }
-            is CatchRet -> { writeValue(out, inst.catchPad); writeString(out, inst.dest) }
-            is CleanupRet -> { writeValue(out, inst.cleanupPad); writeNullableString(out, inst.unwindDest) }
+            is CatchRet -> { writeValue(out, inst.catchPad); writeString(out, inst.dest.label) }
+            is CleanupRet -> { writeValue(out, inst.cleanupPad); writeNullableString(out, inst.unwindDest?.label) }
 
-            is Phi -> { writeValue(out, inst.dest); writeList(out, inst.incoming) { writeValue(out, it.first); writeString(out, it.second) } }
+            is Phi -> { writeValue(out, inst.dest); writeList(out, inst.incoming) { writeValue(out, it.first); writeString(out, it.second.label) } }
             is Select -> { writeValue(out, inst.dest); writeValue(out, inst.condition); writeValue(out, inst.trueValue); writeValue(out, inst.falseValue) }
             is Freeze -> { writeValue(out, inst.dest); writeValue(out, inst.value) }
 
@@ -487,7 +486,7 @@ class IrSerializer {
             is MonitorExit -> writeValue(out, inst.obj)
 
             is Throw -> writeValue(out, inst.exception)
-            is TryCatchRegion -> { writeString(out, inst.tryBlock); writeList(out, inst.catches) { writeCatchHandler(out, it) }; writeNullableString(out, inst.finallyBlock) }
+            is TryCatchRegion -> { writeString(out, inst.tryBlock.label); writeList(out, inst.catches) { writeCatchHandler(out, it) }; writeNullableString(out, inst.finallyBlock?.label) }
 
             is Box -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeType(out, inst.boxType) }
             is Unbox -> { writeValue(out, inst.dest); writeValue(out, inst.obj); writeType(out, inst.unboxType) }
@@ -503,7 +502,7 @@ class IrSerializer {
             is ConstructVariant -> { writeValue(out, inst.dest); writeType(out, inst.unionType); writeString(out, inst.variantName); writeList(out, inst.fields) { writeValue(out, it) } }
             is GetTag -> { writeValue(out, inst.dest); writeValue(out, inst.union) }
             is GetVariantField -> { writeValue(out, inst.dest); writeValue(out, inst.union); writeString(out, inst.variantName); out.writeInt(inst.fieldIndex) }
-            is TagSwitch -> { writeValue(out, inst.union); writeList(out, inst.cases) { writeString(out, it.first); writeString(out, it.second) }; writeNullableString(out, inst.defaultTarget) }
+            is TagSwitch -> { writeValue(out, inst.union); writeList(out, inst.cases) { writeString(out, it.first); writeString(out, it.second.label) }; writeNullableString(out, inst.defaultTarget?.label) }
 
             is GCAlloc -> { writeValue(out, inst.dest); writeType(out, inst.allocType); writeNullableValue(out, inst.size) }
             is GCSafepoint -> {}
@@ -535,6 +534,7 @@ class IrSerializer {
 
             is Assume -> writeValue(out, inst.condition)
             is Expect -> { writeValue(out, inst.dest); writeValue(out, inst.value); writeConstant(out, inst.expected) }
+            else -> throw IllegalArgumentException("Unsupported instruction: ${inst.javaClass.simpleName}")
         }
     }
 
@@ -580,7 +580,7 @@ class IrSerializer {
         I_CEIL -> Ceil(readValue(inp) as InstructionRef, readValue(inp))
         I_FLOOR -> Floor(readValue(inp) as InstructionRef, readValue(inp))
         I_ROUND -> Round(readValue(inp) as InstructionRef, readValue(inp))
-        I_FTRUNC -> Trunc(readValue(inp) as InstructionRef, readValue(inp))
+        I_FTRUNC -> FTrunc(readValue(inp) as InstructionRef, readValue(inp))
         I_COPYSIGN -> CopySign(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
 
         I_AND -> And(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
@@ -590,10 +590,8 @@ class IrSerializer {
         I_SHL -> Shl(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), inp.readBoolean(), inp.readBoolean())
         I_LSHR -> LShr(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), inp.readBoolean())
         I_ASHR -> AShr(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), inp.readBoolean())
-        I_ROTL -> RotateLeft(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_ROTR -> RotateRight(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_ROTL2 -> Rotl(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
-        I_ROTR2 -> Rotr(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_ROTL -> Rotl(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
+        I_ROTR -> Rotr(readValue(inp) as InstructionRef, readValue(inp), readValue(inp))
 
         I_CTLZ -> Ctlz(readValue(inp) as InstructionRef, readValue(inp), inp.readBoolean())
         I_CTTZ -> Cttz(readValue(inp) as InstructionRef, readValue(inp), inp.readBoolean())
@@ -636,17 +634,17 @@ class IrSerializer {
         I_ADDRSPACECAST -> AddrSpaceCast(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
 
         I_RET -> Ret(readNullableValue(inp))
-        I_BR -> Br(readString(inp))
-        I_CONDBR -> CondBr(readValue(inp), readString(inp), readString(inp))
-        I_SWITCH -> Switch(readValue(inp), readString(inp), readList(inp) { readConstant(inp) to readString(inp) })
-        I_INDIRECTBR -> IndirectBr(readValue(inp), readList(inp) { readString(inp) })
+        I_BR -> Br(BlockRef(readString(inp)))
+        I_CONDBR -> CondBr(readValue(inp), BlockRef(readString(inp)), BlockRef(readString(inp)))
+        I_SWITCH -> Switch(readValue(inp), BlockRef(readString(inp)), readList(inp) { readConstant(inp) to BlockRef(readString(inp)) })
+        I_INDIRECTBR -> IndirectBr(readValue(inp), readList(inp) { BlockRef(readString(inp)) })
         I_UNREACHABLE -> Unreachable()
         I_TRAP -> Trap()
         I_DEBUGTRAP -> DebugTrap()
 
         I_CALL -> Call(readNullableValue(inp) as InstructionRef?, readValue(inp), readList(inp) { readValue(inp) }, readType(inp), CallingConvention.entries[inp.readInt()], TailCallKind.entries[inp.readInt()])
-        I_INVOKE -> { val d = readNullableValue(inp) as InstructionRef?; val f = readValue(inp); val a = readList(inp) { readValue(inp) }; val rt = readType(inp); Invoke(d, f, a, rt, readString(inp), readString(inp), CallingConvention.entries[inp.readInt()]) }
-        I_CALLBR -> { val d = readNullableValue(inp) as InstructionRef?; val f = readValue(inp); val a = readList(inp) { readValue(inp) }; val rt = readType(inp); CallBr(d, f, a, rt, readString(inp), readList(inp) { readString(inp) }) }
+        I_INVOKE -> { val d = readNullableValue(inp) as InstructionRef?; val f = readValue(inp); val a = readList(inp) { readValue(inp) }; val rt = readType(inp); Invoke(d, f, a, rt, BlockRef(readString(inp)), BlockRef(readString(inp)), CallingConvention.entries[inp.readInt()]) }
+        I_CALLBR -> { val d = readNullableValue(inp) as InstructionRef?; val f = readValue(inp); val a = readList(inp) { readValue(inp) }; val rt = readType(inp); CallBr(d, f, a, rt, BlockRef(readString(inp)), readList(inp) { BlockRef(readString(inp)) }) }
 
         I_VASTART -> VAStart(readValue(inp))
         I_VAEND -> VAEnd(readValue(inp))
@@ -655,13 +653,13 @@ class IrSerializer {
 
         I_LANDINGPAD -> { val d = readValue(inp) as InstructionRef; val rt = readType(inp); LandingPad(d, rt, readList(inp) { readLandingPadClause(inp) }, inp.readBoolean()) }
         I_RESUME -> Resume(readValue(inp))
-        I_CATCHSWITCH -> CatchSwitch(readValue(inp) as InstructionRef, readNullableValue(inp), readList(inp) { readString(inp) }, readNullableString(inp))
+        I_CATCHSWITCH -> CatchSwitch(readValue(inp) as InstructionRef, readNullableValue(inp), readList(inp) { BlockRef(readString(inp)) }, readNullableString(inp)?.let { BlockRef(it) })
         I_CATCHPAD -> CatchPad(readValue(inp) as InstructionRef, readValue(inp), readList(inp) { readValue(inp) })
         I_CLEANUPPAD -> CleanupPad(readValue(inp) as InstructionRef, readNullableValue(inp), readList(inp) { readValue(inp) })
-        I_CATCHRET -> CatchRet(readValue(inp), readString(inp))
-        I_CLEANUPRET -> CleanupRet(readValue(inp), readNullableString(inp))
+        I_CATCHRET -> CatchRet(readValue(inp), BlockRef(readString(inp)))
+        I_CLEANUPRET -> CleanupRet(readValue(inp), readNullableString(inp)?.let { BlockRef(it) })
 
-        I_PHI -> Phi(readValue(inp) as InstructionRef, readList(inp) { readValue(inp) to readString(inp) })
+        I_PHI -> Phi(readValue(inp) as InstructionRef, readList(inp) { readValue(inp) to BlockRef(readString(inp)) })
         I_SELECT -> Select(readValue(inp) as InstructionRef, readValue(inp), readValue(inp), readValue(inp))
         I_FREEZE -> Freeze(readValue(inp) as InstructionRef, readValue(inp))
 
@@ -702,7 +700,7 @@ class IrSerializer {
         I_MONITOREXIT -> MonitorExit(readValue(inp))
 
         I_THROW -> Throw(readValue(inp))
-        I_TRYCATCH -> TryCatchRegion(readString(inp), readList(inp) { readCatchHandler(inp) }, readNullableString(inp))
+        I_TRYCATCH -> TryCatchRegion(BlockRef(readString(inp)), readList(inp) { readCatchHandler(inp) }, readNullableString(inp)?.let { BlockRef(it) })
 
         I_BOX -> Box(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
         I_UNBOX -> Unbox(readValue(inp) as InstructionRef, readValue(inp), readType(inp))
@@ -718,7 +716,7 @@ class IrSerializer {
         I_CONSTRUCT_VARIANT -> ConstructVariant(readValue(inp) as InstructionRef, readType(inp) as Type.TaggedUnion, readString(inp), readList(inp) { readValue(inp) })
         I_GETTAG -> GetTag(readValue(inp) as InstructionRef, readValue(inp))
         I_GETVARIANTFIELD -> GetVariantField(readValue(inp) as InstructionRef, readValue(inp), readString(inp), inp.readInt())
-        I_TAGSWITCH -> TagSwitch(readValue(inp), readList(inp) { readString(inp) to readString(inp) }, readNullableString(inp))
+        I_TAGSWITCH -> TagSwitch(readValue(inp), readList(inp) { readString(inp) to BlockRef(readString(inp)) }, readNullableString(inp)?.let { BlockRef(it) })
 
         I_GCALLOC -> GCAlloc(readValue(inp) as InstructionRef, readType(inp), readNullableValue(inp))
         I_GCSAFEPOINT -> GCSafepoint()
@@ -1026,11 +1024,10 @@ class IrSerializer {
         is FAbs -> I_FABS; is FMA -> I_FMA
         is FMin -> I_FMIN; is FMax -> I_FMAX
         is Sqrt -> I_SQRT; is Ceil -> I_CEIL; is Floor -> I_FLOOR
-        is Round -> I_ROUND; is Trunc -> I_FTRUNC; is CopySign -> I_COPYSIGN
+        is Round -> I_ROUND; is FTrunc -> I_FTRUNC; is CopySign -> I_COPYSIGN
         is And -> I_AND; is Or -> I_OR; is Xor -> I_XOR; is Not -> I_NOT
         is Shl -> I_SHL; is LShr -> I_LSHR; is AShr -> I_ASHR
-        is RotateLeft -> I_ROTL; is RotateRight -> I_ROTR
-        is Rotl -> I_ROTL2; is Rotr -> I_ROTR2
+        is Rotl -> I_ROTL; is Rotr -> I_ROTR
         is Ctlz -> I_CTLZ; is Cttz -> I_CTTZ; is Ctpop -> I_CTPOP
         is BSwap -> I_BSWAP; is BitReverse -> I_BITREVERSE
         is ICmp -> I_ICMP; is FCmp -> I_FCMP
@@ -1087,6 +1084,7 @@ class IrSerializer {
         is Intrinsic -> I_INTRINSIC; is InlineAsm -> I_INLINEASM
         is DebugLoc -> I_DEBUGLOC; is DebugValue -> I_DEBUGVALUE; is DebugDeclare -> I_DEBUGDECLARE
         is Assume -> I_ASSUME; is Expect -> I_EXPECT
+        else -> throw IllegalArgumentException("Unsupported instruction: ${inst.javaClass.simpleName}")
     }
 
     companion object {
@@ -1180,7 +1178,6 @@ class IrSerializer {
         private const val I_ASSUME = 163; private const val I_EXPECT = 164
         private const val I_PIN = 165; private const val I_UNPIN = 166; private const val I_INTERIOR_PTR = 167
         private const val I_WRITE_BARRIER = 168; private const val I_READ_BARRIER = 169; private const val I_MANAGED_CALL = 170
-        private const val I_ROTL2 = 171; private const val I_ROTR2 = 172
         private const val I_CATCHVALUE = 173; private const val I_MAKEWEAKREF = 174
         private const val I_READWEAKREF = 175; private const val I_CLEARWEAKREF = 176
     }

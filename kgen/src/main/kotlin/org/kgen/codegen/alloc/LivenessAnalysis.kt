@@ -66,7 +66,7 @@ class LivenessAnalysis(private val fn: IrFunction) {
                     defs[result.name] = instIdx
                     types[result.name] = result.type
                 }
-                for (use in operandValues(inst)) {
+                for (use in inst.operands) {
                     val name = use.name
                     if (name in defs || name in types) {
                         lastUses[name] = instIdx
@@ -88,7 +88,7 @@ class LivenessAnalysis(private val fn: IrFunction) {
                 if (inst !is Phi) break
                 val destName = inst.dest.name
                 for ((value, predLabel) in inst.incoming) {
-                    val predIdx = blockLabelToIndex[predLabel] ?: continue
+                    val predIdx = blockLabelToIndex[predLabel.label] ?: continue
                     if (predIdx <= blockIdx) continue // forward edge — already handled by pass 1
                     val predEnd = blockEndPos[predIdx] ?: continue
                     // Extend incoming value's live range to back-edge predecessor block end
@@ -115,8 +115,8 @@ class LivenessAnalysis(private val fn: IrFunction) {
         for ((blockIdx, block) in fn.blocks.withIndex()) {
             val lastInst = block.instructions.lastOrNull() ?: continue
             val targets: List<String> = when (lastInst) {
-                is Br -> listOf(lastInst.target)
-                is CondBr -> listOf(lastInst.trueTarget, lastInst.falseTarget)
+                is Br -> listOf(lastInst.target.label)
+                is CondBr -> listOf(lastInst.trueTarget.label, lastInst.falseTarget.label)
                 else -> emptyList()
             }
             for (target in targets) {
@@ -198,9 +198,9 @@ class LivenessAnalysis(private val fn: IrFunction) {
             fun successors(block: BasicBlock): List<String> {
                 val last = block.instructions.lastOrNull() ?: return emptyList()
                 return when (last) {
-                    is Br -> listOf(last.target)
-                    is CondBr -> listOf(last.trueTarget, last.falseTarget)
-                    is Switch -> listOf(last.defaultTarget) + last.cases.map { it.second }
+                    is Br -> listOf(last.target.label)
+                    is CondBr -> listOf(last.trueTarget.label, last.falseTarget.label)
+                    is Switch -> listOf(last.defaultTarget.label) + last.cases.map { it.second.label }
                     else -> emptyList()
                 }
             }
@@ -226,70 +226,14 @@ class LivenessAnalysis(private val fn: IrFunction) {
             return postOrder
         }
         /**
-         * Extract operand values from an instruction.
+         * Extract operand values from an instruction, filtered to only [Parameter]
+         * and [InstructionRef] values (excludes constants, globals, function refs).
+         *
+         * Delegates to [Instruction.operands] and filters by value type.
          */
         @JvmStatic
         fun operandValues(inst: Instruction): List<Value> {
-            val values = mutableListOf<Value>()
-            fun add(v: Value) {
-                if (v is Parameter || v is InstructionRef) values.add(v)
-            }
-            when (inst) {
-                is Add -> { add(inst.lhs); add(inst.rhs) }
-                is Sub -> { add(inst.lhs); add(inst.rhs) }
-                is Mul -> { add(inst.lhs); add(inst.rhs) }
-                is And -> { add(inst.lhs); add(inst.rhs) }
-                is Or -> { add(inst.lhs); add(inst.rhs) }
-                is Xor -> { add(inst.lhs); add(inst.rhs) }
-                is ICmp -> { add(inst.lhs); add(inst.rhs) }
-                is Ret -> inst.value?.let { add(it) }
-                is Call -> inst.args.forEach { add(it) }
-                is GetElementPtr -> { add(inst.ptr); inst.indices.forEach { add(it) } }
-                is Neg -> add(inst.operand)
-                is Not -> add(inst.operand)
-                is Shl -> { add(inst.lhs); add(inst.rhs) }
-                is LShr -> { add(inst.lhs); add(inst.rhs) }
-                is AShr -> { add(inst.lhs); add(inst.rhs) }
-                is UDiv -> { add(inst.lhs); add(inst.rhs) }
-                is SDiv -> { add(inst.lhs); add(inst.rhs) }
-                is URem -> { add(inst.lhs); add(inst.rhs) }
-                is SRem -> { add(inst.lhs); add(inst.rhs) }
-                is ZExt -> add(inst.value)
-                is SExt -> add(inst.value)
-                is Trunc -> add(inst.operand)
-                is IntTrunc -> add(inst.value)
-                is PtrToInt -> add(inst.value)
-                is IntToPtr -> add(inst.value)
-                is BitCast -> add(inst.value)
-                is Alloca -> inst.numElements?.let { add(it) }
-                is Load -> add(inst.ptr)
-                is Store -> { add(inst.value); add(inst.ptr) }
-                is Select -> { add(inst.condition); add(inst.trueValue); add(inst.falseValue) }
-                is Phi -> inst.incoming.forEach { add(it.first) }
-                is CondBr -> add(inst.condition)
-                is Switch -> add(inst.value)
-                is Br -> {}
-                is FAdd -> { add(inst.lhs); add(inst.rhs) }
-                is FSub -> { add(inst.lhs); add(inst.rhs) }
-                is FMul -> { add(inst.lhs); add(inst.rhs) }
-                is FDiv -> { add(inst.lhs); add(inst.rhs) }
-                is FNeg -> add(inst.operand)
-                is FCmp -> { add(inst.lhs); add(inst.rhs) }
-                is SIToFP -> add(inst.value)
-                is UIToFP -> add(inst.value)
-                is FPToUI -> add(inst.value)
-                is FPToSI -> add(inst.value)
-                is FPTrunc -> add(inst.value)
-                is FPExt -> add(inst.value)
-                is ExtractValue -> add(inst.aggregate)
-                is InsertValue -> { add(inst.aggregate); add(inst.element) }
-                is VAStart -> add(inst.argList)
-                is VAEnd -> add(inst.argList)
-                is VACopy -> { add(inst.dst); add(inst.src) }
-                is VAArg -> add(inst.argList)
-                else -> {}
-            }
-            return values
+            return inst.operands.filter { it is Parameter || it is InstructionRef }
         }
     }
 }

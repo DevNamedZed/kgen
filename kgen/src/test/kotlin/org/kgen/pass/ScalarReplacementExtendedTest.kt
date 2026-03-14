@@ -22,7 +22,7 @@ class ScalarReplacementExtendedTest {
         val tripleType = Type.Struct(null, listOf(Type.I32, Type.I32, Type.I32))
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(tripleType)
             val f0 = gep(tripleType, ptr, Constant.I32(0), Constant.I32(0))
             store(Constant.I32(1), f0)
@@ -45,7 +45,7 @@ class ScalarReplacementExtendedTest {
         val mixedType = Type.Struct(null, listOf(Type.I32, Type.I64, Type.F64))
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(mixedType)
             val f1 = gep(mixedType, ptr, Constant.I32(0), Constant.I32(1))
             store(Constant.I64(999L), f1)
@@ -65,7 +65,7 @@ class ScalarReplacementExtendedTest {
         val arrType = Type.Array(Type.I64, 2)
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(arrType)
             val e0 = gep(arrType, ptr, Constant.I32(0), Constant.I32(0))
             store(Constant.I64(10L), e0)
@@ -86,7 +86,7 @@ class ScalarReplacementExtendedTest {
         val arrType = Type.Array(Type.I32, 4)
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(arrType)
             val e0 = gep(arrType, ptr, Constant.I32(0), Constant.I32(0))
             store(Constant.I32(10), e0)
@@ -104,7 +104,7 @@ class ScalarReplacementExtendedTest {
         val bigArr = Type.Array(Type.I32, 17)
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(bigArr)
             val e0 = gep(bigArr, ptr, Constant.I32(0), Constant.I32(0))
             store(Constant.I32(1), e0)
@@ -122,7 +122,7 @@ class ScalarReplacementExtendedTest {
         val arr16 = Type.Array(Type.I32, 16)
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(arr16)
             val e0 = gep(arr16, ptr, Constant.I32(0), Constant.I32(0))
             store(Constant.I32(1), e0)
@@ -141,7 +141,7 @@ class ScalarReplacementExtendedTest {
         val module = buildAndTransform {
             declareFunction("use_ptr", listOf(Param("p", Type.OpaquePointer)), Type.Void)
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(pointType)
             val xPtr = gep(pointType, ptr, Constant.I32(0), Constant.I32(0))
             call("use_ptr", listOf(xPtr), Type.Void) // gep result escapes to call
@@ -159,7 +159,7 @@ class ScalarReplacementExtendedTest {
         val pairType = Type.Struct(null, listOf(Type.I32, Type.I32))
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(pairType)
             val f0 = gep(pairType, ptr, Constant.I32(0), Constant.I32(0))
             store(Constant.I32(5), f0)
@@ -185,7 +185,7 @@ class ScalarReplacementExtendedTest {
         val smallStruct = Type.Struct(null, listOf(Type.I8, Type.I16))
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I8)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(smallStruct)
             val f0 = gep(smallStruct, ptr, Constant.I32(0), Constant.I32(0))
             store(Constant.I8(42), f0)
@@ -205,7 +205,7 @@ class ScalarReplacementExtendedTest {
         val floatStruct = Type.Struct(null, listOf(Type.F32, Type.F64))
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(floatStruct)
             val f1 = gep(floatStruct, ptr, Constant.I32(0), Constant.I32(1))
             store(Constant.F64(3.14), f1)
@@ -222,7 +222,7 @@ class ScalarReplacementExtendedTest {
     fun `does not replace pointer-typed alloca`() {
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.OpaquePointer)
             store(Constant.I32(0), ptr) // actually stores to pointer, not aggregate
             ret(Constant.I32(0))
@@ -238,7 +238,7 @@ class ScalarReplacementExtendedTest {
         val pointType = Type.Struct(null, listOf(Type.I32, Type.I32))
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val p1 = alloca(pointType)
             val p2 = alloca(pointType)
             val f0p1 = gep(pointType, p1, Constant.I32(0), Constant.I32(0))
@@ -262,7 +262,7 @@ class ScalarReplacementExtendedTest {
         val outer = Type.Struct(null, listOf(inner, Type.F32))
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.F32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(outer)
             val f1 = gep(outer, ptr, Constant.I32(0), Constant.I32(1))
             store(Constant.F32(1.5f), f1)
@@ -282,7 +282,7 @@ class ScalarReplacementExtendedTest {
         val arrType = Type.Array(elemType, 2)
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(arrType)
             val e0 = gep(arrType, ptr, Constant.I32(0), Constant.I32(0))
             val e0f0 = gep(elemType, e0, Constant.I32(0), Constant.I32(0))
@@ -301,7 +301,7 @@ class ScalarReplacementExtendedTest {
         val pointType = Type.Struct(null, listOf(Type.I32, Type.I32))
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.OpaquePointer)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(pointType)
             ret(ptr) // alloca address returned - escapes
             finalizeFunction()
@@ -316,7 +316,7 @@ class ScalarReplacementExtendedTest {
         val pointType = Type.Struct(null, listOf(Type.I32, Type.I32))
         val module = buildAndTransform {
             val params = createFunction("f", listOf(Param("p", Type.OpaquePointer)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(pointType)
             val cmp = icmp(ICmpPredicate.EQ, ptr, params[0])
             val r = select(cmp, Constant.I32(1), Constant.I32(0))
@@ -333,7 +333,7 @@ class ScalarReplacementExtendedTest {
         val pairType = Type.Struct(null, listOf(Type.I32, Type.I32))
         val module = buildAndTransform {
             createFunction("f1", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val p1 = alloca(pairType)
             val f1 = gep(pairType, p1, Constant.I32(0), Constant.I32(0))
             store(Constant.I32(10), f1)
@@ -342,7 +342,7 @@ class ScalarReplacementExtendedTest {
             finalizeFunction()
 
             createFunction("f2", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val p2 = alloca(pairType)
             val f2 = gep(pairType, p2, Constant.I32(0), Constant.I32(1))
             store(Constant.I32(20), f2)
@@ -360,7 +360,7 @@ class ScalarReplacementExtendedTest {
     fun `idempotent on scalar alloca`() {
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(42), ptr)
             val v = load(Type.I32, ptr)
@@ -378,7 +378,7 @@ class ScalarReplacementExtendedTest {
         val pairType = Type.Struct(null, listOf(Type.I32, Type.I32))
         val module = buildAndTransform {
             val params = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(pairType)
             val f0 = gep(pairType, ptr, Constant.I32(0), Constant.I32(0))
             val f1 = gep(pairType, ptr, Constant.I32(0), Constant.I32(1))
@@ -403,7 +403,7 @@ class ScalarReplacementExtendedTest {
         val boolStruct = Type.Struct(null, listOf(Type.I1, Type.I32))
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(boolStruct)
             val f0 = gep(boolStruct, ptr, Constant.I32(0), Constant.I32(0))
             store(Constant.I1(true), f0)
@@ -425,7 +425,7 @@ class ScalarReplacementExtendedTest {
         val pointType = Type.Struct(null, listOf(Type.I32, Type.I32))
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(pointType)
             val ptrStore = alloca(Type.OpaquePointer)
             store(ptr, ptrStore) // address escapes as stored value
@@ -443,7 +443,7 @@ class ScalarReplacementExtendedTest {
         val singleField = Type.Struct(null, listOf(Type.I64))
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(singleField)
             val f0 = gep(singleField, ptr, Constant.I32(0), Constant.I32(0))
             store(Constant.I64(12345L), f0)
@@ -462,7 +462,7 @@ class ScalarReplacementExtendedTest {
         val arr1 = Type.Array(Type.I32, 1)
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(arr1)
             val e0 = gep(arr1, ptr, Constant.I32(0), Constant.I32(0))
             store(Constant.I32(42), e0)
@@ -480,7 +480,7 @@ class ScalarReplacementExtendedTest {
     fun `empty function unchanged`() {
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(null)
             finalizeFunction()
         }
@@ -492,7 +492,7 @@ class ScalarReplacementExtendedTest {
         val mixedType = Type.Struct(null, listOf(Type.I32, Type.I64))
         val module = buildAndTransform {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(mixedType)
             val f0 = gep(mixedType, ptr, Constant.I32(0), Constant.I32(0))
             store(Constant.I32(10), f0)

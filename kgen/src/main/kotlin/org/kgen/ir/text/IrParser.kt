@@ -599,7 +599,7 @@ class IrParser private constructor(private val input: String) {
             tryConsume("ceil ") -> parseUnary(destName) { dest, op -> Ceil(dest, op) }
             tryConsume("floor ") -> parseUnary(destName) { dest, op -> Floor(dest, op) }
             tryConsume("round ") -> parseUnary(destName) { dest, op -> Round(dest, op) }
-            tryConsume("trunc ") -> parseUnary(destName) { dest, op -> Trunc(dest, op) }
+            tryConsume("trunc ") -> parseUnary(destName) { dest, op -> FTrunc(dest, op) }
             tryConsume("copysign ") -> {
                 val (type, mag) = parseTypedValue(params)
                 expect(", ")
@@ -619,13 +619,13 @@ class IrParser private constructor(private val input: String) {
                 val (type, value) = parseTypedValue(params)
                 expect(", ")
                 val amount = parseValue(type, params)
-                RotateLeft(InstructionRef(destName, type), value, amount)
+                Rotl(InstructionRef(destName, type), value, amount)
             }
             tryConsume("rotr ") -> {
                 val (type, value) = parseTypedValue(params)
                 expect(", ")
                 val amount = parseValue(type, params)
-                RotateRight(InstructionRef(destName, type), value, amount)
+                Rotr(InstructionRef(destName, type), value, amount)
             }
 
             // Bit manipulation
@@ -790,7 +790,7 @@ class IrParser private constructor(private val input: String) {
                 expect(" unwind label %")
                 val unwindDest = parseIdent()
                 val dest = if (retType != Type.Void) InstructionRef(destName, retType) else null
-                Invoke(dest, function, args, retType, normalDest, unwindDest)
+                Invoke(dest, function, args, retType, BlockRef(normalDest), BlockRef(unwindDest))
             }
             tryConsume("callbr ") -> {
                 val retType = parseType()
@@ -810,7 +810,7 @@ class IrParser private constructor(private val input: String) {
                 }
                 expect("]")
                 val dest = if (retType != Type.Void) InstructionRef(destName, retType) else null
-                CallBr(dest, function, args, retType, fallthrough, indirect)
+                CallBr(dest, function, args, retType, BlockRef(fallthrough), indirect.map { BlockRef(it) })
             }
 
             // Varargs
@@ -861,7 +861,7 @@ class IrParser private constructor(private val input: String) {
                 expect("]")
                 val unwindDest = if (tryConsume(" unwind label %")) parseIdent()
                 else { tryConsume(" unwind to caller"); null }
-                CatchSwitch(InstructionRef(destName, Type.Token), parentPad, handlers, unwindDest)
+                CatchSwitch(InstructionRef(destName, Type.Token), parentPad, handlers.map { BlockRef(it) }, unwindDest?.let { BlockRef(it) })
             }
             tryConsume("catchpad within ") -> {
                 val catchSwitch = parseValue(Type.Token, params)
@@ -892,14 +892,14 @@ class IrParser private constructor(private val input: String) {
             tryConsume("phi ") -> {
                 val type = parseType()
                 expect(" ")
-                val incoming = mutableListOf<Pair<Value, String>>()
+                val incoming = mutableListOf<Pair<Value, BlockRef>>()
                 do {
                     expect("[")
                     val v = parseValue(type, params)
                     expect(", %")
                     val block = parseIdent()
                     expect("]")
-                    incoming.add(v to block)
+                    incoming.add(v to BlockRef(block))
                 } while (tryConsume(", "))
                 Phi(InstructionRef(destName, type), incoming)
             }
@@ -1264,7 +1264,7 @@ class IrParser private constructor(private val input: String) {
                 val (_, value) = parseTypedValue(params)
                 Ret(value)
             }
-            tryConsume("br label %") -> Br(parseIdent())
+            tryConsume("br label %") -> Br(BlockRef(parseIdent()))
             tryConsume("br ") -> {
                 parseType() // i1
                 expect(" ")
@@ -1273,32 +1273,32 @@ class IrParser private constructor(private val input: String) {
                 val trueTarget = parseIdent()
                 expect(", label %")
                 val falseTarget = parseIdent()
-                CondBr(cond, trueTarget, falseTarget)
+                CondBr(cond, BlockRef(trueTarget), BlockRef(falseTarget))
             }
             tryConsume("switch ") -> {
                 val (type, value) = parseTypedValue(params)
                 expect(", label %")
                 val defaultTarget = parseIdent()
                 expect(" [")
-                val cases = mutableListOf<Pair<Constant, String>>()
+                val cases = mutableListOf<Pair<Constant, BlockRef>>()
                 while (!lookingAt("]")) {
                     val (_, c) = parseTypedConstant()
                     expect(" -> label %")
                     val target = parseIdent()
-                    cases.add(c to target)
+                    cases.add(c to BlockRef(target))
                     if (!lookingAt("]")) tryConsume(", ")
                 }
                 expect("]")
-                Switch(value, defaultTarget, cases)
+                Switch(value, BlockRef(defaultTarget), cases)
             }
             tryConsume("indirectbr ptr ") -> {
                 val address = parseValue(Type.OpaquePointer, params)
                 expect(", [")
-                val targets = mutableListOf<String>()
+                val targets = mutableListOf<BlockRef>()
                 while (!lookingAt("]")) {
                     if (targets.isNotEmpty()) expect(", ")
                     expect("label %")
-                    targets.add(parseIdent())
+                    targets.add(BlockRef(parseIdent()))
                 }
                 expect("]")
                 IndirectBr(address, targets)
@@ -1401,13 +1401,13 @@ class IrParser private constructor(private val input: String) {
                 val catchPad = parseValue(Type.Token, params)
                 expect(" to label %")
                 val dest = parseIdent()
-                CatchRet(catchPad, dest)
+                CatchRet(catchPad, BlockRef(dest))
             }
             tryConsume("cleanupret from ") -> {
                 val cleanupPad = parseValue(Type.Token, params)
                 val unwindDest = if (tryConsume(" unwind label %")) parseIdent()
                 else { tryConsume(" unwind to caller"); null }
-                CleanupRet(cleanupPad, unwindDest)
+                CleanupRet(cleanupPad, unwindDest?.let { BlockRef(it) })
             }
 
             // Calls without dest
@@ -1440,7 +1440,7 @@ class IrParser private constructor(private val input: String) {
                 val normalDest = parseIdent()
                 expect(" unwind label %")
                 val unwindDest = parseIdent()
-                Invoke(null, function, args, retType, normalDest, unwindDest)
+                Invoke(null, function, args, retType, BlockRef(normalDest), BlockRef(unwindDest))
             }
 
             // High-level: Fields (no dest)
@@ -1515,24 +1515,24 @@ class IrParser private constructor(private val input: String) {
                 }
                 expect("]")
                 val finallyBlock = if (tryConsume(" finally %")) parseIdent() else null
-                TryCatchRegion(tryBlock, catches, finallyBlock)
+                TryCatchRegion(BlockRef(tryBlock), catches, finallyBlock?.let { BlockRef(it) })
             }
 
             // High-level: Tagged unions
             tryConsume("tagswitch ") -> {
                 val union = parseValue(Type.I32, params)
                 expect(" [")
-                val cases = mutableListOf<Pair<String, String>>()
-                var defaultTarget: String? = null
+                val cases = mutableListOf<Pair<String, BlockRef>>()
+                var defaultTarget: BlockRef? = null
                 while (!lookingAt("]")) {
                     if (cases.isNotEmpty() || defaultTarget != null) expect(", ")
                     if (tryConsume("default -> %")) {
-                        defaultTarget = parseIdent()
+                        defaultTarget = BlockRef(parseIdent())
                     } else {
                         val variant = parseIdent()
                         expect(" -> %")
                         val target = parseIdent()
-                        cases.add(variant to target)
+                        cases.add(variant to BlockRef(target))
                     }
                 }
                 expect("]")

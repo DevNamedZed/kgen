@@ -244,7 +244,7 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
         is Ceil -> "${inst.dest.name} = ceil ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
         is Floor -> "${inst.dest.name} = floor ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
         is Round -> "${inst.dest.name} = round ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
-        is Trunc -> "${inst.dest.name} = trunc ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
+        is FTrunc -> "${inst.dest.name} = trunc ${typeStr(inst.operand.type)} ${valStr(inst.operand)}"
         is CopySign -> "${inst.dest.name} = copysign ${typeStr(inst.magnitude.type)} ${valStr(inst.magnitude)}, ${valStr(inst.sign)}"
 
         // Bitwise
@@ -255,8 +255,6 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
         is Shl -> "${inst.dest.name} = shl${wrapFlags(inst.nuw, inst.nsw)} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
         is LShr -> "${inst.dest.name} = lshr${if (inst.exact) " exact" else ""} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
         is AShr -> "${inst.dest.name} = ashr${if (inst.exact) " exact" else ""} ${typeStr(inst.lhs.type)} ${valStr(inst.lhs)}, ${valStr(inst.rhs)}"
-        is RotateLeft -> "${inst.dest.name} = rotl ${typeStr(inst.value.type)} ${valStr(inst.value)}, ${valStr(inst.amount)}"
-        is RotateRight -> "${inst.dest.name} = rotr ${typeStr(inst.value.type)} ${valStr(inst.value)}, ${valStr(inst.amount)}"
         is Rotl -> "${inst.dest.name} = rotl ${typeStr(inst.value.type)} ${valStr(inst.value)}, ${valStr(inst.amount)}"
         is Rotr -> "${inst.dest.name} = rotr ${typeStr(inst.value.type)} ${valStr(inst.value)}, ${valStr(inst.amount)}"
 
@@ -337,13 +335,13 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
 
         // Control flow
         is Ret -> if (inst.value != null) "ret ${typeStr(inst.value.type)} ${valStr(inst.value)}" else "ret void"
-        is Br -> "br label %${inst.target}"
-        is CondBr -> "br ${typeStr(Type.I1)} ${valStr(inst.condition)}, label %${inst.trueTarget}, label %${inst.falseTarget}"
+        is Br -> "br label %${inst.target.label}"
+        is CondBr -> "br ${typeStr(Type.I1)} ${valStr(inst.condition)}, label %${inst.trueTarget.label}, label %${inst.falseTarget.label}"
         is Switch -> {
-            val cases = inst.cases.joinToString(", ") { (c, t) -> "${typeStr(c.type)} ${constStr(c)} -> label %$t" }
-            "switch ${typeStr(inst.value.type)} ${valStr(inst.value)}, label %${inst.defaultTarget} [$cases]"
+            val cases = inst.cases.joinToString(", ") { (c, t) -> "${typeStr(c.type)} ${constStr(c)} -> label %${t.label}" }
+            "switch ${typeStr(inst.value.type)} ${valStr(inst.value)}, label %${inst.defaultTarget.label} [$cases]"
         }
-        is IndirectBr -> "indirectbr ptr ${valStr(inst.address)}, [${inst.targets.joinToString(", ") { "label %$it" }}]"
+        is IndirectBr -> "indirectbr ptr ${valStr(inst.address)}, [${inst.targets.joinToString(", ") { "label %${it.label}" }}]"
         is Unreachable -> "unreachable"
         is Trap -> "trap"
         is DebugTrap -> "debugtrap"
@@ -362,13 +360,13 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
         is Invoke -> {
             val args = inst.args.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
             val dest = if (inst.dest != null) "${inst.dest.name} = " else ""
-            "${dest}invoke ${typeStr(inst.returnType)} ${valStr(inst.function)}($args) to label %${inst.normalDest} unwind label %${inst.unwindDest}"
+            "${dest}invoke ${typeStr(inst.returnType)} ${valStr(inst.function)}($args) to label %${inst.normalDest.label} unwind label %${inst.unwindDest.label}"
         }
         is CallBr -> {
             val args = inst.args.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
             val dest = if (inst.dest != null) "${inst.dest.name} = " else ""
-            val indirect = inst.indirectDests.joinToString(", ") { "label %$it" }
-            "${dest}callbr ${typeStr(inst.returnType)} ${valStr(inst.function)}($args) to label %${inst.fallthrough} [$indirect]"
+            val indirect = inst.indirectDests.joinToString(", ") { "label %${it.label}" }
+            "${dest}callbr ${typeStr(inst.returnType)} ${valStr(inst.function)}($args) to label %${inst.fallthrough.label} [$indirect]"
         }
 
         // Varargs
@@ -391,8 +389,8 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
         is Resume -> "resume ${typeStr(inst.value.type)} ${valStr(inst.value)}"
         is CatchSwitch -> {
             val parent = if (inst.parentPad != null) valStr(inst.parentPad) else "none"
-            val handlers = inst.handlers.joinToString(", ") { "label %$it" }
-            val unwind = if (inst.unwindDest != null) " unwind label %${inst.unwindDest}" else " unwind to caller"
+            val handlers = inst.handlers.joinToString(", ") { "label %${it.label}" }
+            val unwind = if (inst.unwindDest != null) " unwind label %${inst.unwindDest.label}" else " unwind to caller"
             "${inst.dest.name} = catchswitch within $parent [$handlers]$unwind"
         }
         is CatchPad -> {
@@ -404,15 +402,15 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
             val args = inst.args.joinToString(", ") { "${typeStr(it.type)} ${valStr(it)}" }
             "${inst.dest.name} = cleanuppad within $parent [$args]"
         }
-        is CatchRet -> "catchret from ${valStr(inst.catchPad)} to label %${inst.dest}"
+        is CatchRet -> "catchret from ${valStr(inst.catchPad)} to label %${inst.dest.label}"
         is CleanupRet -> {
-            val unwind = if (inst.unwindDest != null) "unwind label %${inst.unwindDest}" else "unwind to caller"
+            val unwind = if (inst.unwindDest != null) "unwind label %${inst.unwindDest.label}" else "unwind to caller"
             "cleanupret from ${valStr(inst.cleanupPad)} $unwind"
         }
 
         // SSA
         is Phi -> {
-            val incoming = inst.incoming.joinToString(", ") { (v, b) -> "[${valStr(v)}, %$b]" }
+            val incoming = inst.incoming.joinToString(", ") { (v, b) -> "[${valStr(v)}, %${b.label}]" }
             "${inst.dest.name} = phi ${typeStr(inst.dest.type)} $incoming"
         }
         is Select -> "${inst.dest.name} = select ${typeStr(Type.I1)} ${valStr(inst.condition)}, ${typeStr(inst.trueValue.type)} ${valStr(inst.trueValue)}, ${typeStr(inst.falseValue.type)} ${valStr(inst.falseValue)}"
@@ -495,8 +493,8 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
         is Throw -> "throw ${valStr(inst.exception)}"
         is TryCatchRegion -> {
             val catches = inst.catches.joinToString(", ") { "catch ${typeStr(it.exceptionType)} -> %${it.handlerBlock}" }
-            val fin = if (inst.finallyBlock != null) " finally %${inst.finallyBlock}" else ""
-            "trycatch %${inst.tryBlock} [$catches]$fin"
+            val fin = if (inst.finallyBlock != null) " finally %${inst.finallyBlock.label}" else ""
+            "trycatch %${inst.tryBlock.label} [$catches]$fin"
         }
 
         // High-level: Box/unbox
@@ -528,8 +526,8 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
         is GetTag -> "${inst.dest.name} = gettag ${valStr(inst.union)}"
         is GetVariantField -> "${inst.dest.name} = getvariantfield ${valStr(inst.union)}.${inst.variantName}[${inst.fieldIndex}]"
         is TagSwitch -> {
-            val cases = inst.cases.joinToString(", ") { (variant, target) -> "$variant -> %$target" }
-            val default = if (inst.defaultTarget != null) ", default -> %${inst.defaultTarget}" else ""
+            val cases = inst.cases.joinToString(", ") { (variant, target) -> "$variant -> %${target.label}" }
+            val default = if (inst.defaultTarget != null) ", default -> %${inst.defaultTarget.label}" else ""
             "tagswitch ${valStr(inst.union)} [$cases$default]"
         }
 
@@ -590,6 +588,7 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
         // Hints
         is Assume -> "assume ${valStr(inst.condition)}"
         is Expect -> "${inst.dest.name} = expect ${typeStr(inst.value.type)} ${valStr(inst.value)}, ${constStr(inst.expected)}"
+        else -> "unknown(${inst.javaClass.simpleName})"
     }
 
     companion object {
@@ -657,6 +656,7 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
             is InstructionRef -> value.name
             is GlobalRef -> "@${value.name}"
             is FunctionRef -> "@${value.name}"
+            is DefinedFunction -> "@${value.name}"
             is BlockRef -> "%${value.label}"
             is Constant -> constStr(value)
         }

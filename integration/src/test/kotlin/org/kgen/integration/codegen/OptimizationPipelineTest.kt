@@ -16,7 +16,7 @@ class OptimizationPipelineTest {
         val ir = IrBuilder("opt_test", Target.x86_64())
         val params = ir.createFunction("compute", listOf(
             Param("a", Type.I32), Param("b", Type.I32), Param("c", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
 
         val slot = ir.alloca(Type.I32)
         val sum = ir.add(params[0], params[1])
@@ -54,22 +54,22 @@ class OptimizationPipelineTest {
         val ir = IrBuilder("phi_opt", Target.x86_64())
         val params = ir.createFunction("abs_add", listOf(
             Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
 
         val slot = ir.alloca(Type.I32)
         val cond = ir.icmp(ICmpPredicate.SLT, params[0], Constant.I32(0))
-        ir.condBr(cond, "negate", "keep")
+        ir.condBr(cond, BlockRef("negate"), BlockRef("keep"))
 
-        ir.positionAtEnd(ir.appendBlock("negate"))
+        ir.appendBlock("negate")
         val neg = ir.sub(Constant.I32(0), params[0])
         ir.store(neg, slot)
-        ir.br("merge")
+        ir.br(BlockRef("merge"))
 
-        ir.positionAtEnd(ir.appendBlock("keep"))
+        ir.appendBlock("keep")
         ir.store(params[0], slot)
-        ir.br("merge")
+        ir.br(BlockRef("merge"))
 
-        ir.positionAtEnd(ir.appendBlock("merge"))
+        ir.appendBlock("merge")
         val absX = ir.load(Type.I32, slot)
         val result = ir.add(absX, params[1])
         ir.ret(result)

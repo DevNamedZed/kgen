@@ -270,7 +270,6 @@ class BytecodeToIrLoweringTest {
 
         // mayThrow is a static method we declare externally
         val mayThrowRef = cp.methodRef("org/kgen/test/TryCatch", "mayThrow", "()V")
-
         // Bytecodes:
         // 0: invokestatic #mayThrowRef  (3 bytes: B8, high, low)
         // 3: iconst_0                   (1 byte: 03)
@@ -333,7 +332,6 @@ class BytecodeToIrLoweringTest {
         val superClass = cp.classEntry("java/lang/Object")
         val codeIdx = cp.utf8("Code")
         val mayThrowRef = cp.methodRef("org/kgen/test/NoTry", "doStuff", "()V")
-
         val bytecode = byteArrayOf(
             0xB8.toByte(), (mayThrowRef shr 8).toByte(), (mayThrowRef and 0xFF).toByte(),
             0x03,                       // iconst_0

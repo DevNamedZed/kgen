@@ -105,7 +105,7 @@ class IrVerifierTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Br("nonexistent"),
+                            Br(BlockRef("nonexistent")),
                         ))
                     ),
                 )
@@ -163,7 +163,7 @@ class IrVerifierTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            CondBr(Parameter("x", Type.I32, 0), "a", "b"),
+                            CondBr(Parameter("x", Type.I32, 0), BlockRef("a"), BlockRef("b")),
                         )),
                         BasicBlock("a", listOf(Ret(null))),
                         BasicBlock("b", listOf(Ret(null))),
@@ -191,7 +191,7 @@ class IrVerifierTest {
     @Test
     fun `isTerminator identifies all terminators`() {
         assertTrue(IrVerifier.isTerminator(Ret(null)))
-        assertTrue(IrVerifier.isTerminator(Br("x")))
+        assertTrue(IrVerifier.isTerminator(Br(BlockRef("x"))))
         assertTrue(IrVerifier.isTerminator(Unreachable()))
         assertFalse(IrVerifier.isTerminator(Add(InstructionRef("%0", Type.I32), i32(1), i32(2))))
     }
@@ -209,18 +209,18 @@ class IrVerifierTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            CondBr(Parameter("cond", Type.I1, 0), "left", "right"),
+                            CondBr(Parameter("cond", Type.I1, 0), BlockRef("left"), BlockRef("right")),
                         )),
                         BasicBlock("left", listOf(
-                            Br("merge"),
+                            Br(BlockRef("merge")),
                         )),
                         BasicBlock("right", listOf(
-                            Br("merge"),
+                            Br(BlockRef("merge")),
                         )),
                         BasicBlock("merge", listOf(
                             Phi(InstructionRef("%0", Type.I32), listOf(
-                                Pair(i32(1), "left"),
-                                Pair(i32(2), "right"),
+                                Pair(i32(1), BlockRef("left")),
+                                Pair(i32(2), BlockRef("right")),
                             )),
                             Ret(InstructionRef("%0", Type.I32)),
                         )),
@@ -271,16 +271,16 @@ class IrVerifierTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            CondBr(Parameter("cond", Type.I1, 0), "left", "right"),
+                            CondBr(Parameter("cond", Type.I1, 0), BlockRef("left"), BlockRef("right")),
                         )),
                         BasicBlock("left", listOf(
                             Add(InstructionRef("%0", Type.I32), i32(10), i32(20)),
-                            Br("merge"),
+                            Br(BlockRef("merge")),
                         )),
                         BasicBlock("right", listOf(
                             // Using %0 which is defined in "left" — not dominated
                             Add(InstructionRef("%1", Type.I32), InstructionRef("%0", Type.I32), i32(5)),
-                            Br("merge"),
+                            Br(BlockRef("merge")),
                         )),
                         BasicBlock("merge", listOf(
                             Ret(i32(0)),
@@ -308,7 +308,7 @@ class IrVerifierTest {
                     blocks = listOf(
                         BasicBlock("entry", listOf(
                             Add(InstructionRef("%0", Type.I32), i32(1), i32(2)),
-                            CondBr(Parameter("cond", Type.I1, 0), "left", "right"),
+                            CondBr(Parameter("cond", Type.I1, 0), BlockRef("left"), BlockRef("right")),
                         )),
                         BasicBlock("left", listOf(
                             Add(InstructionRef("%1", Type.I32), InstructionRef("%0", Type.I32), i32(10)),
@@ -338,7 +338,7 @@ class IrVerifierTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            CondBr(Parameter("cond", Type.I1, 1), "a", "b"),
+                            CondBr(Parameter("cond", Type.I1, 1), BlockRef("a"), BlockRef("b")),
                         )),
                         BasicBlock("a", listOf(
                             Add(InstructionRef("%0", Type.I32), Parameter("x", Type.I32, 0), i32(1)),
@@ -395,10 +395,10 @@ class IrVerifierTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            CondBr(Parameter("cond", Type.I1, 0), "left", "merge"),
+                            CondBr(Parameter("cond", Type.I1, 0), BlockRef("left"), BlockRef("merge")),
                         )),
                         BasicBlock("left", listOf(
-                            Br("merge"),
+                            Br(BlockRef("merge")),
                         )),
                         BasicBlock("right", listOf(
                             // "right" is unreachable but defined
@@ -407,8 +407,8 @@ class IrVerifierTest {
                         BasicBlock("merge", listOf(
                             // phi claims value from "right" which is NOT a predecessor of "merge"
                             Phi(InstructionRef("%0", Type.I32), listOf(
-                                Pair(i32(1), "left"),
-                                Pair(i32(2), "right"),
+                                Pair(i32(1), BlockRef("left")),
+                                Pair(i32(2), BlockRef("right")),
                             )),
                             Ret(InstructionRef("%0", Type.I32)),
                         )),
@@ -433,18 +433,18 @@ class IrVerifierTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            CondBr(Parameter("cond", Type.I1, 0), "left", "right"),
+                            CondBr(Parameter("cond", Type.I1, 0), BlockRef("left"), BlockRef("right")),
                         )),
                         BasicBlock("left", listOf(
-                            Br("merge"),
+                            Br(BlockRef("merge")),
                         )),
                         BasicBlock("right", listOf(
-                            Br("merge"),
+                            Br(BlockRef("merge")),
                         )),
                         BasicBlock("merge", listOf(
                             // phi only has entry for "left" but "right" is also a predecessor
                             Phi(InstructionRef("%0", Type.I32), listOf(
-                                Pair(i32(1), "left"),
+                                Pair(i32(1), BlockRef("left")),
                             )),
                             Ret(InstructionRef("%0", Type.I32)),
                         )),
@@ -469,19 +469,19 @@ class IrVerifierTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            CondBr(Parameter("cond", Type.I1, 0), "left", "right"),
+                            CondBr(Parameter("cond", Type.I1, 0), BlockRef("left"), BlockRef("right")),
                         )),
                         BasicBlock("left", listOf(
-                            Br("merge"),
+                            Br(BlockRef("merge")),
                         )),
                         BasicBlock("right", listOf(
-                            Br("merge"),
+                            Br(BlockRef("merge")),
                         )),
                         BasicBlock("merge", listOf(
                             Phi(InstructionRef("%0", Type.I32), listOf(
-                                Pair(i32(1), "left"),
-                                Pair(i32(2), "left"),  // duplicate!
-                                Pair(i32(3), "right"),
+                                Pair(i32(1), BlockRef("left")),
+                                Pair(i32(2), BlockRef("left")),  // duplicate!
+                                Pair(i32(3), BlockRef("right")),
                             )),
                             Ret(InstructionRef("%0", Type.I32)),
                         )),
@@ -506,18 +506,18 @@ class IrVerifierTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            CondBr(Parameter("cond", Type.I1, 0), "left", "right"),
+                            CondBr(Parameter("cond", Type.I1, 0), BlockRef("left"), BlockRef("right")),
                         )),
                         BasicBlock("left", listOf(
-                            Br("merge"),
+                            Br(BlockRef("merge")),
                         )),
                         BasicBlock("right", listOf(
-                            Br("merge"),
+                            Br(BlockRef("merge")),
                         )),
                         BasicBlock("merge", listOf(
                             Phi(InstructionRef("%0", Type.I32), listOf(
-                                Pair(i32(1), "left"),
-                                Pair(i32(2), "right"),
+                                Pair(i32(1), BlockRef("left")),
+                                Pair(i32(2), BlockRef("right")),
                             )),
                             Ret(InstructionRef("%0", Type.I32)),
                         )),
@@ -543,19 +543,19 @@ class IrVerifierTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Br("header"),
+                            Br(BlockRef("header")),
                         )),
                         BasicBlock("header", listOf(
                             Phi(InstructionRef("%i", Type.I32), listOf(
-                                Pair(i32(0), "entry"),
-                                Pair(InstructionRef("%next", Type.I32), "body"),
+                                Pair(i32(0), BlockRef("entry")),
+                                Pair(InstructionRef("%next", Type.I32), BlockRef("body")),
                             )),
                             ICmp(InstructionRef("%cmp", Type.I1), ICmpPredicate.SLT, InstructionRef("%i", Type.I32), Parameter("n", Type.I32, 0)),
-                            CondBr(InstructionRef("%cmp", Type.I1), "body", "exit"),
+                            CondBr(InstructionRef("%cmp", Type.I1), BlockRef("body"), BlockRef("exit")),
                         )),
                         BasicBlock("body", listOf(
                             Add(InstructionRef("%next", Type.I32), InstructionRef("%i", Type.I32), i32(1)),
-                            Br("header"),
+                            Br(BlockRef("header")),
                         )),
                         BasicBlock("exit", listOf(
                             Ret(InstructionRef("%i", Type.I32)),
@@ -581,19 +581,19 @@ class IrVerifierTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Br("header"),
+                            Br(BlockRef("header")),
                         )),
                         BasicBlock("header", listOf(
                             Phi(InstructionRef("%i", Type.I32), listOf(
-                                Pair(i32(0), "entry"),
-                                Pair(InstructionRef("%next", Type.I32), "body"),
+                                Pair(i32(0), BlockRef("entry")),
+                                Pair(InstructionRef("%next", Type.I32), BlockRef("body")),
                             )),
                             ICmp(InstructionRef("%cmp", Type.I1), ICmpPredicate.SLT, InstructionRef("%i", Type.I32), Parameter("n", Type.I32, 0)),
-                            CondBr(InstructionRef("%cmp", Type.I1), "body", "exit"),
+                            CondBr(InstructionRef("%cmp", Type.I1), BlockRef("body"), BlockRef("exit")),
                         )),
                         BasicBlock("body", listOf(
                             Add(InstructionRef("%next", Type.I32), InstructionRef("%i", Type.I32), i32(1)),
-                            Br("header"),
+                            Br(BlockRef("header")),
                         )),
                         BasicBlock("exit", listOf(
                             // Using %next which is defined in "body" — body does NOT dominate exit
@@ -623,17 +623,17 @@ class IrVerifierTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            CondBr(Parameter("cond", Type.I1, 0), "left", "merge"),
+                            CondBr(Parameter("cond", Type.I1, 0), BlockRef("left"), BlockRef("merge")),
                         )),
                         BasicBlock("left", listOf(
                             Add(InstructionRef("%x", Type.I32), i32(10), i32(20)),
-                            Br("merge"),
+                            Br(BlockRef("merge")),
                         )),
                         BasicBlock("merge", listOf(
                             // %x from "entry" — but %x is defined in "left", not reachable from entry path
                             Phi(InstructionRef("%0", Type.I32), listOf(
-                                Pair(InstructionRef("%x", Type.I32), "entry"),
-                                Pair(InstructionRef("%x", Type.I32), "left"),
+                                Pair(InstructionRef("%x", Type.I32), BlockRef("entry")),
+                                Pair(InstructionRef("%x", Type.I32), BlockRef("left")),
                             )),
                             Ret(InstructionRef("%0", Type.I32)),
                         )),
@@ -656,7 +656,7 @@ class IrVerifierTest {
                 block("entry") {
                     val sum = add(param(0), param(1))
                     val cmp = icmp(ICmpPredicate.SGT, sum, i32(100))
-                    condBr(cmp, "big", "small")
+                    condBr(cmp, BlockRef("big"), BlockRef("small"))
                 }
                 block("big") {
                     val doubled = mul(param(0), i32(2))
@@ -683,9 +683,9 @@ class IrVerifierTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Switch(Parameter("x", Type.I32, 0), "default", listOf(
-                                Pair(Constant.I32(0), "case0"),
-                                Pair(Constant.I32(1), "case1"),
+                            Switch(Parameter("x", Type.I32, 0), BlockRef("default"), listOf(
+                                Pair(Constant.I32(0), BlockRef("case0")),
+                                Pair(Constant.I32(1), BlockRef("case1")),
                             )),
                         )),
                         BasicBlock("case0", listOf(Ret(i32(10)))),
@@ -711,7 +711,7 @@ class IrVerifierTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Br("entry"),
+                            Br(BlockRef("entry")),
                             Ret(null),
                         )),
                     ),
@@ -782,11 +782,11 @@ class IrVerifierTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Br("merge"),
+                            Br(BlockRef("merge")),
                         )),
                         BasicBlock("merge", listOf(
                             Add(InstructionRef("%0", Type.I32), i32(1), i32(2)),
-                            Phi(InstructionRef("%1", Type.I32), listOf(Pair(i32(1), "entry"))),
+                            Phi(InstructionRef("%1", Type.I32), listOf(Pair(i32(1), BlockRef("entry")))),
                             Ret(InstructionRef("%1", Type.I32)),
                         )),
                     ),
@@ -810,7 +810,7 @@ class IrVerifierTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Br("target"),
+                            Br(BlockRef("target")),
                         )),
                         BasicBlock("target", listOf(
                             Phi(InstructionRef("%0", Type.I32), emptyList()),
@@ -837,11 +837,11 @@ class IrVerifierTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Br("target"),
+                            Br(BlockRef("target")),
                         )),
                         BasicBlock("target", listOf(
                             Phi(InstructionRef("%0", Type.I32), listOf(
-                                Pair(Constant.I64(42), "entry"),
+                                Pair(Constant.I64(42), BlockRef("entry")),
                             )),
                             Ret(InstructionRef("%0", Type.I32)),
                         )),
@@ -988,31 +988,31 @@ class IrVerifierTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Br("outer_header"),
+                            Br(BlockRef("outer_header")),
                         )),
                         BasicBlock("outer_header", listOf(
                             Phi(InstructionRef("%i", Type.I32), listOf(
-                                Pair(i32(0), "entry"),
-                                Pair(InstructionRef("%i_next", Type.I32), "outer_latch"),
+                                Pair(i32(0), BlockRef("entry")),
+                                Pair(InstructionRef("%i_next", Type.I32), BlockRef("outer_latch")),
                             )),
                             ICmp(InstructionRef("%outer_cmp", Type.I1), ICmpPredicate.SLT, InstructionRef("%i", Type.I32), Parameter("n", Type.I32, 0)),
-                            CondBr(InstructionRef("%outer_cmp", Type.I1), "inner_header", "exit"),
+                            CondBr(InstructionRef("%outer_cmp", Type.I1), BlockRef("inner_header"), BlockRef("exit")),
                         )),
                         BasicBlock("inner_header", listOf(
                             Phi(InstructionRef("%j", Type.I32), listOf(
-                                Pair(i32(0), "outer_header"),
-                                Pair(InstructionRef("%j_next", Type.I32), "inner_body"),
+                                Pair(i32(0), BlockRef("outer_header")),
+                                Pair(InstructionRef("%j_next", Type.I32), BlockRef("inner_body")),
                             )),
                             ICmp(InstructionRef("%inner_cmp", Type.I1), ICmpPredicate.SLT, InstructionRef("%j", Type.I32), InstructionRef("%i", Type.I32)),
-                            CondBr(InstructionRef("%inner_cmp", Type.I1), "inner_body", "outer_latch"),
+                            CondBr(InstructionRef("%inner_cmp", Type.I1), BlockRef("inner_body"), BlockRef("outer_latch")),
                         )),
                         BasicBlock("inner_body", listOf(
                             Add(InstructionRef("%j_next", Type.I32), InstructionRef("%j", Type.I32), i32(1)),
-                            Br("inner_header"),
+                            Br(BlockRef("inner_header")),
                         )),
                         BasicBlock("outer_latch", listOf(
                             Add(InstructionRef("%i_next", Type.I32), InstructionRef("%i", Type.I32), i32(1)),
-                            Br("outer_header"),
+                            Br(BlockRef("outer_header")),
                         )),
                         BasicBlock("exit", listOf(
                             Ret(InstructionRef("%i", Type.I32)),
@@ -1120,7 +1120,7 @@ class IrVerifierTest {
     @Test
     fun `TagSwitch is a terminator`() {
         assertTrue(IrVerifier.isTerminator(TagSwitch(
-            i32(0), listOf(Pair("A", "blockA")), "default"
+            i32(0), listOf(Pair("A", BlockRef("blockA"))), BlockRef("default")
         )))
     }
 
@@ -1526,7 +1526,7 @@ class IrVerifierTest {
                     blocks = listOf(
                         BasicBlock("entry", listOf(
                             CoroResume(Parameter("id", Type.OpaquePointer, 0)),
-                            Br("body"),
+                            Br(BlockRef("body")),
                         )),
                         BasicBlock("body", listOf(
                             CoroBegin(InstructionRef("%h", Type.OpaquePointer), Parameter("id", Type.OpaquePointer, 0), Parameter("mem", Type.OpaquePointer, 1)),
@@ -1562,7 +1562,7 @@ class IrVerifierTest {
                     blocks = listOf(
                         BasicBlock("entry", listOf(
                             TagSwitch(Parameter("s", unionType, 0), listOf(
-                                Pair("Circle", "circle_bb"),
+                                Pair("Circle", BlockRef("circle_bb")),
                             ), defaultTarget = null),
                         )),
                         BasicBlock("circle_bb", listOf(Ret(null))),
@@ -1592,8 +1592,8 @@ class IrVerifierTest {
                     blocks = listOf(
                         BasicBlock("entry", listOf(
                             TagSwitch(Parameter("s", unionType, 0), listOf(
-                                Pair("Circle", "circle_bb"),
-                                Pair("Rect", "rect_bb"),
+                                Pair("Circle", BlockRef("circle_bb")),
+                                Pair("Rect", BlockRef("rect_bb")),
                             ), defaultTarget = null),
                         )),
                         BasicBlock("circle_bb", listOf(Ret(null))),
@@ -1623,8 +1623,8 @@ class IrVerifierTest {
                     blocks = listOf(
                         BasicBlock("entry", listOf(
                             TagSwitch(Parameter("s", unionType, 0), listOf(
-                                Pair("Circle", "circle_bb"),
-                            ), defaultTarget = "default_bb"),
+                                Pair("Circle", BlockRef("circle_bb")),
+                            ), defaultTarget = BlockRef("default_bb")),
                         )),
                         BasicBlock("circle_bb", listOf(Ret(null))),
                         BasicBlock("default_bb", listOf(Ret(null))),
@@ -1676,10 +1676,10 @@ class IrVerifierTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            TryCatchRegion("try_body", listOf(
+                            TryCatchRegion(BlockRef("try_body"), listOf(
                                 CatchHandler(exType, "handler"),
                             )),
-                            Br("try_body"),
+                            Br(BlockRef("try_body")),
                         )),
                         BasicBlock("try_body", listOf(Ret(null))),
                         BasicBlock("handler", listOf(
@@ -1708,10 +1708,10 @@ class IrVerifierTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            TryCatchRegion("try_body", listOf(
+                            TryCatchRegion(BlockRef("try_body"), listOf(
                                 CatchHandler(exType, "handler"),
                             )),
-                            Br("try_body"),
+                            Br(BlockRef("try_body")),
                         )),
                         BasicBlock("try_body", listOf(Ret(null))),
                         BasicBlock("handler", listOf(
@@ -1744,8 +1744,8 @@ class IrVerifierTest {
                                 function = FunctionRef("target", Type.Function(listOf(Type.I32), Type.Void)),
                                 args = listOf(Constant.I64(42)),
                                 returnType = Type.Void,
-                                normalDest = "cont",
-                                unwindDest = "cleanup",
+                                normalDest = BlockRef("cont"),
+                                unwindDest = BlockRef("cleanup"),
                             ),
                         )),
                         BasicBlock("cont", listOf(Ret(null))),

@@ -919,7 +919,7 @@ class IrTextComprehensiveTest {
     fun `round-trip br instruction`() {
         val mod = module("test") {
             function("f", emptyList(), Type.Void) {
-                block("entry") { br("target") }
+                block("entry") { br(BlockRef("target")) }
                 block("target") { ret() }
             }
         }
@@ -931,7 +931,7 @@ class IrTextComprehensiveTest {
     fun `round-trip condBr instruction`() {
         val mod = module("test") {
             function("f", listOf(Param("c", Type.I1)), Type.Void) {
-                block("entry") { condBr(param(0), "t", "f") }
+                block("entry") { condBr(param(0), BlockRef("t"), BlockRef("f")) }
                 block("t") { ret() }
                 block("f") { ret() }
             }
@@ -945,7 +945,7 @@ class IrTextComprehensiveTest {
         val mod = module("test") {
             function("f", listOf(Param("v", Type.I32)), Type.Void) {
                 block("entry") {
-                    switch(param(0), "default", listOf(i32(0) to "case0", i32(1) to "case1"))
+                    switch(param(0), BlockRef("default"), listOf(i32(0) to BlockRef("case0"), i32(1) to BlockRef("case1")))
                 }
                 block("case0") { ret() }
                 block("case1") { ret() }
@@ -995,11 +995,11 @@ class IrTextComprehensiveTest {
     fun `round-trip phi instruction`() {
         val mod = module("test") {
             function("f", listOf(Param("c", Type.I1)), Type.I32) {
-                block("entry") { condBr(param(0), "t", "f") }
-                block("t") { br("merge") }
-                block("f") { br("merge") }
+                block("entry") { condBr(param(0), BlockRef("t"), BlockRef("f")) }
+                block("t") { br(BlockRef("merge")) }
+                block("f") { br(BlockRef("merge")) }
                 block("merge") {
-                    val r = phi(Type.I32, listOf(i32(1) to "t", i32(2) to "f"))
+                    val r = phi(Type.I32, listOf(i32(1) to BlockRef("t"), i32(2) to BlockRef("f")))
                     ret(r)
                 }
             }
@@ -1609,13 +1609,13 @@ class IrTextComprehensiveTest {
             function("abs", listOf(Param("x", Type.I32)), Type.I32) {
                 block("entry") {
                     val cmp = icmp(ICmpPredicate.SLT, param(0), i32(0))
-                    condBr(cmp, "neg", "pos")
+                    condBr(cmp, BlockRef("neg"), BlockRef("pos"))
                 }
                 block("neg") {
                     val n = neg(param(0))
-                    br("done")
+                    br(BlockRef("done"))
                 }
-                block("pos") { br("done") }
+                block("pos") { br(BlockRef("done")) }
                 block("done") {
                     val result = phi(Type.I32, listOf(
                         // We need to reference the neg result somehow. Since DSL creates refs,

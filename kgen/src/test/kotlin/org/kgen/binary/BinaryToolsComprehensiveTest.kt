@@ -21,7 +21,7 @@ class BinaryToolsComprehensiveTest {
     private fun buildAddModule(): Module {
         val ir = IrBuilder("test", Target.x86_64())
         val params = ir.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val sum = ir.add(params[0], params[1])
         ir.ret(sum)
         ir.finalizeFunction()
@@ -36,7 +36,7 @@ class BinaryToolsComprehensiveTest {
             linkage = Linkage.INTERNAL)
         ir.declareFunction("puts", listOf(Param("s", Type.OpaquePointer)), Type.I32)
         ir.createFunction("main", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.call("puts", listOf(strRef), Type.I32)
         ir.ret(Constant.I32(0))
         ir.finalizeFunction()
@@ -46,7 +46,7 @@ class BinaryToolsComprehensiveTest {
     private fun buildSubModule(): Module {
         val ir = IrBuilder("sub_test", Target.x86_64())
         val params = ir.createFunction("subtract", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val diff = ir.sub(params[0], params[1])
         ir.ret(diff)
         ir.finalizeFunction()
@@ -56,12 +56,12 @@ class BinaryToolsComprehensiveTest {
     private fun buildMultiFunctionModule(): Module {
         val ir = IrBuilder("multi", Target.x86_64())
         val addParams = ir.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.add(addParams[0], addParams[1]))
         ir.finalizeFunction()
 
         val subParams = ir.createFunction("sub", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.sub(subParams[0], subParams[1]))
         ir.finalizeFunction()
 

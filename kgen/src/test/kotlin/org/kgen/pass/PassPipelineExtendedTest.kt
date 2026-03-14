@@ -21,7 +21,7 @@ class PassPipelineExtendedTest {
     fun singlePassPipeline() {
         val module = build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(Constant.I32(3), Constant.I32(7)))
             finalizeFunction()
         }
@@ -34,7 +34,7 @@ class PassPipelineExtendedTest {
     fun threePassPipeline() {
         val module = build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], Constant.I32(0))
             val b = add(Constant.I32(1), Constant.I32(2))
             mul(Constant.I32(5), Constant.I32(6)) // dead
@@ -59,7 +59,7 @@ class PassPipelineExtendedTest {
     fun foldThenInstcombineThenDCE() {
         val module = build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(Constant.I32(5), Constant.I32(5)) // fold → 10
             val b = mul(a, Constant.I32(1))                // instcombine → a (which is now 10)
             add(Constant.I32(99), Constant.I32(1))         // dead
@@ -82,17 +82,17 @@ class PassPipelineExtendedTest {
     fun threeFunctionsOptimized() {
         val module = build {
             createFunction("f1", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(Constant.I32(1), Constant.I32(1)))
             finalizeFunction()
 
             createFunction("f2", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(mul(Constant.I32(3), Constant.I32(3)))
             finalizeFunction()
 
             createFunction("f3", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sub(Constant.I32(100), Constant.I32(42)))
             finalizeFunction()
         }
@@ -108,7 +108,7 @@ class PassPipelineExtendedTest {
     fun gvnThenInstcombineThenDCE() {
         val module = build {
             val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], params[1])
             val b = add(params[0], params[1]) // GVN replaces with a
             val c = add(a, b)
@@ -133,19 +133,19 @@ class PassPipelineExtendedTest {
     fun jumpThreadingMultipleBranches() {
         val module = build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
-            br("b1")
+            appendBlock("entry")
+            br(BlockRef("b1"))
 
-            positionAtEnd(appendBlock("b1"))
-            br("b2")
+            appendBlock("b1")
+            br(BlockRef("b2"))
 
-            positionAtEnd(appendBlock("b2"))
+            appendBlock("b2")
             ret(Constant.I32(42))
 
-            positionAtEnd(appendBlock("dead1"))
+            appendBlock("dead1")
             ret(Constant.I32(0))
 
-            positionAtEnd(appendBlock("dead2"))
+            appendBlock("dead2")
             ret(Constant.I32(-1))
 
             finalizeFunction()
@@ -162,15 +162,15 @@ class PassPipelineExtendedTest {
     fun foldAndJumpThreadingChain() {
         val module = build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val x = add(Constant.I32(10), Constant.I32(20))
             val cond = icmp(ICmpPredicate.SGT, x, Constant.I32(25))
-            condBr(cond, "yes", "no")
+            condBr(cond, BlockRef("yes"), BlockRef("no"))
 
-            positionAtEnd(appendBlock("yes"))
+            appendBlock("yes")
             ret(Constant.I32(1))
 
-            positionAtEnd(appendBlock("no"))
+            appendBlock("no")
             ret(Constant.I32(0))
 
             finalizeFunction()
@@ -191,7 +191,7 @@ class PassPipelineExtendedTest {
     fun o1PipelineRemovesIdentityOps() {
         val module = build {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], Constant.I32(0))
             val b = mul(a, Constant.I32(1))
             ret(b)
@@ -209,7 +209,7 @@ class PassPipelineExtendedTest {
     fun o2PipelineComplexFunction() {
         val module = build {
             val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], params[1])
             val b = add(params[0], params[1]) // GVN should deduplicate
             val c = add(a, b)
@@ -228,7 +228,7 @@ class PassPipelineExtendedTest {
     fun o0PreservesDeadCode() {
         val module = build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             add(Constant.I32(1), Constant.I32(2)) // dead
             add(Constant.I32(3), Constant.I32(4)) // dead
             ret(Constant.I32(0))
@@ -245,7 +245,7 @@ class PassPipelineExtendedTest {
         val module = build {
             for (i in 1..5) {
                 createFunction("f$i", emptyList(), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(add(Constant.I32(i), Constant.I32(i)))
                 finalizeFunction()
             }
@@ -267,7 +267,7 @@ class PassPipelineExtendedTest {
     fun pipelineI64ConstantFolding() {
         val module = build {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(Constant.I64(1_000_000_000L), Constant.I64(2_000_000_000L))
             ret(a)
             finalizeFunction()
@@ -285,7 +285,7 @@ class PassPipelineExtendedTest {
             declareFunction("ext1", listOf(Param("x", Type.I32)), Type.I32)
             declareFunction("ext2", listOf(Param("x", Type.I64)), Type.I64)
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(Constant.I32(1), Constant.I32(2)))
             finalizeFunction()
         }
@@ -306,14 +306,14 @@ class PassPipelineExtendedTest {
     fun branchFoldAndDCE() {
         val module = build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cond = icmp(ICmpPredicate.EQ, Constant.I32(5), Constant.I32(5))
-            condBr(cond, "then", "else")
+            condBr(cond, BlockRef("then"), BlockRef("else"))
 
-            positionAtEnd(appendBlock("then"))
+            appendBlock("then")
             ret(Constant.I32(100))
 
-            positionAtEnd(appendBlock("else"))
+            appendBlock("else")
             ret(Constant.I32(200))
 
             finalizeFunction()
@@ -332,14 +332,14 @@ class PassPipelineExtendedTest {
     fun branchFoldFalseCondition() {
         val module = build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cond = icmp(ICmpPredicate.SGT, Constant.I32(1), Constant.I32(10))
-            condBr(cond, "then", "else")
+            condBr(cond, BlockRef("then"), BlockRef("else"))
 
-            positionAtEnd(appendBlock("then"))
+            appendBlock("then")
             ret(Constant.I32(100))
 
-            positionAtEnd(appendBlock("else"))
+            appendBlock("else")
             ret(Constant.I32(200))
 
             finalizeFunction()
@@ -360,7 +360,7 @@ class PassPipelineExtendedTest {
     fun deeplyNestedConstantFolding() {
         val module = build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(Constant.I32(1), Constant.I32(2))     // 3
             val b = mul(Constant.I32(3), Constant.I32(4))     // 12
             val c = add(a, b)                                   // 15
@@ -383,7 +383,7 @@ class PassPipelineExtendedTest {
     fun allDeadCodeRemoved() {
         val module = build {
             createFunction("f", emptyList(), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             add(Constant.I32(1), Constant.I32(2))
             mul(Constant.I32(3), Constant.I32(4))
             sub(Constant.I32(5), Constant.I32(6))
@@ -402,12 +402,12 @@ class PassPipelineExtendedTest {
     fun inlineAndFoldChain() {
         val module = build {
             val addP = createFunction("add2", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(addP[0], addP[1]))
             finalizeFunction()
 
             createFunction("main", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r = call("add2", listOf(Constant.I32(20), Constant.I32(22)), Type.I32)!!
             ret(r)
             finalizeFunction()
@@ -427,7 +427,7 @@ class PassPipelineExtendedTest {
     fun wasmTargetPipeline() {
         val module = build(Target.wasm()) {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(Constant.I32(10), Constant.I32(20))
             ret(a)
             finalizeFunction()
@@ -446,7 +446,7 @@ class PassPipelineExtendedTest {
     fun passOrderMattersForOptimization() {
         val module = build {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(Constant.I32(1), Constant.I32(2))
             mul(a, Constant.I32(0)) // dead after fold produces 3, but mul(3,0) = 0 which is also dead
             ret(a)
@@ -467,7 +467,7 @@ class PassPipelineExtendedTest {
     fun moduleNamePreserved() {
         val ir = IrBuilder("my_module", Target.x86_64())
         ir.createFunction("f", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret()
         ir.finalizeFunction()
         val module = ir.build()
@@ -484,7 +484,7 @@ class PassPipelineExtendedTest {
     fun fullPipelineIdempotent() {
         val module = build {
             val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], params[1])
             val b = add(params[0], params[1])
             val c = add(a, b)

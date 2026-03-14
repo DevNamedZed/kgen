@@ -112,7 +112,6 @@ class KgenIntrinsicsEndToEndTest {
         val superClass = cp.classEntry("java/lang/Object")
         val codeIdx = cp.utf8("Code")
         val loadByteRef = cp.methodRef("org/kgen/unmanaged/Kgen", "loadByte", "(J)I")
-
         val nameIdx = cp.utf8("hash")
         val descIdx = cp.utf8("(JI)I")
 

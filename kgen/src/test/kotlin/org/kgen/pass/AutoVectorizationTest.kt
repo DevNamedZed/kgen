@@ -60,7 +60,7 @@ class AutoVectorizationTest {
     fun noChangeOnSimpleFunction() {
         val builder = IrBuilder("test", Target.x86_64())
         val params = builder.createFunction("simple", listOf(Param("x", Type.I32)), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret(builder.add(params[0], Constant.I32(1)))
         builder.finalizeFunction()
         val module = builder.build()
@@ -76,7 +76,7 @@ class AutoVectorizationTest {
         val params = builder.createFunction("addPairs",
             listOf(Param("a", Type.I32), Param("b", Type.I32), Param("c", Type.I32), Param("d", Type.I32)),
             Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val r1 = builder.add(params[0], params[1])
         val r2 = builder.add(params[2], params[3])
         val sum = builder.add(r1, r2)
@@ -103,7 +103,7 @@ class AutoVectorizationTest {
         val params = builder.createFunction("mixedOps",
             listOf(Param("a", Type.I32), Param("b", Type.I32)),
             Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val r1 = builder.add(params[0], params[1])
         val r2 = builder.sub(params[0], params[1])
         val sum = builder.add(r1, r2)
@@ -139,15 +139,15 @@ class AutoVectorizationTest {
             returnType = Type.Void,
             blocks = listOf(
                 BasicBlock("entry", listOf(
-                    Br("header"),
+                    Br(BlockRef("header")),
                 )),
                 BasicBlock("header", listOf(
                     Phi(iRef, listOf(
-                        Constant.I32(0) to "entry",
-                        nextIRef to "body",
+                        Constant.I32(0) to BlockRef("entry"),
+                        nextIRef to BlockRef("body"),
                     )),
                     ICmp(cmpRef, ICmpPredicate.SLT, iRef, nParam),
-                    CondBr(cmpRef, "body", "exit"),
+                    CondBr(cmpRef, BlockRef("body"), BlockRef("exit")),
                 )),
                 BasicBlock("body", listOf(
                     GetElementPtr(gepRef, Type.I32, arrParam, listOf(iRef)),
@@ -155,7 +155,7 @@ class AutoVectorizationTest {
                     Add(addRef, loadRef, Constant.I32(1)),
                     Store(addRef, gepRef),
                     Add(nextIRef, iRef, Constant.I32(1)),
-                    Br("header"),
+                    Br(BlockRef("header")),
                 )),
                 BasicBlock("exit", listOf(
                     Ret(null),
@@ -194,7 +194,7 @@ class AutoVectorizationTest {
         val pass = AutoVectorization(enableLoopVectorization = false)
         val builder = IrBuilder("test", Target.x86_64())
         val params = builder.createFunction("id", listOf(Param("x", Type.I32)), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret(params[0])
         builder.finalizeFunction()
         val module = builder.build()
@@ -208,7 +208,7 @@ class AutoVectorizationTest {
         val pass = AutoVectorization(enableSLP = false)
         val builder = IrBuilder("test", Target.x86_64())
         val params = builder.createFunction("id", listOf(Param("x", Type.I32)), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret(params[0])
         builder.finalizeFunction()
         val module = builder.build()
@@ -223,7 +223,7 @@ class AutoVectorizationTest {
         val params = builder.createFunction("mulPairs",
             listOf(Param("a", Type.I32), Param("b", Type.I32), Param("c", Type.I32), Param("d", Type.I32)),
             Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val r1 = builder.mul(params[0], params[1])
         val r2 = builder.mul(params[2], params[3])
         val sum = builder.add(r1, r2)

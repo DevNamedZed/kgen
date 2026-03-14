@@ -284,9 +284,9 @@ class CilCodeGenerator : CodeGenerator {
                         pushValue(inst.value)
                         pushValue(caseVal)
                         assembler.ceq()
-                        assembler.brtrue(labelFor(target))
+                        assembler.brtrue(labelFor(target.label))
                     }
-                    assembler.br(labelFor(inst.defaultTarget))
+                    assembler.br(labelFor(inst.defaultTarget.label))
                 }
 
                 is GCSafepoint -> {} // no-op on managed runtime
@@ -301,13 +301,13 @@ class CilCodeGenerator : CodeGenerator {
                 }
 
                 is Br -> {
-                    assembler.br(labelFor(inst.target))
+                    assembler.br(labelFor(inst.target.label))
                 }
 
                 is CondBr -> {
                     pushValue(inst.condition)
-                    assembler.brtrue(labelFor(inst.trueTarget))
-                    assembler.br(labelFor(inst.falseTarget))
+                    assembler.brtrue(labelFor(inst.trueTarget.label))
+                    assembler.br(labelFor(inst.falseTarget.label))
                 }
 
                 is Call -> emitCall(inst)
@@ -324,7 +324,7 @@ class CilCodeGenerator : CodeGenerator {
                     storeResult(inst.dest)
                 }
 
-                is Trunc -> {
+                is FTrunc -> {
                     pushValue(inst.operand)
                     emitTruncation(inst.operand.type, inst.dest.type)
                     storeResult(inst.dest)

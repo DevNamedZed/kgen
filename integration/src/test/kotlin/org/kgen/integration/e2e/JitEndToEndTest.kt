@@ -42,7 +42,7 @@ class JitEndToEndTest {
         JitEngine(X86CodeGenerator()).use { jit ->
             val ir = IrBuilder("add_mod", Target.x86_64())
             val p = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.add(p[0], p[1]))
             ir.finalizeFunction()
 
@@ -58,13 +58,13 @@ class JitEndToEndTest {
         JitEngine(X86CodeGenerator()).use { jit ->
             val ir = IrBuilder("max_mod", Target.x86_64())
             val p = ir.createFunction("max", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             val cond = ir.icmp(ICmpPredicate.SGT, p[0], p[1])
-            ir.condBr(cond, "ret_a", "ret_b")
+            ir.condBr(cond, BlockRef("ret_a"), BlockRef("ret_b"))
 
-            ir.positionAtEnd(ir.appendBlock("ret_a"))
+            ir.appendBlock("ret_a")
             ir.ret(p[0])
-            ir.positionAtEnd(ir.appendBlock("ret_b"))
+            ir.appendBlock("ret_b")
             ir.ret(p[1])
             ir.finalizeFunction()
 
@@ -81,12 +81,12 @@ class JitEndToEndTest {
             val ir = IrBuilder("multi_mod", Target.x86_64())
 
             val addP = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.add(addP[0], addP[1]))
             ir.finalizeFunction()
 
             val mulP = ir.createFunction("mul", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.mul(mulP[0], mulP[1]))
             ir.finalizeFunction()
 
@@ -106,7 +106,7 @@ class JitEndToEndTest {
         JitEngine(X86CodeGenerator()).use { jit ->
             val ir = IrBuilder("opt_mod", Target.x86_64())
             val p = ir.createFunction("compute", listOf(Param("x", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
 
             // x + 0 should be folded to just x
             val r1 = ir.add(p[0], Constant.I64(0))
@@ -131,7 +131,7 @@ class JitEndToEndTest {
     fun loaderExecutesCompiledObjectFile() {
         val obj = generateObjectFile {
             val p = createFunction("square", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(mul(p[0], p[0]))
             finalizeFunction()
         }
@@ -149,12 +149,12 @@ class JitEndToEndTest {
     fun loaderMultipleFunctions() {
         val obj = generateObjectFile {
             val addP = createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(addP[0], addP[1]))
             finalizeFunction()
 
             val negP = createFunction("negate", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(sub(Constant.I64(0), negP[0]))
             finalizeFunction()
         }
@@ -196,7 +196,7 @@ class JitEndToEndTest {
             val ir = IrBuilder("callback_mod", Target.x86_64())
             ir.declareFunction("tick", emptyList(), Type.I64)
             ir.createFunction("call_tick_twice", emptyList(), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.call("tick", emptyList(), Type.I64)
             val result = ir.call("tick", emptyList(), Type.I64)
             ir.ret(result)
@@ -219,7 +219,7 @@ class JitEndToEndTest {
             // V1: returns 1
             val ir1 = IrBuilder("v1", Target.x86_64())
             ir1.createFunction("getValue", emptyList(), Type.I64)
-            ir1.positionAtEnd(ir1.appendBlock("entry"))
+            ir1.appendBlock("entry")
             ir1.ret(Constant.I64(1))
             ir1.finalizeFunction()
 
@@ -231,7 +231,7 @@ class JitEndToEndTest {
             // V2: returns 2
             val ir2 = IrBuilder("v2", Target.x86_64())
             ir2.createFunction("getValue", emptyList(), Type.I64)
-            ir2.positionAtEnd(ir2.appendBlock("entry"))
+            ir2.appendBlock("entry")
             ir2.ret(Constant.I64(2))
             ir2.finalizeFunction()
 
@@ -247,7 +247,7 @@ class JitEndToEndTest {
         JitEngine(X86CodeGenerator()).use { jit ->
             val ir = IrBuilder("stress", Target.x86_64())
             val p = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            ir.positionAtEnd(ir.appendBlock("entry"))
+            ir.appendBlock("entry")
             ir.ret(ir.add(p[0], p[1]))
             ir.finalizeFunction()
             jit.addModule(ir.build())

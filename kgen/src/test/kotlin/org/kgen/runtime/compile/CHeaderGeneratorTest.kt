@@ -12,7 +12,7 @@ class CHeaderGeneratorTest {
         val builder = IrBuilder("test", Target.x86_64())
         for ((name, retType, params) in fns) {
             builder.createFunction(name, params, retType)
-            builder.positionAtEnd(builder.appendBlock("entry"))
+            builder.appendBlock("entry")
             if (retType == Type.Void) {
                 builder.ret()
             } else {
@@ -120,7 +120,7 @@ class CHeaderGeneratorTest {
         ), Type.I32)
         // Define — should appear
         builder.createFunction("my_fn", listOf(Param("x", Type.I32)), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         builder.ret(Constant.I32(0))
         builder.finalizeFunction()
         val module = builder.build()

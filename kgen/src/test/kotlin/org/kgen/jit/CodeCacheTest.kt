@@ -15,7 +15,7 @@ class CodeCacheTest {
     private fun buildModule(name: String, funcName: String, value: Long): Module {
         val ir = IrBuilder(name, Target.x86_64())
         ir.createFunction(funcName, emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I64(value))
         ir.finalizeFunction()
         return ir.build()

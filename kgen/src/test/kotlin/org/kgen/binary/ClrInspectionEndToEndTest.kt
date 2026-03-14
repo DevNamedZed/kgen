@@ -272,7 +272,6 @@ class ClrInspectionEndToEndTest {
         // Add a type ref to System.Console (in a second assembly ref)
         builder.addAssemblyRef("System.Console", 6, 0, 0, 0)
         val consoleTypeRef = builder.addTypeRef(2, "Console", "System")
-
         // Add a member ref to Console.WriteLine(string)
         val writeLineSig = CilClassBuilder.sig(CilSigType.VOID, CilSigType.STRING)
         builder.addMemberRef(consoleTypeRef, "WriteLine", writeLineSig)

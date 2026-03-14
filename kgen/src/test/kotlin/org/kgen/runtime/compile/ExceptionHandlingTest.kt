@@ -148,7 +148,6 @@ class ExceptionHandlingTest {
         val superClass = cp.classEntry("java/lang/Object")
         val codeIdx = cp.utf8("Code")
         val ifaceMethod = cp.interfaceMethodRef("java/lang/Comparable", "compareTo", "(Ljava/lang/Object;)I")
-
         val nameIdx = cp.utf8("cmp")
         val descIdx = cp.utf8("(Ljava/lang/Comparable;Ljava/lang/Object;)I")
 

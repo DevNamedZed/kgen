@@ -19,7 +19,6 @@ class InstanceMethodTest {
         val superClass = cp.classEntry("java/lang/Object")
         val codeIdx = cp.utf8("Code")
         val countField = cp.fieldRef("org/kgen/test/Counter", "count", "I")
-
         // Instance method: int getCount() { return this.count; }
         // bytecode: aload_0, getfield count, ireturn
         val getCountName = cp.utf8("getCount")
@@ -130,7 +129,6 @@ class InstanceMethodTest {
         val superClass = cp.classEntry("java/lang/Object")
         val codeIdx = cp.utf8("Code")
         val superInit = cp.methodRef("java/lang/Object", "<init>", "()V")
-
         // <init> method: aload_0, invokespecial Object.<init>, return
         val initName = cp.utf8("<init>")
         val initDesc = cp.utf8("()V")

@@ -201,7 +201,6 @@ class JvmClassFileExtendedTest {
         val superClassIdx = cp.classEntry("java/lang/Object")
         val codeNameIdx = cp.utf8("Code")
         val superInitRef = cp.methodRef("java/lang/Object", "<init>", "()V")
-
         fun makeMethod(name: String, desc: String, code: ByteArray, maxStack: Int, maxLocals: Int): MethodInfo {
             val nameIdx = cp.utf8(name)
             val descIdx = cp.utf8(desc)

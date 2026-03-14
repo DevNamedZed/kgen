@@ -21,7 +21,7 @@ class InstructionCombiningTest {
     fun `simplifies x plus 0`() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val sum = add(params[0], Constant.I32(0))
             ret(sum)
             finalizeFunction()
@@ -34,7 +34,7 @@ class InstructionCombiningTest {
     fun `simplifies 0 plus x`() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val sum = add(Constant.I32(0), params[0])
             ret(sum)
             finalizeFunction()
@@ -47,7 +47,7 @@ class InstructionCombiningTest {
     fun `simplifies x minus 0`() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val diff = sub(params[0], Constant.I32(0))
             ret(diff)
             finalizeFunction()
@@ -60,7 +60,7 @@ class InstructionCombiningTest {
     fun `simplifies x minus x`() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val diff = sub(params[0], params[0])
             ret(diff)
             finalizeFunction()
@@ -73,7 +73,7 @@ class InstructionCombiningTest {
     fun `simplifies x times 1`() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val prod = mul(params[0], Constant.I32(1))
             ret(prod)
             finalizeFunction()
@@ -86,7 +86,7 @@ class InstructionCombiningTest {
     fun `simplifies x times 0`() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val prod = mul(params[0], Constant.I32(0))
             ret(prod)
             finalizeFunction()
@@ -99,7 +99,7 @@ class InstructionCombiningTest {
     fun `simplifies x and 0`() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = and(params[0], Constant.I32(0))
             ret(result)
             finalizeFunction()
@@ -112,7 +112,7 @@ class InstructionCombiningTest {
     fun `simplifies x and minus 1`() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = and(params[0], Constant.I32(-1))
             ret(result)
             finalizeFunction()
@@ -125,7 +125,7 @@ class InstructionCombiningTest {
     fun `simplifies x or 0`() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = or(params[0], Constant.I32(0))
             ret(result)
             finalizeFunction()
@@ -138,7 +138,7 @@ class InstructionCombiningTest {
     fun `simplifies x xor 0`() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = xor(params[0], Constant.I32(0))
             ret(result)
             finalizeFunction()
@@ -151,7 +151,7 @@ class InstructionCombiningTest {
     fun `simplifies x xor x`() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = xor(params[0], params[0])
             ret(result)
             finalizeFunction()
@@ -164,7 +164,7 @@ class InstructionCombiningTest {
     fun `simplifies x shl 0`() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = shl(params[0], Constant.I32(0))
             ret(result)
             finalizeFunction()
@@ -177,7 +177,7 @@ class InstructionCombiningTest {
     fun `simplifies select with constant true`() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = select(Constant.I1(true), params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -190,7 +190,7 @@ class InstructionCombiningTest {
     fun `simplifies select with constant false`() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = select(Constant.I1(false), params[0], params[1])
             ret(result)
             finalizeFunction()
@@ -203,7 +203,7 @@ class InstructionCombiningTest {
     fun `simplifies select with same true and false`() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("cond", Type.I1), Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = select(params[0], params[1], params[1])
             ret(result)
             finalizeFunction()
@@ -216,7 +216,7 @@ class InstructionCombiningTest {
     fun `chained simplifications`() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = add(params[0], Constant.I32(0)) // → x
             val b = mul(a, Constant.I32(1))          // → x
             val c = sub(b, Constant.I32(0))          // → x
@@ -233,7 +233,7 @@ class InstructionCombiningTest {
     fun `i64 simplifications`() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = add(params[0], Constant.I64(0))
             ret(result)
             finalizeFunction()
@@ -246,7 +246,7 @@ class InstructionCombiningTest {
     fun `preserves non-identity operations`() {
         val module = buildAndCombine {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val result = add(params[0], Constant.I32(5))
             ret(result)
             finalizeFunction()

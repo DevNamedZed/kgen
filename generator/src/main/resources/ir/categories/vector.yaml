@@ -1,0 +1,106 @@
+name: Vector
+interfaceName: VectorInstruction
+enumValue: VECTOR
+description: |-
+  SIMD vector manipulation instructions.
+
+  Vector instructions operate on fixed-width vector types, supporting
+  element extraction, insertion, lane shuffling, scalar broadcasting,
+  and horizontal reductions.
+imports:
+- org.kgen.ir.Type
+- org.kgen.ir.VectorReduceOp
+sections:
+- comment: Vector instructions
+  instructions:
+  - name: ExtractElement
+    description: Extracts a single scalar element from a vector at a dynamic index.
+    effects: PURE
+    emit:
+      resultType: elementType
+      extraParams:
+      - name: elementType
+        type: Type
+        description: the scalar element type of the vector
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: vector
+      type: Value
+      role: operand
+    - name: index
+      type: Value
+      role: operand
+  - name: InsertElement
+    description: Inserts a scalar element into a vector at a dynamic index.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: vector
+      type: Value
+      role: operand
+    - name: element
+      type: Value
+      role: operand
+    - name: index
+      type: Value
+      role: operand
+  - name: ShuffleVector
+    description: Shuffles lanes from two vectors according to a compile-time mask.
+    effects: PURE
+    emit:
+      resultType: resultType
+      extraParams:
+      - name: resultType
+        type: Type.Vector
+        description: the result vector type (element type from source, lane count from mask)
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: v1
+      type: Value
+      role: operand
+    - name: v2
+      type: Value
+      role: operand
+    - name: mask
+      type: List<Int>
+      role: config
+  - name: Splat
+    description: Broadcasts a scalar value into every lane of a vector.
+    effects: PURE
+    emit:
+      resultType: vectorType
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: scalar
+      type: Value
+      role: operand
+    - name: vectorType
+      type: Type.Vector
+      role: config
+  - name: VectorReduce
+    description: Reduces all lanes of a vector into a single scalar using a reduction operator.
+    effects: PURE
+    emit:
+      resultType: elementType
+      extraParams:
+      - name: elementType
+        type: Type
+        description: the scalar element type of the vector being reduced
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: op
+      type: VectorReduceOp
+      role: config
+    - name: vector
+      type: Value
+      role: operand

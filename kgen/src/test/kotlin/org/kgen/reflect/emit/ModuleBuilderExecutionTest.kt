@@ -135,7 +135,7 @@ class ModuleBuilderExecutionTest {
         val mod = ModuleBuilder.native_("testmod")
         val ir = mod.irBuilder()
         ir.createFunction("answer", emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I64(42))
         ir.finalizeFunction()
 
@@ -150,7 +150,7 @@ class ModuleBuilderExecutionTest {
         val mod = ModuleBuilder.native_("testmod")
         val ir = mod.irBuilder()
         val params = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.add(params[0], params[1]))
         ir.finalizeFunction()
 
@@ -164,7 +164,7 @@ class ModuleBuilderExecutionTest {
         val mod = ModuleBuilder.native_("testmod")
         val ir = mod.irBuilder()
         ir.createFunction("noop", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret()
         ir.finalizeFunction()
         assertTrue(mod.toBytes().isNotEmpty())

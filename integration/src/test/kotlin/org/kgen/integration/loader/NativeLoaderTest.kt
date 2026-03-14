@@ -25,7 +25,7 @@ class NativeLoaderTest {
     fun addTwoNumbers() {
         val obj = generateObjectFile {
             val params = createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val sum = add(params[0], params[1])
             ret(sum)
             finalizeFunction()
@@ -45,7 +45,7 @@ class NativeLoaderTest {
     fun subtractTwoNumbers() {
         val obj = generateObjectFile {
             val params = createFunction("subtract", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val diff = sub(params[0], params[1])
             ret(diff)
             finalizeFunction()
@@ -62,7 +62,7 @@ class NativeLoaderTest {
     fun multiplyTwoNumbers() {
         val obj = generateObjectFile {
             val params = createFunction("multiply", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val product = mul(params[0], params[1])
             ret(product)
             finalizeFunction()
@@ -80,7 +80,7 @@ class NativeLoaderTest {
     fun returnConstant() {
         val obj = generateObjectFile {
             createFunction("answer", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I64(42))
             finalizeFunction()
         }
@@ -95,7 +95,7 @@ class NativeLoaderTest {
     fun bitwiseOperations() {
         val obj = generateObjectFile {
             val params = createFunction("bitwise", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val r1 = and(params[0], params[1])
             val r2 = or(r1, params[1])
             val r3 = xor(r2, params[0])
@@ -113,14 +113,14 @@ class NativeLoaderTest {
     fun conditionalBranch() {
         val obj = generateObjectFile {
             val params = createFunction("max", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val cond = icmp(ICmpPredicate.SGT, params[0], params[1])
-            condBr(cond, "ret_a", "ret_b")
+            condBr(cond, BlockRef("ret_a"), BlockRef("ret_b"))
 
-            positionAtEnd(appendBlock("ret_a"))
+            appendBlock("ret_a")
             ret(params[0])
 
-            positionAtEnd(appendBlock("ret_b"))
+            appendBlock("ret_b")
             ret(params[1])
 
             finalizeFunction()
@@ -139,12 +139,12 @@ class NativeLoaderTest {
     fun multipleFunction() {
         val obj = generateObjectFile {
             val addParams = createFunction("add2", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(add(addParams[0], addParams[1]))
             finalizeFunction()
 
             val mulParams = createFunction("mul2", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(mul(mulParams[0], mulParams[1]))
             finalizeFunction()
         }
@@ -183,12 +183,12 @@ class NativeLoaderTest {
     fun symbolDiscovery() {
         val obj = generateObjectFile {
             createFunction("foo", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I64(1))
             finalizeFunction()
 
             createFunction("bar", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(Constant.I64(2))
             finalizeFunction()
         }

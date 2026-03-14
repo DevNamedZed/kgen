@@ -23,18 +23,18 @@ class IrVerifierExtendedTest {
                     returnType = Type.I32,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            CondBr(Parameter("cond", Type.I1, 0), "left", "right"),
+                            CondBr(Parameter("cond", Type.I1, 0), BlockRef("left"), BlockRef("right")),
                         )),
                         BasicBlock("left", listOf(
-                            Br("merge"),
+                            Br(BlockRef("merge")),
                         )),
                         BasicBlock("right", listOf(
-                            Br("merge"),
+                            Br(BlockRef("merge")),
                         )),
                         BasicBlock("merge", listOf(
                             Phi(InstructionRef("%0", Type.I32), listOf(
-                                Pair(i32(1), "left"),
-                                Pair(i64(2), "right"),
+                                Pair(i32(1), BlockRef("left")),
+                                Pair(i64(2), BlockRef("right")),
                             )),
                             Ret(InstructionRef("%0", Type.I32)),
                         )),
@@ -60,7 +60,7 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            CondBr(Parameter("cond", Type.I1, 0), "ghost", "fallback"),
+                            CondBr(Parameter("cond", Type.I1, 0), BlockRef("ghost"), BlockRef("fallback")),
                         )),
                         BasicBlock("fallback", listOf(Ret(null))),
                     ),
@@ -221,7 +221,7 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            CondBr(Parameter("c", Type.I1, 0), "body", "body"),
+                            CondBr(Parameter("c", Type.I1, 0), BlockRef("body"), BlockRef("body")),
                         )),
                         BasicBlock("body", listOf(Ret(null))),
                         BasicBlock("body", listOf(Ret(null))),
@@ -418,7 +418,7 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Br("target"),
+                            Br(BlockRef("target")),
                             Unreachable(),
                         )),
                         BasicBlock("target", listOf(Ret(null))),
@@ -445,7 +445,7 @@ class IrVerifierExtendedTest {
                     blocks = listOf(
                         BasicBlock("entry", listOf(
                             Phi(InstructionRef("%0", Type.I32), listOf(
-                                Pair(i32(42), "entry"),
+                                Pair(i32(42), BlockRef("entry")),
                             )),
                             Ret(InstructionRef("%0", Type.I32)),
                         )),
@@ -471,8 +471,8 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            Switch(Parameter("x", Type.F32, 0), "default", listOf(
-                                Pair(Constant.I32(0), "case0"),
+                            Switch(Parameter("x", Type.F32, 0), BlockRef("default"), listOf(
+                                Pair(Constant.I32(0), BlockRef("case0")),
                             )),
                         )),
                         BasicBlock("case0", listOf(Ret(null))),
@@ -1003,7 +1003,7 @@ class IrVerifierExtendedTest {
                     returnType = Type.Void,
                     blocks = listOf(
                         BasicBlock("entry", listOf(
-                            IndirectBr(i32(0), listOf("entry")),
+                            IndirectBr(i32(0), listOf(BlockRef("entry"))),
                         )),
                     ),
                 )
@@ -1321,6 +1321,67 @@ class IrVerifierExtendedTest {
                                 returnType = Type.Void,
                             ),
                             Ret(null),
+                        )),
+                    ),
+                )
+            ),
+        )
+
+        val result = IrVerifier.verify(mod)
+        assertTrue(result.isValid, result.toString())
+    }
+
+    @Test
+    fun `ClosureInvokeOnce used twice with same closure fails`() {
+        val closureType = Type.Function(listOf(Type.I32), Type.I32)
+        val funcRef = FunctionRef("impl", closureType)
+        val closureRef = InstructionRef("closure", Type.OpaquePointer)
+        val result1 = InstructionRef("r1", Type.I32)
+        val result2 = InstructionRef("r2", Type.I32)
+
+        val mod = Module(
+            name = "linear_use_violation",
+            functions = listOf(
+                IrFunction(
+                    name = "bad_closure",
+                    params = listOf(Parameter("p", Type.I32, 0)),
+                    returnType = Type.I32,
+                    blocks = listOf(
+                        BasicBlock("entry", listOf(
+                            ClosureCreate(closureRef, funcRef, emptyList(), closureType, false),
+                            ClosureInvokeOnce(result1, closureRef, listOf(Parameter("p", Type.I32, 0))),
+                            ClosureInvokeOnce(result2, closureRef, listOf(Parameter("p", Type.I32, 0))),
+                            Ret(result2),
+                        )),
+                    ),
+                )
+            ),
+        )
+
+        val result = IrVerifier.verify(mod)
+        assertFalse(result.isValid)
+        assertTrue(result.errors.any { it.message.contains("linear-use") }, result.toString())
+    }
+
+    @Test
+    fun `ClosureInvokeOnce used once is valid`() {
+        val closureType = Type.Function(listOf(Type.I32), Type.I32)
+        val funcRef = FunctionRef("impl", closureType)
+        val closureRef = InstructionRef("closure", Type.OpaquePointer)
+        val result1 = InstructionRef("r1", Type.I32)
+
+        val mod = Module(
+            name = "linear_use_ok",
+            functions = listOf(
+                IrFunction(
+                    name = "good_closure",
+                    params = listOf(Parameter("p", Type.I32, 0)),
+                    returnType = Type.I32,
+                    blocks = listOf(
+                        BasicBlock("entry", listOf(
+                            ClosureCreate(closureRef, funcRef, emptyList(), closureType, false),
+                            ClosureInvokeOnce(result1, closureRef, listOf(Parameter("p", Type.I32, 0))),
+                            Ret(result1),
                         )),
                     ),
                 )

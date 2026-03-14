@@ -24,7 +24,7 @@ class SortBlocksRPOTest {
         fun singleBlockUnchanged() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -37,7 +37,7 @@ class SortBlocksRPOTest {
         fun emptyBlockListUnchanged() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -49,14 +49,14 @@ class SortBlocksRPOTest {
         fun linearChainPreservesOrder() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                val entry = appendBlock("entry")
-                val mid = appendBlock("mid")
-                val exit = appendBlock("exit")
-                positionAtEnd(entry)
-                br("mid")
-                positionAtEnd(mid)
-                br("exit")
-                positionAtEnd(exit)
+                val entry = createBlock("entry")
+                val mid = createBlock("mid")
+                val exit = createBlock("exit")
+                appendBlock(entry)
+                br(BlockRef("mid"))
+                appendBlock(mid)
+                br(BlockRef("exit"))
+                appendBlock(exit)
                 ret()
                 finalizeFunction()
             }
@@ -74,17 +74,17 @@ class SortBlocksRPOTest {
         fun diamondEntryBeforeBranches() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("cond", Type.I1)), Type.I64)
-                val entry = appendBlock("entry")
-                val left = appendBlock("left")
-                val right = appendBlock("right")
-                val merge = appendBlock("merge")
-                positionAtEnd(entry)
-                condBr(Parameter("cond", Type.I1, 0), "left", "right")
-                positionAtEnd(left)
-                br("merge")
-                positionAtEnd(right)
-                br("merge")
-                positionAtEnd(merge)
+                val entry = createBlock("entry")
+                val left = createBlock("left")
+                val right = createBlock("right")
+                val merge = createBlock("merge")
+                appendBlock(entry)
+                condBr(Parameter("cond", Type.I1, 0), BlockRef("left"), BlockRef("right"))
+                appendBlock(left)
+                br(BlockRef("merge"))
+                appendBlock(right)
+                br(BlockRef("merge"))
+                appendBlock(merge)
                 ret(Constant.I64(0))
                 finalizeFunction()
             }
@@ -106,19 +106,19 @@ class SortBlocksRPOTest {
         fun loopHeaderBeforeBody() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("n", Type.I64)), Type.I64)
-                val entry = appendBlock("entry")
-                val header = appendBlock("header")
-                val body = appendBlock("body")
-                val exit = appendBlock("exit")
-                positionAtEnd(entry)
-                br("header")
-                positionAtEnd(header)
+                val entry = createBlock("entry")
+                val header = createBlock("header")
+                val body = createBlock("body")
+                val exit = createBlock("exit")
+                appendBlock(entry)
+                br(BlockRef("header"))
+                appendBlock(header)
                 val n = Parameter("n", Type.I64, 0)
                 val cmp = icmp(ICmpPredicate.SLT, n, Constant.I64(10))
-                condBr(cmp, "body", "exit")
-                positionAtEnd(body)
-                br("header")
-                positionAtEnd(exit)
+                condBr(cmp, BlockRef("body"), BlockRef("exit"))
+                appendBlock(body)
+                br(BlockRef("header"))
+                appendBlock(exit)
                 ret(Constant.I64(0))
                 finalizeFunction()
             }
@@ -140,14 +140,14 @@ class SortBlocksRPOTest {
         fun unreachableBlocksAppendedAtEnd() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                val entry = appendBlock("entry")
-                val unreachable = appendBlock("dead")
-                val normal = appendBlock("normal")
-                positionAtEnd(entry)
-                br("normal")
-                positionAtEnd(unreachable)
+                val entry = createBlock("entry")
+                val unreachable = createBlock("dead")
+                val normal = createBlock("normal")
+                appendBlock(entry)
+                br(BlockRef("normal"))
+                appendBlock(unreachable)
                 ret()
-                positionAtEnd(normal)
+                appendBlock(normal)
                 ret()
                 finalizeFunction()
             }
@@ -164,11 +164,11 @@ class SortBlocksRPOTest {
         fun allBlocksPreserved() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
-                val entry = appendBlock("entry")
-                val dead = appendBlock("dead")
-                positionAtEnd(entry)
+                val entry = createBlock("entry")
+                val dead = createBlock("dead")
+                appendBlock(entry)
                 ret()
-                positionAtEnd(dead)
+                appendBlock(dead)
                 ret()
                 finalizeFunction()
             }

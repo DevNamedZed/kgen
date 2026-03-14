@@ -1,0 +1,218 @@
+name: Bitwise
+interfaceName: BitwiseInstruction
+enumValue: BITWISE
+description: |-
+  Bitwise logic and shift instructions.
+
+  All bitwise instructions operate on integer types and produce a single result
+  of the same type as their operands.
+imports: []
+sections:
+- comment: Logical operations
+  instructions:
+  - name: And
+    description: 'Bitwise AND: `dest = lhs & rhs`.'
+    effects: PURE_COMMUTATIVE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+  - name: Or
+    description: 'Bitwise OR: `dest = lhs | rhs`.'
+    effects: PURE_COMMUTATIVE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+  - name: Xor
+    description: 'Bitwise XOR: `dest = lhs ^ rhs`.'
+    effects: PURE_COMMUTATIVE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+  - name: Not
+    description: 'Bitwise NOT (complement): `dest = ~operand`.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: operand
+      type: Value
+      role: operand
+- comment: Shift operations
+  instructions:
+  - name: Shl
+    description: 'Shift left: `dest = lhs << rhs`.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    - name: nuw
+      type: Boolean
+      default: 'false'
+      role: flag
+    - name: nsw
+      type: Boolean
+      default: 'false'
+      role: flag
+  - name: LShr
+    description: 'Logical shift right: `dest = lhs >>> rhs` (unsigned).'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    - name: exact
+      type: Boolean
+      default: 'false'
+      role: flag
+    emit:
+      name: lshr
+  - name: AShr
+    description: 'Arithmetic shift right: `dest = lhs >> rhs` (signed).'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: lhs
+      type: Value
+      role: operand
+    - name: rhs
+      type: Value
+      role: operand
+    - name: exact
+      type: Boolean
+      default: 'false'
+      role: flag
+    emit:
+      name: ashr
+- comment: Rotate operations
+  instructions:
+  - name: Rotl
+    description: 'Rotate left (hardware instruction form): maps to target `rol`.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+    - name: amount
+      type: Value
+      role: operand
+  - name: Rotr
+    description: 'Rotate right (hardware instruction form): maps to target `ror`.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: value
+      type: Value
+      role: operand
+    - name: amount
+      type: Value
+      role: operand
+- comment: Bit counting and manipulation
+  instructions:
+  - name: Ctlz
+    description: 'Count leading zeros: `dest = ctlz(operand)`.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: operand
+      type: Value
+      role: operand
+    - name: isZeroPoison
+      type: Boolean
+      default: 'false'
+      role: flag
+    emit:
+      name: ctlz
+  - name: Cttz
+    description: 'Count trailing zeros: `dest = cttz(operand)`.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: operand
+      type: Value
+      role: operand
+    - name: isZeroPoison
+      type: Boolean
+      default: 'false'
+      role: flag
+    emit:
+      name: cttz
+  - name: Ctpop
+    description: 'Population count: `dest = ctpop(operand)`.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: operand
+      type: Value
+      role: operand
+    emit:
+      name: ctpop
+  - name: BSwap
+    description: 'Byte swap: reverses the byte order of `operand`.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: operand
+      type: Value
+      role: operand
+    emit:
+      name: bswap
+  - name: BitReverse
+    description: 'Bit reverse: reverses the order of all bits in `operand`.'
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: operand
+      type: Value
+      role: operand

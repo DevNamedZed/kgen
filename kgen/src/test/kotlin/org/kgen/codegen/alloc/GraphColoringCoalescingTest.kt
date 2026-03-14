@@ -41,24 +41,23 @@ class GraphColoringCoalescingTest {
         fun phiWithNonOverlappingIncomingCoalesces() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("cond", Type.I1)), Type.I64)
-                val entry = appendBlock("entry")
-                val left = appendBlock("left")
-                val right = appendBlock("right")
-                val merge = appendBlock("merge")
+                val entry = createBlock("entry")
+                val left = createBlock("left")
+                val right = createBlock("right")
+                val merge = createBlock("merge")
 
-                positionAtEnd(entry)
-                condBr(Parameter("cond", Type.I1, 0), "left", "right")
-
-                positionAtEnd(left)
+                appendBlock(entry)
+                condBr(Parameter("cond", Type.I1, 0), BlockRef("left"), BlockRef("right"))
+                appendBlock(left)
                 val a = add(Constant.I64(1), Constant.I64(2))
-                br("merge")
+                br(BlockRef("merge"))
 
-                positionAtEnd(right)
+                appendBlock(right)
                 val b = add(Constant.I64(3), Constant.I64(4))
-                br("merge")
+                br(BlockRef("merge"))
 
-                positionAtEnd(merge)
-                val result = phi(Type.I64, listOf(a to "left", b to "right"))
+                appendBlock(merge)
+                val result = phi(Type.I64, listOf(a to BlockRef("left"), b to BlockRef("right")))
                 ret(result)
                 finalizeFunction()
             }
@@ -79,24 +78,23 @@ class GraphColoringCoalescingTest {
         fun coalescedPhiValuesShareRegister() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("cond", Type.I1)), Type.I64)
-                val entry = appendBlock("entry")
-                val left = appendBlock("left")
-                val right = appendBlock("right")
-                val merge = appendBlock("merge")
+                val entry = createBlock("entry")
+                val left = createBlock("left")
+                val right = createBlock("right")
+                val merge = createBlock("merge")
 
-                positionAtEnd(entry)
-                condBr(Parameter("cond", Type.I1, 0), "left", "right")
-
-                positionAtEnd(left)
+                appendBlock(entry)
+                condBr(Parameter("cond", Type.I1, 0), BlockRef("left"), BlockRef("right"))
+                appendBlock(left)
                 val a = add(Constant.I64(10), Constant.I64(20))
-                br("merge")
+                br(BlockRef("merge"))
 
-                positionAtEnd(right)
+                appendBlock(right)
                 val b = add(Constant.I64(30), Constant.I64(40))
-                br("merge")
+                br(BlockRef("merge"))
 
-                positionAtEnd(merge)
-                val merged = phi(Type.I64, listOf(a to "left", b to "right"))
+                appendBlock(merge)
+                val merged = phi(Type.I64, listOf(a to BlockRef("left"), b to BlockRef("right")))
                 ret(merged)
                 finalizeFunction()
             }
@@ -119,7 +117,7 @@ class GraphColoringCoalescingTest {
         fun bitcastCoalescing() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val x = Parameter("x", Type.I64, 0)
                 val casted = bitcast(x, Type.I64)
                 val result = add(casted, Constant.I64(1))
@@ -140,7 +138,7 @@ class GraphColoringCoalescingTest {
         fun zextCoalescing() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("x", Type.I32)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val x = Parameter("x", Type.I32, 0)
                 val extended = zext(x, Type.I64)
                 ret(extended)
@@ -163,7 +161,7 @@ class GraphColoringCoalescingTest {
         fun overlappingValuesGetDifferentRegisters() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 // Both a and b are live at the add instruction
@@ -191,7 +189,7 @@ class GraphColoringCoalescingTest {
                     Param("a", Type.I64), Param("b", Type.I64),
                     Param("c", Type.I64)
                 ), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val c = Parameter("c", Type.I64, 2)
@@ -217,7 +215,7 @@ class GraphColoringCoalescingTest {
                 createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)
                 ), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val c = add(a, b)
@@ -254,7 +252,7 @@ class GraphColoringCoalescingTest {
         fun shortLivedValuePrefersCallerSaved() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v = add(Constant.I64(1), Constant.I64(2))
                 ret(v)
                 finalizeFunction()

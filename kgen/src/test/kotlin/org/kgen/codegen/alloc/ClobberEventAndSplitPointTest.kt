@@ -112,7 +112,7 @@ class ClobberEventAndSplitPointTest {
         fun sdivDetectedAsIntDiv() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val q = sdiv(a, b)
@@ -136,7 +136,7 @@ class ClobberEventAndSplitPointTest {
         fun udivDetectedAsIntDiv() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val q = udiv(a, b)
@@ -159,7 +159,7 @@ class ClobberEventAndSplitPointTest {
         fun sremDetectedAsIntDiv() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val r = srem(a, b)
@@ -182,7 +182,7 @@ class ClobberEventAndSplitPointTest {
         fun shlDetectedAsVariableShift() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val a = Parameter("a", Type.I64, 0)
                 val b = Parameter("b", Type.I64, 1)
                 val s = shl(a, b)
@@ -207,7 +207,7 @@ class ClobberEventAndSplitPointTest {
             val fn = buildFunction {
                 declareFunction("ext", emptyList(), Type.Void)
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 call("ext", emptyList(), Type.Void)
                 ret()
                 finalizeFunction()
@@ -229,7 +229,7 @@ class ClobberEventAndSplitPointTest {
         fun noClobberEntriesProducesNoEvents() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val q = sdiv(Parameter("a", Type.I64, 0), Parameter("b", Type.I64, 1))
                 ret(q)
                 finalizeFunction()
@@ -249,7 +249,7 @@ class ClobberEventAndSplitPointTest {
         fun addDoesNotGenerateClobberEvent() {
             val fn = buildFunction {
                 createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = add(Parameter("a", Type.I64, 0), Parameter("b", Type.I64, 1))
                 ret(sum)
                 finalizeFunction()

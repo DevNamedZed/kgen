@@ -74,7 +74,7 @@ class GlobalValueNumbering : ModulePass {
                     valueTable.invalidateLoads(rewritten.ptr, aa)
                 }
                 // Calls may write to any memory — invalidate all loads
-                if (rewritten is Call || rewritten is Invoke) {
+                if (rewritten.effects.isCall()) {
                     valueTable.invalidateAllLoads()
                 }
             }
@@ -230,11 +230,11 @@ class GlobalValueNumbering : ModulePass {
     }
 
     private fun terminatorTargets(inst: Instruction): List<String> = when (inst) {
-        is Br -> listOf(inst.target)
-        is CondBr -> listOf(inst.trueTarget, inst.falseTarget)
-        is Switch -> listOf(inst.defaultTarget) + inst.cases.map { it.second }
-        is IndirectBr -> inst.targets
-        is Invoke -> listOf(inst.normalDest, inst.unwindDest)
+        is Br -> listOf(inst.target.label)
+        is CondBr -> listOf(inst.trueTarget.label, inst.falseTarget.label)
+        is Switch -> listOf(inst.defaultTarget.label) + inst.cases.map { it.second.label }
+        is IndirectBr -> inst.targets.map { it.label }
+        is Invoke -> listOf(inst.normalDest.label, inst.unwindDest.label)
         else -> emptyList()
     }
 
@@ -322,7 +322,7 @@ class GlobalValueNumbering : ModulePass {
             is ZExt -> inst.copy(value = rw(inst.value))
             is SExt -> inst.copy(value = rw(inst.value))
             is IntTrunc -> inst.copy(value = rw(inst.value))
-            is Trunc -> inst.copy(operand = rw(inst.operand))
+            is FTrunc -> inst.copy(operand = rw(inst.operand))
             is Ret -> inst.copy(value = inst.value?.let { rw(it) })
             is Call -> inst.copy(args = inst.args.map { rw(it) })
             is Select -> inst.copy(condition = rw(inst.condition), trueValue = rw(inst.trueValue), falseValue = rw(inst.falseValue))

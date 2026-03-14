@@ -21,7 +21,7 @@ class Mem2RegExtendedTest {
     fun `promotes i1 alloca`() {
         val module = buildAndPromote {
             createFunction("f", emptyList(), Type.I1)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I1)
             store(Constant.I1(true), ptr)
             val v = load(Type.I1, ptr)
@@ -38,7 +38,7 @@ class Mem2RegExtendedTest {
     fun `promotes i8 alloca`() {
         val module = buildAndPromote {
             createFunction("f", emptyList(), Type.I8)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I8)
             store(Constant.I8(42), ptr)
             val v = load(Type.I8, ptr)
@@ -55,7 +55,7 @@ class Mem2RegExtendedTest {
     fun `promotes i16 alloca`() {
         val module = buildAndPromote {
             createFunction("f", emptyList(), Type.I16)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I16)
             store(Constant.I16(1000), ptr)
             val v = load(Type.I16, ptr)
@@ -72,7 +72,7 @@ class Mem2RegExtendedTest {
     fun `promotes f32 alloca`() {
         val module = buildAndPromote {
             createFunction("f", emptyList(), Type.F32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.F32)
             store(Constant.F32(2.5f), ptr)
             val v = load(Type.F32, ptr)
@@ -89,7 +89,7 @@ class Mem2RegExtendedTest {
     fun `load before store in i64 returns zero`() {
         val module = buildAndPromote {
             createFunction("f", emptyList(), Type.I64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I64)
             val v = load(Type.I64, ptr)
             ret(v)
@@ -105,7 +105,7 @@ class Mem2RegExtendedTest {
     fun `load before store in f64 returns zero`() {
         val module = buildAndPromote {
             createFunction("f", emptyList(), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.F64)
             val v = load(Type.F64, ptr)
             ret(v)
@@ -121,7 +121,7 @@ class Mem2RegExtendedTest {
     fun `load before store in i1 returns false`() {
         val module = buildAndPromote {
             createFunction("f", emptyList(), Type.I1)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I1)
             val v = load(Type.I1, ptr)
             ret(v)
@@ -137,7 +137,7 @@ class Mem2RegExtendedTest {
     fun `promotes three allocas independently`() {
         val module = buildAndPromote {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = alloca(Type.I32)
             val b = alloca(Type.I32)
             val c = alloca(Type.I32)
@@ -162,7 +162,7 @@ class Mem2RegExtendedTest {
     fun `promotes with overwritten store`() {
         val module = buildAndPromote {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(100), ptr)
             store(Constant.I32(200), ptr) // overwrites
@@ -180,16 +180,16 @@ class Mem2RegExtendedTest {
     fun `promotes with store in then branch only`() {
         val module = buildAndPromote {
             val params = createFunction("f", listOf(Param("cond", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(0), ptr)
-            condBr(params[0], "then", "merge")
+            condBr(params[0], BlockRef("then"), BlockRef("merge"))
 
-            positionAtEnd(appendBlock("then"))
+            appendBlock("then")
             store(Constant.I32(42), ptr)
-            br("merge")
+            br(BlockRef("merge"))
 
-            positionAtEnd(appendBlock("merge"))
+            appendBlock("merge")
             val v = load(Type.I32, ptr)
             ret(v)
             finalizeFunction()
@@ -204,19 +204,19 @@ class Mem2RegExtendedTest {
     fun `phi has correct values from diamond`() {
         val module = buildAndPromote {
             val params = createFunction("f", listOf(Param("cond", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
-            condBr(params[0], "then", "else")
+            condBr(params[0], BlockRef("then"), BlockRef("else"))
 
-            positionAtEnd(appendBlock("then"))
+            appendBlock("then")
             store(Constant.I32(10), ptr)
-            br("merge")
+            br(BlockRef("merge"))
 
-            positionAtEnd(appendBlock("else"))
+            appendBlock("else")
             store(Constant.I32(20), ptr)
-            br("merge")
+            br(BlockRef("merge"))
 
-            positionAtEnd(appendBlock("merge"))
+            appendBlock("merge")
             val v = load(Type.I32, ptr)
             ret(v)
             finalizeFunction()
@@ -231,7 +231,7 @@ class Mem2RegExtendedTest {
     fun `does not promote volatile store`() {
         val module = buildAndPromote {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(42), ptr, volatile = true)
             val v = load(Type.I32, ptr)
@@ -246,7 +246,7 @@ class Mem2RegExtendedTest {
     fun `promotes alloca used in add computation`() {
         val module = buildAndPromote {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = alloca(Type.I32)
             val b = alloca(Type.I32)
             store(Constant.I32(5), a)
@@ -269,7 +269,7 @@ class Mem2RegExtendedTest {
     fun `promotes alloca stored with expression result`() {
         val module = buildAndPromote {
             val params = createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             val sum = add(params[0], params[1])
             store(sum, ptr)
@@ -287,7 +287,7 @@ class Mem2RegExtendedTest {
     fun `promotes multiple loads from same alloca`() {
         val module = buildAndPromote {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(42), ptr)
             val v1 = load(Type.I32, ptr)
@@ -308,7 +308,7 @@ class Mem2RegExtendedTest {
         val module = buildAndPromote {
             declareFunction("use_ptr", listOf(Param("p", Type.OpaquePointer)), Type.Void)
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(42), ptr)
             // ptr value itself is stored somewhere -> address escapes
@@ -328,7 +328,7 @@ class Mem2RegExtendedTest {
     fun `handles store then load then store then load`() {
         val module = buildAndPromote {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(1), ptr)
             val v1 = load(Type.I32, ptr)
@@ -350,7 +350,7 @@ class Mem2RegExtendedTest {
         val module = buildAndPromote {
             declareFunction("side", listOf(Param("p", Type.OpaquePointer)), Type.Void)
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(1), ptr)
             call("side", listOf(ptr), Type.Void)
@@ -367,7 +367,7 @@ class Mem2RegExtendedTest {
         val module = buildAndPromote {
             declareFunction("side", listOf(Param("p", Type.OpaquePointer)), Type.Void)
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val good = alloca(Type.I32)
             val bad = alloca(Type.I32)
             store(Constant.I32(10), good)
@@ -388,7 +388,7 @@ class Mem2RegExtendedTest {
     fun `handles empty function`() {
         val module = buildAndPromote {
             createFunction("f", emptyList(), Type.Void)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             ret(null)
             finalizeFunction()
         }
@@ -400,7 +400,7 @@ class Mem2RegExtendedTest {
     fun `handles function with no allocas`() {
         val module = buildAndPromote {
             val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val v = add(params[0], Constant.I32(1))
             ret(v)
             finalizeFunction()
@@ -413,19 +413,19 @@ class Mem2RegExtendedTest {
     fun `promotes alloca in loop with phi`() {
         val module = buildAndPromote {
             val params = createFunction("f", listOf(Param("n", Type.I32)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(0), ptr)
-            br("loop")
+            br(BlockRef("loop"))
 
-            positionAtEnd(appendBlock("loop"))
+            appendBlock("loop")
             val v = load(Type.I32, ptr)
             val next = add(v, Constant.I32(1))
             store(next, ptr)
             val cond = icmp(ICmpPredicate.SLT, next, params[0])
-            condBr(cond, "loop", "exit")
+            condBr(cond, BlockRef("loop"), BlockRef("exit"))
 
-            positionAtEnd(appendBlock("exit"))
+            appendBlock("exit")
             val result = load(Type.I32, ptr)
             ret(result)
             finalizeFunction()
@@ -440,24 +440,24 @@ class Mem2RegExtendedTest {
     fun `promotes two allocas with diamond and independent phis`() {
         val module = buildAndPromote {
             val params = createFunction("f", listOf(Param("cond", Type.I1)), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = alloca(Type.I32)
             val b = alloca(Type.I32)
             store(Constant.I32(0), a)
             store(Constant.I32(0), b)
-            condBr(params[0], "then", "else")
+            condBr(params[0], BlockRef("then"), BlockRef("else"))
 
-            positionAtEnd(appendBlock("then"))
+            appendBlock("then")
             store(Constant.I32(1), a)
             store(Constant.I32(10), b)
-            br("merge")
+            br(BlockRef("merge"))
 
-            positionAtEnd(appendBlock("else"))
+            appendBlock("else")
             store(Constant.I32(2), a)
             store(Constant.I32(20), b)
-            br("merge")
+            br(BlockRef("merge"))
 
-            positionAtEnd(appendBlock("merge"))
+            appendBlock("merge")
             val va = load(Type.I32, a)
             val vb = load(Type.I32, b)
             val sum = add(va, vb)
@@ -473,7 +473,7 @@ class Mem2RegExtendedTest {
     fun `promotes i32 alloca`() {
         val module = buildAndPromote {
             createFunction("f", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.I32)
             store(Constant.I32(99), ptr)
             val v = load(Type.I32, ptr)
@@ -490,7 +490,7 @@ class Mem2RegExtendedTest {
     fun `promotes f64 alloca`() {
         val module = buildAndPromote {
             createFunction("f", emptyList(), Type.F64)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val ptr = alloca(Type.F64)
             store(Constant.F64(3.14), ptr)
             val v = load(Type.F64, ptr)
@@ -507,7 +507,7 @@ class Mem2RegExtendedTest {
     fun `handles multiple functions`() {
         val module = buildAndPromote {
             createFunction("f1", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val p1 = alloca(Type.I32)
             store(Constant.I32(10), p1)
             val v1 = load(Type.I32, p1)
@@ -515,7 +515,7 @@ class Mem2RegExtendedTest {
             finalizeFunction()
 
             createFunction("f2", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val p2 = alloca(Type.I32)
             store(Constant.I32(20), p2)
             val v2 = load(Type.I32, p2)

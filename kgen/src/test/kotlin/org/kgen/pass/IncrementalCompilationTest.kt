@@ -12,7 +12,7 @@ class IncrementalCompilationTest {
         val builder = IrBuilder("test", Target.x86_64())
         for ((name, body) in functions) {
             val params = builder.createFunction(name, listOf(Param("x", Type.I32)), Type.I32)
-            builder.positionAtEnd(builder.appendBlock("entry"))
+            builder.appendBlock("entry")
             body(builder, params)
             builder.finalizeFunction()
         }
@@ -102,12 +102,12 @@ class IncrementalCompilationTest {
         val builder1 = IrBuilder("test", Target.x86_64())
         // helper: returns x + 1
         val hp = builder1.createFunction("helper", listOf(Param("x", Type.I32)), Type.I32)
-        builder1.positionAtEnd(builder1.appendBlock("entry"))
+        builder1.appendBlock("entry")
         builder1.ret(builder1.add(hp[0], Constant.I32(1)))
         builder1.finalizeFunction()
         // main: calls helper
         val mp = builder1.createFunction("main", listOf(Param("x", Type.I32)), Type.I32)
-        builder1.positionAtEnd(builder1.appendBlock("entry"))
+        builder1.appendBlock("entry")
         val result = builder1.call("helper", listOf(mp[0]), Type.I32)
         builder1.ret(result!!)
         builder1.finalizeFunction()
@@ -119,11 +119,11 @@ class IncrementalCompilationTest {
         // Change helper's body
         val builder2 = IrBuilder("test", Target.x86_64())
         val hp2 = builder2.createFunction("helper", listOf(Param("x", Type.I32)), Type.I32)
-        builder2.positionAtEnd(builder2.appendBlock("entry"))
+        builder2.appendBlock("entry")
         builder2.ret(builder2.add(hp2[0], Constant.I32(2))) // changed from 1 to 2
         builder2.finalizeFunction()
         val mp2 = builder2.createFunction("main", listOf(Param("x", Type.I32)), Type.I32)
-        builder2.positionAtEnd(builder2.appendBlock("entry"))
+        builder2.appendBlock("entry")
         val result2 = builder2.call("helper", listOf(mp2[0]), Type.I32)
         builder2.ret(result2!!)
         builder2.finalizeFunction()
@@ -161,7 +161,7 @@ class IncrementalCompilationTest {
     fun extractDependencies() {
         val builder = IrBuilder("test", Target.x86_64())
         val params = builder.createFunction("caller", listOf(Param("x", Type.I32)), Type.I32)
-        builder.positionAtEnd(builder.appendBlock("entry"))
+        builder.appendBlock("entry")
         val r = builder.call("helper", listOf(params[0]), Type.I32)
         builder.ret(r!!)
         builder.finalizeFunction()

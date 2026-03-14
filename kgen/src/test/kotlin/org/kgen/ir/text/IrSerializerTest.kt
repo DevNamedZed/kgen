@@ -119,7 +119,7 @@ class IrSerializerTest {
             function("fib", listOf(Param("n", Type.I32)), Type.I32) {
                 block("entry") {
                     val cmp = icmp(ICmpPredicate.SLE, param(0), i32(1))
-                    condBr(cmp, "base", "recurse")
+                    condBr(cmp, BlockRef("base"), BlockRef("recurse"))
                 }
                 block("base") {
                     ret(param(0))

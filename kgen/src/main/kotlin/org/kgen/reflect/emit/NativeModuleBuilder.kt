@@ -12,7 +12,7 @@ import org.kgen.reflect.NativeCode
  * NativeModuleBuilder mod = ModuleBuilder.native_("myLib", x86Generator);
  * IrBuilder ir = mod.irBuilder();
  * var params = ir.createFunction("add", List.of(new Param("a", Type.I64), new Param("b", Type.I64)), Type.I64);
- * ir.positionAtEnd(ir.appendBlock("entry"));
+ * ir.appendBlock("entry");
  * var sum = ir.add(params.get(0), params.get(1));
  * ir.ret(sum);
  * ir.finalizeFunction();

@@ -74,9 +74,35 @@ object IrConstraints {
         IrCategory.OBJECT,
     )
 
-    /** Managed native: structural + machine + runtime + interop + object. Everything except nothing. */
+    /** Managed native: structural + machine + runtime + interop + object. */
     @JvmField val MANAGED_NATIVE: Set<IrCategory> = unmodifiable(
-        *IrCategory.entries.toTypedArray()
+        IrCategory.TERMINATOR, IrCategory.CALL, IrCategory.SSA,
+        IrCategory.DEBUG, IrCategory.INTRINSIC,
+        IrCategory.ARITHMETIC, IrCategory.BITWISE, IrCategory.COMPARISON,
+        IrCategory.CONVERSION, IrCategory.MEMORY, IrCategory.ATOMIC,
+        IrCategory.VECTOR, IrCategory.AGGREGATE, IrCategory.EXCEPTION,
+        IrCategory.RUNTIME, IrCategory.INTEROP, IrCategory.OBJECT,
+    )
+
+    /** JIT compilation: managed native + deoptimization (guards, frame states, OSR). */
+    @JvmField val JIT: Set<IrCategory> = unmodifiable(
+        IrCategory.TERMINATOR, IrCategory.CALL, IrCategory.SSA,
+        IrCategory.DEBUG, IrCategory.INTRINSIC,
+        IrCategory.ARITHMETIC, IrCategory.BITWISE, IrCategory.COMPARISON,
+        IrCategory.CONVERSION, IrCategory.MEMORY, IrCategory.ATOMIC,
+        IrCategory.VECTOR, IrCategory.AGGREGATE, IrCategory.EXCEPTION,
+        IrCategory.RUNTIME, IrCategory.INTEROP, IrCategory.OBJECT,
+        IrCategory.DEOPTIMIZATION,
+    )
+
+    /** Compute kernel: native + compute. For GPU kernel bodies. */
+    @JvmField val COMPUTE_KERNEL: Set<IrCategory> = unmodifiable(
+        IrCategory.TERMINATOR, IrCategory.CALL, IrCategory.SSA,
+        IrCategory.DEBUG, IrCategory.INTRINSIC,
+        IrCategory.ARITHMETIC, IrCategory.BITWISE, IrCategory.COMPARISON,
+        IrCategory.CONVERSION, IrCategory.MEMORY, IrCategory.ATOMIC,
+        IrCategory.VECTOR, IrCategory.AGGREGATE,
+        IrCategory.COMPUTE,
     )
 
     /** All categories allowed. Equivalent to passing `null` as constraints. */

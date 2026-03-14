@@ -25,12 +25,12 @@ class MachORoundTripTest {
     private fun buildModule(target: Target): Module {
         val ir = IrBuilder("macho_test", target)
         val params = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(ir.add(params[0], params[1]))
         ir.finalizeFunction()
 
         ir.createFunction("_main", emptyList(), Type.I64)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret(Constant.I64(0))
         ir.finalizeFunction()
 
@@ -98,14 +98,14 @@ class MachORoundTripTest {
     fun multiObjectMachOLink() {
         val ir1 = IrBuilder("lib", Target.x86_64())
         val p = ir1.createFunction("compute", listOf(Param("x", Type.I64)), Type.I64)
-        ir1.positionAtEnd(ir1.appendBlock("entry"))
+        ir1.appendBlock("entry")
         ir1.ret(ir1.mul(p[0], Constant.I64(3)))
         ir1.finalizeFunction()
         val obj1 = X86CodeGenerator().generateObjectFile(ir1.build())
 
         val ir2 = IrBuilder("main", Target.x86_64())
         ir2.createFunction("_main", emptyList(), Type.I64)
-        ir2.positionAtEnd(ir2.appendBlock("entry"))
+        ir2.appendBlock("entry")
         ir2.ret(Constant.I64(0))
         ir2.finalizeFunction()
         val obj2 = X86CodeGenerator().generateObjectFile(ir2.build())

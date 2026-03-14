@@ -43,7 +43,7 @@ class X86LinearScanAllocatorTest {
         fun `single i32 param uses edi register`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(params[0])
                 finalizeFunction()
             }
@@ -55,7 +55,7 @@ class X86LinearScanAllocatorTest {
         fun `single i64 param uses rdi register`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(params[0])
                 finalizeFunction()
             }
@@ -67,7 +67,7 @@ class X86LinearScanAllocatorTest {
         fun `pointer param uses 64-bit register`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("p", Type.OpaquePointer)), Type.OpaquePointer)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(params[0])
                 finalizeFunction()
             }
@@ -80,7 +80,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = fadd(params[0], params[1])
                 ret(sum)
                 finalizeFunction()
@@ -94,7 +94,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = fadd(params[0], params[1])
                 ret(sum)
                 finalizeFunction()
@@ -108,7 +108,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = add(params[0], params[1])
                 ret(sum)
                 finalizeFunction()
@@ -125,7 +125,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = add(params[0], params[1])
                 val result = add(sum, params[2])
                 ret(result)
@@ -142,7 +142,7 @@ class X86LinearScanAllocatorTest {
         fun `system v abi first param in rdi`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = add(params[0], Constant.I64(1))
                 ret(result)
                 finalizeFunction()
@@ -156,7 +156,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = add(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -171,7 +171,7 @@ class X86LinearScanAllocatorTest {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64),
                     Param("d", Type.I64), Param("e", Type.I64), Param("f", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 var sum = add(params[0], params[1])
                 sum = add(sum, params[2])
                 sum = add(sum, params[3])
@@ -189,7 +189,7 @@ class X86LinearScanAllocatorTest {
         fun `win64 abi first param in rcx`() {
             val lines = generateAndDisassemble(triple = "x86_64-unknown-windows-msvc") {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = add(params[0], Constant.I64(1))
                 ret(result)
                 finalizeFunction()
@@ -203,7 +203,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble(triple = "x86_64-unknown-windows-msvc") {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = add(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -217,7 +217,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = fadd(params[0], params[1])
                 ret(sum)
                 finalizeFunction()
@@ -231,7 +231,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = add(params[0], params[1])
                 ret(sum)
                 finalizeFunction()
@@ -249,7 +249,7 @@ class X86LinearScanAllocatorTest {
         fun `identity function uses no extra registers`() {
             val code = generateCode {
                 val params = createFunction("id", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(params[0])
                 finalizeFunction()
             }
@@ -261,7 +261,7 @@ class X86LinearScanAllocatorTest {
             val code = generateCode {
                 val params = createFunction("add", listOf(
                     Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = add(params[0], params[1])
                 ret(sum)
                 finalizeFunction()
@@ -274,7 +274,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val ab = add(params[0], params[1])
                 val result = add(ab, params[2])
                 ret(result)
@@ -288,7 +288,7 @@ class X86LinearScanAllocatorTest {
         fun `constant operand does not consume register`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = add(params[0], Constant.I32(42))
                 ret(result)
                 finalizeFunction()
@@ -302,7 +302,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = sub(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -315,7 +315,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = mul(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -328,7 +328,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = and(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -340,7 +340,7 @@ class X86LinearScanAllocatorTest {
         fun `shift left with immediate`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = shl(params[0], Constant.I32(3))
                 ret(result)
                 finalizeFunction()
@@ -357,7 +357,7 @@ class X86LinearScanAllocatorTest {
             val code = generateCode {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v1 = add(params[0], Constant.I64(1))
                 val v2 = add(params[0], Constant.I64(2))
                 val v3 = add(params[0], Constant.I64(3))
@@ -391,7 +391,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v1 = add(params[0], Constant.I64(1))
                 val v2 = add(params[0], Constant.I64(2))
                 val v3 = add(params[0], Constant.I64(3))
@@ -425,7 +425,7 @@ class X86LinearScanAllocatorTest {
         fun `i32 values under pressure still compile`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v1 = add(params[0], Constant.I32(1))
                 val v2 = add(params[0], Constant.I32(2))
                 val v3 = add(params[0], Constant.I32(3))
@@ -457,7 +457,7 @@ class X86LinearScanAllocatorTest {
         fun `fp values under pressure cause spilling`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("x", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v1 = fadd(params[0], Constant.F64(1.0))
                 val v2 = fadd(params[0], Constant.F64(2.0))
                 val v3 = fadd(params[0], Constant.F64(3.0))
@@ -498,7 +498,7 @@ class X86LinearScanAllocatorTest {
             val code = generateCode {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 // Create values with varying use counts — allocator should evict least-used
                 val v1 = add(params[0], Constant.I64(1))
                 val v2 = add(params[0], Constant.I64(2))
@@ -541,7 +541,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 declareFunction("external_fn", emptyList(), Type.I64)
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = call("external_fn", emptyList(), Type.I64)!!
                 // x is live across the call — must be in callee-saved reg
                 val sum = add(params[0], result)
@@ -560,7 +560,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 declareFunction("external_fn", emptyList(), Type.I64)
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = call("external_fn", emptyList(), Type.I64)!!
                 val sum = add(params[0], result)
                 ret(sum)
@@ -576,7 +576,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 declareFunction("external_fn", emptyList(), Type.I64)
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = call("external_fn", emptyList(), Type.I64)!!
                 val sum = add(params[0], result)
                 ret(sum)
@@ -592,7 +592,7 @@ class X86LinearScanAllocatorTest {
                 declareFunction("external_fn", emptyList(), Type.I64)
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = call("external_fn", emptyList(), Type.I64)!!
                 val sum = add(params[0], params[1])
                 val final_ = add(sum, result)
@@ -607,7 +607,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 declareFunction("external_fn", listOf(Param("v", Type.I64)), Type.I64)
                 createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v = add(Parameter("x", Type.I64, 0), Constant.I64(1))
                 val result = call("external_fn", listOf(v), Type.I64)
                 ret(result)
@@ -621,7 +621,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 declareFunction("ext", emptyList(), Type.Void)
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 call("ext", emptyList(), Type.Void)
                 ret(params[0])
                 finalizeFunction()
@@ -638,7 +638,7 @@ class X86LinearScanAllocatorTest {
                 declareFunction("ext1", emptyList(), Type.I64)
                 declareFunction("ext2", listOf(Param("v", Type.I64)), Type.I64)
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val r1 = call("ext1", emptyList(), Type.I64)!!
                 val r2 = call("ext2", listOf(r1), Type.I64)
                 ret(r2)
@@ -656,7 +656,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = add(params[0], params[1])
                 ret(sum)
                 finalizeFunction()
@@ -672,7 +672,7 @@ class X86LinearScanAllocatorTest {
                 declareFunction("ext", emptyList(), Type.Void)
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 call("ext", emptyList(), Type.Void)
                 val sum = add(params[0], params[1])
                 val result = add(sum, params[2])
@@ -689,7 +689,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 declareFunction("ext", emptyList(), Type.Void)
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 call("ext", emptyList(), Type.Void)
                 ret(params[0])
                 finalizeFunction()
@@ -708,7 +708,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = fadd(params[0], params[1])
                 ret(sum)
                 finalizeFunction()
@@ -722,7 +722,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = fadd(params[0], params[1])
                 ret(sum)
                 finalizeFunction()
@@ -736,7 +736,7 @@ class X86LinearScanAllocatorTest {
             val code = generateCode {
                 declareFunction("ext", emptyList(), Type.Void)
                 val params = createFunction("f", listOf(Param("x", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 call("ext", emptyList(), Type.Void)
                 ret(params[0])
                 finalizeFunction()
@@ -750,7 +750,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.F64), Param("b", Type.F64), Param("c", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val ab = fadd(params[0], params[1])
                 val result = fadd(ab, params[2])
                 ret(result)
@@ -765,7 +765,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("n", Type.I64), Param("x", Type.F64), Param("y", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val sum = fadd(params[1], params[2])
                 ret(sum)
                 finalizeFunction()
@@ -779,7 +779,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = fmul(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -793,7 +793,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = fsub(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -807,7 +807,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = fdiv(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -824,7 +824,7 @@ class X86LinearScanAllocatorTest {
         fun `spill slots use negative rbp offsets`() {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(Param("a", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v1 = add(params[0], Constant.I64(1))
                 val v2 = add(params[0], Constant.I64(2))
                 val v3 = add(params[0], Constant.I64(3))
@@ -858,7 +858,7 @@ class X86LinearScanAllocatorTest {
         fun `stack frame is aligned`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v1 = add(params[0], Constant.I64(1))
                 val v2 = add(params[0], Constant.I64(2))
                 val v3 = add(params[0], Constant.I64(3))
@@ -891,7 +891,7 @@ class X86LinearScanAllocatorTest {
         fun `spill slots are reused after value dies`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 // Create values with short live ranges that can reuse spill slots
                 val v1 = add(params[0], Constant.I64(1))
                 val v2 = add(v1, Constant.I64(2))
@@ -913,7 +913,7 @@ class X86LinearScanAllocatorTest {
             val code = generateCode {
                 createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(Constant.I64(42))
                 finalizeFunction()
             }
@@ -924,7 +924,7 @@ class X86LinearScanAllocatorTest {
         fun `short-lived values free registers quickly`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 // Chain of operations — each intermediate is short-lived
                 val v1 = add(params[0], Constant.I64(1))
                 val v2 = add(v1, Constant.I64(2))
@@ -948,7 +948,7 @@ class X86LinearScanAllocatorTest {
         fun `value used multiple times extends its live range`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val doubled = add(params[0], params[0])
                 val tripled = add(doubled, params[0])
                 val quadrupled = add(tripled, params[0])
@@ -963,12 +963,12 @@ class X86LinearScanAllocatorTest {
             val code = generateCode {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val cond = icmp(ICmpPredicate.SGT, params[0], params[1])
-                condBr(cond, "then", "else_")
-                positionAtEnd(appendBlock("then"))
+                condBr(cond, BlockRef("then"), BlockRef("else_"))
+                appendBlock("then")
                 ret(params[0])
-                positionAtEnd(appendBlock("else_"))
+                appendBlock("else_")
                 ret(params[1])
                 finalizeFunction()
             }
@@ -979,17 +979,17 @@ class X86LinearScanAllocatorTest {
         fun `phi in diamond merges different paths`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("n", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val cond = icmp(ICmpPredicate.SGT, params[0], Constant.I64(0))
-                condBr(cond, "pos", "neg")
-                positionAtEnd(appendBlock("pos"))
+                condBr(cond, BlockRef("pos"), BlockRef("neg"))
+                appendBlock("pos")
                 val posVal = add(params[0], Constant.I64(1))
-                br("merge")
-                positionAtEnd(appendBlock("neg"))
+                br(BlockRef("merge"))
+                appendBlock("neg")
                 val negVal = sub(Constant.I64(0), params[0])
-                br("merge")
-                positionAtEnd(appendBlock("merge"))
-                val result = phi(Type.I64, listOf(posVal to "pos", negVal to "neg"))
+                br(BlockRef("merge"))
+                appendBlock("merge")
+                val result = phi(Type.I64, listOf(posVal to BlockRef("pos"), negVal to BlockRef("neg")))
                 ret(result)
                 finalizeFunction()
             }
@@ -1005,7 +1005,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = sdiv(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -1019,7 +1019,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = srem(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -1032,7 +1032,7 @@ class X86LinearScanAllocatorTest {
             val lines = generateAndDisassemble {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 // c arrives in RDX (3rd System V param), but div clobbers RDX
                 val result = sdiv(params[0], params[1])
                 val final_ = add(result, params[2])
@@ -1047,7 +1047,7 @@ class X86LinearScanAllocatorTest {
             val code = generateCode {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = udiv(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -1060,7 +1060,7 @@ class X86LinearScanAllocatorTest {
             val code = generateCode {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = urem(params[0], params[1])
                 ret(result)
                 finalizeFunction()
@@ -1076,12 +1076,12 @@ class X86LinearScanAllocatorTest {
         fun `two functions each get independent allocation`() {
             val module = buildModule {
                 val p1 = createFunction("f1", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(add(p1[0], Constant.I64(1)))
                 finalizeFunction()
 
                 val p2 = createFunction("f2", listOf(Param("y", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(add(p2[0], Constant.I64(2)))
                 finalizeFunction()
             }
@@ -1095,12 +1095,12 @@ class X86LinearScanAllocatorTest {
         fun `caller and callee allocate independently`() {
             val code = generateCode {
                 val hp = createFunction("helper", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(add(hp[0], Constant.I64(1)))
                 finalizeFunction()
 
                 createFunction("main", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = call("helper", listOf(Constant.I64(41)), Type.I64)
                 ret(result)
                 finalizeFunction()
@@ -1112,7 +1112,7 @@ class X86LinearScanAllocatorTest {
         fun `function with no params and no locals`() {
             val code = generateCode {
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(Constant.I64(42))
                 finalizeFunction()
             }
@@ -1127,7 +1127,7 @@ class X86LinearScanAllocatorTest {
         fun `void return function`() {
             val code = generateCode {
                 createFunction("f", emptyList(), Type.Void)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret()
                 finalizeFunction()
             }
@@ -1138,7 +1138,7 @@ class X86LinearScanAllocatorTest {
         fun `function returning constant`() {
             val lines = generateAndDisassemble {
                 createFunction("f", emptyList(), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(Constant.I32(0))
                 finalizeFunction()
             }
@@ -1153,7 +1153,7 @@ class X86LinearScanAllocatorTest {
                     Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64),
                     Param("d", Type.I64), Param("e", Type.I64), Param("f_", Type.I64),
                     Param("g", Type.I64), Param("h", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 var sum = add(params[0], params[1])
                 for (i in 2 until 6) {
                     sum = add(sum, params[i])
@@ -1169,12 +1169,12 @@ class X86LinearScanAllocatorTest {
             val code = generateCode {
                 val params = createFunction("max", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val cond = icmp(ICmpPredicate.SGT, params[0], params[1])
-                condBr(cond, "ret_a", "ret_b")
-                positionAtEnd(appendBlock("ret_a"))
+                condBr(cond, BlockRef("ret_a"), BlockRef("ret_b"))
+                appendBlock("ret_a")
                 ret(params[0])
-                positionAtEnd(appendBlock("ret_b"))
+                appendBlock("ret_b")
                 ret(params[1])
                 finalizeFunction()
             }
@@ -1185,7 +1185,7 @@ class X86LinearScanAllocatorTest {
         fun `select instruction`() {
             val code = generateCode {
                 val params = createFunction("abs", listOf(Param("x", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val neg = sub(Constant.I64(0), params[0])
                 val cond = icmp(ICmpPredicate.SGT, params[0], Constant.I64(0))
                 val result = select(cond, params[0], neg)
@@ -1200,7 +1200,7 @@ class X86LinearScanAllocatorTest {
             val code = generateCode {
                 val params = createFunction("f", listOf(
                     Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val cmp = icmp(ICmpPredicate.EQ, params[0], params[1])
                 val result = zext(cmp, Type.I32)
                 ret(result)
@@ -1214,13 +1214,13 @@ class X86LinearScanAllocatorTest {
             val code = generateCode {
                 val params = createFunction("f", listOf(
                     Param("n", Type.I64)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val cond = icmp(ICmpPredicate.SGT, params[0], Constant.I64(10))
-                condBr(cond, "big", "small")
-                positionAtEnd(appendBlock("big"))
+                condBr(cond, BlockRef("big"), BlockRef("small"))
+                appendBlock("big")
                 val bigResult = add(params[0], Constant.I64(100))
                 ret(bigResult)
-                positionAtEnd(appendBlock("small"))
+                appendBlock("small")
                 val smallResult = add(params[0], Constant.I64(1))
                 ret(smallResult)
                 finalizeFunction()
@@ -1235,7 +1235,7 @@ class X86LinearScanAllocatorTest {
                     Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64),
                     Param("d", Type.I64), Param("e", Type.I64), Param("f_", Type.I64)), Type.I64)
                 createFunction("f", emptyList(), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val result = call("ext", listOf(
                     Constant.I64(1), Constant.I64(2), Constant.I64(3),
                     Constant.I64(4), Constant.I64(5), Constant.I64(6)), Type.I64)
@@ -1249,7 +1249,7 @@ class X86LinearScanAllocatorTest {
         fun `load and store with pointer`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("p", Type.OpaquePointer)), Type.I64)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 val v = load(Type.I64, params[0])
                 val result = add(v, Constant.I64(1))
                 store(result, params[0])
@@ -1263,7 +1263,7 @@ class X86LinearScanAllocatorTest {
         fun `i8 type allocation`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("x", Type.I8)), Type.I8)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(params[0])
                 finalizeFunction()
             }
@@ -1274,7 +1274,7 @@ class X86LinearScanAllocatorTest {
         fun `i16 type allocation`() {
             val code = generateCode {
                 val params = createFunction("f", listOf(Param("x", Type.I16)), Type.I16)
-                positionAtEnd(appendBlock("entry"))
+                appendBlock("entry")
                 ret(params[0])
                 finalizeFunction()
             }

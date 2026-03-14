@@ -34,21 +34,21 @@ class CrossBackendCodegenTest {
 
     private fun buildArithmeticModule(target: Target): Module = buildModule(target) {
         val params = createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        positionAtEnd(appendBlock("entry"))
+        appendBlock("entry")
         ret(add(params[0], params[1]))
         finalizeFunction()
     }
 
     private fun buildBranchModule(target: Target): Module = buildModule(target) {
         val params = createFunction("abs", listOf(Param("x", Type.I32)), Type.I32)
-        positionAtEnd(appendBlock("entry"))
+        appendBlock("entry")
         val cond = icmp(ICmpPredicate.SGE, params[0], Constant.I32(0))
-        condBr(cond, "positive", "negative")
+        condBr(cond, BlockRef("positive"), BlockRef("negative"))
 
-        positionAtEnd(appendBlock("positive"))
+        appendBlock("positive")
         ret(params[0])
 
-        positionAtEnd(appendBlock("negative"))
+        appendBlock("negative")
         val neg = sub(Constant.I32(0), params[0])
         ret(neg)
         finalizeFunction()
@@ -56,17 +56,17 @@ class CrossBackendCodegenTest {
 
     private fun buildMultiFunctionModule(target: Target): Module = buildModule(target) {
         val addParams = createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        positionAtEnd(appendBlock("entry"))
+        appendBlock("entry")
         ret(add(addParams[0], addParams[1]))
         finalizeFunction()
 
         val mulParams = createFunction("mul", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-        positionAtEnd(appendBlock("entry"))
+        appendBlock("entry")
         ret(mul(mulParams[0], mulParams[1]))
         finalizeFunction()
 
         createFunction("constant", emptyList(), Type.I64)
-        positionAtEnd(appendBlock("entry"))
+        appendBlock("entry")
         ret(Constant.I64(42))
         finalizeFunction()
     }

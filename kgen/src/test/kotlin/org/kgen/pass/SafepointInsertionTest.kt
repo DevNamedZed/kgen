@@ -13,7 +13,7 @@ class SafepointInsertionTest {
     fun noInsertionWithoutGcStrategy() {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("f", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.ret()
         ir.finalizeFunction()
         val module = ir.build()
@@ -83,7 +83,7 @@ class SafepointInsertionTest {
         val ir = IrBuilder("test", Target.x86_64())
         ir.declareFunction("target", listOf(Param("x", Type.I32)), Type.I32)
         ir.createFunction("f", emptyList(), Type.I32)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         val fn = GlobalRef("target", Type.Function(listOf(Type.I32), Type.I32))
         val r = ir.managedCall(fn, listOf(Constant.I32(1)), Type.I32, ManagedCallDirection.MANAGED_TO_NATIVE)!!
         ir.ret(r)
@@ -103,7 +103,7 @@ class SafepointInsertionTest {
         val ir = IrBuilder("test", Target.x86_64())
         ir.declareFunction("puts", listOf(Param("s", Type.I32)), Type.Void)
         ir.createFunction("f", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.call(GlobalRef("puts", Type.Function(listOf(Type.I32), Type.Void)), listOf(Constant.I32(0)), Type.Void)
         ir.ret()
         ir.finalizeFunction()
@@ -117,19 +117,19 @@ class SafepointInsertionTest {
         val ir = IrBuilder("test", Target.x86_64())
         ir.createFunction("loop", listOf(Param("n", Type.I32)), Type.Void)
 
-        val entry = ir.appendBlock("entry")
-        val loopBody = ir.appendBlock("loop")
-        val exit = ir.appendBlock("exit")
+        val entry = ir.createBlock("entry")
+        val loopBody = ir.createBlock("loop")
+        val exit = ir.createBlock("exit")
 
-        ir.positionAtEnd(entry)
-        ir.br("loop")
+        ir.appendBlock(entry)
+        ir.br(BlockRef("loop"))
 
-        ir.positionAtEnd(loopBody)
+        ir.appendBlock(loopBody)
         val n = Parameter("n", Type.I32, 0)
         val cond = ir.icmp(ICmpPredicate.EQ, n, Constant.I32(0))
-        ir.condBr(cond, "exit", "loop")
+        ir.condBr(cond, BlockRef("exit"), BlockRef("loop"))
 
-        ir.positionAtEnd(exit)
+        ir.appendBlock(exit)
         ir.ret()
         ir.finalizeFunction()
 
@@ -143,7 +143,7 @@ class SafepointInsertionTest {
         val ir = IrBuilder("test", Target.x86_64())
         ir.declareFunction("puts", listOf(Param("s", Type.I32)), Type.Void)
         ir.createFunction("f", emptyList(), Type.Void)
-        ir.positionAtEnd(ir.appendBlock("entry"))
+        ir.appendBlock("entry")
         ir.gcSafepoint()
         ir.call(GlobalRef("puts", Type.Function(listOf(Type.I32), Type.Void)), listOf(Constant.I32(0)), Type.Void)
         ir.ret()

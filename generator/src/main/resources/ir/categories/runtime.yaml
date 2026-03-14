@@ -1,0 +1,219 @@
+name: Runtime
+interfaceName: RuntimeInstruction
+enumValue: RUNTIME
+description: |-
+  Garbage collection and runtime support instructions.
+
+  Runtime instructions manage the interaction between compiled code and the
+  managed runtime: heap allocation, GC safepoints, root tracking, write/read
+  barriers, reference counting, and coroutine lifecycle.
+imports:
+- org.kgen.ir.Type
+sections:
+- comment: GC and memory management
+  instructions:
+  - name: GCAlloc
+    description: Allocates an object of the given type on the garbage-collected heap.
+    effects: GC_ALLOC
+    emit:
+      name: gcAlloc
+      resultType: Type.Reference(allocType)
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: allocType
+      type: Type
+      role: config
+    - name: size
+      type: Value?
+      default: 'null'
+      role: operandNullable
+  - name: GCSafepoint
+    description: Inserts a GC safepoint poll.
+    effects: SAFEPOINT
+    emit:
+      name: gcSafepoint
+    fields: []
+  - name: GCRoot
+    description: Registers a pointer as a GC root so the collector can trace through it.
+    effects:
+      bits:
+      - HAS_SIDE_EFFECTS
+    emit:
+      name: gcRoot
+    fields:
+    - name: ptr
+      type: Value
+      role: operand
+    - name: metadata
+      type: Value?
+      role: operandNullable
+  - name: WriteBarrier
+    description: Emits a write barrier for a reference store into an object field.
+    effects: WRITE_BARRIER
+    fields:
+    - name: obj
+      type: Value
+      role: operand
+    - name: fieldIndex
+      type: Value
+      role: operand
+    - name: value
+      type: Value
+      role: operand
+  - name: ReadBarrier
+    description: Emits a read barrier for loading a reference from an object field.
+    effects:
+      bits:
+      - READS_HEAP_MEMORY
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: ref
+      type: Value
+      role: operand
+    emit:
+      resultType: ref.type
+- comment: Reference counting
+  instructions:
+  - name: RefRetain
+    description: Increments the reference count of a reference-counted object.
+    effects:
+      bits:
+      - WRITES_HEAP_MEMORY
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: obj
+      type: Value
+      role: operand
+  - name: RefRelease
+    description: Decrements the reference count of a reference-counted object.
+    effects:
+      bits:
+      - WRITES_HEAP_MEMORY
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: obj
+      type: Value
+      role: operand
+  - name: RefCount
+    description: Reads the current reference count of a reference-counted object.
+    effects:
+      bits:
+      - READS_HEAP_MEMORY
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: obj
+      type: Value
+      role: operand
+    emit:
+      resultType: Type.I32
+- comment: Coroutine lifecycle
+  instructions:
+  - name: CoroBegin
+    description: Begins a coroutine, creating a handle from an ID and memory buffer.
+    effects:
+      bits:
+      - WRITES_HEAP_MEMORY
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: id
+      type: Value
+      role: operand
+    - name: mem
+      type: Value
+      role: operand
+    emit:
+      resultType: Type.OpaquePointer
+  - name: CoroEnd
+    description: Marks the end of a coroutine's execution.
+    effects:
+      bits:
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: handle
+      type: Value
+      role: operand
+    - name: unwind
+      type: Boolean
+      default: 'false'
+      role: flag
+  - name: CoroSuspend
+    description: Suspends a coroutine, yielding control to the caller or resumer.
+    effects:
+      bits:
+      - IS_SAFEPOINT
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: save
+      type: Value?
+      role: operandNullable
+    - name: isFinal
+      type: Boolean
+      default: 'false'
+      role: flag
+    emit:
+      resultType: Type.I8
+  - name: CoroResume
+    description: Resumes a suspended coroutine from its last suspension point.
+    effects:
+      bits:
+      - WRITES_HEAP_MEMORY
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: handle
+      type: Value
+      role: operand
+  - name: CoroDestroy
+    description: Destroys a coroutine, releasing its frame memory.
+    effects:
+      bits:
+      - WRITES_HEAP_MEMORY
+      - HAS_SIDE_EFFECTS
+    fields:
+    - name: handle
+      type: Value
+      role: operand
+  - name: CoroSize
+    description: Returns the size in bytes required for a coroutine frame.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    emit:
+      resultType: Type.I64
+- comment: GC relocate
+  instructions:
+  - name: GCRelocate
+    description: |-
+      Produce post-safepoint SSA value for a potentially-relocated reference.
+
+      After any instruction with `isSafepoint=true`, live GC references may have
+      been moved by a compacting collector. GCRelocate produces a new SSA value
+      representing the post-safepoint location. For non-moving GC strategies,
+      GCRelocate is the identity and is eliminated.
+    effects: PURE
+    fields:
+    - name: dest
+      type: InstructionRef
+      role: result
+    - name: safepoint
+      type: Value
+      role: operand
+    - name: base
+      type: Value
+      role: operand
+    - name: derived
+      type: Value
+      role: operand

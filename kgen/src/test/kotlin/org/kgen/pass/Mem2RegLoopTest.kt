@@ -35,27 +35,27 @@ class Mem2RegLoopTest {
         // exit: ret i
         val module = buildAndPromote {
             createFunction("loop", emptyList(), Type.I32)
-            val entry = appendBlock("entry")
-            val header = appendBlock("header")
-            val body = appendBlock("body")
-            val exit = appendBlock("exit")
+            val entry = createBlock("entry")
+            val header = createBlock("header")
+            val body = createBlock("body")
+            val exit = createBlock("exit")
 
-            positionAtEnd(entry)
+            appendBlock(entry)
             val iPtr = alloca(Type.I32)
             store(Constant.I32(0), iPtr)
             br(header)
 
-            positionAtEnd(header)
+            appendBlock(header)
             val iVal = load(Type.I32, iPtr)
             val cond = icmp(ICmpPredicate.SLT, iVal, Constant.I32(10))
             condBr(cond, body, exit)
 
-            positionAtEnd(body)
+            appendBlock(body)
             val next = add(load(Type.I32, iPtr), Constant.I32(1))
             store(next, iPtr)
             br(header)
 
-            positionAtEnd(exit)
+            appendBlock(exit)
             val result = load(Type.I32, iPtr)
             ret(result)
             finalizeFunction()
@@ -70,11 +70,11 @@ class Mem2RegLoopTest {
         val phi = headerPhis[0]
         assertEquals(2, phi.incoming.size, "Phi should have two incoming edges")
         val preds = phi.incoming.map { it.second }.toSet()
-        assertTrue("entry" in preds, "Phi should have entry as predecessor")
-        assertTrue("body" in preds, "Phi should have body as predecessor")
+        assertTrue(BlockRef("entry") in preds, "Phi should have entry as predecessor")
+        assertTrue(BlockRef("body") in preds, "Phi should have body as predecessor")
 
         // Entry incoming value should be the initial constant 0
-        val entryVal = phi.incoming.first { it.second == "entry" }.first
+        val entryVal = phi.incoming.first { it.second == BlockRef("entry") }.first
         assertTrue(entryVal is Constant.I32 && entryVal.value == 0, "Entry value should be 0, got: $entryVal")
 
         // No alloca, load, or store instructions should remain
@@ -99,7 +99,7 @@ class Mem2RegLoopTest {
         // After Mem2Reg, result should be 42 (transitively resolved)
         val module = buildAndPromote {
             createFunction("transitive", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = alloca(Type.I32)
             val b = alloca(Type.I32)
             store(Constant.I32(42), a)
@@ -128,31 +128,31 @@ class Mem2RegLoopTest {
         // After Mem2Reg, b's uses should resolve to a's phi, not a dangling ref
         val module = buildAndPromote {
             createFunction("transLoop", emptyList(), Type.I32)
-            val entry = appendBlock("entry")
-            val header = appendBlock("header")
-            val body = appendBlock("body")
-            val exit = appendBlock("exit")
+            val entry = createBlock("entry")
+            val header = createBlock("header")
+            val body = createBlock("body")
+            val exit = createBlock("exit")
 
-            positionAtEnd(entry)
+            appendBlock(entry)
             val a = alloca(Type.I32)
             val b = alloca(Type.I32)
             store(Constant.I32(0), a)
             store(Constant.I32(0), b)
             br(header)
 
-            positionAtEnd(header)
+            appendBlock(header)
             val aVal = load(Type.I32, a)
             store(aVal, b)
             val cond = icmp(ICmpPredicate.SLT, aVal, Constant.I32(10))
             condBr(cond, body, exit)
 
-            positionAtEnd(body)
+            appendBlock(body)
             val bVal = load(Type.I32, b)
             val next = add(bVal, Constant.I32(1))
             store(next, a)
             br(header)
 
-            positionAtEnd(exit)
+            appendBlock(exit)
             val result = load(Type.I32, b)
             ret(result)
             finalizeFunction()
@@ -186,41 +186,41 @@ class Mem2RegLoopTest {
         // entry → outer_header → inner_header → inner_body → inner_header → outer_body → outer_header → exit
         val module = buildAndPromote {
             createFunction("nested", emptyList(), Type.I32)
-            val entry = appendBlock("entry")
-            val outerHeader = appendBlock("outer_header")
-            val innerHeader = appendBlock("inner_header")
-            val innerBody = appendBlock("inner_body")
-            val outerBody = appendBlock("outer_body")
-            val exit = appendBlock("exit")
+            val entry = createBlock("entry")
+            val outerHeader = createBlock("outer_header")
+            val innerHeader = createBlock("inner_header")
+            val innerBody = createBlock("inner_body")
+            val outerBody = createBlock("outer_body")
+            val exit = createBlock("exit")
 
-            positionAtEnd(entry)
+            appendBlock(entry)
             val iPtr = alloca(Type.I32)
             val jPtr = alloca(Type.I32)
             store(Constant.I32(0), iPtr)
             br(outerHeader)
 
-            positionAtEnd(outerHeader)
+            appendBlock(outerHeader)
             val i = load(Type.I32, iPtr)
             val outerCond = icmp(ICmpPredicate.SLT, i, Constant.I32(5))
             store(Constant.I32(0), jPtr)
             condBr(outerCond, innerHeader, exit)
 
-            positionAtEnd(innerHeader)
+            appendBlock(innerHeader)
             val j = load(Type.I32, jPtr)
             val innerCond = icmp(ICmpPredicate.SLT, j, Constant.I32(3))
             condBr(innerCond, innerBody, outerBody)
 
-            positionAtEnd(innerBody)
+            appendBlock(innerBody)
             val jNext = add(load(Type.I32, jPtr), Constant.I32(1))
             store(jNext, jPtr)
             br(innerHeader)
 
-            positionAtEnd(outerBody)
+            appendBlock(outerBody)
             val iNext = add(load(Type.I32, iPtr), Constant.I32(1))
             store(iNext, iPtr)
             br(outerHeader)
 
-            positionAtEnd(exit)
+            appendBlock(exit)
             val result = load(Type.I32, iPtr)
             ret(result)
             finalizeFunction()
@@ -254,35 +254,35 @@ class Mem2RegLoopTest {
         // exit: ret load ptr
         val module = buildAndPromote {
             createFunction("multiStore", listOf(Param("flag", Type.I1)), Type.I32)
-            val entry = appendBlock("entry")
-            val header = appendBlock("header")
-            val left = appendBlock("left")
-            val right = appendBlock("right")
-            val merge = appendBlock("merge")
-            val exit = appendBlock("exit")
+            val entry = createBlock("entry")
+            val header = createBlock("header")
+            val left = createBlock("left")
+            val right = createBlock("right")
+            val merge = createBlock("merge")
+            val exit = createBlock("exit")
 
-            positionAtEnd(entry)
+            appendBlock(entry)
             val ptr = alloca(Type.I32)
             store(Constant.I32(0), ptr)
             br(header)
 
-            positionAtEnd(header)
+            appendBlock(header)
             val v = load(Type.I32, ptr)
             val loopCond = icmp(ICmpPredicate.SLT, v, Constant.I32(100))
             condBr(loopCond, left, exit)
 
-            positionAtEnd(left)
+            appendBlock(left)
             store(Constant.I32(10), ptr)
             br(merge)
 
-            positionAtEnd(right)
+            appendBlock(right)
             store(Constant.I32(20), ptr)
             br(merge)
 
-            positionAtEnd(merge)
+            appendBlock(merge)
             br(header)
 
-            positionAtEnd(exit)
+            appendBlock(exit)
             ret(load(Type.I32, ptr))
             finalizeFunction()
         }
@@ -310,7 +310,7 @@ class Mem2RegLoopTest {
     fun `straight line code needs no phi nodes`() {
         val module = buildAndPromote {
             createFunction("straight", emptyList(), Type.I32)
-            positionAtEnd(appendBlock("entry"))
+            appendBlock("entry")
             val a = alloca(Type.I32)
             store(Constant.I32(1), a)
             val v1 = load(Type.I32, a)
