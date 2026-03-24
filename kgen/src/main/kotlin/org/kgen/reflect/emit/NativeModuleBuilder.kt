@@ -2,15 +2,14 @@ package org.kgen.reflect.emit
 
 import org.kgen.codegen.CodeGenOptions
 import org.kgen.codegen.CodeGenerator
-import org.kgen.ir.build.IrBuilder
 import org.kgen.reflect.NativeCode
 
 /**
  * Module builder that produces native binary output via IR and a [CodeGenerator].
  *
  * ```java
- * NativeModuleBuilder mod = ModuleBuilder.native_("myLib", x86Generator);
- * IrBuilder ir = mod.irBuilder();
+ * NativeModuleBuilder mod = new NativeModuleBuilder("myLib");
+ * org.kgen.ir.build.ModuleBuilder ir = mod.irBuilder();
  * var params = ir.createFunction("add", List.of(new Param("a", Type.I64), new Param("b", Type.I64)), Type.I64);
  * ir.appendBlock("entry");
  * var sum = ir.add(params.get(0), params.get(1));
@@ -33,10 +32,10 @@ class NativeModuleBuilder @JvmOverloads constructor(
     target: org.kgen.ir.target.Target = hostTarget(),
 ) : ModuleBuilder(name) {
 
-    private val irBuilder = IrBuilder(name, target)
+    private val irBuilder = org.kgen.ir.build.ModuleBuilder(name, target)
 
     /** Access the IR builder for defining functions and types. */
-    fun irBuilder(): IrBuilder = irBuilder
+    fun irBuilder(): org.kgen.ir.build.ModuleBuilder = irBuilder
 
     /** Access the underlying IR module being built. */
     fun irModule(): org.kgen.ir.Module = irBuilder.build()
@@ -44,7 +43,7 @@ class NativeModuleBuilder @JvmOverloads constructor(
     /** Serialize to raw assembled machine code bytes (no linking, no object file headers). */
     override fun toBytes(): ByteArray {
         val module = irBuilder.build().let { m ->
-            if (m.targetTriple != null) m else m.copy(targetTriple = hostTriple())
+            if (m.targetTriple != null) { m } else { m.copy(targetTriple = hostTriple()) }
         }
         return codeGenerator.generateCode(module).textBytes
     }
@@ -58,7 +57,7 @@ class NativeModuleBuilder @JvmOverloads constructor(
      */
     fun compile(): NativeCode {
         val module = irBuilder.build().let { m ->
-            if (m.targetTriple != null) m else m.copy(targetTriple = hostTriple())
+            if (m.targetTriple != null) { m } else { m.copy(targetTriple = hostTriple()) }
         }
         val compiled = codeGenerator.generateCode(module)
         val symbolMap = mutableMapOf<String, Long>()

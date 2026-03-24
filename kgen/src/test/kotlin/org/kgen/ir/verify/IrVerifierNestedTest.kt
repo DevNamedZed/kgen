@@ -5,14 +5,14 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
 import org.kgen.ir.instructions.*
-import org.kgen.ir.types.StructDef
+import org.kgen.ir.types.StructDefinition
 
 class IrVerifierNestedTest {
 
     private val verifier = IrVerifier()
 
     private fun verifyModule(vararg functions: IrFunction, globals: List<Global> = emptyList(),
-                             structs: List<StructDef> = emptyList()): VerificationResult {
+                             structs: List<StructDefinition> = emptyList()): VerificationResult {
         return verifier.verify(Module("test", functions = functions.toList(), globals = globals, structs = structs))
     }
 
@@ -296,7 +296,7 @@ class IrVerifierNestedTest {
     inner class ValidModules {
 
         @Test
-        fun emptyModulePasses() {
+        fun emptyPipelineStagees() {
             val result = verifier.verify(Module("empty"))
             assertTrue(result.isValid)
         }

@@ -3,7 +3,7 @@ package org.kgen.target.x86.codegen
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.target.x86.disasm.X86Disassembler
 
@@ -17,8 +17,8 @@ class X86CodeGenExtraTest {
             "All bytes should be decoded: ${insts.map { it.text() }}")
     }
 
-    private fun generateCode(builder: (IrBuilder) -> Unit): ByteArray {
-        val ir = IrBuilder("test", Target.x86_64())
+    private fun generateCode(builder: (ModuleBuilder) -> Unit): ByteArray {
+        val ir = ModuleBuilder("test", Target.x86_64())
         builder(ir)
         val obj = X86CodeGenerator().generateObjectFile(ir.build())
         return obj.sections[0].data
@@ -50,18 +50,19 @@ class X86CodeGenExtraTest {
 
     @Test
     fun compilesSimpleLoop() {
-        val ir = IrBuilder("loop_test", Target.x86_64())
+        val ir = ModuleBuilder("loop_test", Target.x86_64())
         val fn = ir.function("sum_to_n", listOf(Param("n", Type.I32)), Type.I32)
-        val sum = fn.variable(Type.i32(0))
-        val i = fn.variable(Type.i32(0))
+        val ins = fn.instructions
+        val sum = ins.variable(Type.i32(0))
+        val i = ins.variable(Type.i32(0))
         fn.whileLoop(
-            condition = { lt(get(i), param(0)) },
+            condition = { ins.lt(ins.get(i), param(0)) },
             body = {
-                set(sum, add(get(sum), get(i)))
-                set(i, add(get(i), Type.i32(1)))
+                ins.set(sum, ins.add(ins.get(sum), ins.get(i)))
+                ins.set(i, ins.add(ins.get(i), Type.i32(1)))
             }
         )
-        fn.ret(fn.get(sum))
+        fn.ret(ins.get(sum))
         fn.end()
         val obj = X86CodeGenerator().generateObjectFile(ir.build())
         assertValidCodegen(obj.sections[0].data)
@@ -194,7 +195,7 @@ class X86CodeGenExtraTest {
 
     @Test
     fun compilesMultipleFunctions() {
-        val ir = IrBuilder("multi", Target.x86_64())
+        val ir = ModuleBuilder("multi", Target.x86_64())
         val p1 = ir.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.add(p1[0], p1[1]))
@@ -329,7 +330,7 @@ class X86CodeGenExtraTest {
 
     @Test
     fun generatedObjectFileHasTextSection() {
-        val ir = IrBuilder("objfile", Target.x86_64())
+        val ir = ModuleBuilder("objfile", Target.x86_64())
         ir.createFunction("f", emptyList(), Type.Void)
         ir.appendBlock("entry")
         ir.ret()
@@ -340,7 +341,7 @@ class X86CodeGenExtraTest {
 
     @Test
     fun generatedObjectFileHasSymbol() {
-        val ir = IrBuilder("sym_test", Target.x86_64())
+        val ir = ModuleBuilder("sym_test", Target.x86_64())
         ir.createFunction("my_func", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(0))
@@ -399,15 +400,16 @@ class X86CodeGenExtraTest {
     }
 
     @Test
-    fun compilesIfElseWithFunctionScope() {
-        val ir = IrBuilder("ifelse_test", Target.x86_64())
+    fun compilesIfElseWithFunctionBuilder() {
+        val ir = ModuleBuilder("ifelse_test", Target.x86_64())
         val fn = ir.function("max", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
-        val result = fn.variable(Type.i32(0))
-        fn.ifElse(fn.gt(fn.param(0), fn.param(1)),
-            { set(result, param(0)) },
-            { set(result, param(1)) }
+        val ins = fn.instructions
+        val result = ins.variable(Type.i32(0))
+        fn.ifElse(ins.gt(fn.param(0), fn.param(1)),
+            { ins.set(result, param(0)) },
+            { ins.set(result, param(1)) }
         )
-        fn.ret(fn.get(result))
+        fn.ret(ins.get(result))
         fn.end()
         val obj = X86CodeGenerator().generateObjectFile(ir.build())
         assertValidCodegen(obj.sections[0].data)
@@ -415,17 +417,18 @@ class X86CodeGenExtraTest {
 
     @Test
     fun compilesForLoop() {
-        val ir = IrBuilder("for_test", Target.x86_64())
+        val ir = ModuleBuilder("for_test", Target.x86_64())
         val fn = ir.function("factorial", listOf(Param("n", Type.I32)), Type.I32)
-        val result = fn.variable(Type.i32(1))
-        val i = fn.variable(Type.i32(0))
+        val ins = fn.instructions
+        val result = ins.variable(Type.i32(1))
+        val i = ins.variable(Type.i32(0))
         fn.forLoop(
-            init = { set(i, Type.i32(1)) },
-            condition = { le(get(i), param(0)) },
-            update = { set(i, add(get(i), Type.i32(1))) },
-            body = { set(result, mul(get(result), get(i))) }
+            init = { ins.set(i, Type.i32(1)) },
+            condition = { ins.le(ins.get(i), param(0)) },
+            update = { ins.set(i, ins.add(ins.get(i), Type.i32(1))) },
+            body = { ins.set(result, ins.mul(ins.get(result), ins.get(i))) }
         )
-        fn.ret(fn.get(result))
+        fn.ret(ins.get(result))
         fn.end()
         val obj = X86CodeGenerator().generateObjectFile(ir.build())
         assertValidCodegen(obj.sections[0].data)

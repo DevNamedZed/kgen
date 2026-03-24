@@ -6,7 +6,7 @@ import org.kgen.binary.elf.ElfObjectType
 import org.kgen.binary.elf.ElfReader
 import org.kgen.binary.pe.PeReader
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.runtime.compile.CHeaderGenerator
 import org.kgen.runtime.compile.NativeLibraryCompiler
@@ -80,7 +80,7 @@ class NativeLibraryEndToEndTest {
     fun generateCHeaderFromIrModule() {
         // CHeaderGenerator works on IR modules with EXTERNAL linkage.
         // Build an IR module directly with exported functions.
-        val ir = IrBuilder("header_test", Target.x86_64())
+        val ir = ModuleBuilder("header_test", Target.x86_64())
         val p = ir.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32,
             linkage = Linkage.EXTERNAL)
         ir.appendBlock("entry")

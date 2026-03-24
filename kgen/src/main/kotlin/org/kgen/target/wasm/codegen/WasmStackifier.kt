@@ -57,7 +57,7 @@ class WasmStackifier(private val fn: IrFunction) {
 
     private fun computeRPO() {
         // Compute reachable blocks via DFS, then use original IR order filtered to reachable.
-        // The original IR order from IrBuilder naturally has loop bodies before exits
+        // The original IR order from ModuleBuilder naturally has loop bodies before exits
         // and follows the control flow structure the programmer intended.
         val blockMap = fn.blocks.associateBy { it.label }
         val reachable = mutableSetOf<String>()

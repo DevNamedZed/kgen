@@ -27,7 +27,7 @@ class NativeModuleBuilderTest {
     }
 
     @Nested
-    inner class IrBuilder {
+    inner class ModuleBuilder {
 
         @Test
         fun irBuilderIsNotNull() {

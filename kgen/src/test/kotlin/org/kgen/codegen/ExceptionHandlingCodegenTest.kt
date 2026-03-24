@@ -12,7 +12,7 @@ import org.kgen.target.x86.codegen.X86CodeGenerator
 class ExceptionHandlingCodegenTest {
 
     private fun buildInvokeModule(): Module {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
 
         // Declare an external function that might throw
         ir.declareFunction("may_throw", emptyList(), Type.Void)
@@ -46,7 +46,7 @@ class ExceptionHandlingCodegenTest {
     }
 
     private fun buildCleanupModule(): Module {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.declareFunction("may_throw", emptyList(), Type.Void)
 
         ir.createFunction("cleanup", emptyList(), Type.Void)
@@ -70,7 +70,7 @@ class ExceptionHandlingCodegenTest {
     }
 
     private fun buildMultiInvokeModule(): Module {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.declareFunction("foo", emptyList(), Type.Void)
         ir.declareFunction("bar", emptyList(), Type.Void)
 
@@ -127,7 +127,7 @@ class ExceptionHandlingCodegenTest {
 
     @Test
     fun `no invoke means no except table`() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         val params = ir.createFunction("simple", listOf(Param("a", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         ir.ret(params[0])
@@ -172,7 +172,7 @@ class ExceptionHandlingCodegenTest {
 
     @Test
     fun `invoke with return value produces valid code`() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.declareFunction("get_value", emptyList(), Type.I64)
 
         ir.createFunction("invokeWithReturn", emptyList(), Type.I64)
@@ -198,7 +198,7 @@ class ExceptionHandlingCodegenTest {
 
     @Test
     fun `invoke with arguments emits proper code`() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.declareFunction("process", listOf(Param("a", Type.I64), Param("b", Type.I32)), Type.I32)
 
         val params = ir.createFunction("invokeWithArgs", listOf(Param("a", Type.I64)), Type.I32)
@@ -225,7 +225,7 @@ class ExceptionHandlingCodegenTest {
     // ── Throw instruction codegen ────────────────────────────────────
 
     private fun buildThrowModule(target: Target): Module {
-        val ir = IrBuilder("test", target)
+        val ir = ModuleBuilder("test", target)
         ir.declareFunction("kgen_throw", listOf(Param("exception", Type.OpaquePointer)), Type.Void)
 
         val params = ir.createFunction("throwIt", listOf(Param("exn", Type.OpaquePointer)), Type.Void)

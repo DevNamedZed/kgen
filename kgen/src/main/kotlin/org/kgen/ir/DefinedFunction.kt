@@ -1,11 +1,11 @@
 package org.kgen.ir
 
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 
 /**
- * A handle to a function currently being defined via [IrBuilder].
+ * A handle to a function currently being defined via [ModuleBuilder].
  *
- * Returned by [IrBuilder.defineFunction]. Provides access to the function's
+ * Returned by [ModuleBuilder.defineFunction]. Provides access to the function's
  * parameters and acts as a [Value] that can be passed directly to `call`
  * instructions (no manual [FunctionRef] construction needed).
  *
@@ -21,10 +21,10 @@ import org.kgen.ir.build.IrBuilder
  * }
  * ```
  *
- * @see IrBuilder.defineFunction
+ * @see ModuleBuilder.defineFunction
  */
 class DefinedFunction internal constructor(
-    private val builder: IrBuilder,
+    private val builder: ModuleBuilder,
     private val parameters: List<Parameter>,
     private val ref: FunctionRef,
 ) : Value, AutoCloseable {

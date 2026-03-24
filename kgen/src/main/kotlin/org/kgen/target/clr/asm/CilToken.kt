@@ -37,8 +37,8 @@ class CilToken internal constructor(
     /** Token for the Field table (0x04). */
     val isField: Boolean get() = tableId == 0x04
 
-    /** Token for the MethodDef table (0x06). */
-    val isMethodDef: Boolean get() = tableId == 0x06
+    /** Token for the MethodDefinition table (0x06). */
+    val isMethodDefinition: Boolean get() = tableId == 0x06
 
     /** Token for the MemberRef table (0x0A). */
     val isMemberRef: Boolean get() = tableId == 0x0A
@@ -51,7 +51,7 @@ class CilToken internal constructor(
     override fun hashCode(): Int = value
 
     companion object {
-        /** Create a MethodDef token (table 0x06). */
+        /** Create a MethodDefinition token (table 0x06). */
         @JvmStatic fun methodDef(index: Int): CilToken = CilToken(0x06000000 or index)
 
         /** Create a MemberRef token (table 0x0A). */

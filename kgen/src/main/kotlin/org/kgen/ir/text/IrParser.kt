@@ -32,14 +32,14 @@ class IrParser private constructor(private val input: String) {
         var sourceFile: String? = null
         val targetFeatures = mutableSetOf<String>()
         val aliases = mutableListOf<TypeAlias>()
-        val structs = mutableListOf<StructDef>()
-        val classes = mutableListOf<ClassDef>()
-        val interfaces = mutableListOf<InterfaceDef>()
-        val enums = mutableListOf<EnumDef>()
+        val structs = mutableListOf<StructDefinition>()
+        val classes = mutableListOf<ClassDefinition>()
+        val interfaces = mutableListOf<InterfaceDefinition>()
+        val enums = mutableListOf<EnumDefinition>()
         val globals = mutableListOf<Global>()
         val globalCtors = mutableListOf<GlobalCtor>()
         val globalDtors = mutableListOf<GlobalCtor>()
-        val comdats = mutableListOf<ComdatDef>()
+        val comdats = mutableListOf<ComdatDefinition>()
         val ifuncs = mutableListOf<IFunc>()
         var moduleInlineAsm: String? = null
         val functions = mutableListOf<IrFunction>()
@@ -83,23 +83,23 @@ class IrParser private constructor(private val input: String) {
                     aliases.add(TypeAlias(aliasName, aliasType))
                 }
                 lookingAt("struct %") -> {
-                    structs.add(parseStructDef())
+                    structs.add(parseStructDefinition())
                 }
                 lookingAt("comdat @") -> {
                     advance("comdat @".length)
                     val cName = parseIdent()
                     expect(" = ")
                     val kind = parseEnumValue<ComdatSelectionKind>()
-                    comdats.add(ComdatDef(cName, kind))
+                    comdats.add(ComdatDefinition(cName, kind))
                 }
                 lookingAt("enum ") -> {
-                    enums.add(parseEnumDef())
+                    enums.add(parseEnumDefinition())
                 }
                 lookingAtClassKeyword() -> {
-                    classes.add(parseClassDef())
+                    classes.add(parseClassDefinition())
                 }
                 lookingAt("interface ") -> {
-                    interfaces.add(parseInterfaceDef())
+                    interfaces.add(parseInterfaceDefinition())
                 }
                 lookingAt("@llvm.global_ctors") -> {
                     advance("@llvm.global_ctors".length)
@@ -182,7 +182,7 @@ class IrParser private constructor(private val input: String) {
         )
     }
 
-    private fun parseStructDef(): StructDef {
+    private fun parseStructDefinition(): StructDefinition {
         expect("struct %")
         val name = parseIdent()
         skipWhitespace()
@@ -198,10 +198,10 @@ class IrParser private constructor(private val input: String) {
             fields.add(Param(fname, ftype))
         }
         expect("}")
-        return StructDef(name, fields, packed)
+        return StructDefinition(name, fields, packed)
     }
 
-    private fun parseClassDef(): ClassDef {
+    private fun parseClassDefinition(): ClassDefinition {
         var visibility = ClassVisibility.PUBLIC
         var isAbstract = false
         var isFinal = false
@@ -233,22 +233,22 @@ class IrParser private constructor(private val input: String) {
         expect("{")
         skipWhitespace()
 
-        val fields = mutableListOf<FieldDef>()
-        val methods = mutableListOf<MethodDef>()
-        val constructors = mutableListOf<MethodDef>()
+        val fields = mutableListOf<FieldDefinition>()
+        val methods = mutableListOf<MethodDefinition>()
+        val constructors = mutableListOf<MethodDefinition>()
 
         while (!lookingAt("}")) {
             if (lookingAt("field ")) {
-                fields.add(parseFieldDef())
+                fields.add(parseFieldDefinition())
             } else if (lookingAt("method ")) {
-                val m = parseMethodDef()
+                val m = parseMethodDefinition()
                 if (m.name == "<init>" || m.name == "<clinit>") constructors.add(m) else methods.add(m)
             }
             skipWhitespace()
         }
         expect("}")
 
-        return ClassDef(
+        return ClassDefinition(
             name = name,
             superClass = superClass,
             interfaces = ifaces,
@@ -261,7 +261,7 @@ class IrParser private constructor(private val input: String) {
         )
     }
 
-    private fun parseFieldDef(): FieldDef {
+    private fun parseFieldDefinition(): FieldDefinition {
         expect("field ")
         val vis = parseMemberVisibility()
         val isFinal = tryConsume(" final")
@@ -269,7 +269,7 @@ class IrParser private constructor(private val input: String) {
         val name = parseIdent()
         expect(": ")
         val type = parseType()
-        return FieldDef(name, type, visibility = vis, isFinal = isFinal)
+        return FieldDefinition(name, type, visibility = vis, isFinal = isFinal)
     }
 
     private fun parseMemberVisibility(): MemberVisibility {
@@ -279,7 +279,7 @@ class IrParser private constructor(private val input: String) {
         return MemberVisibility.PUBLIC
     }
 
-    private fun parseMethodDef(): MethodDef {
+    private fun parseMethodDefinition(): MethodDefinition {
         expect("method ")
         val vis = parseMemberVisibility()
         val isAbstract = tryConsume(" abstract")
@@ -299,7 +299,7 @@ class IrParser private constructor(private val input: String) {
         expect(")")
         expect(": ")
         val returnType = parseType()
-        return MethodDef(
+        return MethodDefinition(
             name = name,
             params = params,
             returnType = returnType,
@@ -310,7 +310,7 @@ class IrParser private constructor(private val input: String) {
         )
     }
 
-    private fun parseInterfaceDef(): InterfaceDef {
+    private fun parseInterfaceDefinition(): InterfaceDefinition {
         expect("interface ")
         val name = parseIdent()
         skipWhitespace()
@@ -326,19 +326,19 @@ class IrParser private constructor(private val input: String) {
         expect("{")
         skipWhitespace()
 
-        val methods = mutableListOf<MethodDef>()
+        val methods = mutableListOf<MethodDefinition>()
         while (!lookingAt("}")) {
             if (lookingAt("method ")) {
-                methods.add(parseMethodDef())
+                methods.add(parseMethodDefinition())
             }
             skipWhitespace()
         }
         expect("}")
 
-        return InterfaceDef(name = name, superInterfaces = supers, methods = methods)
+        return InterfaceDefinition(name = name, superInterfaces = supers, methods = methods)
     }
 
-    private fun parseEnumDef(): EnumDef {
+    private fun parseEnumDefinition(): EnumDefinition {
         expect("enum ")
         val name = parseIdent()
         skipWhitespace()
@@ -366,7 +366,7 @@ class IrParser private constructor(private val input: String) {
         }
         expect("}")
 
-        return EnumDef(name = name, variants = variants)
+        return EnumDefinition(name = name, variants = variants)
     }
 
     private sealed interface GlobalOrIFunc {

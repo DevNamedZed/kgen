@@ -35,8 +35,8 @@ class CilClassBuilder(
     private val us = ClrUserStringHeapBuilder()
 
     private val typeDefs = mutableListOf<TypeDefEntry>()
-    private val methodDefs = mutableListOf<MethodDefEntry>()
-    private val fieldDefs = mutableListOf<FieldDefEntry>()
+    private val methodDefs = mutableListOf<MethodDefinitionEntry>()
+    private val fieldDefs = mutableListOf<FieldDefinitionEntry>()
     private val typeRefs = mutableListOf<TypeRefEntry>()
     private val memberRefs = mutableListOf<MemberRefEntry>()
     private val assemblyRefs = mutableListOf<AssemblyRefEntry>()
@@ -72,7 +72,7 @@ class CilClassBuilder(
     @JvmOverloads
     fun field(name: String, type: CilSigType, flags: Int = CilFieldFlags.PRIVATE): CilClassBuilder {
         val sig = buildFieldSig(type)
-        fieldDefs.add(FieldDefEntry(name, flags, sig))
+        fieldDefs.add(FieldDefinitionEntry(name, flags, sig))
         return this
     }
 
@@ -83,7 +83,7 @@ class CilClassBuilder(
         val asm = CilAssembler()
         body(asm)
         val codeBytes = asm.toByteArray()
-        methodDefs.add(MethodDefEntry(name, flags, signature, codeBytes))
+        methodDefs.add(MethodDefinitionEntry(name, flags, signature, codeBytes))
         return this
     }
 
@@ -91,7 +91,7 @@ class CilClassBuilder(
      * Add a method with pre-assembled CIL bytecode.
      */
     fun method(name: String, signature: ByteArray, flags: Int, code: ByteArray): CilClassBuilder {
-        methodDefs.add(MethodDefEntry(name, flags, signature, code))
+        methodDefs.add(MethodDefinitionEntry(name, flags, signature, code))
         return this
     }
 
@@ -99,7 +99,7 @@ class CilClassBuilder(
      * Add a method with no body (abstract or extern).
      */
     fun method(name: String, signature: ByteArray, flags: Int): CilClassBuilder {
-        methodDefs.add(MethodDefEntry(name, flags, signature, null))
+        methodDefs.add(MethodDefinitionEntry(name, flags, signature, null))
         return this
     }
 
@@ -131,7 +131,7 @@ class CilClassBuilder(
     ): CilClassBuilder {
         // PInvokeImpl flag = 0x2000
         val methodFlags = flags or 0x2000
-        methodDefs.add(MethodDefEntry(methodName, methodFlags, signature, null))
+        methodDefs.add(MethodDefinitionEntry(methodName, methodFlags, signature, null))
 
         // Find or add ModuleRef
         var moduleRefIndex = moduleRefs.indexOf(dllName) + 1
@@ -140,7 +140,7 @@ class CilClassBuilder(
             moduleRefIndex = moduleRefs.size
         }
 
-        // MemberForwarded coded index: MethodDef tag = 1, 1-bit tag
+        // MemberForwarded coded index: MethodDefinition tag = 1, 1-bit tag
         val methodIndex = methodDefs.size // 1-based
         val memberForwarded = (methodIndex shl 1) or 1
 
@@ -239,12 +239,12 @@ class CilClassBuilder(
         }
 
         // Build method rows and param rows
-        val methodRows = mutableListOf<ClrMethodDef>()
+        val methodRows = mutableListOf<ClrMethodDefinition>()
         val paramRows = mutableListOf<ClrParam>()
         var paramIndex = 1
 
         for (m in methodDefs) {
-            methodRows.add(ClrMethodDef(
+            methodRows.add(ClrMethodDefinition(
                 rva = 0, // no real RVA (metadata only)
                 implFlags = 0,
                 flags = m.flags,
@@ -276,7 +276,7 @@ class CilClassBuilder(
         )
 
         val entryToken = if (entryPointMethodIndex >= 0) {
-            0x06000000 or (entryPointMethodIndex + 1) // MethodDef token
+            0x06000000 or (entryPointMethodIndex + 1) // MethodDefinition token
         } else 0
 
         // Build ModuleRef rows
@@ -343,8 +343,8 @@ class CilClassBuilder(
     }
 
     private data class TypeDefEntry(val name: String, val namespace: String, val flags: Int)
-    private data class MethodDefEntry(val name: String, val flags: Int, val signature: ByteArray, val code: ByteArray?)
-    private data class FieldDefEntry(val name: String, val flags: Int, val signature: ByteArray)
+    private data class MethodDefinitionEntry(val name: String, val flags: Int, val signature: ByteArray, val code: ByteArray?)
+    private data class FieldDefinitionEntry(val name: String, val flags: Int, val signature: ByteArray)
     private data class TypeRefEntry(val assemblyRefIndex: Int, val name: String, val namespace: String)
     private data class MemberRefEntry(val typeRefIndex: Int, val name: String, val signature: ByteArray)
     private data class AssemblyRefEntry(val name: String, val major: Int, val minor: Int, val build: Int, val revision: Int)

@@ -5,7 +5,7 @@ package org.kgen.ir
  * and can appear as instruction operands, global initializers, and annotation values.
  *
  * Constants implement [Value], so they can be passed directly wherever a [Value] operand
- * is expected (e.g., to `IrBuilder.add`, `IrBuilder.store`, etc.). The [Type] companions
+ * is expected (e.g., to `ModuleBuilder.add`, `ModuleBuilder.store`, etc.). The [Type] companions
  * provide convenient factory functions for the most common constant types:
  *
  * ```java

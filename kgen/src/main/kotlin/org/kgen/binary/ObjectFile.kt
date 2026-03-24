@@ -17,7 +17,7 @@ package org.kgen.binary
  *
  * ## From code generation
  * ```kotlin
- * val module = IrBuilder("test", Target.x86_64()).apply {
+ * val module = ModuleBuilder("test", Target.x86_64()).apply {
  *     createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
  *     appendBlock("entry")
  *     ret(add(currentParams[0], currentParams[1]))

@@ -7,7 +7,7 @@ import org.kgen.binary.elf.*
 import org.kgen.codegen.CodeGenOptions
 import org.kgen.codegen.OutputFormat
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.target.arm64.codegen.Arm64CodeGenerator
 import org.kgen.target.riscv.codegen.RiscVCodeGenerator
@@ -26,7 +26,7 @@ class ElfRoundTripTest {
     // -- Helpers --
 
     private fun buildAddModule(target: Target): Module {
-        val ir = IrBuilder("elf_test", target)
+        val ir = ModuleBuilder("elf_test", target)
         val params = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         ir.ret(ir.add(params[0], params[1]))
@@ -35,7 +35,7 @@ class ElfRoundTripTest {
     }
 
     private fun buildMultiModule(target: Target): Module {
-        val ir = IrBuilder("multi_test", target)
+        val ir = ModuleBuilder("multi_test", target)
 
         val addParams = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
@@ -189,14 +189,14 @@ class ElfRoundTripTest {
 
     @Test
     fun twoObjectFilesLinkedIntoStaticExecutable() {
-        val ir1 = IrBuilder("mod1", Target.x86_64())
+        val ir1 = ModuleBuilder("mod1", Target.x86_64())
         val p1 = ir1.createFunction("compute", listOf(Param("x", Type.I64)), Type.I64)
         ir1.appendBlock("entry")
         ir1.ret(ir1.mul(p1[0], Constant.I64(2)))
         ir1.finalizeFunction()
         val obj1 = X86CodeGenerator().generateObjectFile(ir1.build())
 
-        val ir2 = IrBuilder("mod2", Target.x86_64())
+        val ir2 = ModuleBuilder("mod2", Target.x86_64())
         ir2.createFunction("_start", emptyList(), Type.I64)
         ir2.appendBlock("entry")
         ir2.ret(Constant.I64(0))

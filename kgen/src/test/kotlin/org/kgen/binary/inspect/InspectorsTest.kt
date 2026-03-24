@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.binary.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.codegen.CodeGenOptions
 import org.kgen.codegen.OutputFormat
 import org.kgen.ir.target.Target
@@ -14,7 +14,7 @@ import org.kgen.target.x86.codegen.X86CodeGenerator
 class InspectorsTest {
 
     private fun buildSimpleModule(): Module {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.createFunction("noop", emptyList(), Type.Void)
         ir.appendBlock("entry")
         ir.ret()
@@ -23,7 +23,7 @@ class InspectorsTest {
     }
 
     private fun buildMainModule(): Module {
-        val ir = IrBuilder("main", Target.x86_64())
+        val ir = ModuleBuilder("main", Target.x86_64())
         val strType = Type.Array(Type.I8, 14)
         val strRef = ir.addGlobal("hello_str", strType,
             Constant.StringConst("Hello, World!"), isConstant = true,

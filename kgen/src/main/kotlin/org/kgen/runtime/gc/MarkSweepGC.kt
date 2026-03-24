@@ -27,6 +27,7 @@ class MarkSweepGC(
     private val rootProviders = mutableListOf<RootProvider>()
     private val stackMaps = mutableMapOf<String, StackMap>()
     private val executionContexts = mutableListOf<ExecutionContext>()
+    private val finalizers = mutableMapOf<Int, Finalizer>()
     private var collections = 0L
     private var reclaimed = 0L
 
@@ -162,6 +163,10 @@ class MarkSweepGC(
 
     override fun bytesReclaimed(): Long = reclaimed
 
+    override fun registerFinalizer(typeId: Int, finalizer: Finalizer) {
+        finalizers[typeId] = finalizer
+    }
+
     override fun writeBarrier(obj: Long, fieldIndex: Int, value: Long) {
         // Mark-sweep does not need an incremental write barrier.
         // A generational or concurrent collector would record the reference here.
@@ -226,7 +231,10 @@ class MarkSweepGC(
             val alignedSize = (totalSize + 7) and 7L.inv()
 
             if (!isMarked(address)) {
-                // Unmarked — dead object, add to free list
+                val finalizer = finalizers[typeId]
+                if (finalizer != null) {
+                    finalizer.finalize(address)
+                }
                 heap.addFreeBlock(address, alignedSize)
                 reclaimed += alignedSize
             }

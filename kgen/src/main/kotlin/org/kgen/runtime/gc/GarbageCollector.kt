@@ -20,6 +20,18 @@ interface GarbageCollector {
     /** Register stack maps for a compiled function. */
     fun registerStackMap(stackMap: StackMap)
 
+    /**
+     * Register a finalizer for a type. When the GC sweeps a dead object with this
+     * type ID, it calls the finalizer before reclaiming the memory.
+     *
+     * The finalizer receives the object's heap address. It should free any internal
+     * resources (native allocations, file handles, etc.) owned by the object.
+     *
+     * This is the native equivalent of C# finalizers / C++ destructors — the GC
+     * calls it automatically when the object becomes unreachable.
+     */
+    fun registerFinalizer(typeId: Int, finalizer: Finalizer) {}
+
     /** Trigger a garbage collection. */
     fun collect()
 

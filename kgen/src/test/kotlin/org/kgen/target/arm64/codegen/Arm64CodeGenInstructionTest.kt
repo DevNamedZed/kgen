@@ -2,7 +2,7 @@ package org.kgen.target.arm64.codegen
 
 import org.kgen.target.arm64.disasm.Arm64Disassembler
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
@@ -11,8 +11,8 @@ class Arm64CodeGenInstructionTest {
 
     private val disasm = Arm64Disassembler()
 
-    private fun compile(block: IrBuilder.() -> Unit): ByteArray {
-        val ir = IrBuilder("test", Target.arm64())
+    private fun compile(block: ModuleBuilder.() -> Unit): ByteArray {
+        val ir = ModuleBuilder("test", Target.arm64())
         ir.block()
         val module = ir.build()
         val gen = Arm64CodeGenerator()
@@ -20,12 +20,12 @@ class Arm64CodeGenInstructionTest {
         return obj.sections.first { it.kind == org.kgen.binary.SectionKind.TEXT }.data
     }
 
-    private fun compileAndDisassemble(block: IrBuilder.() -> Unit): List<String> {
+    private fun compileAndDisassemble(block: ModuleBuilder.() -> Unit): List<String> {
         val code = compile(block)
         return disasm.disassemble(code).map { it.toString() }
     }
 
-    private fun assertCompiles(block: IrBuilder.() -> Unit) {
+    private fun assertCompiles(block: ModuleBuilder.() -> Unit) {
         val code = compile(block)
         assertTrue(code.isNotEmpty(), "Should produce non-empty code")
     }

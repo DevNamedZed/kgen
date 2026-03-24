@@ -280,8 +280,8 @@ class AnnotationsAndKgenTest {
     inner class KgenStackAllocTest {
 
         @Test
-        fun `stackAlloc fallback returns 0`() {
-            assertEquals(0L, Kgen.stackAlloc(64))
+        fun `stackAlloc allocates memory`() {
+            assertTrue(Kgen.stackAlloc(64) > 0, "stackAlloc should return non-zero address")
         }
     }
 
@@ -333,8 +333,8 @@ class AnnotationsAndKgenTest {
     inner class KgenAllocationTest {
 
         @Test
-        fun `runtimeAlloc fallback returns 0`() {
-            assertEquals(0L, Kgen.runtimeAlloc(128))
+        fun `runtimeAlloc allocates memory`() {
+            assertTrue(Kgen.runtimeAlloc(128) > 0, "runtimeAlloc should return non-zero address")
         }
 
         @Test
@@ -347,13 +347,13 @@ class AnnotationsAndKgenTest {
     inner class KgenStringConstTest {
 
         @Test
-        fun `stringConst fallback returns 0`() {
-            assertEquals(0L, Kgen.stringConst("hello"))
+        fun `stringConst returns valid address`() {
+            assertTrue(Kgen.stringConst("hello") > 0, "stringConst should return non-zero address")
         }
 
         @Test
-        fun `stringConst with empty string returns 0`() {
-            assertEquals(0L, Kgen.stringConst(""))
+        fun `stringConst with empty string returns valid address`() {
+            assertTrue(Kgen.stringConst("") > 0, "stringConst with empty string should return non-zero address")
         }
     }
 

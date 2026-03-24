@@ -7,7 +7,7 @@ import java.util.EnumSet
  *
  * The IR has 17 instruction categories ([IrCategory]) spanning from low-level machine
  * operations (ARITHMETIC, MEMORY, ATOMIC) to high-level managed concepts (OBJECT, RUNTIME).
- * Constraints restrict which categories an [IrBuilder][org.kgen.ir.build.IrBuilder] accepts,
+ * Constraints restrict which categories an [ModuleBuilder][org.kgen.ir.build.ModuleBuilder] accepts,
  * catching misuse at build time rather than during codegen.
  *
  * Preset hierarchy (each level adds categories):
@@ -20,10 +20,10 @@ import java.util.EnumSet
  *
  * ```java
  * // Only machine-level code (no GC, no objects)
- * var ir = new IrBuilder("kernel", Target.x86_64(), IrConstraints.NATIVE);
+ * var ir = new ModuleBuilder("kernel", Target.x86_64(), IrConstraints.NATIVE);
  *
  * // Runtime + machine (GC runtime written in native code)
- * var ir = new IrBuilder("gc", Target.x86_64(), IrConstraints.RUNTIME_NATIVE);
+ * var ir = new ModuleBuilder("gc", Target.x86_64(), IrConstraints.RUNTIME_NATIVE);
  * ```
  *
  * Pass `null` to allow all categories (the default).

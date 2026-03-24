@@ -3,6 +3,7 @@ package org.kgen.ir.target
 import org.kgen.ir.CallingConvention
 import org.kgen.ir.IrCategory
 import org.kgen.ir.IrConstraints
+import org.kgen.ir.TargetProfile
 
 /**
  * Compilation target. Determines valid instructions, calling conventions, pointer sizes,
@@ -52,6 +53,18 @@ data class Target internal constructor(
 
     fun enable(vararg features: TargetFeature): Target = copy(features = this.features + features.toSet())
     fun disable(vararg features: TargetFeature): Target = copy(features = this.features - features.toSet())
+
+    /**
+     * Returns the [TargetProfile] that corresponds to this target's architecture.
+     * Used when constructing a [ModuleBuilder] from a Target for backward compatibility.
+     */
+    fun profile(): TargetProfile = when (arch) {
+        Arch.JVM -> TargetProfile.MANAGED_VM
+        Arch.MSIL -> TargetProfile.MANAGED_VM
+        Arch.MSIL_MIXED -> TargetProfile.MIXED
+        Arch.WASM32, Arch.WASM64 -> TargetProfile.NATIVE
+        Arch.X86_64, Arch.ARM64, Arch.RISCV64 -> TargetProfile.NATIVE
+    }
 
     fun tripleString(): String = when (arch) {
         Arch.WASM32 -> "wasm32-unknown-unknown"

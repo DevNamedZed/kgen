@@ -6,17 +6,17 @@ import org.junit.jupiter.api.condition.EnabledOnOs
 import org.junit.jupiter.api.condition.OS
 import org.kgen.target.x86.codegen.X86CodeGenerator
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
-import org.kgen.pass.ConstantFolding
-import org.kgen.pass.DeadCodeElimination
-import org.kgen.pass.PassPipeline
+import org.kgen.pipeline.ConstantFolding
+import org.kgen.pipeline.DeadCodeElimination
+import org.kgen.pipeline.Pipeline
 
 @EnabledOnOs(OS.WINDOWS, OS.LINUX)
 class TieredCompilationTest {
 
     private fun buildAddModule(): Module {
-        val ir = IrBuilder("add_module", Target.x86_64())
+        val ir = ModuleBuilder("add_module", Target.x86_64())
         ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)
@@ -27,7 +27,7 @@ class TieredCompilationTest {
     }
 
     private fun buildConstantModule(name: String, funcName: String, value: Long): Module {
-        val ir = IrBuilder(name, Target.x86_64())
+        val ir = ModuleBuilder(name, Target.x86_64())
         ir.createFunction(funcName, emptyList(), Type.I64)
         ir.appendBlock("entry")
         ir.ret(Constant.I64(value))
@@ -39,7 +39,7 @@ class TieredCompilationTest {
     fun tieredRecompilationTriggersAtThreshold() {
         val jit = JitEngine(X86CodeGenerator())
         val tiered = TieredCompilation(recompileThreshold = 5)
-        val pipeline = PassPipeline()
+        val pipeline = Pipeline()
         pipeline.add(ConstantFolding())
         pipeline.add(DeadCodeElimination())
         tiered.setTier1Pipeline(pipeline)
@@ -117,8 +117,8 @@ class TieredCompilationTest {
         val jit = JitEngine(X86CodeGenerator())
         val tiered = TieredCompilation(recompileThreshold = 2)
 
-        val tier0Pipeline = PassPipeline() // no passes
-        val tier1Pipeline = PassPipeline()
+        val tier0Pipeline = Pipeline() // no passes
+        val tier1Pipeline = Pipeline()
         tier1Pipeline.add(ConstantFolding())
         tier1Pipeline.add(DeadCodeElimination())
         tiered.setTier1Pipeline(tier1Pipeline)
@@ -142,7 +142,7 @@ class TieredCompilationTest {
         val tiered = TieredCompilation(recompileThreshold = 3)
         jit.setTieredCompilation(tiered)
 
-        val ir = IrBuilder("multi", Target.x86_64())
+        val ir = ModuleBuilder("multi", Target.x86_64())
         ir.createFunction("f1", emptyList(), Type.I64)
         ir.appendBlock("entry")
         ir.ret(Constant.I64(1))

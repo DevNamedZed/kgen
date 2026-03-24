@@ -3,7 +3,7 @@ package org.kgen.codegen
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.ir.verify.IrVerifier
 import org.kgen.target.x86.codegen.X86CodeGenerator
@@ -14,41 +14,41 @@ import org.kgen.binary.SectionKind
 
 class CrossTargetCodegenExtendedTest {
 
-    private fun buildModule(target: Target, block: IrBuilder.() -> Unit): Module {
-        val ir = IrBuilder("cross_target_ext", target)
+    private fun buildModule(target: Target, block: ModuleBuilder.() -> Unit): Module {
+        val ir = ModuleBuilder("cross_target_ext", target)
         ir.block()
         val mod = ir.build()
         assertTrue(IrVerifier.verify(mod).isValid, "IR should be valid before codegen")
         return mod
     }
 
-    private fun compileX86(block: IrBuilder.() -> Unit) {
+    private fun compileX86(block: ModuleBuilder.() -> Unit) {
         val obj = X86CodeGenerator().generateObjectFile(buildModule(Target.x86_64(), block))
         assertTrue(obj.sections.any { it.kind == SectionKind.TEXT && it.data.isNotEmpty() })
     }
 
-    private fun compileArm64(block: IrBuilder.() -> Unit) {
+    private fun compileArm64(block: ModuleBuilder.() -> Unit) {
         val obj = Arm64CodeGenerator().generateObjectFile(buildModule(Target.arm64(), block))
         assertTrue(obj.sections.any { it.kind == SectionKind.TEXT && it.data.isNotEmpty() })
     }
 
-    private fun compileRiscV(block: IrBuilder.() -> Unit) {
+    private fun compileRiscV(block: ModuleBuilder.() -> Unit) {
         val obj = RiscVCodeGenerator().generateObjectFile(buildModule(Target.riscv64(), block))
         assertTrue(obj.sections.any { it.kind == SectionKind.TEXT && it.data.isNotEmpty() })
     }
 
-    private fun compileWasm(block: IrBuilder.() -> Unit) {
+    private fun compileWasm(block: ModuleBuilder.() -> Unit) {
         val bytes = WasmCodeGenerator().generate(buildModule(Target.wasm(), block))
         assertTrue(bytes.size > 8)
     }
 
-    private fun compileAllNative(block: IrBuilder.() -> Unit) {
+    private fun compileAllNative(block: ModuleBuilder.() -> Unit) {
         compileX86(block)
         compileArm64(block)
         compileRiscV(block)
     }
 
-    private fun compileX86AndArm64(block: IrBuilder.() -> Unit) {
+    private fun compileX86AndArm64(block: ModuleBuilder.() -> Unit) {
         compileX86(block)
         compileArm64(block)
     }

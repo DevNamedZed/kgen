@@ -17,7 +17,7 @@ class ClrTypeBuilder internal constructor(
     private val flags: Set<TypeFlag>,
 ) {
     private val methods = mutableListOf<ClrMethodBuilder>()
-    private val fields = mutableListOf<FieldDef>()
+    private val fields = mutableListOf<FieldDefinition>()
     private val typeRefs = mutableListOf<TypeRefDef>()
     private val memberRefs = mutableListOf<MemberRefDef>()
 
@@ -28,7 +28,7 @@ class ClrTypeBuilder internal constructor(
     }
 
     fun defineField(name: String, type: TypeRef, vararg flags: FieldFlag): CilToken {
-        fields.add(FieldDef(name, type, flags.toSet()))
+        fields.add(FieldDefinition(name, type, flags.toSet()))
         return CilToken.field(fields.size)
     }
 
@@ -66,7 +66,7 @@ class ClrTypeBuilder internal constructor(
         return builder
     }
 
-    private data class FieldDef(val name: String, val type: TypeRef, val flags: Set<FieldFlag>)
+    private data class FieldDefinition(val name: String, val type: TypeRef, val flags: Set<FieldFlag>)
     private data class TypeRefDef(val assemblyRefIndex: Int, val name: String, val namespace: String)
     private data class MemberRefDef(val typeRefIndex: Int, val name: String, val signature: Signature, val instance: Boolean)
 }

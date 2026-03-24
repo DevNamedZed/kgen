@@ -2,7 +2,7 @@ package org.kgen.target.x86.codegen
 
 import org.kgen.target.x86.disasm.X86Disassembler
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.codegen.CodeGenOptions
 import org.kgen.codegen.OutputFormat
 import org.kgen.ir.target.Target
@@ -14,8 +14,8 @@ class X86CodeGenInstructionTest {
 
     private val disasm = X86Disassembler()
 
-    private fun compile(block: IrBuilder.() -> Unit): ByteArray {
-        val ir = IrBuilder("test", Target.x86_64())
+    private fun compile(block: ModuleBuilder.() -> Unit): ByteArray {
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.block()
         val module = ir.build()
         val gen = X86CodeGenerator()
@@ -23,12 +23,12 @@ class X86CodeGenInstructionTest {
         return obj.sections.first { it.name == ".text" }.data
     }
 
-    private fun compileAndDisassemble(block: IrBuilder.() -> Unit): List<String> {
+    private fun compileAndDisassemble(block: ModuleBuilder.() -> Unit): List<String> {
         val code = compile(block)
         return disasm.disassembleRaw(code).map { it.text() }
     }
 
-    private fun assertCompiles(block: IrBuilder.() -> Unit) {
+    private fun assertCompiles(block: ModuleBuilder.() -> Unit) {
         val code = compile(block)
         assertTrue(code.isNotEmpty(), "Should produce non-empty code")
     }
@@ -277,16 +277,14 @@ class X86CodeGenInstructionTest {
 
     @Test
     fun `shl i64`() {
-        // Variable shift with I64 shift amount not yet supported (shift amount is I64 but must load as 32-bit into CL)
-        assertThrows<Exception> {
-            compileAndDisassemble {
-                val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                appendBlock("entry")
-                val r = shl(p[0], p[1])
-                ret(r)
-                finalizeFunction()
-            }
+        val lines = compileAndDisassemble {
+            val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
+            appendBlock("entry")
+            val r = shl(p[0], p[1])
+            ret(r)
+            finalizeFunction()
         }
+        assertTrue(lines.any { it.contains("shl") }, "Should contain shl: $lines")
     }
 
     @Test
@@ -303,16 +301,14 @@ class X86CodeGenInstructionTest {
 
     @Test
     fun `lshr i64`() {
-        // Variable shift with I64 shift amount not yet supported
-        assertThrows<Exception> {
-            compileAndDisassemble {
-                val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                appendBlock("entry")
-                val r = lshr(p[0], p[1])
-                ret(r)
-                finalizeFunction()
-            }
+        val lines = compileAndDisassemble {
+            val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
+            appendBlock("entry")
+            val r = lshr(p[0], p[1])
+            ret(r)
+            finalizeFunction()
         }
+        assertTrue(lines.any { it.contains("shr") }, "Should contain shr: $lines")
     }
 
     @Test
@@ -329,16 +325,14 @@ class X86CodeGenInstructionTest {
 
     @Test
     fun `ashr i64`() {
-        // Variable shift with I64 shift amount not yet supported
-        assertThrows<Exception> {
-            compileAndDisassemble {
-                val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
-                appendBlock("entry")
-                val r = ashr(p[0], p[1])
-                ret(r)
-                finalizeFunction()
-            }
+        val lines = compileAndDisassemble {
+            val p = createFunction("f", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
+            appendBlock("entry")
+            val r = ashr(p[0], p[1])
+            ret(r)
+            finalizeFunction()
         }
+        assertTrue(lines.any { it.contains("sar") }, "Should contain sar: $lines")
     }
 
     @Test
@@ -862,15 +856,12 @@ class X86CodeGenInstructionTest {
 
     @Test
     fun `bitcast i64 to f64`() {
-        // BitCast between integer and float types not yet supported (needs movq GP<->XMM)
-        assertThrows<Exception> {
-            compile {
-                val p = createFunction("f", listOf(Param("a", Type.I64)), Type.F64)
-                appendBlock("entry")
-                val r = bitcast(p[0], Type.F64)
-                ret(r)
-                finalizeFunction()
-            }
+        assertCompiles {
+            val p = createFunction("f", listOf(Param("a", Type.I64)), Type.F64)
+            appendBlock("entry")
+            val r = bitcast(p[0], Type.F64)
+            ret(r)
+            finalizeFunction()
         }
     }
 
@@ -927,17 +918,14 @@ class X86CodeGenInstructionTest {
 
     @Test
     fun `alloca and store and load f64`() {
-        // F64 store/load from memory not yet supported in x86 codegen
-        assertThrows<Exception> {
-            compile {
-                val p = createFunction("f", listOf(Param("a", Type.F64)), Type.F64)
-                appendBlock("entry")
-                val slot = alloca(Type.F64)
-                store(p[0], slot)
-                val r = load(Type.F64, slot)
-                ret(r)
-                finalizeFunction()
-            }
+        assertCompiles {
+            val p = createFunction("f", listOf(Param("a", Type.F64)), Type.F64)
+            appendBlock("entry")
+            val slot = alloca(Type.F64)
+            store(p[0], slot)
+            val r = load(Type.F64, slot)
+            ret(r)
+            finalizeFunction()
         }
     }
 
@@ -1645,44 +1633,35 @@ class X86CodeGenInstructionTest {
 
     @Test
     fun `load f32`() {
-        // F32 load from memory not yet supported in x86 codegen
-        assertThrows<Exception> {
-            compile {
-                val p = createFunction("f", listOf(Param("ptr", Type.OpaquePointer)), Type.F32)
-                appendBlock("entry")
-                val r = load(Type.F32, p[0])
-                ret(r)
-                finalizeFunction()
-            }
+        assertCompiles {
+            val p = createFunction("f", listOf(Param("ptr", Type.OpaquePointer)), Type.F32)
+            appendBlock("entry")
+            val r = load(Type.F32, p[0])
+            ret(r)
+            finalizeFunction()
         }
     }
 
     @Test
     fun `store f32`() {
-        // F32 store to memory not yet supported in x86 codegen
-        assertThrows<Exception> {
-            compile {
-                val p = createFunction("f", listOf(Param("val", Type.F32), Param("ptr", Type.OpaquePointer)), Type.Void)
-                appendBlock("entry")
-                store(p[0], p[1])
-                ret(null)
-                finalizeFunction()
-            }
+        assertCompiles {
+            val p = createFunction("f", listOf(Param("val", Type.F32), Param("ptr", Type.OpaquePointer)), Type.Void)
+            appendBlock("entry")
+            store(p[0], p[1])
+            ret(null)
+            finalizeFunction()
         }
     }
 
     @Test
     fun `select f64`() {
-        // F64 select not yet supported in x86 codegen (only I32/I64 selects implemented)
-        assertThrows<Exception> {
-            compile {
-                val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
-                appendBlock("entry")
-                val c = fcmp(FCmpPredicate.OGT, p[0], p[1])
-                val r = select(c, p[0], p[1])
-                ret(r)
-                finalizeFunction()
-            }
+        assertCompiles {
+            val p = createFunction("f", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
+            appendBlock("entry")
+            val c = fcmp(FCmpPredicate.OGT, p[0], p[1])
+            val r = select(c, p[0], p[1])
+            ret(r)
+            finalizeFunction()
         }
     }
 
@@ -1776,15 +1755,12 @@ class X86CodeGenInstructionTest {
 
     @Test
     fun `bitcast f64 to i64`() {
-        // BitCast between float and integer types not yet supported (needs movq XMM<->GP)
-        assertThrows<Exception> {
-            compile {
-                val p = createFunction("f", listOf(Param("a", Type.F64)), Type.I64)
-                appendBlock("entry")
-                val r = bitcast(p[0], Type.I64)
-                ret(r)
-                finalizeFunction()
-            }
+        assertCompiles {
+            val p = createFunction("f", listOf(Param("a", Type.F64)), Type.I64)
+            appendBlock("entry")
+            val r = bitcast(p[0], Type.I64)
+            ret(r)
+            finalizeFunction()
         }
     }
 

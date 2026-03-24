@@ -10,7 +10,7 @@ import org.kgen.ir.target.Target
 import org.kgen.runtime.ManagedRuntime
 import org.kgen.runtime.exec.SafepointManager
 import org.kgen.runtime.gc.GarbageCollector
-import org.kgen.pass.PassPipeline
+import org.kgen.pipeline.Pipeline
 import org.kgen.reflect.NativeMemory
 import org.kgen.runtime.compile.RuntimeCompiler
 import java.lang.foreign.FunctionDescriptor
@@ -57,7 +57,7 @@ class JitEngine(
     private val globalSymbols = mutableMapOf<String, JitSymbol>()
     private val resolvers = mutableListOf<SymbolResolver>()
     private val lazyStubs = mutableMapOf<String, LazyStub>()
-    private var pipeline: PassPipeline? = null
+    private var pipeline: Pipeline? = null
     private var codeCache: CodeCache? = null
     private var tieredCompilation: TieredCompilation? = null
     private var debugInfo: JitDebugInfo? = null
@@ -77,13 +77,13 @@ class JitEngine(
      * this pipeline before code generation.
      *
      * ```java
-     * var pipeline = new PassPipeline();
+     * var pipeline = new Pipeline();
      * pipeline.add(new ConstantFolding());
      * pipeline.add(new DeadCodeElimination());
      * jit.setOptimizationPipeline(pipeline);
      * ```
      */
-    fun setOptimizationPipeline(pipeline: PassPipeline) {
+    fun setOptimizationPipeline(pipeline: Pipeline) {
         this.pipeline = pipeline
     }
 
@@ -179,11 +179,16 @@ class JitEngine(
      * Uses [CompiledCode] directly when the backend supports it,
      * bypassing [ObjectFile] construction for faster JIT compilation.
      */
+    private var lastCompiledCode: CompiledCode? = null
+    private var lastCompiledIr: Module? = null
+
     fun addModule(module: Module): JitModule {
         val adjusted = ensureTargetTriple(module)
         val optimized = pipeline?.execute(adjusted) ?: adjusted
+        lastCompiledIr = optimized
         val jitModule = try {
             val code = codeGenerator.generateCode(optimized)
+            lastCompiledCode = code
             loadCompiledCode(module.name, code)
         } catch (_: UnsupportedOperationException) {
             val obj = compileToObjectFile(optimized)
@@ -193,6 +198,17 @@ class JitEngine(
         trackInCache(jitModule)
         debugInfo?.notifyLoad(jitModule)
         return jitModule
+    }
+
+    /**
+     * Create an inspector for examining JIT-compiled code.
+     * Call after [addModule] to inspect the most recently compiled module.
+     */
+    fun inspector(): JitInspector {
+        val inspector = JitInspector(this)
+        lastCompiledIr?.let { inspector.setIrModule(it) }
+        lastCompiledCode?.let { inspector.setCompiledCode(it) }
+        return inspector
     }
 
     /**
@@ -537,8 +553,9 @@ class JitEngine(
 
         val trampolineSize = code.externalSymbols.size * TRAMPOLINE_ENTRY_SIZE
         val rodataSize = code.rodataBytes.size.toLong()
+        val dataSize = code.dataBytes.size.toLong()
         val tdataSize = code.tdataBytes.size.toLong()
-        val totalSize = textBytes.size.toLong() + rodataSize + tdataSize + trampolineSize
+        val totalSize = textBytes.size.toLong() + rodataSize + dataSize + tdataSize + trampolineSize
         val mem = NativeMemory.allocateExecutable(maxOf(totalSize, 4096))
 
         mem.write(0, textBytes)
@@ -548,16 +565,24 @@ class JitEngine(
             mem.write(rodataOffset, code.rodataBytes)
         }
 
-        val tdataOffset = rodataOffset + rodataSize
+        val dataOffset = rodataOffset + rodataSize
+        if (code.dataBytes.isNotEmpty()) {
+            mem.write(dataOffset, code.dataBytes)
+        }
+
+        val tdataOffset = dataOffset + dataSize
         if (code.tdataBytes.isNotEmpty()) {
             mem.write(tdataOffset, code.tdataBytes)
         }
 
         val symbolMap = mutableMapOf<String, JitSymbol>()
         val tdataBaseAddr = mem.address + tdataOffset
+        val dataBaseAddr = mem.address + dataOffset
         for (sym in code.symbols) {
             val addr = if (sym.tdataOffset >= 0) {
                 tdataBaseAddr + sym.tdataOffset
+            } else if (sym.dataOffset >= 0) {
+                dataBaseAddr + sym.dataOffset
             } else if (sym.rodataOffset >= 0) {
                 mem.address + rodataOffset + sym.rodataOffset
             } else {
@@ -566,7 +591,7 @@ class JitEngine(
             symbolMap[sym.name] = JitSymbol(sym.name, addr, source = JitSymbol.SymbolSource.JIT)
         }
 
-        val trampolineBase = textBytes.size.toLong() + rodataSize + tdataSize
+        val trampolineBase = textBytes.size.toLong() + rodataSize + dataSize + tdataSize
         val trampolineAddrs = buildTrampolines(mem, trampolineBase, code.externalSymbols, symbolMap)
 
         applyRelocationsFromList(code.relocations, mem, symbolMap, rodataOffset, trampolineAddrs, tdataBaseAddr)

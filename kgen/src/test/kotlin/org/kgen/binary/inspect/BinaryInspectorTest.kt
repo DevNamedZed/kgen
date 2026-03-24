@@ -7,7 +7,7 @@ import org.kgen.binary.elf.ElfReader
 import org.kgen.binary.elf.ElfWriter
 import org.kgen.binary.pe.PeReader
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.codegen.CodeGenOptions
 import org.kgen.codegen.OutputFormat
 import org.kgen.ir.target.Target
@@ -16,7 +16,7 @@ import org.kgen.target.x86.codegen.X86CodeGenerator
 class BinaryInspectorTest {
 
     private fun buildAddModule(): Module {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         val params = ir.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val sum = ir.add(params[0], params[1])
@@ -26,7 +26,7 @@ class BinaryInspectorTest {
     }
 
     private fun buildHelloModule(): Module {
-        val ir = IrBuilder("hello", Target.x86_64())
+        val ir = ModuleBuilder("hello", Target.x86_64())
         val strType = Type.Array(Type.I8, 14)
         val strRef = ir.addGlobal("hello_str", strType,
             Constant.StringConst("Hello, World!"), isConstant = true,

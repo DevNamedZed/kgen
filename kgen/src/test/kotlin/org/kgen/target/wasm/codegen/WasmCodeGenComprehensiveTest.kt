@@ -22,8 +22,8 @@ class WasmCodeGenComprehensiveTest {
         assertEquals(0x00, wasm[7].toInt() and 0xFF)
     }
 
-    private fun generateWasm(block: (IrBuilder) -> Unit): ByteArray {
-        val ir = IrBuilder("test", Target.wasm())
+    private fun generateWasm(block: (ModuleBuilder) -> Unit): ByteArray {
+        val ir = ModuleBuilder("test", Target.wasm())
         block(ir)
         return WasmCodeGenerator().generate(ir.build())
     }
@@ -1654,7 +1654,7 @@ class WasmCodeGenComprehensiveTest {
     @Test
     fun `deterministic output for identical IR`() {
         fun buildModule(): ByteArray {
-            val ir = IrBuilder("test", Target.wasm())
+            val ir = ModuleBuilder("test", Target.wasm())
             val p = ir.createFunction("f", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
             ir.appendBlock("entry")
             val sum = ir.add(p[0], p[1])
@@ -1669,7 +1669,7 @@ class WasmCodeGenComprehensiveTest {
     @Test
     fun `deterministic output with imports`() {
         fun buildModule(): ByteArray {
-            val ir = IrBuilder("test", Target.wasm())
+            val ir = ModuleBuilder("test", Target.wasm())
             ir.declareFunction("ext", listOf(Param("v", Type.I32)), Type.I32)
             ir.createFunction("main", listOf(Param("x", Type.I32)), Type.I32)
             ir.appendBlock("entry")

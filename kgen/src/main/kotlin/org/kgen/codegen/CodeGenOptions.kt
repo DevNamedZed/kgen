@@ -1,9 +1,22 @@
 package org.kgen.codegen
 
 import org.kgen.binary.mangling.ManglingScheme
+import org.kgen.ir.target.Target
 
-/** Options controlling code generation behavior. */
+/**
+ * Options controlling code generation behavior.
+ *
+ * ```java
+ * // With target
+ * new CodeGenOptions(Target.x86_64(X86CPU.HASWELL), OptLevel.O2);
+ *
+ * // Without target (backend uses its default)
+ * new CodeGenOptions(OptLevel.O2);
+ * ```
+ */
 data class CodeGenOptions(
+    /** Target architecture. When set, the code generator uses this for CPU features, triple, data layout. */
+    val target: Target? = null,
     /** Optimization level. Higher levels trade compile time for better output. */
     val optimizationLevel: OptLevel = OptLevel.O0,
     /** Whether to emit debug information (DWARF, PDB, etc.). */
@@ -16,6 +29,8 @@ data class CodeGenOptions(
     val outputFormat: OutputFormat = OutputFormat.BINARY,
     /** Symbol mangling scheme. When set, exported symbol names are mangled accordingly. */
     val manglingScheme: ManglingScheme? = null,
+    /** Entry point symbol name for executables. When set, the linker uses this instead of searching for _start/main. */
+    val entryPoint: String? = null,
 )
 
 /** Optimization levels. */

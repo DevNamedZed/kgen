@@ -41,8 +41,8 @@ class ClrReflectionPropertiesEventsTest {
                 ClrTypeDef(0x01, typeName, ns, 0, 1, 1),
             ),
             methodDefs = listOf(
-                ClrMethodDef(0, 0, 0x0006, getName, sig, 1),
-                ClrMethodDef(0, 0, 0x0006, setName, sig, 1),
+                ClrMethodDefinition(0, 0, 0x0006, getName, sig, 1),
+                ClrMethodDefinition(0, 0, 0x0006, setName, sig, 1),
             ),
             propertyMaps = listOf(ClrPropertyMap(parent = 2, propertyList = 1)),
             properties = listOf(ClrProperty(0, propName, propSig)),
@@ -86,7 +86,7 @@ class ClrReflectionPropertiesEventsTest {
                 ClrTypeDef(0, strings.add("<Module>"), ns, 0, 1, 1),
                 ClrTypeDef(0x01, typeName, ns, 0, 1, 1),
             ),
-            methodDefs = listOf(ClrMethodDef(0, 0, 0x0006, getName, sig, 1)),
+            methodDefs = listOf(ClrMethodDefinition(0, 0, 0x0006, getName, sig, 1)),
             propertyMaps = listOf(ClrPropertyMap(parent = 2, propertyList = 1)),
             properties = listOf(ClrProperty(0, propName, propSig)),
             methodSemantics = listOf(
@@ -123,8 +123,8 @@ class ClrReflectionPropertiesEventsTest {
                 ClrTypeDef(0x01, typeName, ns, 0, 1, 1),
             ),
             methodDefs = listOf(
-                ClrMethodDef(0, 0, 0x0006, addClick, sig, 1),
-                ClrMethodDef(0, 0, 0x0006, removeClick, sig, 1),
+                ClrMethodDefinition(0, 0, 0x0006, addClick, sig, 1),
+                ClrMethodDefinition(0, 0, 0x0006, removeClick, sig, 1),
             ),
             eventMaps = listOf(ClrEventMap(parent = 2, eventList = 1)),
             events = listOf(ClrEvent(flags = 0, name = eventName, eventType = 0)),
@@ -169,8 +169,8 @@ class ClrReflectionPropertiesEventsTest {
                 ClrTypeDef(0x01, typeName, ns, 0, 1, 1),
             ),
             methodDefs = listOf(
-                ClrMethodDef(0, 0, 0x0006, getter1, sig, 1),
-                ClrMethodDef(0, 0, 0x0006, getter2, sig, 1),
+                ClrMethodDefinition(0, 0, 0x0006, getter1, sig, 1),
+                ClrMethodDefinition(0, 0, 0x0006, getter2, sig, 1),
             ),
             propertyMaps = listOf(ClrPropertyMap(parent = 2, propertyList = 1)),
             properties = listOf(
@@ -236,9 +236,9 @@ class ClrReflectionPropertiesEventsTest {
                 ClrTypeDef(0x01, typeName, ns, 0, 1, 1),
             ),
             methodDefs = listOf(
-                ClrMethodDef(0, 0, 0x0006, addM, sig, 1),
-                ClrMethodDef(0, 0, 0x0006, removeM, sig, 1),
-                ClrMethodDef(0, 0, 0x0006, raiseM, sig, 1),
+                ClrMethodDefinition(0, 0, 0x0006, addM, sig, 1),
+                ClrMethodDefinition(0, 0, 0x0006, removeM, sig, 1),
+                ClrMethodDefinition(0, 0, 0x0006, raiseM, sig, 1),
             ),
             eventMaps = listOf(ClrEventMap(parent = 2, eventList = 1)),
             events = listOf(ClrEvent(flags = 0, name = eventName, eventType = 0)),
@@ -282,8 +282,8 @@ class ClrReflectionPropertiesEventsTest {
                 ClrTypeDef(0x01, type2, ns, 0, 1, 2),
             ),
             methodDefs = listOf(
-                ClrMethodDef(0, 0, 0x0006, getter, sig, 1),
-                ClrMethodDef(0, 0, 0x0006, addM, sig, 1),
+                ClrMethodDefinition(0, 0, 0x0006, getter, sig, 1),
+                ClrMethodDefinition(0, 0, 0x0006, addM, sig, 1),
             ),
             propertyMaps = listOf(ClrPropertyMap(parent = 2, propertyList = 1)),
             properties = listOf(ClrProperty(0, prop1, propSig)),

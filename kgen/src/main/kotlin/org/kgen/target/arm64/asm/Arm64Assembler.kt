@@ -14,6 +14,30 @@ class Arm64Assembler {
     private val buf = ByteArrayOutputStream()
     private val labels = mutableMapOf<String, Int>()
     private val fixups = mutableListOf<Fixup>()
+    private val typedLabels = mutableListOf<Label>()
+
+    class Label internal constructor(val id: Int) {
+        internal var offset: Int = -1
+        internal val marked: Boolean get() = offset >= 0
+    }
+
+    fun label(): Label {
+        val label = Label(typedLabels.size)
+        typedLabels.add(label)
+        return label
+    }
+
+    fun mark(): Label {
+        val label = label()
+        mark(label)
+        return label
+    }
+
+    fun mark(label: Label) {
+        check(!label.marked) { "label ${label.id} already marked" }
+        label.offset = buf.size()
+        labels["__typed_label_${label.id}"] = buf.size()
+    }
 
     private data class Fixup(val offset: Int, val label: String, val kind: FixupKind)
 
@@ -448,6 +472,43 @@ class Arm64Assembler {
     // CBNZ Wt, label
     fun cbnz(rt: Arm64Register32, label: String) {
         fixups.add(Fixup(buf.size(), label, FixupKind.BRANCH_19))
+        emit(0x35000000 or enc(rt))
+    }
+
+    // Typed label branch overloads
+
+    fun b(label: Label) {
+        fixups.add(Fixup(buf.size(), "__typed_label_${label.id}", FixupKind.BRANCH_26))
+        emit(0x14000000)
+    }
+
+    fun bl(label: Label) {
+        fixups.add(Fixup(buf.size(), "__typed_label_${label.id}", FixupKind.BRANCH_26))
+        emit(0x94000000.toInt())
+    }
+
+    fun bCond(cond: Arm64Condition, label: Label) {
+        fixups.add(Fixup(buf.size(), "__typed_label_${label.id}", FixupKind.BRANCH_19))
+        emit(0x54000000 or cond.code)
+    }
+
+    fun cbz(rt: Arm64Register64, label: Label) {
+        fixups.add(Fixup(buf.size(), "__typed_label_${label.id}", FixupKind.BRANCH_19))
+        emit(0xB4000000.toInt() or enc(rt))
+    }
+
+    fun cbz(rt: Arm64Register32, label: Label) {
+        fixups.add(Fixup(buf.size(), "__typed_label_${label.id}", FixupKind.BRANCH_19))
+        emit(0x34000000 or enc(rt))
+    }
+
+    fun cbnz(rt: Arm64Register64, label: Label) {
+        fixups.add(Fixup(buf.size(), "__typed_label_${label.id}", FixupKind.BRANCH_19))
+        emit(0xB5000000.toInt() or enc(rt))
+    }
+
+    fun cbnz(rt: Arm64Register32, label: Label) {
+        fixups.add(Fixup(buf.size(), "__typed_label_${label.id}", FixupKind.BRANCH_19))
         emit(0x35000000 or enc(rt))
     }
 

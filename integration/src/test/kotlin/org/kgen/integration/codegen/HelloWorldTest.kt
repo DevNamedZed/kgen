@@ -8,7 +8,7 @@ import org.kgen.ir.*
 import org.kgen.ir.build.*
 import org.kgen.codegen.*
 import org.kgen.ir.target.Target
-import org.kgen.pass.OptLevel
+import org.kgen.codegen.OptLevel
 import org.kgen.target.x86.codegen.X86CodeGenerator
 import java.io.File
 import java.nio.ByteBuffer
@@ -19,7 +19,7 @@ class HelloWorldTest {
     private fun le(bytes: ByteArray): ByteBuffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
 
     private fun buildHelloWorldModule(): Module {
-        val ir = IrBuilder("hello", Target.x86_64())
+        val ir = ModuleBuilder("hello", Target.x86_64())
 
         val strType = Type.Array(Type.I8, 14)
         val strRef = ir.addGlobal("hello_str", strType,
@@ -38,7 +38,7 @@ class HelloWorldTest {
     }
 
     private fun buildWindowsHelloWorldModule(): Module {
-        val ir = IrBuilder("hello_pe", Target.x86_64())
+        val ir = ModuleBuilder("hello_pe", Target.x86_64())
         ir.targetTriple = "x86_64-unknown-windows-msvc"
 
         val strType = Type.Array(Type.I8, 14)

@@ -285,7 +285,7 @@ class ClrWriterExtendedTest {
                 ClrTypeDef(0, strings.add("<Module>"), emptyNs, 0, 1, 1),
             ),
             methodDefs = listOf(
-                ClrMethodDef(0, 0, 0x0086, strings.add("Add"), methodSig, 1),
+                ClrMethodDefinition(0, 0, 0x0086, strings.add("Add"), methodSig, 1),
             ),
             params = listOf(
                 ClrParam(0, 1, strings.add("a")),
@@ -397,7 +397,7 @@ class ClrWriterExtendedTest {
     // --- Multiple Method Defs ---
 
     @Test
-    fun multipleMethodDefs() {
+    fun multipleMethodDefinitions() {
         val strings = ClrStringHeapBuilder()
         val blobs = ClrBlobHeapBuilder()
         val guids = ClrGuidHeapBuilder()
@@ -410,9 +410,9 @@ class ClrWriterExtendedTest {
                 ClrTypeDef(0, strings.add("<Module>"), emptyNs, 0, 1, 1),
             ),
             methodDefs = listOf(
-                ClrMethodDef(0, 0, 0x0086, strings.add("MethodA"), voidSig, 1),
-                ClrMethodDef(0, 0, 0x0086, strings.add("MethodB"), voidSig, 1),
-                ClrMethodDef(0, 0, 0x0086, strings.add("MethodC"), voidSig, 1),
+                ClrMethodDefinition(0, 0, 0x0086, strings.add("MethodA"), voidSig, 1),
+                ClrMethodDefinition(0, 0, 0x0086, strings.add("MethodB"), voidSig, 1),
+                ClrMethodDefinition(0, 0, 0x0086, strings.add("MethodC"), voidSig, 1),
             ),
         )
         val parsed = buildAndParse(strings = strings, blobs = blobs, guids = guids, tables = tables)
@@ -585,7 +585,7 @@ class ClrWriterExtendedTest {
             modules = listOf(ClrModule(0, moduleName, mvid, 0, 0)),
             typeDefs = listOf(ClrTypeDef(0, strings.add("<Module>"), emptyNs, 0, 1, 1)),
             methodDefs = listOf(
-                ClrMethodDef(0, 0, 0x0086, strings.add("GenericMethod"), methodSig, 1),
+                ClrMethodDefinition(0, 0, 0x0086, strings.add("GenericMethod"), methodSig, 1),
             ),
             methodSpecs = listOf(
                 ClrMethodSpec(method = (1 shl 1) or 0, instantiation = instantiation),

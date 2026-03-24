@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.reflect.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.target.x86.X86Register
 import org.kgen.target.x86.asm.X86Assembler
@@ -36,7 +36,7 @@ class NativeCodeTest {
 
     @Test
     fun irToExecutable() {
-        val ir = IrBuilder("jit", Target.x86_64())
+        val ir = ModuleBuilder("jit", Target.x86_64())
         if (isWindows) ir.targetTriple = "x86_64-unknown-windows-msvc"
 
         val params = ir.createFunction("add3",
@@ -56,7 +56,7 @@ class NativeCodeTest {
 
     @Test
     fun multipleFunctionsFromIr() {
-        val ir = IrBuilder("multi", Target.x86_64())
+        val ir = ModuleBuilder("multi", Target.x86_64())
         if (isWindows) ir.targetTriple = "x86_64-unknown-windows-msvc"
 
         val addParams = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)

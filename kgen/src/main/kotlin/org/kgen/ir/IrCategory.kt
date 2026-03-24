@@ -5,7 +5,7 @@ package org.kgen.ir
  *
  * Every instruction belongs to exactly one category. Categories serve three purposes:
  *
- * 1. **Constraint enforcement.** The [org.kgen.ir.build.IrBuilder] can restrict which
+ * 1. **Constraint enforcement.** The [org.kgen.ir.build.ModuleBuilder] can restrict which
  *    categories are legal via `allowedCategories`. Emitting an instruction whose category
  *    is not in the allowed set produces an immediate error.
  *

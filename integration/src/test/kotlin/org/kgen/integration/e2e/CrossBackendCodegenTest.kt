@@ -6,7 +6,7 @@ import org.kgen.binary.SectionKind
 import org.kgen.codegen.CodeGenOptions
 import org.kgen.codegen.OutputFormat
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.target.arm64.codegen.Arm64CodeGenerator
 import org.kgen.target.arm64.disasm.Arm64Disassembler
@@ -26,8 +26,8 @@ class CrossBackendCodegenTest {
 
     // -- Helpers --
 
-    private fun buildModule(target: Target, block: IrBuilder.() -> Unit): Module {
-        val ir = IrBuilder("cross_test", target)
+    private fun buildModule(target: Target, block: ModuleBuilder.() -> Unit): Module {
+        val ir = ModuleBuilder("cross_test", target)
         ir.block()
         return ir.build()
     }

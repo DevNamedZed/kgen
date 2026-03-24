@@ -3,13 +3,13 @@ package org.kgen.codegen.alloc
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 
 class LocalSlotAllocatorTest {
 
-    private fun buildFunction(block: IrBuilder.() -> Unit): IrFunction {
-        val ir = IrBuilder("test_module", Target.x86_64())
+    private fun buildFunction(block: ModuleBuilder.() -> Unit): IrFunction {
+        val ir = ModuleBuilder("test_module", Target.x86_64())
         ir.block()
         return ir.build().functions[0]
     }

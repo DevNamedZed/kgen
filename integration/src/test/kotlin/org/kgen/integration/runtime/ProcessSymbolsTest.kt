@@ -6,7 +6,7 @@ import org.junit.jupiter.api.condition.EnabledOnOs
 import org.junit.jupiter.api.condition.OS
 import org.kgen.reflect.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.target.x86.codegen.X86CodeGenerator
 import org.kgen.binary.elf.ElfSharedLinker
@@ -35,7 +35,7 @@ class ProcessSymbolsTest {
     @Test
     @EnabledOnOs(OS.LINUX)
     fun buildAndLoadSharedLibrary() {
-        val ir = IrBuilder("testlib", Target.x86_64())
+        val ir = ModuleBuilder("testlib", Target.x86_64())
         val addParams = ir.createFunction("kgen_add",
             listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")

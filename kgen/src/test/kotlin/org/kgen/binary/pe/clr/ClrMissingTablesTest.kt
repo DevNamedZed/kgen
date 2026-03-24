@@ -181,7 +181,7 @@ class ClrMissingTablesTest {
         val tables = ClrTables(
             modules = listOf(ClrModule(0, moduleName, 1, 0, 0)),
             typeDefs = listOf(ClrTypeDef(0, typeName, ns, 0, 1, 1)),
-            methodDefs = listOf(ClrMethodDef(0, 0, 0x0006, getterName, methodSig, 1)),
+            methodDefs = listOf(ClrMethodDefinition(0, 0, 0x0006, getterName, methodSig, 1)),
             properties = listOf(ClrProperty(0, propName, propSig)),
             methodSemantics = listOf(ClrMethodSemantics(
                 semantics = 0x0002, // Getter
@@ -210,17 +210,17 @@ class ClrMissingTablesTest {
         val ifaceMethodName = strings.add("DoWork")
         val memberRefSig = blobs.add(byteArrayOf(0x00, 0x00, 0x01))
 
-        // METHOD_DEF_OR_REF coded index: 1 bit tag, MethodDef=0, MemberRef=1
-        // MethodDef row 1 → coded index = (1 shl 1) or 0 = 2
+        // METHOD_DEF_OR_REF coded index: 1 bit tag, MethodDefinition=0, MemberRef=1
+        // MethodDefinition row 1 → coded index = (1 shl 1) or 0 = 2
         // MemberRef row 1 → coded index = (1 shl 1) or 1 = 3
         val tables = ClrTables(
             modules = listOf(ClrModule(0, moduleName, 1, 0, 0)),
             typeDefs = listOf(ClrTypeDef(0, typeName, ns, 0, 1, 1)),
-            methodDefs = listOf(ClrMethodDef(0, 0, 0x0006, methodName, methodSig, 1)),
+            methodDefs = listOf(ClrMethodDefinition(0, 0, 0x0006, methodName, methodSig, 1)),
             memberRefs = listOf(ClrMemberRef(0, ifaceMethodName, memberRefSig)),
             methodImpls = listOf(ClrMethodImpl(
                 classIndex = 1,
-                methodBody = 2,       // MethodDef row 1
+                methodBody = 2,       // MethodDefinition row 1
                 methodDeclaration = 3, // MemberRef row 1
             )),
         )
@@ -311,9 +311,9 @@ class ClrMissingTablesTest {
             modules = listOf(ClrModule(0, moduleName, 1, 0, 0)),
             typeDefs = listOf(ClrTypeDef(0, typeName, ns, 0, 1, 1)),
             methodDefs = listOf(
-                ClrMethodDef(0, 0, 0x0006, getName, mSig, 1),
-                ClrMethodDef(0, 0, 0x0006, setName, mSig, 1),
-                ClrMethodDef(0, 0, 0x0006, getAge, mSig, 1),
+                ClrMethodDefinition(0, 0, 0x0006, getName, mSig, 1),
+                ClrMethodDefinition(0, 0, 0x0006, setName, mSig, 1),
+                ClrMethodDefinition(0, 0, 0x0006, getAge, mSig, 1),
             ),
             propertyMaps = listOf(ClrPropertyMap(parent = 1, propertyList = 1)),
             properties = listOf(
@@ -357,7 +357,7 @@ class ClrMissingTablesTest {
             modules = listOf(ClrModule(0, moduleName, 1, 0, 0)),
             typeDefs = listOf(ClrTypeDef(0, typeName, ns, 0, 1, 1)),
             fields = listOf(ClrField(0x06, fieldName, sig)),
-            methodDefs = listOf(ClrMethodDef(0, 0, 0x0006, methodName, sig, 1)),
+            methodDefs = listOf(ClrMethodDefinition(0, 0, 0x0006, methodName, sig, 1)),
             fieldMarshals = listOf(ClrFieldMarshal(parent = 2, nativeType = nativeType)),
             declSecurities = listOf(ClrDeclSecurity(action = 2, parent = 4, permissionSet = permSet)),
             eventMaps = listOf(ClrEventMap(parent = 1, eventList = 1)),

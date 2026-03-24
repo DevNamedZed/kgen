@@ -3,7 +3,7 @@ package org.kgen.integration.loader
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.target.x86.codegen.X86CodeGenerator
 import org.kgen.jit.FfmNativeLoader
@@ -13,8 +13,8 @@ class NativeLoaderTest {
     private val loader = FfmNativeLoader()
     private val isWindows = System.getProperty("os.name").lowercase().contains("win")
 
-    private fun generateObjectFile(block: IrBuilder.() -> Unit): org.kgen.binary.ObjectFile {
-        val ir = IrBuilder("jit_test", Target.x86_64())
+    private fun generateObjectFile(block: ModuleBuilder.() -> Unit): org.kgen.binary.ObjectFile {
+        val ir = ModuleBuilder("jit_test", Target.x86_64())
         if (isWindows) ir.targetTriple = "x86_64-unknown-windows-msvc"
         ir.block()
         val module = ir.build()

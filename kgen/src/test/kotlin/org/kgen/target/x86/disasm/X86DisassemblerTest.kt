@@ -3,7 +3,7 @@ package org.kgen.target.x86.disasm
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.target.x86.codegen.X86CodeGenerator
 
@@ -222,7 +222,7 @@ class X86DisassemblerTest {
 
     @Test
     fun `round-trips codegen output`() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         val params = ir.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val sum = ir.add(params[0], params[1])
@@ -249,7 +249,7 @@ class X86DisassemblerTest {
 
     @Test
     fun `disassembles hello world codegen output`() {
-        val ir = IrBuilder("hello", Target.x86_64())
+        val ir = ModuleBuilder("hello", Target.x86_64())
 
         val strType = Type.Array(Type.I8, 14)
         val strRef = ir.addGlobal("hello_str", strType,

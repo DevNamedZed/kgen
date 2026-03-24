@@ -6,7 +6,7 @@ import org.junit.jupiter.api.condition.EnabledOnOs
 import org.junit.jupiter.api.condition.OS
 import org.kgen.target.x86.codegen.X86CodeGenerator
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.jit.JitEngine
 import org.kgen.jit.SymbolResolver
@@ -362,7 +362,7 @@ class JitRuntimeIntegrationTest {
     // ---- IR building helpers ----
 
     private fun buildAddModule(): Module {
-        val ir = IrBuilder("add_module", Target.x86_64())
+        val ir = ModuleBuilder("add_module", Target.x86_64())
         ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         ir.ret(ir.add(Parameter("a", Type.I64, 0), Parameter("b", Type.I64, 1)))
@@ -371,7 +371,7 @@ class JitRuntimeIntegrationTest {
     }
 
     private fun buildMulModule(): Module {
-        val ir = IrBuilder("mul_module", Target.x86_64())
+        val ir = ModuleBuilder("mul_module", Target.x86_64())
         ir.createFunction("mul", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         ir.ret(ir.mul(Parameter("a", Type.I64, 0), Parameter("b", Type.I64, 1)))
@@ -380,7 +380,7 @@ class JitRuntimeIntegrationTest {
     }
 
     private fun buildConstantFunction(name: String, value: Long): Module {
-        val ir = IrBuilder("${name}_module", Target.x86_64())
+        val ir = ModuleBuilder("${name}_module", Target.x86_64())
         ir.createFunction(name, emptyList(), Type.I64)
         ir.appendBlock("entry")
         ir.ret(Constant.I64(value))
@@ -389,7 +389,7 @@ class JitRuntimeIntegrationTest {
     }
 
     private fun buildCallExtern3Times(externName: String): Module {
-        val ir = IrBuilder("test_module", Target.x86_64())
+        val ir = ModuleBuilder("test_module", Target.x86_64())
         ir.declareFunction(externName, emptyList(), Type.I64)
 
         ir.createFunction("test_increment", emptyList(), Type.I64)

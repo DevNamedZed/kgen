@@ -3,7 +3,7 @@ package org.kgen.codegen
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.instructions.*
 import org.kgen.ir.target.Target
 import org.kgen.target.x86.codegen.X86CodeGenerator
@@ -13,7 +13,7 @@ import org.kgen.target.riscv.codegen.RiscVCodeGenerator
 class CallBrCodegenTest {
 
     private fun buildCallBrModule(target: Target): Module {
-        val ir = IrBuilder("callbr_test", target)
+        val ir = ModuleBuilder("callbr_test", target)
 
         ir.declareFunction("target_func", emptyList(), Type.Void)
 
@@ -37,7 +37,7 @@ class CallBrCodegenTest {
     }
 
     private fun buildCallBrWithResultModule(target: Target): Module {
-        val ir = IrBuilder("callbr_result_test", target)
+        val ir = ModuleBuilder("callbr_result_test", target)
 
         ir.declareFunction("asm_func", listOf(Param("input", Type.I32)), Type.I32)
 
@@ -61,7 +61,7 @@ class CallBrCodegenTest {
     }
 
     private fun buildCallBrMultipleIndirectModule(target: Target): Module {
-        val ir = IrBuilder("callbr_multi_test", target)
+        val ir = ModuleBuilder("callbr_multi_test", target)
 
         ir.declareFunction("dispatch_func", emptyList(), Type.Void)
 

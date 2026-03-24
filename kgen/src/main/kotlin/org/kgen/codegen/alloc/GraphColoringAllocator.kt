@@ -69,6 +69,7 @@ class GraphColoringAllocator : RegisterAllocator {
         private val spilledNodes = mutableSetOf<String>()
         private val coalescedNodes = mutableSetOf<String>()
         private val selectStack = mutableListOf<String>()
+        private val selectStackSet = mutableSetOf<String>()
 
         private val coalescedMoves = mutableSetOf<Move>()
         private val constrainedMoves = mutableSetOf<Move>()
@@ -202,13 +203,16 @@ class GraphColoringAllocator : RegisterAllocator {
                         }
                     }
 
-                    // Copy-like instructions
+                    // Copy-like instructions — only same-width, same-class copies
+                    // ZExt/SExt/IntTrunc/FTrunc change bit width — coalescing would lose the conversion
                     val copyPair = when (inst) {
-                        is BitCast -> inst.value.name to inst.dest.name
-                        is FTrunc -> inst.operand.name to inst.dest.name
-                        is ZExt -> inst.value.name to inst.dest.name
-                        is SExt -> inst.value.name to inst.dest.name
-                        is IntTrunc -> inst.value.name to inst.dest.name
+                        is BitCast -> {
+                            if (inst.value.type == inst.dest.type) {
+                                inst.value.name to inst.dest.name
+                            } else {
+                                null
+                            }
+                        }
                         else -> null
                     }
                     if (copyPair != null && copyPair.first in intervalMap && copyPair.second in intervalMap) {
@@ -242,7 +246,7 @@ class GraphColoringAllocator : RegisterAllocator {
 
         private fun adjacent(u: String): Set<String> {
             return (adjList[u] ?: emptySet()).filterTo(mutableSetOf()) {
-                it !in selectStack && it !in coalescedNodes
+                it !in selectStackSet && it !in coalescedNodes
             }
         }
 
@@ -258,6 +262,7 @@ class GraphColoringAllocator : RegisterAllocator {
             val node = simplifyWorklist.first()
             simplifyWorklist.remove(node)
             selectStack.add(node)
+            selectStackSet.add(node)
             for (adj in adjacent(node)) {
                 decrementDegree(adj)
             }
@@ -421,6 +426,7 @@ class GraphColoringAllocator : RegisterAllocator {
             // Pop from select stack and assign colors
             while (selectStack.isNotEmpty()) {
                 val name = selectStack.removeLast()
+                selectStackSet.remove(name)
                 val iv = intervalMap[name] ?: continue
                 val cls = classForType(iv.type)
                 val regs = allocatableByClass[cls] ?: continue

@@ -10,7 +10,7 @@ import org.kgen.ir.*
 import org.kgen.ir.instructions.*
 import org.kgen.ir.target.Arch
 import org.kgen.ir.target.Target
-import org.kgen.pass.Mem2Reg
+import org.kgen.pipeline.Mem2Reg
 
 /**
  * Compiles classfiles to a native shared library.

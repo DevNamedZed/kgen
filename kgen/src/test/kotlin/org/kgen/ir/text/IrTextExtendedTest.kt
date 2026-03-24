@@ -355,7 +355,7 @@ class IrTextExtendedTest {
 
     @Test
     @org.junit.jupiter.api.Disabled("Parser does not yet support struct definitions")
-    fun roundTripStructDef() {
+    fun roundTripStructDefinition() {
         val mod = module("struct") {
             struct("Pair", listOf(Param("first", Type.I32), Param("second", Type.I64)))
         }

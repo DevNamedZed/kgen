@@ -41,12 +41,12 @@ class IrSerializer {
 
         writeList(out, m.targetFeatures.toList()) { writeString(out, it) }
         writeList(out, m.aliases) { writeTypeAlias(out, it) }
-        writeList(out, m.structs) { writeStructDef(out, it) }
+        writeList(out, m.structs) { writeStructDefinition(out, it) }
         writeList(out, m.globals) { writeGlobal(out, it) }
         writeList(out, m.functions) { writeFunction(out, it) }
-        writeList(out, m.classes) { writeClassDef(out, it) }
-        writeList(out, m.interfaces) { writeInterfaceDef(out, it) }
-        writeList(out, m.enums) { writeEnumDef(out, it) }
+        writeList(out, m.classes) { writeClassDefinition(out, it) }
+        writeList(out, m.interfaces) { writeInterfaceDefinition(out, it) }
+        writeList(out, m.enums) { writeEnumDefinition(out, it) }
 
         // Metadata
         writeList(out, m.metadata.entries.toList()) {
@@ -81,12 +81,12 @@ class IrSerializer {
 
         val targetFeatures = readList(inp) { readString(inp) }.toSet()
         val aliases = readList(inp) { readTypeAlias(inp) }
-        val structs = readList(inp) { readStructDef(inp) }
+        val structs = readList(inp) { readStructDefinition(inp) }
         val globals = readList(inp) { readGlobal(inp) }
         val functions = readList(inp) { readFunction(inp) }
-        val classes = readList(inp) { readClassDef(inp) }
-        val interfaces = readList(inp) { readInterfaceDef(inp) }
-        val enums = readList(inp) { readEnumDef(inp) }
+        val classes = readList(inp) { readClassDefinition(inp) }
+        val interfaces = readList(inp) { readInterfaceDefinition(inp) }
+        val enums = readList(inp) { readEnumDefinition(inp) }
 
         val metadata = readList(inp) {
             readString(inp) to readMetadata(inp)
@@ -811,14 +811,14 @@ class IrSerializer {
         return Global(name, type, init, isConst, linkage, vis, align = align)
     }
 
-    private fun writeStructDef(out: DataOutputStream, s: StructDef) {
+    private fun writeStructDefinition(out: DataOutputStream, s: StructDefinition) {
         writeString(out, s.name)
         writeList(out, s.fields) { writeString(out, it.name); writeType(out, it.type) }
         out.writeBoolean(s.packed)
     }
 
-    private fun readStructDef(inp: DataInputStream): StructDef =
-        StructDef(readString(inp), readList(inp) { Param(readString(inp), readType(inp)) }, inp.readBoolean())
+    private fun readStructDefinition(inp: DataInputStream): StructDefinition =
+        StructDefinition(readString(inp), readList(inp) { Param(readString(inp), readType(inp)) }, inp.readBoolean())
 
     private fun writeTypeAlias(out: DataOutputStream, a: TypeAlias) {
         writeString(out, a.name); writeType(out, a.type)
@@ -826,47 +826,47 @@ class IrSerializer {
 
     private fun readTypeAlias(inp: DataInputStream): TypeAlias = TypeAlias(readString(inp), readType(inp))
 
-    private fun writeClassDef(out: DataOutputStream, cls: ClassDef) {
+    private fun writeClassDefinition(out: DataOutputStream, cls: ClassDefinition) {
         writeString(out, cls.name)
         writeNullableString(out, cls.superClass)
         writeList(out, cls.interfaces) { writeString(out, it) }
-        writeList(out, cls.fields) { writeFieldDef(out, it) }
-        writeList(out, cls.methods) { writeMethodDef(out, it) }
-        writeList(out, cls.constructors) { writeMethodDef(out, it) }
+        writeList(out, cls.fields) { writeFieldDefinition(out, it) }
+        writeList(out, cls.methods) { writeMethodDefinition(out, it) }
+        writeList(out, cls.constructors) { writeMethodDefinition(out, it) }
         out.writeBoolean(cls.isAbstract)
         out.writeBoolean(cls.isFinal)
         out.writeInt(cls.visibility.ordinal)
     }
 
-    private fun readClassDef(inp: DataInputStream): ClassDef {
+    private fun readClassDefinition(inp: DataInputStream): ClassDefinition {
         val name = readString(inp)
         val superClass = readNullableString(inp)
         val interfaces = readList(inp) { readString(inp) }
-        val fields = readList(inp) { readFieldDef(inp) }
-        val methods = readList(inp) { readMethodDef(inp) }
-        val ctors = readList(inp) { readMethodDef(inp) }
+        val fields = readList(inp) { readFieldDefinition(inp) }
+        val methods = readList(inp) { readMethodDefinition(inp) }
+        val ctors = readList(inp) { readMethodDefinition(inp) }
         val isAbstract = inp.readBoolean()
         val isFinal = inp.readBoolean()
         val vis = ClassVisibility.entries[inp.readInt()]
-        return ClassDef(name, superClass, interfaces, fields, methods, ctors, isAbstract = isAbstract, isFinal = isFinal, visibility = vis)
+        return ClassDefinition(name, superClass, interfaces, fields, methods, ctors, isAbstract = isAbstract, isFinal = isFinal, visibility = vis)
     }
 
-    private fun writeInterfaceDef(out: DataOutputStream, iface: InterfaceDef) {
+    private fun writeInterfaceDefinition(out: DataOutputStream, iface: InterfaceDefinition) {
         writeString(out, iface.name)
         writeList(out, iface.superInterfaces) { writeString(out, it) }
-        writeList(out, iface.methods) { writeMethodDef(out, it) }
+        writeList(out, iface.methods) { writeMethodDefinition(out, it) }
         out.writeInt(iface.visibility.ordinal)
     }
 
-    private fun readInterfaceDef(inp: DataInputStream): InterfaceDef {
+    private fun readInterfaceDefinition(inp: DataInputStream): InterfaceDefinition {
         val name = readString(inp)
         val supers = readList(inp) { readString(inp) }
-        val methods = readList(inp) { readMethodDef(inp) }
+        val methods = readList(inp) { readMethodDefinition(inp) }
         val vis = ClassVisibility.entries[inp.readInt()]
-        return InterfaceDef(name, supers, methods, visibility = vis)
+        return InterfaceDefinition(name, supers, methods, visibility = vis)
     }
 
-    private fun writeEnumDef(out: DataOutputStream, e: EnumDef) {
+    private fun writeEnumDefinition(out: DataOutputStream, e: EnumDefinition) {
         writeString(out, e.name)
         writeList(out, e.variants) {
             writeString(out, it.name)
@@ -876,23 +876,23 @@ class IrSerializer {
         out.writeInt(e.visibility.ordinal)
     }
 
-    private fun readEnumDef(inp: DataInputStream): EnumDef {
+    private fun readEnumDefinition(inp: DataInputStream): EnumDefinition {
         val name = readString(inp)
         val variants = readList(inp) {
             EnumVariant(readString(inp), inp.readInt(), readList(inp) { Param(readString(inp), readType(inp)) })
         }
         val vis = ClassVisibility.entries[inp.readInt()]
-        return EnumDef(name, variants, visibility = vis)
+        return EnumDefinition(name, variants, visibility = vis)
     }
 
-    private fun writeFieldDef(out: DataOutputStream, f: FieldDef) {
+    private fun writeFieldDefinition(out: DataOutputStream, f: FieldDefinition) {
         writeString(out, f.name); writeType(out, f.type); out.writeInt(f.visibility.ordinal); out.writeBoolean(f.isFinal)
     }
 
-    private fun readFieldDef(inp: DataInputStream): FieldDef =
-        FieldDef(readString(inp), readType(inp), MemberVisibility.entries[inp.readInt()], inp.readBoolean())
+    private fun readFieldDefinition(inp: DataInputStream): FieldDefinition =
+        FieldDefinition(readString(inp), readType(inp), MemberVisibility.entries[inp.readInt()], inp.readBoolean())
 
-    private fun writeMethodDef(out: DataOutputStream, m: MethodDef) {
+    private fun writeMethodDefinition(out: DataOutputStream, m: MethodDefinition) {
         writeString(out, m.name)
         writeList(out, m.params) { writeString(out, it.name); writeType(out, it.type) }
         writeType(out, m.returnType)
@@ -900,13 +900,13 @@ class IrSerializer {
         out.writeBoolean(m.isAbstract); out.writeBoolean(m.isFinal); out.writeBoolean(m.isStatic)
     }
 
-    private fun readMethodDef(inp: DataInputStream): MethodDef {
+    private fun readMethodDefinition(inp: DataInputStream): MethodDefinition {
         val name = readString(inp)
         val params = readList(inp) { Param(readString(inp), readType(inp)) }
         val ret = readType(inp)
         val vis = MemberVisibility.entries[inp.readInt()]
         val isAbstract = inp.readBoolean(); val isFinal = inp.readBoolean(); val isStatic = inp.readBoolean()
-        return MethodDef(name, params, ret, visibility = vis, isAbstract = isAbstract, isFinal = isFinal, isStatic = isStatic)
+        return MethodDefinition(name, params, ret, visibility = vis, isAbstract = isAbstract, isFinal = isFinal, isStatic = isStatic)
     }
 
     private fun writeMetadata(out: DataOutputStream, md: MetadataValue) {

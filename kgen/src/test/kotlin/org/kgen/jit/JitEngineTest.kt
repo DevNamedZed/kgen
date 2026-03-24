@@ -6,11 +6,11 @@ import org.junit.jupiter.api.condition.EnabledOnOs
 import org.junit.jupiter.api.condition.OS
 import org.kgen.target.x86.codegen.X86CodeGenerator
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
-import org.kgen.pass.ConstantFolding
-import org.kgen.pass.DeadCodeElimination
-import org.kgen.pass.PassPipeline
+import org.kgen.pipeline.ConstantFolding
+import org.kgen.pipeline.DeadCodeElimination
+import org.kgen.pipeline.Pipeline
 import java.lang.foreign.FunctionDescriptor
 import java.lang.foreign.ValueLayout.*
 
@@ -18,7 +18,7 @@ import java.lang.foreign.ValueLayout.*
 class JitEngineTest {
 
     private fun buildAddModule(): Module {
-        val ir = IrBuilder("add_module", Target.x86_64())
+        val ir = ModuleBuilder("add_module", Target.x86_64())
         ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)
@@ -30,7 +30,7 @@ class JitEngineTest {
     }
 
     private fun buildConstantModule(name: String, funcName: String, value: Long): Module {
-        val ir = IrBuilder(name, Target.x86_64())
+        val ir = ModuleBuilder(name, Target.x86_64())
         ir.createFunction(funcName, emptyList(), Type.I64)
         ir.appendBlock("entry")
         ir.ret(Constant.I64(value))
@@ -39,7 +39,7 @@ class JitEngineTest {
     }
 
     private fun buildMulModule(): Module {
-        val ir = IrBuilder("mul_module", Target.x86_64())
+        val ir = ModuleBuilder("mul_module", Target.x86_64())
         ir.createFunction("mul", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)
@@ -263,7 +263,7 @@ class JitEngineTest {
 
     @Test
     fun subtractFunction() {
-        val ir = IrBuilder("sub_module", Target.x86_64())
+        val ir = ModuleBuilder("sub_module", Target.x86_64())
         ir.createFunction("sub", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)
@@ -281,7 +281,7 @@ class JitEngineTest {
 
     @Test
     fun bitwiseOperations() {
-        val ir = IrBuilder("bitwise", Target.x86_64())
+        val ir = ModuleBuilder("bitwise", Target.x86_64())
 
         ir.createFunction("bitand", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
@@ -307,7 +307,7 @@ class JitEngineTest {
 
     @Test
     fun multipleFunctionsInOneModule() {
-        val ir = IrBuilder("multi", Target.x86_64())
+        val ir = ModuleBuilder("multi", Target.x86_64())
 
         ir.createFunction("f1", emptyList(), Type.I64)
         ir.appendBlock("entry")
@@ -361,7 +361,7 @@ class JitEngineTest {
     @Test
     fun optimizationPipeline() {
         val jit = JitEngine(X86CodeGenerator())
-        val pipeline = PassPipeline()
+        val pipeline = Pipeline()
         pipeline.add(ConstantFolding())
         pipeline.add(DeadCodeElimination())
         jit.setOptimizationPipeline(pipeline)
@@ -392,7 +392,7 @@ class JitEngineTest {
     @Test
     fun tlsGlobalLoadsIntoJit() {
         // Build module with a thread-local global
-        val ir = IrBuilder("tls_module", Target.x86_64())
+        val ir = ModuleBuilder("tls_module", Target.x86_64())
         ir.addGlobal("tls_counter", Type.I64, Constant.I64(42),
             threadLocal = ThreadLocalMode.LOCAL_EXEC)
 

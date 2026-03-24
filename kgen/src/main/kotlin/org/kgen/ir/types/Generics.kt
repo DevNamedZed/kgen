@@ -3,7 +3,7 @@ package org.kgen.ir.types
 import org.kgen.ir.Type
 
 /** Generic type parameter definition. */
-data class TypeParamDef(
+data class TypeParamDefinition(
     val name: String,
     val index: Int,
     val upperBounds: List<Type> = emptyList(),

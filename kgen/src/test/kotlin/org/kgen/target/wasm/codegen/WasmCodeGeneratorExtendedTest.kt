@@ -26,7 +26,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `sub i32 constants`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("subConst", emptyList(), Type.I32)
         ir.appendBlock("entry")
         val result = ir.sub(Constant.I32(100), Constant.I32(42))
@@ -39,7 +39,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `sub i64 params`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("sub64", listOf(
             Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
@@ -54,7 +54,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `mul i32 with zero`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("mulZero", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.mul(params[0], Constant.I32(0)))
@@ -66,7 +66,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `mul i64 params`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("mul64", listOf(
             Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
@@ -81,7 +81,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `fsub f32`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("fsubf32", listOf(
             Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
         ir.appendBlock("entry")
@@ -94,7 +94,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `fsub f64`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("fsubf64", listOf(
             Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
         ir.appendBlock("entry")
@@ -109,7 +109,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `fmul f32`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("fmulf32", listOf(
             Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
         ir.appendBlock("entry")
@@ -122,7 +122,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `fmul f64`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("fmulf64", listOf(
             Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
         ir.appendBlock("entry")
@@ -137,7 +137,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `fdiv f32`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("fdivf32", listOf(
             Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
         ir.appendBlock("entry")
@@ -150,7 +150,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `fdiv f64`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("fdivf64", listOf(
             Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
         ir.appendBlock("entry")
@@ -165,7 +165,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `icmp EQ i32 with constant`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("eqConst", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.icmp(ICmpPredicate.EQ, params[0], Constant.I32(0))
@@ -179,7 +179,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `icmp NE i32 with constant`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("neConst", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.icmp(ICmpPredicate.NE, params[0], Constant.I32(0))
@@ -193,7 +193,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `icmp SLT i32`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("slt", listOf(
             Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -207,7 +207,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `icmp SGT i32`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("sgt", listOf(
             Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -221,7 +221,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `icmp SLE i32`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("sle", listOf(
             Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -235,7 +235,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `icmp SGE i32`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("sge", listOf(
             Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -249,7 +249,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `icmp ULT i32`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("ult", listOf(
             Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -263,7 +263,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `icmp UGT i32`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("ugt", listOf(
             Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -277,7 +277,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `icmp ULE i32`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("ule", listOf(
             Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -291,7 +291,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `icmp UGE i32`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("uge", listOf(
             Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -307,7 +307,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `icmp EQ i64`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("eq64", listOf(
             Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
         ir.appendBlock("entry")
@@ -321,7 +321,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `icmp NE i64`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("ne64", listOf(
             Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
         ir.appendBlock("entry")
@@ -335,7 +335,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `icmp SGT i64`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("sgt64", listOf(
             Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
         ir.appendBlock("entry")
@@ -349,7 +349,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `icmp ULT i64`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("ult64", listOf(
             Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
         ir.appendBlock("entry")
@@ -365,7 +365,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `and i32 with mask`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("mask", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.and(params[0], Constant.I32(0x0F)))
@@ -377,7 +377,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `or i32 set bit`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("setBit", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.or(params[0], Constant.I32(0x80)))
@@ -389,7 +389,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `xor i32 toggle bits`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("toggle", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.xor(params[0], Constant.I32(-1)))
@@ -401,7 +401,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `shl i32 multiply by power of two`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("shiftL", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.shl(params[0], Constant.I32(3)))
@@ -413,7 +413,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `shl i64`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("shiftL64", listOf(Param("x", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         ir.ret(ir.shl(params[0], Constant.I64(8L)))
@@ -425,7 +425,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `and i64`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("and64", listOf(
             Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
@@ -438,7 +438,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `or i64`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("or64", listOf(
             Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
@@ -451,7 +451,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `xor i64`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("xor64", listOf(
             Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
@@ -464,7 +464,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `chained bitwise operations i32`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("chainBit", listOf(
             Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -482,7 +482,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `call chain of defined functions`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
 
         val addParams = ir.createFunction("add", listOf(
             Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
@@ -509,7 +509,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `call void function`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.declareFunction("log", listOf(Param("v", Type.I32)), Type.Void)
 
         ir.createFunction("main", emptyList(), Type.Void)
@@ -526,7 +526,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `call with multiple argument types`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.declareFunction("process", listOf(
             Param("i", Type.I32), Param("l", Type.I64),
             Param("f", Type.F32), Param("d", Type.F64)), Type.I32)
@@ -545,7 +545,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `recursive call pattern`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
 
         val params = ir.createFunction("factorial", listOf(Param("n", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -565,7 +565,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `function with single i32 param`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("identity", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         ir.ret(params[0])
@@ -577,7 +577,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `function with single i64 param`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("identity64", listOf(Param("x", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         ir.ret(params[0])
@@ -589,7 +589,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `function with single f32 param`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("identityf32", listOf(Param("x", Type.F32)), Type.F32)
         ir.appendBlock("entry")
         ir.ret(params[0])
@@ -601,7 +601,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `function with single f64 param`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("identityf64", listOf(Param("x", Type.F64)), Type.F64)
         ir.appendBlock("entry")
         ir.ret(params[0])
@@ -613,7 +613,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `function with all four wasm param types`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("allTypes", listOf(
             Param("i", Type.I32), Param("l", Type.I64),
             Param("f", Type.F32), Param("d", Type.F64)), Type.I32)
@@ -627,7 +627,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `function with many params same type`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val paramList = (1..8).map { Param("p$it", Type.I32) }
         val params = ir.createFunction("sum8", paramList, Type.I32)
         ir.appendBlock("entry")
@@ -646,7 +646,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `void function with no operations`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("empty", emptyList(), Type.Void)
         ir.appendBlock("entry")
         ir.ret()
@@ -658,7 +658,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `return i32 constant`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("const", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(0))
@@ -670,7 +670,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `return i64 constant`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("const64", emptyList(), Type.I64)
         ir.appendBlock("entry")
         ir.ret(Constant.I64(Long.MAX_VALUE))
@@ -682,7 +682,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `return f32 constant`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("constf32", emptyList(), Type.F32)
         ir.appendBlock("entry")
         ir.ret(Constant.F32(Float.MAX_VALUE))
@@ -694,7 +694,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `return f64 constant`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("constf64", emptyList(), Type.F64)
         ir.appendBlock("entry")
         ir.ret(Constant.F64(Double.MIN_VALUE))
@@ -706,7 +706,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `return negative i32 constant`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("neg", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(-1))
@@ -718,7 +718,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `return negative i64 constant`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("neg64", emptyList(), Type.I64)
         ir.appendBlock("entry")
         ir.ret(Constant.I64(-1L))
@@ -732,7 +732,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `select with boolean constant true`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("selTrue", emptyList(), Type.I32)
         ir.appendBlock("entry")
         val result = ir.select(Constant.I1(true), Constant.I32(10), Constant.I32(20))
@@ -745,7 +745,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `select with boolean constant false`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("selFalse", emptyList(), Type.I32)
         ir.appendBlock("entry")
         val result = ir.select(Constant.I1(false), Constant.I32(10), Constant.I32(20))
@@ -758,7 +758,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `nested select for clamp`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("clamp", listOf(
             Param("x", Type.I32), Param("lo", Type.I32), Param("hi", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -775,7 +775,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `select min of two i64 values`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("min64", listOf(
             Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
@@ -792,7 +792,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `internal linkage prevents export`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("internal1", emptyList(), Type.I32,
             linkage = Linkage.INTERNAL)
         ir.appendBlock("entry")
@@ -820,7 +820,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `polynomial evaluation a*x*x + b*x + c`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("poly", listOf(
             Param("x", Type.I32), Param("a", Type.I32),
             Param("b", Type.I32), Param("c", Type.I32)), Type.I32)
@@ -839,7 +839,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `float polynomial evaluation`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("fpoly", listOf(
             Param("x", Type.F64), Param("a", Type.F64),
             Param("b", Type.F64), Param("c", Type.F64)), Type.F64)
@@ -858,7 +858,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `abs value via select`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("abs", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val isNeg = ir.icmp(ICmpPredicate.SLT, params[0], Constant.I32(0))
@@ -873,7 +873,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `bit field extract via shift and mask`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("extractBits", listOf(
             Param("value", Type.I32), Param("offset", Type.I32),
             Param("width", Type.I32)), Type.I32)
@@ -893,7 +893,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `five functions in one module with calls between them`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
 
         val p1 = ir.createFunction("inc", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -932,7 +932,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `import with i64 parameters`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.declareFunction("externalOp", listOf(
             Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
 
@@ -949,7 +949,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `import with f64 return`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.declareFunction("getTime", emptyList(), Type.F64)
 
         ir.createFunction("elapsed", emptyList(), Type.F64)
@@ -969,7 +969,7 @@ class WasmCodeGeneratorExtendedTest {
     @Test
     fun `deterministic output for complex module`() {
         fun buildModule(): ByteArray {
-            val ir = IrBuilder("test", Target.wasm())
+            val ir = ModuleBuilder("test", Target.wasm())
             ir.declareFunction("log", listOf(Param("v", Type.I32)), Type.Void)
 
             val params = ir.createFunction("compute", listOf(
@@ -994,14 +994,14 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `empty module with no functions produces wasm output`() {
-        val ir = IrBuilder("empty", Target.wasm())
+        val ir = ModuleBuilder("empty", Target.wasm())
         val wasm = WasmCodeGenerator().generate(ir.build())
         assertTrue(wasm.isNotEmpty(), "Empty module should still produce output")
     }
 
     @Test
     fun `function with zero constant`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("zero", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(0))
@@ -1013,7 +1013,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `function with i32 max value`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("maxI32", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(Int.MAX_VALUE))
@@ -1025,7 +1025,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `function with i32 min value`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("minI32", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(Int.MIN_VALUE))
@@ -1037,7 +1037,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `function with i64 max value`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("maxI64", emptyList(), Type.I64)
         ir.appendBlock("entry")
         ir.ret(Constant.I64(Long.MAX_VALUE))
@@ -1049,7 +1049,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `function with special float values`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
 
         ir.createFunction("posInf", emptyList(), Type.F64)
         ir.appendBlock("entry")
@@ -1072,7 +1072,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `mixed arithmetic chain i32`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("mixedArith", listOf(
             Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -1090,7 +1090,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `sdiv compiles to wasm`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("divTest", listOf(
             Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -1109,7 +1109,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `generate with explicit CodeGenOptions`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.add(ir.param(0), Constant.I32(1)))
@@ -1122,7 +1122,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `module with only imports and no defined functions`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.declareFunction("extern1", listOf(Param("x", Type.I32)), Type.I32)
         ir.declareFunction("extern2", emptyList(), Type.Void)
 
@@ -1132,7 +1132,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `large number of local variables`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("manyLocals", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         var current: Value = params[0]
@@ -1148,7 +1148,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `select with f64 values`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("fmax", listOf(
             Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
         ir.appendBlock("entry")
@@ -1169,7 +1169,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `select with i64 values`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("max64", listOf(
             Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
@@ -1184,7 +1184,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `select with f32 values`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("pickf32", listOf(
             Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
         ir.appendBlock("entry")
@@ -1201,7 +1201,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `chained comparisons with select for range check`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("inRange", listOf(
             Param("x", Type.I32), Param("lo", Type.I32), Param("hi", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -1221,7 +1221,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `constant folding opportunity add`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("constAdd", emptyList(), Type.I32)
         ir.appendBlock("entry")
         val result = ir.add(Constant.I32(10), Constant.I32(20))
@@ -1234,7 +1234,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `constant folding opportunity mul`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("constMul", emptyList(), Type.I64)
         ir.appendBlock("entry")
         val result = ir.mul(Constant.I64(6L), Constant.I64(7L))
@@ -1247,7 +1247,7 @@ class WasmCodeGeneratorExtendedTest {
 
     @Test
     fun `float constant arithmetic`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("fconst", emptyList(), Type.F64)
         ir.appendBlock("entry")
         val pi = Constant.F64(3.141592653589793)

@@ -62,10 +62,10 @@ class ClrMethodBuilderTest {
     inner class Token {
 
         @Test
-        fun tokenReturnsMethodDefToken() {
+        fun tokenReturnsMethodDefinitionToken() {
             val mb = createMethodBuilder(index = 0)
             val token = mb.token()
-            assertTrue(token.isMethodDef)
+            assertTrue(token.isMethodDefinition)
             assertEquals(1, token.rowIndex)
         }
 

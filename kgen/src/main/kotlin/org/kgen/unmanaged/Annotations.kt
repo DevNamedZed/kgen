@@ -152,3 +152,41 @@ annotation class KgenLeaf
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class KgenImport(val value: String = "")
+
+/**
+ * Marks a method as a destructor for automatic resource cleanup.
+ *
+ * When a `@KgenNative` class has a method annotated with `@KgenDestructor`,
+ * the native compiler inserts calls to it at scope exits for local variables
+ * of that type — like C++ destructors. The method must be idempotent (safe
+ * to call multiple times).
+ *
+ * On the JVM, the class should also implement `AutoCloseable` to enable
+ * Kotlin `use {}` and Java try-with-resources for explicit cleanup.
+ *
+ * ```java
+ * @KgenNative
+ * public class NativeBuffer implements AutoCloseable {
+ *     long data;
+ *     int size;
+ *
+ *     @KgenDestructor
+ *     public void destroy() {
+ *         if (data != 0) {
+ *             Kgen.free(data);
+ *             data = 0;
+ *         }
+ *     }
+ *
+ *     @Override public void close() { destroy(); }
+ * }
+ * ```
+ *
+ * Native compilation: destructor is called implicitly when local variables
+ * go out of scope. Returned values transfer ownership to the caller.
+ *
+ * JVM testing: use `AutoCloseable` / `use {}` for deterministic cleanup.
+ */
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class KgenDestructor

@@ -1,7 +1,7 @@
 package org.kgen.ir
 
 /** COMDAT group definition. Controls linker deduplication. */
-data class ComdatDef(
+data class ComdatDefinition(
     val name: String,
     val selectionKind: ComdatSelectionKind,
 )

@@ -55,6 +55,19 @@ class CilAssembler : CilAssemblerOps() {
         label.offset = buffer.size
     }
 
+    /** Allocate a label as a forward reference (alias for [defineLabel]). */
+    fun label(): CilLabel = defineLabel()
+
+    /** Allocate a label and mark it at the current position. */
+    fun mark(): CilLabel {
+        val label = defineLabel()
+        markLabel(label)
+        return label
+    }
+
+    /** Mark an existing label at the current position (alias for [markLabel]). */
+    fun mark(label: CilLabel) = markLabel(label)
+
     // ── Locals ──
 
     /** Declare a local variable and return a handle for it. */

@@ -3,7 +3,7 @@ package org.kgen.target.clr.codegen
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.target.clr.*
 import org.kgen.target.clr.asm.CilDisassembler
@@ -11,8 +11,8 @@ import org.kgen.target.clr.asm.CilInstruction
 
 class CilCodeGenComprehensiveTest {
 
-    private fun buildAndDisassemble(block: (IrBuilder) -> Unit): List<CilInstruction> {
-        val ir = IrBuilder("test", Target.msil())
+    private fun buildAndDisassemble(block: (ModuleBuilder) -> Unit): List<CilInstruction> {
+        val ir = ModuleBuilder("test", Target.msil())
         block(ir)
         val module = ir.build()
         val gen = CilCodeGenerator()
@@ -23,9 +23,9 @@ class CilCodeGenComprehensiveTest {
     private fun buildMethodAndDisassemble(
         params: List<Param> = emptyList(),
         returnType: Type = Type.I32,
-        block: (IrBuilder) -> Unit,
+        block: (ModuleBuilder) -> Unit,
     ): List<CilInstruction> {
-        val ir = IrBuilder("test", Target.msil())
+        val ir = ModuleBuilder("test", Target.msil())
         ir.createFunction("testFn", params, returnType)
         ir.appendBlock("entry")
         block(ir)
@@ -1643,7 +1643,7 @@ class CilCodeGenComprehensiveTest {
 
     @Test
     fun `call function produces CALL opcode`() {
-        val ir = IrBuilder("test", Target.msil())
+        val ir = ModuleBuilder("test", Target.msil())
 
         ir.createFunction("helper", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -1668,7 +1668,7 @@ class CilCodeGenComprehensiveTest {
 
     @Test
     fun `call void function no result store`() {
-        val ir = IrBuilder("test", Target.msil())
+        val ir = ModuleBuilder("test", Target.msil())
 
         ir.createFunction("sideEffect", emptyList(), Type.Void)
         ir.appendBlock("entry")
@@ -1693,7 +1693,7 @@ class CilCodeGenComprehensiveTest {
 
     @Test
     fun `call with multiple arguments`() {
-        val ir = IrBuilder("test", Target.msil())
+        val ir = ModuleBuilder("test", Target.msil())
 
         ir.createFunction("add3", listOf(
             Param("a", Type.I32), Param("b", Type.I32), Param("c", Type.I32)
@@ -1899,7 +1899,7 @@ class CilCodeGenComprehensiveTest {
 
     @Test
     fun `generate with multiple functions produces container format`() {
-        val ir = IrBuilder("test", Target.msil())
+        val ir = ModuleBuilder("test", Target.msil())
 
         ir.createFunction("funcA", emptyList(), Type.I32)
         ir.appendBlock("entry")
@@ -1923,7 +1923,7 @@ class CilCodeGenComprehensiveTest {
 
     @Test
     fun `single function does not use container format`() {
-        val ir = IrBuilder("test", Target.msil())
+        val ir = ModuleBuilder("test", Target.msil())
         ir.createFunction("only", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(99))
@@ -1941,7 +1941,7 @@ class CilCodeGenComprehensiveTest {
 
     @Test
     fun `generateMethod returns bytes for specific function`() {
-        val ir = IrBuilder("test", Target.msil())
+        val ir = ModuleBuilder("test", Target.msil())
 
         ir.createFunction("ignored", emptyList(), Type.I32)
         ir.appendBlock("entry")
@@ -1964,7 +1964,7 @@ class CilCodeGenComprehensiveTest {
 
     @Test
     fun `generateMethodAssembler returns assembler`() {
-        val ir = IrBuilder("test", Target.msil())
+        val ir = ModuleBuilder("test", Target.msil())
         ir.createFunction("fn", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(5))
@@ -1982,7 +1982,7 @@ class CilCodeGenComprehensiveTest {
 
     @Test
     fun `external functions are skipped in generate`() {
-        val ir = IrBuilder("test", Target.msil())
+        val ir = ModuleBuilder("test", Target.msil())
 
         ir.declareFunction("externalFn", listOf(Param("x", Type.I32)), Type.I32)
 

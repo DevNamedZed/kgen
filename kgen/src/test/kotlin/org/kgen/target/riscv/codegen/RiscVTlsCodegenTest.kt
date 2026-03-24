@@ -12,7 +12,7 @@ class RiscVTlsCodegenTest {
 
     @Test
     fun tlsGlobalGoesToTdataSection() {
-        val ir = IrBuilder("test", Target.riscv64())
+        val ir = ModuleBuilder("test", Target.riscv64())
         ir.addGlobal("tls_var", Type.I32, Constant.I32(42), threadLocal = ThreadLocalMode.LOCAL_EXEC)
         ir.createFunction("get", emptyList(), Type.I32)
         ir.appendBlock("entry")
@@ -27,7 +27,7 @@ class RiscVTlsCodegenTest {
 
     @Test
     fun nonTlsGlobalNotInTdata() {
-        val ir = IrBuilder("test", Target.riscv64())
+        val ir = ModuleBuilder("test", Target.riscv64())
         ir.addGlobal("normal_var", Type.I32, Constant.I32(42))
         ir.createFunction("get", emptyList(), Type.I32)
         ir.appendBlock("entry")
@@ -41,7 +41,7 @@ class RiscVTlsCodegenTest {
 
     @Test
     fun tlsLoadGeneratesTprelRelocations() {
-        val ir = IrBuilder("test", Target.riscv64())
+        val ir = ModuleBuilder("test", Target.riscv64())
         ir.addGlobal("tls_val", Type.I32, Constant.I32(0), threadLocal = ThreadLocalMode.LOCAL_EXEC)
         ir.createFunction("read_tls", emptyList(), Type.I32)
         ir.appendBlock("entry")
@@ -61,7 +61,7 @@ class RiscVTlsCodegenTest {
 
     @Test
     fun tlsStoreGeneratesTprelRelocations() {
-        val ir = IrBuilder("test", Target.riscv64())
+        val ir = ModuleBuilder("test", Target.riscv64())
         ir.addGlobal("tls_counter", Type.I32, Constant.I32(0), threadLocal = ThreadLocalMode.LOCAL_EXEC)
         val params = ir.createFunction("set_tls", listOf(Param("v", Type.I32)), Type.Void)
         ir.appendBlock("entry")
@@ -79,7 +79,7 @@ class RiscVTlsCodegenTest {
 
     @Test
     fun mixedTlsAndNormalGlobals() {
-        val ir = IrBuilder("test", Target.riscv64())
+        val ir = ModuleBuilder("test", Target.riscv64())
         ir.addGlobal("normal", Type.I32, Constant.I32(10))
         ir.addGlobal("tls_var", Type.I32, Constant.I32(20), threadLocal = ThreadLocalMode.LOCAL_EXEC)
         ir.createFunction("func", emptyList(), Type.I32)
@@ -94,7 +94,7 @@ class RiscVTlsCodegenTest {
 
     @Test
     fun multipleTlsVariablesWithCorrectSizes() {
-        val ir = IrBuilder("test", Target.riscv64())
+        val ir = ModuleBuilder("test", Target.riscv64())
         ir.addGlobal("tls_a", Type.I32, Constant.I32(1), threadLocal = ThreadLocalMode.LOCAL_EXEC)
         ir.addGlobal("tls_b", Type.I64, Constant.I64(2), threadLocal = ThreadLocalMode.LOCAL_EXEC)
         ir.createFunction("func", emptyList(), Type.Void)
@@ -109,7 +109,7 @@ class RiscVTlsCodegenTest {
 
     @Test
     fun tlsVariableWithAlignment() {
-        val ir = IrBuilder("test", Target.riscv64())
+        val ir = ModuleBuilder("test", Target.riscv64())
         ir.addGlobal("tls_aligned", Type.I64, Constant.I64(0), threadLocal = ThreadLocalMode.LOCAL_EXEC, align = 16)
         ir.createFunction("func", emptyList(), Type.Void)
         ir.appendBlock("entry")
@@ -124,7 +124,7 @@ class RiscVTlsCodegenTest {
 
     @Test
     fun tlsObjectFileHasTdataSection() {
-        val ir = IrBuilder("test", Target.riscv64())
+        val ir = ModuleBuilder("test", Target.riscv64())
         ir.addGlobal("tls_counter", Type.I64, Constant.I64(0), threadLocal = ThreadLocalMode.LOCAL_EXEC)
         ir.createFunction("inc", emptyList(), Type.Void)
         ir.appendBlock("entry")
@@ -141,7 +141,7 @@ class RiscVTlsCodegenTest {
 
     @Test
     fun compiledCodeHasTdataBytes() {
-        val ir = IrBuilder("test", Target.riscv64())
+        val ir = ModuleBuilder("test", Target.riscv64())
         ir.addGlobal("tls_x", Type.I32, Constant.I32(99), threadLocal = ThreadLocalMode.LOCAL_EXEC)
         ir.createFunction("noop", emptyList(), Type.Void)
         ir.appendBlock("entry")
@@ -158,7 +158,7 @@ class RiscVTlsCodegenTest {
 
     @Test
     fun tlsLoadEmitsThreeInstructions() {
-        val ir = IrBuilder("test", Target.riscv64())
+        val ir = ModuleBuilder("test", Target.riscv64())
         ir.addGlobal("tls_val", Type.I64, Constant.I64(0), threadLocal = ThreadLocalMode.LOCAL_EXEC)
         ir.createFunction("read_tls", emptyList(), Type.I64)
         ir.appendBlock("entry")
@@ -174,7 +174,7 @@ class RiscVTlsCodegenTest {
 
     @Test
     fun tlsRelocationsTargetCorrectSymbol() {
-        val ir = IrBuilder("test", Target.riscv64())
+        val ir = ModuleBuilder("test", Target.riscv64())
         ir.addGlobal("my_tls", Type.I32, Constant.I32(0), threadLocal = ThreadLocalMode.LOCAL_EXEC)
         ir.createFunction("read", emptyList(), Type.I32)
         ir.appendBlock("entry")
@@ -195,7 +195,7 @@ class RiscVTlsCodegenTest {
 
     @Test
     fun tlsI64GlobalSize() {
-        val ir = IrBuilder("test", Target.riscv64())
+        val ir = ModuleBuilder("test", Target.riscv64())
         ir.addGlobal("tls64", Type.I64, Constant.I64(Long.MAX_VALUE), threadLocal = ThreadLocalMode.LOCAL_EXEC)
         ir.createFunction("func", emptyList(), Type.Void)
         ir.appendBlock("entry")
@@ -210,7 +210,7 @@ class RiscVTlsCodegenTest {
 
     @Test
     fun zeroInitTlsGlobal() {
-        val ir = IrBuilder("test", Target.riscv64())
+        val ir = ModuleBuilder("test", Target.riscv64())
         val arrType = Type.Array(Type.I32, 4)
         ir.addGlobal("tls_arr", arrType, Constant.ZeroInitializer(arrType), threadLocal = ThreadLocalMode.LOCAL_EXEC)
         ir.createFunction("func", emptyList(), Type.Void)
@@ -226,7 +226,7 @@ class RiscVTlsCodegenTest {
 
     @Test
     fun tlsNotInExternalSymbols() {
-        val ir = IrBuilder("test", Target.riscv64())
+        val ir = ModuleBuilder("test", Target.riscv64())
         ir.addGlobal("tls_local", Type.I32, Constant.I32(7), threadLocal = ThreadLocalMode.LOCAL_EXEC)
         ir.createFunction("read", emptyList(), Type.I32)
         ir.appendBlock("entry")

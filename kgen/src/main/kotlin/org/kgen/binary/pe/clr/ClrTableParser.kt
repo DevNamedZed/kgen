@@ -92,7 +92,7 @@ class ClrTableParser(private val buf: ByteBuffer, private val raw: ByteArray) {
         ctx.skipTable(0x03) // FieldPtr
         val fields = ctx.parseTable(0x04) { it.readField() }
         ctx.skipTable(0x05) // MethodPtr
-        val methodDefs = ctx.parseTable(0x06) { it.readMethodDef() }
+        val methodDefs = ctx.parseTable(0x06) { it.readMethodDefinition() }
         ctx.skipTable(0x07) // ParamPtr
         val params = ctx.parseTable(0x08) { it.readParam() }
         val interfaceImpls = ctx.parseTable(0x09) { it.readInterfaceImpl() }
@@ -315,7 +315,7 @@ class TableReadContext(
 
     fun readField() = ClrField(flags = readU16(), name = readStringIdx(), signature = readBlobIdx())
 
-    fun readMethodDef() = ClrMethodDef(
+    fun readMethodDefinition() = ClrMethodDefinition(
         rva = readU32(), implFlags = readU16(), flags = readU16(),
         name = readStringIdx(), signature = readBlobIdx(), paramList = readTableIdx(0x08),
     )

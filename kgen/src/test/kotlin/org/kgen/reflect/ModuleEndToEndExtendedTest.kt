@@ -7,21 +7,21 @@ import org.kgen.binary.elf.ElfObjectWriter
 import org.kgen.target.x86.codegen.X86CodeGenerator
 import org.kgen.target.riscv.codegen.RiscVCodeGenerator
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 
 class ModuleEndToEndExtendedTest {
 
-    private fun buildX86ElfBytes(block: IrBuilder.() -> Unit): ByteArray {
-        val ir = IrBuilder("test", Target.x86_64())
+    private fun buildX86ElfBytes(block: ModuleBuilder.() -> Unit): ByteArray {
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.block()
         val module = ir.build()
         val obj = X86CodeGenerator().generateObjectFile(module)
         return ElfObjectWriter().write(obj)
     }
 
-    private fun buildRiscVElfBytes(block: IrBuilder.() -> Unit): ByteArray {
-        val ir = IrBuilder("test", Target.riscv64())
+    private fun buildRiscVElfBytes(block: ModuleBuilder.() -> Unit): ByteArray {
+        val ir = ModuleBuilder("test", Target.riscv64())
         ir.block()
         val module = ir.build()
         val obj = RiscVCodeGenerator().generateObjectFile(module)

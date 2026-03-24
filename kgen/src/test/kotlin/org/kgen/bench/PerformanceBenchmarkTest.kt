@@ -3,13 +3,13 @@ package org.kgen.bench
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.ir.verify.IrVerifier
 import org.kgen.ir.text.IrPrinter
 import org.kgen.ir.text.IrParser
 import org.kgen.ir.text.IrSerializer
-import org.kgen.pass.*
+import org.kgen.pipeline.*
 
 /**
  * Performance benchmarks for key kgen operations.
@@ -19,7 +19,7 @@ import org.kgen.pass.*
 class PerformanceBenchmarkTest {
 
     private fun buildLargeModule(functionCount: Int, blocksPerFunction: Int = 3): Module {
-        val builder = IrBuilder("bench", Target.x86_64())
+        val builder = ModuleBuilder("bench", Target.x86_64())
         for (i in 0 until functionCount) {
             val params = builder.createFunction("func_$i",
                 listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
@@ -120,7 +120,7 @@ class PerformanceBenchmarkTest {
 
     @Test
     fun constantFoldingThroughput() {
-        val builder = IrBuilder("bench", Target.x86_64())
+        val builder = ModuleBuilder("bench", Target.x86_64())
         for (i in 0 until 100) {
             val params = builder.createFunction("fold_$i", listOf(Param("x", Type.I32)), Type.I32)
             builder.appendBlock("entry")
@@ -167,7 +167,7 @@ class PerformanceBenchmarkTest {
     fun fullOptimizationPipeline() {
         val module = buildLargeModule(50, 5)
 
-        val pipeline = PassPipeline()
+        val pipeline = Pipeline()
         pipeline.add(ConstantFolding())
         pipeline.add(DeadCodeElimination())
         pipeline.add(InstructionCombining())

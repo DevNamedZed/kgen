@@ -16,6 +16,7 @@ data class LiveInterval(
     val type: Type,
     val useCount: Int = 1,
     val acrossCall: Boolean = false,
+    val isPhi: Boolean = false,
 )
 
 /**
@@ -41,6 +42,7 @@ class LivenessAnalysis(private val fn: IrFunction) {
         val types = mutableMapOf<String, Type>()
         val useCounts = mutableMapOf<String, Int>()
         val callPositions = mutableListOf<Int>()
+        val phiNames = mutableSetOf<String>()
 
         var instIdx = 0
 
@@ -53,17 +55,27 @@ class LivenessAnalysis(private val fn: IrFunction) {
         val blockStartPos = mutableMapOf<Int, Int>()
         val blockEndPos = mutableMapOf<Int, Int>()
 
-        for ((blockIdx, block) in fn.blocks.withIndex()) {
+        val sortedBlocks = sortBlocksRPO(fn)
+        for ((blockIdx, block) in sortedBlocks.withIndex()) {
             blockLabelToIndex[block.label] = blockIdx
             val blockFirst = instIdx + 1
+            var inPhiRegion = true
             for (inst in block.instructions) {
                 instIdx++
-                if (inst is Call) {
+                if (inPhiRegion && inst !is Phi) {
+                    inPhiRegion = false
+                }
+                if (inst is Call || inst is Invoke || inst is CallBr) {
                     callPositions.add(instIdx)
                 }
                 val result = inst.result
                 if (result != null) {
-                    defs[result.name] = instIdx
+                    // Phi defs all share the block entry position because phi
+                    // assignments are conceptually simultaneous. Sequential
+                    // positions would let the allocator reuse registers between
+                    // phis whose intervals don't overlap, but the phi copies
+                    // at the predecessor write to all destinations at once.
+                    defs[result.name] = if (inPhiRegion) { phiNames.add(result.name); blockFirst } else { instIdx }
                     types[result.name] = result.type
                 }
                 for (use in inst.operands) {
@@ -83,13 +95,13 @@ class LivenessAnalysis(private val fn: IrFunction) {
         // (predecessor after successor in linear order), the incoming value must be
         // live until the predecessor block end, and the phi dest register must not
         // be reassigned before the copy writes.
-        for ((blockIdx, block) in fn.blocks.withIndex()) {
+        for ((blockIdx, block) in sortedBlocks.withIndex()) {
             for (inst in block.instructions) {
                 if (inst !is Phi) break
                 val destName = inst.dest.name
                 for ((value, predLabel) in inst.incoming) {
                     val predIdx = blockLabelToIndex[predLabel.label] ?: continue
-                    if (predIdx <= blockIdx) continue // forward edge — already handled by pass 1
+                    if (predIdx < blockIdx) continue // forward edge — already handled by pass 1
                     val predEnd = blockEndPos[predIdx] ?: continue
                     // Extend incoming value's live range to back-edge predecessor block end
                     if (value is Parameter || value is InstructionRef) {
@@ -112,7 +124,7 @@ class LivenessAnalysis(private val fn: IrFunction) {
 
         // Pass 3: Extend live ranges across loop back-edges for non-phi values
         // defined before the loop that are used inside.
-        for ((blockIdx, block) in fn.blocks.withIndex()) {
+        for ((blockIdx, block) in sortedBlocks.withIndex()) {
             val lastInst = block.instructions.lastOrNull() ?: continue
             val targets: List<String> = when (lastInst) {
                 is Br -> listOf(lastInst.target.label)
@@ -136,13 +148,15 @@ class LivenessAnalysis(private val fn: IrFunction) {
             }
         }
 
+        val sortedCalls = callPositions.toIntArray().also { it.sort() }
+
         val intervals = mutableListOf<LiveInterval>()
         for ((name, start) in defs) {
             val end = lastUses[name] ?: start
             val type = types[name] ?: continue
             val count = useCounts[name] ?: 0
-            val acrossCall = callPositions.any { it in (start + 1)..end }
-            intervals.add(LiveInterval(name, start, end, type, count, acrossCall))
+            val acrossCall = hasCallInRange(sortedCalls, start + 1, end)
+            intervals.add(LiveInterval(name, start, end, type, count, acrossCall, isPhi = name in phiNames))
         }
         return intervals.sortedBy { it.start }
     }
@@ -158,7 +172,7 @@ class LivenessAnalysis(private val fn: IrFunction) {
     fun clobberEvents(constraints: RegisterConstraints): List<ClobberEvent> {
         val events = mutableListOf<ClobberEvent>()
         var instIdx = 0
-        for (block in fn.blocks) {
+        for (block in sortBlocksRPO(fn)) {
             for (inst in block.instructions) {
                 instIdx++
                 val kind = when (inst) {
@@ -178,6 +192,24 @@ class LivenessAnalysis(private val fn: IrFunction) {
             }
         }
         return events
+    }
+
+    private fun hasCallInRange(sortedCalls: IntArray, low: Int, high: Int): Boolean {
+        if (sortedCalls.isEmpty() || low > high) return false
+        var lo = 0
+        var hi = sortedCalls.size - 1
+        while (lo <= hi) {
+            val mid = (lo + hi) ushr 1
+            val pos = sortedCalls[mid]
+            if (pos < low) {
+                lo = mid + 1
+            } else if (pos > high) {
+                hi = mid - 1
+            } else {
+                return true
+            }
+        }
+        return false
     }
 
     companion object {
@@ -201,6 +233,10 @@ class LivenessAnalysis(private val fn: IrFunction) {
                     is Br -> listOf(last.target.label)
                     is CondBr -> listOf(last.trueTarget.label, last.falseTarget.label)
                     is Switch -> listOf(last.defaultTarget.label) + last.cases.map { it.second.label }
+                    is Invoke -> listOf(last.normalDest.label, last.unwindDest.label)
+                    is CallBr -> listOf(last.fallthrough.label) + last.indirectDests.map { it.label }
+                    is CatchSwitch -> last.handlers.map { it.label } + listOfNotNull(last.unwindDest?.label)
+                    is IndirectBr -> last.targets.map { it.label }
                     else -> emptyList()
                 }
             }
@@ -216,13 +252,6 @@ class LivenessAnalysis(private val fn: IrFunction) {
 
             dfs(fn.blocks[0].label)
             postOrder.reverse()
-
-            for (block in fn.blocks) {
-                if (block.label !in visited) {
-                    postOrder.add(block)
-                }
-            }
-
             return postOrder
         }
         /**

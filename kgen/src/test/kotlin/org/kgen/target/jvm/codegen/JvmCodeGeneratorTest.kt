@@ -3,7 +3,7 @@ package org.kgen.target.jvm.codegen
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import java.lang.reflect.InvocationTargetException
 
@@ -27,7 +27,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun generateClassBytes() {
-        val ir = IrBuilder("TestModule", Target.jvm())
+        val ir = ModuleBuilder("TestModule", Target.jvm())
         ir.createFunction("getFortyTwo", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(42))
@@ -46,7 +46,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun loadAndCallConstant() {
-        val ir = IrBuilder("ConstTest", Target.jvm())
+        val ir = ModuleBuilder("ConstTest", Target.jvm())
         ir.createFunction("getFortyTwo", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(42))
@@ -60,7 +60,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun addTwoInts() {
-        val ir = IrBuilder("AddTest", Target.jvm())
+        val ir = ModuleBuilder("AddTest", Target.jvm())
         ir.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
@@ -77,7 +77,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun subtractInts() {
-        val ir = IrBuilder("SubTest", Target.jvm())
+        val ir = ModuleBuilder("SubTest", Target.jvm())
         ir.createFunction("sub", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
@@ -92,7 +92,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun multiplyInts() {
-        val ir = IrBuilder("MulTest", Target.jvm())
+        val ir = ModuleBuilder("MulTest", Target.jvm())
         ir.createFunction("mul", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
@@ -107,7 +107,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun divideInts() {
-        val ir = IrBuilder("DivTest", Target.jvm())
+        val ir = ModuleBuilder("DivTest", Target.jvm())
         ir.createFunction("div", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
@@ -123,7 +123,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun longArithmetic() {
-        val ir = IrBuilder("LongTest", Target.jvm())
+        val ir = ModuleBuilder("LongTest", Target.jvm())
         ir.createFunction("addLong", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)
@@ -139,7 +139,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun voidReturn() {
-        val ir = IrBuilder("VoidTest", Target.jvm())
+        val ir = ModuleBuilder("VoidTest", Target.jvm())
         ir.createFunction("doNothing", emptyList(), Type.Void)
         ir.appendBlock("entry")
         ir.ret()
@@ -152,7 +152,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun multipleFunctions() {
-        val ir = IrBuilder("MultiFunc", Target.jvm())
+        val ir = ModuleBuilder("MultiFunc", Target.jvm())
 
         ir.createFunction("f1", emptyList(), Type.I32)
         ir.appendBlock("entry")
@@ -171,7 +171,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun negation() {
-        val ir = IrBuilder("NegTest", Target.jvm())
+        val ir = ModuleBuilder("NegTest", Target.jvm())
         ir.createFunction("neg", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val x = Parameter("x", Type.I32, 0)
@@ -186,7 +186,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun bitwiseOps() {
-        val ir = IrBuilder("BitTest", Target.jvm())
+        val ir = ModuleBuilder("BitTest", Target.jvm())
         ir.createFunction("bitand", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
@@ -200,7 +200,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun constantVariants() {
-        val ir = IrBuilder("ConstVar", Target.jvm())
+        val ir = ModuleBuilder("ConstVar", Target.jvm())
         ir.createFunction("bipush", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(42))
@@ -224,7 +224,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun longConstants() {
-        val ir = IrBuilder("LongConst", Target.jvm())
+        val ir = ModuleBuilder("LongConst", Target.jvm())
         ir.createFunction("zero", emptyList(), Type.I64)
         ir.appendBlock("entry")
         ir.ret(Constant.I64(0))
@@ -248,7 +248,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun conditionalBranchWithStackMap() {
-        val ir = IrBuilder("CondTest", Target.jvm())
+        val ir = ModuleBuilder("CondTest", Target.jvm())
         ir.createFunction("abs", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val x = Parameter("x", Type.I32, 0)
@@ -273,7 +273,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun selectWithStackMap() {
-        val ir = IrBuilder("SelTest", Target.jvm())
+        val ir = ModuleBuilder("SelTest", Target.jvm())
         ir.createFunction("max", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
@@ -293,7 +293,7 @@ class JvmCodeGeneratorTest {
     @Test
     fun phiNodeLowering() {
         // Build: if x >= 0 then result = x else result = -x (using phi)
-        val ir = IrBuilder("PhiTest", Target.jvm())
+        val ir = ModuleBuilder("PhiTest", Target.jvm())
         ir.createFunction("absPhi", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val x = Parameter("x", Type.I32, 0)
@@ -325,7 +325,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun callAcrossFunctions() {
-        val ir = IrBuilder("CallTest", Target.jvm())
+        val ir = ModuleBuilder("CallTest", Target.jvm())
         ir.createFunction("double", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val x = Parameter("x", Type.I32, 0)
@@ -347,7 +347,7 @@ class JvmCodeGeneratorTest {
     fun invokeWithExceptionHandler() {
         // Build: function that throws if x < 0, otherwise returns x
         // Caller uses invoke to catch the exception
-        val ir = IrBuilder("ExTest", Target.jvm())
+        val ir = ModuleBuilder("ExTest", Target.jvm())
 
         // thrower: if x < 0 throw RuntimeException, else return x
         ir.createFunction("thrower", listOf(Param("x", Type.I32)), Type.I32)
@@ -388,7 +388,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun unsignedDivision() {
-        val ir = IrBuilder("UDivTest", Target.jvm())
+        val ir = ModuleBuilder("UDivTest", Target.jvm())
         ir.createFunction("udiv", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
@@ -405,7 +405,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun unsignedRemainder() {
-        val ir = IrBuilder("URemTest", Target.jvm())
+        val ir = ModuleBuilder("URemTest", Target.jvm())
         ir.createFunction("urem", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
@@ -420,7 +420,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun bitwiseNot() {
-        val ir = IrBuilder("NotTest", Target.jvm())
+        val ir = ModuleBuilder("NotTest", Target.jvm())
         ir.createFunction("bitnot", listOf(Param("a", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
@@ -435,7 +435,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun floatCompareOrdered() {
-        val ir = IrBuilder("FCmpTest", Target.jvm())
+        val ir = ModuleBuilder("FCmpTest", Target.jvm())
         ir.createFunction("feq", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I1)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.F64, 0)
@@ -451,7 +451,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun signedIntToFloat() {
-        val ir = IrBuilder("SIToFPTest", Target.jvm())
+        val ir = ModuleBuilder("SIToFPTest", Target.jvm())
         ir.createFunction("toDouble", listOf(Param("a", Type.I32)), Type.F64)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
@@ -465,7 +465,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun floatToSignedInt() {
-        val ir = IrBuilder("FPToSITest", Target.jvm())
+        val ir = ModuleBuilder("FPToSITest", Target.jvm())
         ir.createFunction("toInt", listOf(Param("a", Type.F64)), Type.I32)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.F64, 0)
@@ -479,7 +479,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun floatExtend() {
-        val ir = IrBuilder("FPExtTest", Target.jvm())
+        val ir = ModuleBuilder("FPExtTest", Target.jvm())
         ir.createFunction("extend", listOf(Param("a", Type.F32)), Type.F64)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.F32, 0)
@@ -494,7 +494,7 @@ class JvmCodeGeneratorTest {
 
     @Test
     fun switchInstruction() {
-        val ir = IrBuilder("SwitchTest", Target.jvm())
+        val ir = ModuleBuilder("SwitchTest", Target.jvm())
         ir.createFunction("choose", listOf(Param("a", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)

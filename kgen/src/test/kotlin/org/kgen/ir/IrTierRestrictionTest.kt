@@ -2,7 +2,7 @@ package org.kgen.ir
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 
 class IrTierRestrictionTest {
@@ -11,7 +11,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun nativeAllowsArithmetic() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val (x) = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val result = ir.add(x, x)
@@ -23,7 +23,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun nativeAllowsMemory() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
         ir.appendBlock("entry")
         val ptr = ir.alloca(Type.I32)
@@ -35,7 +35,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun nativeAllowsTerminators() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
         ir.appendBlock("entry")
         ir.ret()
@@ -45,7 +45,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun nativeAllowsCalls() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val func = ir.declareFunction("ext", listOf(Param("x", Type.I32)), Type.I32)
         ir.createFunction("f", emptyList(), Type.I32)
         ir.appendBlock("entry")
@@ -57,7 +57,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun nativeAllowsDebug() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
         ir.appendBlock("entry")
         ir.debugLoc(1, 1, "main")
@@ -68,7 +68,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun nativeAllowsComparison() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val (x) = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I1)
         ir.appendBlock("entry")
         val cmp = ir.icmp(ICmpPredicate.EQ, x, Type.i32(0))
@@ -79,7 +79,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun nativeAllowsConversion() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val (x) = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I64)
         ir.appendBlock("entry")
         val ext = ir.sext(x, Type.I64)
@@ -90,7 +90,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun nativeAllowsBitwise() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val (x) = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val result = ir.and(x, Type.i32(0xFF))
@@ -101,7 +101,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun nativeRejectsNewObject() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
         ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
@@ -112,7 +112,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun nativeRejectsVirtualCall() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val (x) = ir.createFunction("f", listOf(Param("obj", Type.ClassRef("Foo"))), Type.Void)
         ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
@@ -123,7 +123,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun nativeRejectsGCAlloc() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
         ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
@@ -134,7 +134,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun nativeRejectsGCSafepoint() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
         ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
@@ -145,7 +145,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun nativeRejectsWriteBarrier() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val (obj) = ir.createFunction("f", listOf(Param("obj", Type.I32)), Type.Void)
         ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
@@ -156,7 +156,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun nativeRejectsPin() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val refType = Type.Reference(Type.ClassRef("Foo"))
         val (obj) = ir.createFunction("f", listOf(Param("obj", refType)), Type.Void)
         ir.appendBlock("entry")
@@ -170,7 +170,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun runtimeNativeAllowsArithmetic() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.RUNTIME_NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.RUNTIME_NATIVE)
         val (x) = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val result = ir.add(x, x)
@@ -181,7 +181,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun runtimeNativeAllowsGCAlloc() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.RUNTIME_NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.RUNTIME_NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
         ir.appendBlock("entry")
         ir.gcAlloc(Type.I32)
@@ -192,7 +192,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun runtimeNativeAllowsGCSafepoint() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.RUNTIME_NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.RUNTIME_NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
         ir.appendBlock("entry")
         ir.gcSafepoint()
@@ -203,7 +203,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun runtimeNativeRejectsNewObject() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.RUNTIME_NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.RUNTIME_NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
         ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
@@ -214,7 +214,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun runtimeNativeRejectsGetField() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.RUNTIME_NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.RUNTIME_NATIVE)
         val (obj) = ir.createFunction("f", listOf(Param("obj", Type.ClassRef("Foo"))), Type.I32)
         ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
@@ -225,7 +225,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun runtimeNativeRejectsArrayGet() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.RUNTIME_NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.RUNTIME_NATIVE)
         val (arr) = ir.createFunction("f", listOf(Param("arr", Type.Array(Type.I32, 10))), Type.I32)
         ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
@@ -236,7 +236,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun runtimeNativeRejectsPin() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.RUNTIME_NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.RUNTIME_NATIVE)
         val refType = Type.Reference(Type.ClassRef("Foo"))
         val (obj) = ir.createFunction("f", listOf(Param("obj", refType)), Type.Void)
         ir.appendBlock("entry")
@@ -250,7 +250,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun mixedAllowsPin() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.MIXED)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.MIXED)
         val refType = Type.Reference(Type.ClassRef("Foo"))
         val (obj) = ir.createFunction("f", listOf(Param("obj", refType)), Type.Void)
         ir.appendBlock("entry")
@@ -263,7 +263,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun mixedRejectsNewObject() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.MIXED)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.MIXED)
         ir.createFunction("f", emptyList(), Type.Void)
         ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
@@ -276,7 +276,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun nullConstraintsAllowEverything() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         val (x) = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.Void)
         ir.appendBlock("entry")
         ir.add(x, x)        // machine
@@ -290,13 +290,13 @@ class IrTierRestrictionTest {
 
     @Test
     fun defaultConstraintsAreNull() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         assertNull(ir.allowedCategories)
     }
 
     @Test
     fun defaultConstraintsAllowObjectInstructions() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.createFunction("f", emptyList(), Type.Void)
         ir.appendBlock("entry")
         ir.newObject("Foo")
@@ -309,7 +309,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun nativeAllowsExceptionHandling() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
         ir.appendBlock("entry")
         ir.landingPad(Type.I32, emptyList())
@@ -321,7 +321,7 @@ class IrTierRestrictionTest {
     @Test
     fun nativeAllowsThrowAsException() {
         // Throw is now OBJECT category, not EXCEPTION
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val (x) = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.Void)
         ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
@@ -334,7 +334,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun errorMessageIncludesCategoryName() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
         ir.appendBlock("entry")
         val ex = assertThrows(IllegalStateException::class.java) {
@@ -349,7 +349,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun structuralInstructionsAlwaysAllowedWithNative() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         ir.createFunction("f", emptyList(), Type.Void)
         ir.appendBlock("entry")
         ir.debugLoc(1, 1, "scope")
@@ -361,7 +361,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun ssaInstructionsAlwaysAllowedWithNative() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val (x) = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val sel = ir.select(Type.i1(true), x, Type.i32(0))
@@ -372,7 +372,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun intrinsicAlwaysAllowedWithNative() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val (x) = ir.createFunction("f", listOf(Param("x", Type.F64)), Type.F64)
         ir.appendBlock("entry")
         val result = ir.intrinsic("llvm.sqrt.f64", listOf(x), Type.F64)
@@ -385,11 +385,11 @@ class IrTierRestrictionTest {
 
     @Test
     fun maxTierDerivedFromConstraints() {
-        assertEquals(IrTier.MACHINE, IrBuilder("t", Target.x86_64(), IrConstraints.NATIVE).maxTier)
-        assertEquals(IrTier.RUNTIME, IrBuilder("t", Target.x86_64(), IrConstraints.RUNTIME_NATIVE).maxTier)
-        assertEquals(IrTier.OBJECT, IrBuilder("t", Target.x86_64(), IrConstraints.ALL).maxTier)
-        assertEquals(IrTier.OBJECT, IrBuilder("t", Target.x86_64()).maxTier)
-        assertEquals(IrTier.STRUCTURAL, IrBuilder("t", Target.x86_64(), IrConstraints.STRUCTURAL).maxTier)
+        assertEquals(IrTier.MACHINE, ModuleBuilder("t", Target.x86_64(), IrConstraints.NATIVE).maxTier)
+        assertEquals(IrTier.RUNTIME, ModuleBuilder("t", Target.x86_64(), IrConstraints.RUNTIME_NATIVE).maxTier)
+        assertEquals(IrTier.OBJECT, ModuleBuilder("t", Target.x86_64(), IrConstraints.ALL).maxTier)
+        assertEquals(IrTier.OBJECT, ModuleBuilder("t", Target.x86_64()).maxTier)
+        assertEquals(IrTier.STRUCTURAL, ModuleBuilder("t", Target.x86_64(), IrConstraints.STRUCTURAL).maxTier)
     }
 
     // --- Target.defaultConstraints() ---
@@ -444,7 +444,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun submoduleConstraintsOverrideModule() {
-        val ir = IrBuilder("test", Target.x86_64()) // null = all allowed
+        val ir = ModuleBuilder("test", Target.x86_64()) // null = all allowed
         ir.beginSubmodule("native_gc", IrConstraints.NATIVE)
         val (x) = ir.createFunction("gc_func", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -457,7 +457,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun submoduleFunctionsTracked() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.beginSubmodule("app", IrConstraints.ALL)
         ir.createFunction("f1", emptyList(), Type.Void)
         ir.appendBlock("entry")
@@ -476,7 +476,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun submoduleGlobalsTracked() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.beginSubmodule("data", IrConstraints.NATIVE)
         ir.addGlobal("g1", Type.I32)
         ir.addGlobal("g2", Type.I64)
@@ -487,14 +487,14 @@ class IrTierRestrictionTest {
 
     @Test
     fun moduleConstraintsStoredInModule() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         val mod = ir.build()
         assertEquals(IrConstraints.NATIVE, mod.constraints)
     }
 
     @Test
     fun multipleSubmodules() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.beginSubmodule("gc", IrConstraints.RUNTIME_NATIVE)
         ir.createFunction("gc_alloc", emptyList(), Type.Void)
         ir.appendBlock("entry")
@@ -520,7 +520,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun cannotNestSubmodules() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.beginSubmodule("a", IrConstraints.NATIVE)
         val ex = assertThrows(IllegalStateException::class.java) {
             ir.beginSubmodule("b", IrConstraints.ALL)
@@ -530,7 +530,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun cannotBuildWithOpenSubmodule() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.beginSubmodule("a", IrConstraints.NATIVE)
         val ex = assertThrows(IllegalStateException::class.java) {
             ir.build()
@@ -540,7 +540,7 @@ class IrTierRestrictionTest {
 
     @Test
     fun functionsOutsideSubmoduleUseModuleConstraints() {
-        val ir = IrBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
+        val ir = ModuleBuilder("test", Target.x86_64(), IrConstraints.NATIVE)
         // Outside any submodule — uses module-level NATIVE
         ir.createFunction("f", emptyList(), Type.Void)
         ir.appendBlock("entry")

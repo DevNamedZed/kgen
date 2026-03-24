@@ -6,7 +6,7 @@ import org.kgen.codegen.CodeGenerator
 import org.kgen.ir.Constant
 import org.kgen.ir.Param
 import org.kgen.ir.Type
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.reflect.NativeCode
 import org.kgen.reflect.Signature
@@ -102,7 +102,7 @@ class NativeCodeBuilder private constructor(private val target: Target) {
     }
 
     private fun buildCompiledCode(): org.kgen.codegen.CompiledCode {
-        val ir = IrBuilder(moduleName(), target)
+        val ir = ModuleBuilder(moduleName(), target)
         ir.targetTriple = NativeModuleBuilder.hostTriple()
         for (spec in functions) {
             emitFunction(ir, spec)
@@ -129,7 +129,7 @@ class NativeCodeBuilder private constructor(private val target: Target) {
         }
     }
 
-    private fun emitFunction(ir: IrBuilder, spec: FunctionSpec) {
+    private fun emitFunction(ir: ModuleBuilder, spec: FunctionSpec) {
         val irParams = spec.signature.parameters().mapIndexed { i, p ->
             Param(p.name ?: "p$i", toIrType(p.type))
         }
@@ -188,7 +188,7 @@ class NativeCodeBuilder private constructor(private val target: Target) {
         return SymbolMangling.mangleFunction(name, paramTypes, returnType, scheme)
     }
 
-    private fun emitReturnDefault(ir: IrBuilder, returnType: Type) {
+    private fun emitReturnDefault(ir: ModuleBuilder, returnType: Type) {
         when (returnType) {
             Type.Void -> ir.ret()
             Type.F32 -> ir.ret(Constant.F32(0.0f))
@@ -252,10 +252,10 @@ class NativeCodeBuilder private constructor(private val target: Target) {
         }
 
         /**
-         * Build the function body using IrBuilder directly.
+         * Build the function body using ModuleBuilder directly.
          * The lambda receives the builder positioned at the entry block and the parameter list.
          */
-        fun body(block: (IrBuilder, List<org.kgen.ir.Parameter>) -> Unit): NativeCodeBuilder {
+        fun body(block: (ModuleBuilder, List<org.kgen.ir.Parameter>) -> Unit): NativeCodeBuilder {
             functions.add(FunctionSpec.Custom(name, signature, block))
             return this@NativeCodeBuilder
         }
@@ -268,7 +268,7 @@ class NativeCodeBuilder private constructor(private val target: Target) {
         class Identity(name: String, sig: Signature, val paramIndex: Int) : FunctionSpec(name, sig)
         class Custom(
             name: String, sig: Signature,
-            val body: (IrBuilder, List<org.kgen.ir.Parameter>) -> Unit,
+            val body: (ModuleBuilder, List<org.kgen.ir.Parameter>) -> Unit,
         ) : FunctionSpec(name, sig)
     }
 

@@ -1,12 +1,11 @@
 package org.kgen.examples.api;
 
 import org.kgen.codegen.CompiledCode;
-import org.kgen.codegen.DisassembledInstruction;
 import org.kgen.ir.Module;
 import org.kgen.ir.Param;
 import org.kgen.ir.Type;
-import org.kgen.ir.Value;
-import org.kgen.ir.build.IrBuilder;
+import org.kgen.ir.build.ModuleBuilder;
+import org.kgen.ir.build.scope.NativeScope;
 import org.kgen.ir.target.Target;
 import org.kgen.target.x86.X86Memory;
 import org.kgen.target.x86.X86Register;
@@ -19,81 +18,73 @@ import java.util.List;
 /**
  * Java version of the assembler and codegen examples.
  *
- * <p>Demonstrates the three-layer code generation API from Java:
- * assembler (raw emit), code generator (IR to machine code),
- * and disassembler (machine code to instructions).</p>
+ * <p>Java can't use the Kotlin DSL block syntax ({@code x86 { ... }}), but the
+ * typed label API ({@code label()}, {@code mark()}) works from Java.</p>
  */
 public final class AssemblerJavaExample {
 
     /**
-     * Uses the x86-64 assembler directly to emit a function that adds two integers.
-     *
-     * <pre>{@code
-     * add_ints:
-     *   lea eax, [rdi + rsi]
-     *   ret
-     * }</pre>
+     * Uses the x86-64 assembler with typed labels.
      */
     public static byte[] assembleAddFunction() {
-        X86Assembler assembler = new X86Assembler();
+        X86Assembler asm = new X86Assembler();
 
-        assembler.lea(X86Register.EAX,
+        asm.lea(X86Register.EAX,
             X86Memory.base(X86Register.RDI).index(X86Register.RSI, 1).build());
-        assembler.ret();
+        asm.ret();
 
-        return assembler.toByteArray();
+        return asm.toByteArray();
     }
 
     /**
-     * Uses the x86-64 assembler to emit a loop that sums integers from 1 to N.
-     *
-     * <pre>{@code
-     * sum_to_n:
-     *   xor eax, eax
-     *   mov ecx, edi
-     * .loop:
-     *   add eax, ecx
-     *   dec ecx
-     *   jnz .loop
-     *   ret
-     * }</pre>
+     * Uses typed labels for the loop — mark() for backward, label() for forward.
      */
     public static byte[] assembleSumLoop() {
-        X86Assembler assembler = new X86Assembler();
+        X86Assembler asm = new X86Assembler();
 
-        assembler.xor_(X86Register.EAX, X86Register.EAX);
-        assembler.mov(X86Register.ECX, X86Register.EDI);
+        asm.xor_(X86Register.EAX, X86Register.EAX);
+        asm.mov(X86Register.ECX, X86Register.EDI);
 
-        assembler.label("loop");
-        assembler.add(X86Register.EAX, X86Register.ECX);
-        assembler.dec(X86Register.ECX);
-        assembler.jccLabel(0x05, "loop"); // JNZ
+        X86Assembler.Label loop = asm.mark();
+        asm.add(X86Register.EAX, X86Register.ECX);
+        asm.dec(X86Register.ECX);
+        asm.jnz(loop);
 
-        assembler.ret();
+        asm.ret();
 
-        return assembler.toByteArray();
+        return asm.toByteArray();
     }
 
     /**
-     * Compiles an IR module to x86-64 machine code using the CodeGenerator.
+     * Forward reference — allocate label, bind later.
+     */
+    public static byte[] assembleForwardJump() {
+        X86Assembler asm = new X86Assembler();
+
+        X86Assembler.Label skip = asm.label();
+        asm.test(X86Register.ESI, X86Register.ESI);
+        asm.jz(skip);
+        asm.add(X86Register.EAX, X86Register.ESI);
+        asm.mark(skip);
+        asm.ret();
+
+        return asm.toByteArray();
+    }
+
+    /**
+     * Compiles IR to x86 machine code using the new scoped API.
      */
     public static CompiledCode compileIrToMachineCode() {
-        IrBuilder builder = new IrBuilder("codegen_example", Target.x86_64());
+        ModuleBuilder module = new ModuleBuilder("codegen_example", Target.x86_64());
 
-        builder.createFunction(
-            "multiply",
-            List.of(Param.of("a", Type.I32.INSTANCE), Param.of("b", Type.I32.INSTANCE)),
-            Type.I32.INSTANCE
-        );
-        builder.appendBlock("entry");
-        Value product = builder.mul(builder.param(0), builder.param(1));
-        builder.ret(product);
-        builder.finalizeFunction();
+        module.defineFunction(NativeScope.class, "multiply",
+                List.of(Param.of("a", Type.I32.INSTANCE), Param.of("b", Type.I32.INSTANCE)),
+                Type.I32.INSTANCE, fn -> {
+                    NativeScope ins = fn.instructions();
+                    fn.ret(ins.mul(fn.param(0), fn.param(1), false, false));
+                });
 
-        Module module = builder.build();
-
-        X86CodeGenerator codeGenerator = new X86CodeGenerator();
-        return codeGenerator.generateCode(module);
+        return new X86CodeGenerator().generateCode(module.build());
     }
 
     /**
@@ -123,6 +114,12 @@ public final class AssemblerJavaExample {
         byte[] sumCode = assembleSumLoop();
         System.out.printf("  %d bytes of machine code%n", sumCode.length);
         disassembleAndPrint(sumCode);
+
+        System.out.println();
+        System.out.println("=== Direct Assembly: forward jump [Java] ===");
+        byte[] fwdCode = assembleForwardJump();
+        System.out.printf("  %d bytes of machine code%n", fwdCode.length);
+        disassembleAndPrint(fwdCode);
 
         System.out.println();
         System.out.println("=== IR CodeGen: multiply(a, b) [Java] ===");

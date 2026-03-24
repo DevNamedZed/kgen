@@ -7,7 +7,7 @@ import org.kgen.ir.types.*
  *
  * A module is the unit of compilation: it is what you pass to a
  * [CodeGenerator][org.kgen.codegen.CodeGenerator] to produce machine code, or to a
- * [PassPipeline][org.kgen.pass.PassPipeline] for optimization. Modules are **immutable**
+ * [Pipeline][org.kgen.pipeline.Pipeline] for optimization. Modules are **immutable**
  * data classes — all transformations produce new modules via `copy()`.
  *
  * **Contents:**
@@ -20,12 +20,12 @@ import org.kgen.ir.types.*
  *
  * **Building a module:**
  * ```java
- * var ir = new IrBuilder("my_module", Target.x86_64());
- * ir.createFunction("main", List.of(new Param("argc", Type.I32)), Type.I32);
- * ir.appendBlock("entry");
- * ir.ret(ir.add(ir.param(0), Constant.I32(1)));
- * ir.finalizeFunction();
- * Module module = ir.build();
+ * var module = new ModuleBuilder("my_module", TargetProfile.NATIVE);
+ * module.defineFunction(NativeScope.class, "main",
+ *     List.of(Param.of("argc", Type.I32)), Type.I32, fn -> {
+ *         fn.ret(fn.instructions().add(fn.param(0), new Constant.I32(1)));
+ *     });
+ * Module ir = module.build();
  * ```
  *
  * @param name the module's name (used in debug output, symbol mangling, and diagnostics)
@@ -57,10 +57,10 @@ data class Module(
     val dataLayout: String? = null,
     val functions: List<IrFunction> = emptyList(),
     val globals: List<Global> = emptyList(),
-    val structs: List<StructDef> = emptyList(),
-    val classes: List<ClassDef> = emptyList(),
-    val interfaces: List<InterfaceDef> = emptyList(),
-    val enums: List<EnumDef> = emptyList(),
+    val structs: List<StructDefinition> = emptyList(),
+    val classes: List<ClassDefinition> = emptyList(),
+    val interfaces: List<InterfaceDefinition> = emptyList(),
+    val enums: List<EnumDefinition> = emptyList(),
     val aliases: List<TypeAlias> = emptyList(),
     val metadata: Map<String, MetadataValue> = emptyMap(),
     val sourceFile: String? = null,
@@ -68,9 +68,10 @@ data class Module(
     val globalCtors: List<GlobalCtor> = emptyList(),
     val globalDtors: List<GlobalCtor> = emptyList(),
     val ifuncs: List<IFunc> = emptyList(),
-    val comdats: List<ComdatDef> = emptyList(),
+    val comdats: List<ComdatDefinition> = emptyList(),
     val moduleInlineAsm: String? = null,
     val moduleFlags: Map<String, ModuleFlagValue> = emptyMap(),
     val constraints: Set<IrCategory>? = null,
     val submodules: List<Submodule> = emptyList(),
+    val profile: TargetProfile? = null,
 )

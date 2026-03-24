@@ -291,10 +291,10 @@ class ClrExtendedTest {
         assertEquals("Console", parsed.strings.get(parsed.tables.typeRefs[2].name))
     }
 
-    // --- MethodDef Tests ---
+    // --- MethodDefinition Tests ---
 
     @Test
-    fun multipleMethodDefsRoundTrip() {
+    fun multipleMethodDefinitionsRoundTrip() {
         val h = newHeaps()
         val (modName, mvid) = h.baseModule()
         val emptyNs = h.strings.add("")
@@ -307,9 +307,9 @@ class ClrExtendedTest {
                 ClrTypeDef(0x00100001, h.strings.add("MyClass"), emptyNs, 0, 1, 1),
             ),
             methodDefs = listOf(
-                ClrMethodDef(0, 0, 0x0086, h.strings.add("Method1"), sig1, 1),
-                ClrMethodDef(0, 0, 0x0086, h.strings.add("Method2"), sig2, 1),
-                ClrMethodDef(0, 0, 0x0091, h.strings.add("Method3"), sig1, 1),
+                ClrMethodDefinition(0, 0, 0x0086, h.strings.add("Method1"), sig1, 1),
+                ClrMethodDefinition(0, 0, 0x0086, h.strings.add("Method2"), sig2, 1),
+                ClrMethodDefinition(0, 0, 0x0091, h.strings.add("Method3"), sig1, 1),
             ),
         )
         val parsed = buildAndParse(tables, h.strings, h.blobs, h.guids, h.us)
@@ -358,7 +358,7 @@ class ClrExtendedTest {
         val tables = ClrTables(
             modules = listOf(ClrModule(0, modName, mvid, 0, 0)),
             typeDefs = listOf(ClrTypeDef(0, h.strings.add("<Module>"), emptyNs, 0, 1, 1)),
-            methodDefs = listOf(ClrMethodDef(0, 0, 0x0086, h.strings.add("Add"), sig, 1)),
+            methodDefs = listOf(ClrMethodDefinition(0, 0, 0x0086, h.strings.add("Add"), sig, 1)),
             params = listOf(
                 ClrParam(0, 1, h.strings.add("a")),
                 ClrParam(0, 2, h.strings.add("b")),
@@ -546,12 +546,12 @@ class ClrExtendedTest {
         val tables = ClrTables(
             modules = listOf(ClrModule(0, modName, mvid, 0, 0)),
             typeDefs = listOf(ClrTypeDef(0, h.strings.add("<Module>"), emptyNs, 0, 1, 1)),
-            methodDefs = listOf(ClrMethodDef(0, 0, 0x0086, h.strings.add("MessageBoxA"), sig, 1)),
+            methodDefs = listOf(ClrMethodDefinition(0, 0, 0x0086, h.strings.add("MessageBoxA"), sig, 1)),
             moduleRefs = listOf(ClrModuleRef(h.strings.add("user32.dll"))),
             implMaps = listOf(
                 ClrImplMap(
                     mappingFlags = 0x0001, // CharSetNotSpec | NoMangle
-                    memberForwarded = (1 shl 1) or 1, // MethodDef #1, tag=1
+                    memberForwarded = (1 shl 1) or 1, // MethodDefinition #1, tag=1
                     importName = h.strings.add("MessageBoxA"),
                     importScope = 1,
                 ),
@@ -575,10 +575,10 @@ class ClrExtendedTest {
         val tables = ClrTables(
             modules = listOf(ClrModule(0, modName, mvid, 0, 0)),
             typeDefs = listOf(ClrTypeDef(0, h.strings.add("<Module>"), emptyNs, 0, 1, 1)),
-            methodDefs = listOf(ClrMethodDef(0, 0, 0x0086, h.strings.add("GenericMethod"), methodSig, 1)),
+            methodDefs = listOf(ClrMethodDefinition(0, 0, 0x0086, h.strings.add("GenericMethod"), methodSig, 1)),
             methodSpecs = listOf(
                 ClrMethodSpec(
-                    method = (1 shl 1) or 0, // MethodDef #1, tag=0
+                    method = (1 shl 1) or 0, // MethodDefinition #1, tag=0
                     instantiation = instSig,
                 ),
             ),
@@ -755,7 +755,7 @@ class ClrExtendedTest {
                 ClrTypeDef(0x00100001, h.strings.add("Program"), emptyNs, 0, 1, 1),
             ),
             typeRefs = listOf(ClrTypeRef((1 shl 2) or 3, h.strings.add("Object"), sysNs)),
-            methodDefs = listOf(ClrMethodDef(0, 0, 0x0096, h.strings.add("Main"), ctorSig, 1)),
+            methodDefs = listOf(ClrMethodDefinition(0, 0, 0x0096, h.strings.add("Main"), ctorSig, 1)),
             fields = listOf(ClrField(0x0016, h.strings.add("count"), fieldSig)),
             memberRefs = listOf(ClrMemberRef((1 shl 3) or 1, h.strings.add(".ctor"), ctorSig)),
             nestedClasses = emptyList(),

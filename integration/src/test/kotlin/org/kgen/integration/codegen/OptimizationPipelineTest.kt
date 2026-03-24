@@ -3,9 +3,10 @@ package org.kgen.integration.codegen
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
-import org.kgen.pass.OptLevel
+import org.kgen.codegen.OptLevel
+import org.kgen.pipeline.pipeline
 import org.kgen.target.x86.codegen.X86CodeGenerator
 import org.kgen.ir.instructions.*
 
@@ -13,7 +14,7 @@ class OptimizationPipelineTest {
 
     @Test
     fun o2PipelineThenCodegen() {
-        val ir = IrBuilder("opt_test", Target.x86_64())
+        val ir = ModuleBuilder("opt_test", Target.x86_64())
         val params = ir.createFunction("compute", listOf(
             Param("a", Type.I32), Param("b", Type.I32), Param("c", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -51,7 +52,7 @@ class OptimizationPipelineTest {
 
     @Test
     fun o2PipelineWithBranches() {
-        val ir = IrBuilder("phi_opt", Target.x86_64())
+        val ir = ModuleBuilder("phi_opt", Target.x86_64())
         val params = ir.createFunction("abs_add", listOf(
             Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
         ir.appendBlock("entry")

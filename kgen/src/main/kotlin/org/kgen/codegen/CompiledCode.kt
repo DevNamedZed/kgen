@@ -25,6 +25,7 @@ data class CompiledCode(
     val textBytes: ByteArray,
     /** Read-only data (string constants, jump tables, etc.). Empty if none. */
     val rodataBytes: ByteArray = ByteArray(0),
+    val dataBytes: ByteArray = ByteArray(0),
     /** Symbols defined in the compiled code (functions, data labels). */
     val symbols: List<CodeSymbol> = emptyList(),
     /** Relocations that need patching when the code is loaded. */
@@ -66,6 +67,8 @@ data class CompiledCode(
         val isGlobal: Boolean = true,
         /** Byte offset within rodata section (for data symbols). -1 if in text. */
         val rodataOffset: Long = -1,
+        /** Byte offset within data section (for mutable data symbols). -1 if not data. */
+        val dataOffset: Long = -1,
         /** Byte offset within tdata section (for TLS symbols). -1 if not TLS. */
         val tdataOffset: Long = -1,
     )
@@ -84,6 +87,9 @@ data class CompiledCode(
         )
         if (rodataBytes.isNotEmpty()) {
             sections.add(Section(".rodata", SectionKind.RODATA, rodataBytes, align = rodataAlign))
+        }
+        if (dataBytes.isNotEmpty()) {
+            sections.add(Section(".data", SectionKind.DATA, dataBytes, align = 8))
         }
         if (ehFrameBytes.isNotEmpty()) {
             sections.add(Section(".eh_frame", SectionKind.EH_FRAME, ehFrameBytes, align = 8))
@@ -106,8 +112,16 @@ data class CompiledCode(
         val objSymbols = symbols.map { sym ->
             Symbol(
                 name = sym.name,
-                value = if (sym.rodataOffset >= 0) sym.rodataOffset else sym.offset,
-                section = if (sym.rodataOffset >= 0) ".rodata" else ".text",
+                value = when {
+                    sym.dataOffset >= 0 -> sym.dataOffset
+                    sym.rodataOffset >= 0 -> sym.rodataOffset
+                    else -> sym.offset
+                },
+                section = when {
+                    sym.dataOffset >= 0 -> ".data"
+                    sym.rodataOffset >= 0 -> ".rodata"
+                    else -> ".text"
+                },
                 binding = if (sym.isGlobal) SymbolBinding.GLOBAL else SymbolBinding.LOCAL,
                 kind = sym.kind,
             )

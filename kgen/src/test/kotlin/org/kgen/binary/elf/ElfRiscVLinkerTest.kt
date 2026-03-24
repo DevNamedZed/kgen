@@ -2,7 +2,7 @@ package org.kgen.binary.elf
 
 import org.kgen.binary.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.target.riscv.codegen.RiscVCodeGenerator
 import org.junit.jupiter.api.Test
@@ -18,8 +18,8 @@ class ElfRiscVLinkerTest {
 
     private val riscvMachine = ElfMachine.RISCV.code
 
-    private fun compileRiscVModule(block: IrBuilder.() -> Unit): ObjectFile {
-        val ir = IrBuilder("test", Target.riscv64())
+    private fun compileRiscVModule(block: ModuleBuilder.() -> Unit): ObjectFile {
+        val ir = ModuleBuilder("test", Target.riscv64())
         ir.block()
         return RiscVCodeGenerator().generateObjectFile(ir.build())
     }

@@ -2,7 +2,7 @@ package org.kgen.target.riscv.codegen
 
 import org.kgen.target.riscv.disasm.RiscVDisassembler
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.codegen.CodeGenOptions
 import org.kgen.codegen.OutputFormat
 import org.kgen.ir.target.Target
@@ -13,8 +13,8 @@ class RiscVCodeGeneratorTest {
 
     private val disasm = RiscVDisassembler()
 
-    private fun buildAndDisassemble(block: IrBuilder.() -> Unit): List<String> {
-        val ir = IrBuilder("test", Target.riscv64())
+    private fun buildAndDisassemble(block: ModuleBuilder.() -> Unit): List<String> {
+        val ir = ModuleBuilder("test", Target.riscv64())
         ir.block()
         val module = ir.build()
         val gen = RiscVCodeGenerator()
@@ -190,7 +190,7 @@ class RiscVCodeGeneratorTest {
 
     @Test
     fun `generates object file with correct arch`() {
-        val ir = IrBuilder("test", Target.riscv64())
+        val ir = ModuleBuilder("test", Target.riscv64())
         ir.createFunction("noop", emptyList(), Type.Void)
         ir.appendBlock("entry")
         ir.ret(null)
@@ -208,7 +208,7 @@ class RiscVCodeGeneratorTest {
 
     @Test
     fun `generates ELF object bytes`() {
-        val ir = IrBuilder("test", Target.riscv64())
+        val ir = ModuleBuilder("test", Target.riscv64())
         ir.createFunction("func", emptyList(), Type.Void)
         ir.appendBlock("entry")
         ir.ret(null)
@@ -273,7 +273,7 @@ class RiscVCodeGeneratorTest {
 
     @Test
     fun `generates external symbol`() {
-        val ir = IrBuilder("test", Target.riscv64())
+        val ir = ModuleBuilder("test", Target.riscv64())
         ir.declareFunction("printf", listOf(Param("fmt", Type.OpaquePointer)), Type.I32, isVarArg = true)
         ir.createFunction("main", emptyList(), Type.I32)
         ir.appendBlock("entry")

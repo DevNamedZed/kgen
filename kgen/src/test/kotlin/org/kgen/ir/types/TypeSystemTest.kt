@@ -433,18 +433,18 @@ class TypeSystemTest {
         assertEquals(24, c.bits)
     }
 
-    // --- ClassDef ---
+    // --- ClassDefinition ---
 
     @Test
     fun `class def with fields and methods`() {
-        val cls = ClassDef(
+        val cls = ClassDefinition(
             name = "Point",
             fields = listOf(
-                FieldDef("x", Type.F64),
-                FieldDef("y", Type.F64),
+                FieldDefinition("x", Type.F64),
+                FieldDefinition("y", Type.F64),
             ),
             methods = listOf(
-                MethodDef("distance", listOf(Param("other", Type.ClassRef("Point"))), Type.F64),
+                MethodDefinition("distance", listOf(Param("other", Type.ClassRef("Point"))), Type.F64),
             ),
         )
         assertEquals("Point", cls.name)
@@ -457,7 +457,7 @@ class TypeSystemTest {
 
     @Test
     fun `class def with inheritance`() {
-        val cls = ClassDef(
+        val cls = ClassDefinition(
             name = "Dog",
             superClass = "Animal",
             interfaces = listOf("Runnable", "Comparable"),
@@ -482,14 +482,14 @@ class TypeSystemTest {
         assertEquals(listOf("Driveable"), cls.interfaces)
     }
 
-    // --- InterfaceDef ---
+    // --- InterfaceDefinition ---
 
     @Test
     fun `interface def with methods`() {
-        val iface = InterfaceDef(
+        val iface = InterfaceDefinition(
             name = "Drawable",
             methods = listOf(
-                MethodDef("draw", emptyList(), Type.Void, isAbstract = true),
+                MethodDefinition("draw", emptyList(), Type.Void, isAbstract = true),
             ),
         )
         assertEquals("Drawable", iface.name)
@@ -500,18 +500,18 @@ class TypeSystemTest {
     fun `interface def builder DSL`() {
         val iface = interfaceDef("Serializable") {
             extends("Writable")
-            method(MethodDef("serialize", emptyList(), Type.Array(Type.I8, 0), isAbstract = true))
+            method(MethodDefinition("serialize", emptyList(), Type.Array(Type.I8, 0), isAbstract = true))
         }
         assertEquals("Serializable", iface.name)
         assertEquals(listOf("Writable"), iface.superInterfaces)
         assertEquals(1, iface.methods.size)
     }
 
-    // --- StructDef ---
+    // --- StructDefinition ---
 
     @Test
     fun `struct def basic`() {
-        val s = StructDef(
+        val s = StructDefinition(
             name = "Vec3",
             fields = listOf(Param("x", Type.F32), Param("y", Type.F32), Param("z", Type.F32)),
         )
@@ -523,7 +523,7 @@ class TypeSystemTest {
 
     @Test
     fun `struct def packed with alignment`() {
-        val s = StructDef(
+        val s = StructDefinition(
             name = "Header",
             fields = listOf(Param("magic", Type.I32), Param("version", Type.I16)),
             packed = true,
@@ -533,11 +533,11 @@ class TypeSystemTest {
         assertEquals(1, s.align)
     }
 
-    // --- EnumDef ---
+    // --- EnumDefinition ---
 
     @Test
     fun `enum def with variants`() {
-        val e = EnumDef(
+        val e = EnumDefinition(
             name = "Color",
             variants = listOf(
                 EnumVariant("RED", 0),

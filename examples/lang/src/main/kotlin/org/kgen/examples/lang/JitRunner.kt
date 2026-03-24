@@ -7,8 +7,8 @@ import org.kgen.jit.TieredCompilation
 import org.kgen.runtime.*
 import org.kgen.runtime.gc.*
 import org.kgen.runtime.exec.*
-import org.kgen.pass.OptLevel
-import org.kgen.pass.PassPipeline
+import org.kgen.pipeline.OptLevel
+import org.kgen.pipeline.Pipeline
 import java.lang.foreign.*
 import java.lang.foreign.ValueLayout.JAVA_LONG
 import java.lang.invoke.MethodHandles
@@ -201,7 +201,7 @@ class JitRunner : AutoCloseable {
      * Enable tiered compilation — functions start at O0 and get recompiled
      * with optimization after the given number of calls.
      */
-    fun enableTieredCompilation(threshold: Int = 100, pipeline: PassPipeline = OptLevel.O2.pipeline()) {
+    fun enableTieredCompilation(threshold: Int = 100, pipeline: Pipeline = OptLevel.O2.pipeline()) {
         val tiered = TieredCompilation(threshold)
         tiered.setTier1Pipeline(pipeline)
         jit.setTieredCompilation(tiered)

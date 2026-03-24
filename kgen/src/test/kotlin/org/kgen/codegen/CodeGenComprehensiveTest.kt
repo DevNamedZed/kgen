@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.ir.verify.IrVerifier
 import org.kgen.target.x86.codegen.X86CodeGenerator
@@ -60,15 +60,15 @@ class CodeGenComprehensiveTest {
 
     private fun allNativeAndWasm(): List<TargetBackend> = nativeBackends() + wasmBackend()
 
-    private fun buildModule(target: Target, block: IrBuilder.() -> Unit): Module {
-        val ir = IrBuilder("comprehensive_test", target)
+    private fun buildModule(target: Target, block: ModuleBuilder.() -> Unit): Module {
+        val ir = ModuleBuilder("comprehensive_test", target)
         ir.block()
         val mod = ir.build()
         assertTrue(IrVerifier.verify(mod).isValid, "IR should be valid before codegen")
         return mod
     }
 
-    private fun compileOn(backends: List<TargetBackend>, block: IrBuilder.() -> Unit) {
+    private fun compileOn(backends: List<TargetBackend>, block: ModuleBuilder.() -> Unit) {
         for (backend in backends) {
             val mod = buildModule(backend.target, block)
             try {
@@ -79,12 +79,12 @@ class CodeGenComprehensiveTest {
         }
     }
 
-    private fun compileOnAll(block: IrBuilder.() -> Unit) = compileOn(allBackends(), block)
-    private fun compileOnNative(block: IrBuilder.() -> Unit) = compileOn(nativeBackends(), block)
-    private fun compileOnNativeAndWasm(block: IrBuilder.() -> Unit) = compileOn(allNativeAndWasm(), block)
-    private fun compileOnAllExcept(vararg exclude: String, block: IrBuilder.() -> Unit) =
+    private fun compileOnAll(block: ModuleBuilder.() -> Unit) = compileOn(allBackends(), block)
+    private fun compileOnNative(block: ModuleBuilder.() -> Unit) = compileOn(nativeBackends(), block)
+    private fun compileOnNativeAndWasm(block: ModuleBuilder.() -> Unit) = compileOn(allNativeAndWasm(), block)
+    private fun compileOnAllExcept(vararg exclude: String, block: ModuleBuilder.() -> Unit) =
         compileOn(allBackends().filter { it.name !in exclude }, block)
-    private fun compileOnNativeExcept(vararg exclude: String, block: IrBuilder.() -> Unit) =
+    private fun compileOnNativeExcept(vararg exclude: String, block: ModuleBuilder.() -> Unit) =
         compileOn(nativeBackends().filter { it.name !in exclude }, block)
 
     // --- Integer Arithmetic: Add ---

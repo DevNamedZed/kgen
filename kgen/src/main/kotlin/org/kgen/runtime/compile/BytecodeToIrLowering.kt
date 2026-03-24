@@ -1,12 +1,12 @@
 package org.kgen.runtime.compile
 
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.instructions.*
 import org.kgen.target.jvm.*
 import org.kgen.target.jvm.JvmOpCode.*
 import org.kgen.target.jvm.AttributeParser
-import org.kgen.unmanaged.lib.StdlibProvider
+import org.kgen.unmanaged.lib.NativeStdlib
 
 /**
  * Lowers JVM bytecode from a single method to kgen IR.
@@ -17,7 +17,7 @@ import org.kgen.unmanaged.lib.StdlibProvider
  * corresponding IR instructions.
  */
 class BytecodeToIrLowering(
-    private val builder: IrBuilder,
+    private val builder: ModuleBuilder,
     private val cf: ClassFile,
     private val methodName: String,
     private val descriptor: String,
@@ -677,7 +677,7 @@ class BytecodeToIrLowering(
         val (fieldName, fieldDesc) = cp.nameAndType(entry.nameAndTypeIndex)
 
         // Special handling for System.out / System.err — push a null placeholder
-        // (the receiver is dropped when calling println/print via StdlibProvider)
+        // (the receiver is dropped when calling println/print via NativeStdlib)
         if (className == "java/lang/System" && (fieldName == "out" || fieldName == "err")) {
             push(Constant.NullPtr)
             return
@@ -756,7 +756,7 @@ class BytecodeToIrLowering(
         if (name == "<init>" && className == "java/lang/Object") return
 
         // Check if this is a stdlib method we can redirect
-        val stdlibName = StdlibProvider.nativeName(className, name, desc)
+        val stdlibName = NativeStdlib.resolve(className, name, desc)
         if (stdlibName != null) {
             // For String methods, pass the receiver as the first arg
             // For PrintStream methods (System.out), drop the receiver
@@ -981,7 +981,7 @@ class BytecodeToIrLowering(
                 emitCall(importedName, args, returnType)
             } else {
                 // Check for stdlib static methods (Math.*, Integer.toString, etc.)
-                val stdlibName = StdlibProvider.nativeName(className, name, desc)
+                val stdlibName = NativeStdlib.resolve(className, name, desc)
                 if (stdlibName != null) {
                     emitCall(stdlibName, args, returnType)
                 } else {

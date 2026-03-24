@@ -8,7 +8,7 @@ import org.kgen.binary.pe.PeWriter
 import org.kgen.codegen.CodeGenOptions
 import org.kgen.codegen.OutputFormat
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.target.x86.codegen.X86CodeGenerator
 import java.nio.ByteBuffer
@@ -22,7 +22,7 @@ class PeRoundTripTest {
     private fun le(bytes: ByteArray): ByteBuffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
 
     private fun buildWindowsModule(): Module {
-        val ir = IrBuilder("pe_test", Target.x86_64())
+        val ir = ModuleBuilder("pe_test", Target.x86_64())
         ir.targetTriple = "x86_64-unknown-windows-msvc"
 
         val params = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
@@ -40,7 +40,7 @@ class PeRoundTripTest {
     }
 
     private fun buildWindowsHelloModule(): Module {
-        val ir = IrBuilder("hello_pe", Target.x86_64())
+        val ir = ModuleBuilder("hello_pe", Target.x86_64())
         ir.targetTriple = "x86_64-unknown-windows-msvc"
 
         val strType = Type.Array(Type.I8, 14)

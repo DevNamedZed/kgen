@@ -8,7 +8,7 @@ import org.kgen.binary.macho.MachOLinker
 import org.kgen.binary.macho.MachOObjectWriter
 import org.kgen.binary.macho.MachOReader
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.target.arm64.codegen.Arm64CodeGenerator
 import org.kgen.target.x86.codegen.X86CodeGenerator
@@ -23,7 +23,7 @@ class MachORoundTripTest {
     private fun le(bytes: ByteArray): ByteBuffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
 
     private fun buildModule(target: Target): Module {
-        val ir = IrBuilder("macho_test", target)
+        val ir = ModuleBuilder("macho_test", target)
         val params = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         ir.ret(ir.add(params[0], params[1]))
@@ -96,14 +96,14 @@ class MachORoundTripTest {
 
     @Test
     fun multiObjectMachOLink() {
-        val ir1 = IrBuilder("lib", Target.x86_64())
+        val ir1 = ModuleBuilder("lib", Target.x86_64())
         val p = ir1.createFunction("compute", listOf(Param("x", Type.I64)), Type.I64)
         ir1.appendBlock("entry")
         ir1.ret(ir1.mul(p[0], Constant.I64(3)))
         ir1.finalizeFunction()
         val obj1 = X86CodeGenerator().generateObjectFile(ir1.build())
 
-        val ir2 = IrBuilder("main", Target.x86_64())
+        val ir2 = ModuleBuilder("main", Target.x86_64())
         ir2.createFunction("_main", emptyList(), Type.I64)
         ir2.appendBlock("entry")
         ir2.ret(Constant.I64(0))

@@ -1,11 +1,11 @@
 package org.kgen.runtime.compile
 
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.instructions.*
 import org.kgen.ir.target.Target
-import org.kgen.pass.Inlining
-import org.kgen.pass.Mem2Reg
+import org.kgen.pipeline.Inlining
+import org.kgen.pipeline.Mem2Reg
 import org.kgen.target.jvm.*
 
 /**
@@ -43,7 +43,7 @@ class RuntimeCompiler(
         }
 
         val isKgenNative = hasClassAnnotation(cf, "org/kgen/unmanaged/KgenNative")
-        val builder = IrBuilder(cf.thisClassName.replace('/', '_'), target)
+        val builder = ModuleBuilder(cf.thisClassName.replace('/', '_'), target)
         val classPrefix = cf.thisClassName.replace('/', '_')
         val importMap = mutableMapOf<String, String>() // java method name → native symbol name
 
@@ -79,10 +79,12 @@ class RuntimeCompiler(
             val isNative = flags and AccessFlags.NATIVE != 0
 
             if (isNative) continue
-            // Skip constructors/clinit for @KgenNative classes — these are just
-            // Kotlin object/companion singleton setup, not meaningful native code.
-            // Regular classes (compiled via NativeCompiler) keep their clinit.
-            if ((name == "<init>" || name == "<clinit>") && isKgenNative) continue
+            // Skip constructors for @KgenNative singletons (Kotlin object/companion) —
+            // their <init> is just Object.<init>. Regular @KgenNative classes with
+            // instance fields keep their constructors (they initialize the struct).
+            val hasInstanceFields = cf.fields.any { it.accessFlags and AccessFlags.STATIC == 0 }
+            if (name == "<init>" && isKgenNative && !hasInstanceFields) { continue }
+            if (name == "<clinit>" && isKgenNative) { continue }
 
             val codeAttr = method.attributes.firstOrNull { cf.string(it.nameIndex) == "Code" }
                 ?: continue

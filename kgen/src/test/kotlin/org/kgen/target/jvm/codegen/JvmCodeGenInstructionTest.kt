@@ -3,7 +3,7 @@ package org.kgen.target.jvm.codegen
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 
 class JvmCodeGenInstructionTest {
@@ -27,9 +27,9 @@ class JvmCodeGenInstructionTest {
         return loader.defineClass(className, bytes)
     }
 
-    private fun buildI32BinOp(name: String, op: (IrBuilder, Value, Value) -> Value): Class<*> {
+    private fun buildI32BinOp(name: String, op: (ModuleBuilder, Value, Value) -> Value): Class<*> {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction(name, listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
@@ -39,9 +39,9 @@ class JvmCodeGenInstructionTest {
         return generateAndLoad(ir.build(), cn)
     }
 
-    private fun buildI64BinOp(name: String, op: (IrBuilder, Value, Value) -> Value): Class<*> {
+    private fun buildI64BinOp(name: String, op: (ModuleBuilder, Value, Value) -> Value): Class<*> {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction(name, listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)
@@ -51,9 +51,9 @@ class JvmCodeGenInstructionTest {
         return generateAndLoad(ir.build(), cn)
     }
 
-    private fun buildF32BinOp(name: String, op: (IrBuilder, Value, Value) -> Value): Class<*> {
+    private fun buildF32BinOp(name: String, op: (ModuleBuilder, Value, Value) -> Value): Class<*> {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction(name, listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.F32, 0)
@@ -63,9 +63,9 @@ class JvmCodeGenInstructionTest {
         return generateAndLoad(ir.build(), cn)
     }
 
-    private fun buildF64BinOp(name: String, op: (IrBuilder, Value, Value) -> Value): Class<*> {
+    private fun buildF64BinOp(name: String, op: (ModuleBuilder, Value, Value) -> Value): Class<*> {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction(name, listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.F64, 0)
@@ -329,7 +329,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `neg i32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("neg", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.neg(Parameter("x", Type.I32, 0)))
@@ -344,7 +344,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `neg i64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("neg", listOf(Param("x", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         ir.ret(ir.neg(Parameter("x", Type.I64, 0)))
@@ -358,7 +358,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `not i32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("bitnot", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.not(Parameter("x", Type.I32, 0)))
@@ -373,7 +373,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `not i64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("bitnot", listOf(Param("x", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         ir.ret(ir.not(Parameter("x", Type.I64, 0)))
@@ -387,7 +387,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fneg f32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("fneg", listOf(Param("x", Type.F32)), Type.F32)
         ir.appendBlock("entry")
         ir.ret(ir.fneg(Parameter("x", Type.F32, 0)))
@@ -401,7 +401,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fneg f64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("fneg", listOf(Param("x", Type.F64)), Type.F64)
         ir.appendBlock("entry")
         ir.ret(ir.fneg(Parameter("x", Type.F64, 0)))
@@ -415,7 +415,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `icmp eq i32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("eq", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
@@ -432,7 +432,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `icmp ne i32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("ne", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.icmp(ICmpPredicate.NE, Parameter("a", Type.I32, 0), Parameter("b", Type.I32, 1))
@@ -447,7 +447,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `icmp slt i32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("slt", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.icmp(ICmpPredicate.SLT, Parameter("a", Type.I32, 0), Parameter("b", Type.I32, 1))
@@ -463,7 +463,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `icmp sle i32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("sle", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.icmp(ICmpPredicate.SLE, Parameter("a", Type.I32, 0), Parameter("b", Type.I32, 1))
@@ -479,7 +479,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `icmp sgt i32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("sgt", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.icmp(ICmpPredicate.SGT, Parameter("a", Type.I32, 0), Parameter("b", Type.I32, 1))
@@ -495,7 +495,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `icmp sge i32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("sge", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.icmp(ICmpPredicate.SGE, Parameter("a", Type.I32, 0), Parameter("b", Type.I32, 1))
@@ -511,7 +511,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `icmp eq i64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("eq", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.icmp(ICmpPredicate.EQ, Parameter("a", Type.I64, 0), Parameter("b", Type.I64, 1))
@@ -526,7 +526,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `icmp ne i64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("ne", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.icmp(ICmpPredicate.NE, Parameter("a", Type.I64, 0), Parameter("b", Type.I64, 1))
@@ -541,7 +541,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `icmp slt i64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("slt", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.icmp(ICmpPredicate.SLT, Parameter("a", Type.I64, 0), Parameter("b", Type.I64, 1))
@@ -556,7 +556,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `icmp sle i64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("sle", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.icmp(ICmpPredicate.SLE, Parameter("a", Type.I64, 0), Parameter("b", Type.I64, 1))
@@ -571,7 +571,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `icmp sgt i64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("sgt", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.icmp(ICmpPredicate.SGT, Parameter("a", Type.I64, 0), Parameter("b", Type.I64, 1))
@@ -586,7 +586,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `icmp sge i64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("sge", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.icmp(ICmpPredicate.SGE, Parameter("a", Type.I64, 0), Parameter("b", Type.I64, 1))
@@ -602,7 +602,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fcmp oeq f32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("oeq", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.fcmp(FCmpPredicate.OEQ, Parameter("a", Type.F32, 0), Parameter("b", Type.F32, 1))
@@ -617,7 +617,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fcmp one f32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("one", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.fcmp(FCmpPredicate.ONE, Parameter("a", Type.F32, 0), Parameter("b", Type.F32, 1))
@@ -632,7 +632,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fcmp olt f32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("olt", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.fcmp(FCmpPredicate.OLT, Parameter("a", Type.F32, 0), Parameter("b", Type.F32, 1))
@@ -647,7 +647,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fcmp ole f32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("ole", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.fcmp(FCmpPredicate.OLE, Parameter("a", Type.F32, 0), Parameter("b", Type.F32, 1))
@@ -663,7 +663,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fcmp ogt f32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("ogt", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.fcmp(FCmpPredicate.OGT, Parameter("a", Type.F32, 0), Parameter("b", Type.F32, 1))
@@ -678,7 +678,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fcmp oge f32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("oge", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.fcmp(FCmpPredicate.OGE, Parameter("a", Type.F32, 0), Parameter("b", Type.F32, 1))
@@ -694,7 +694,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fcmp oeq f64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("oeq", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.fcmp(FCmpPredicate.OEQ, Parameter("a", Type.F64, 0), Parameter("b", Type.F64, 1))
@@ -709,7 +709,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fcmp one f64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("one", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.fcmp(FCmpPredicate.ONE, Parameter("a", Type.F64, 0), Parameter("b", Type.F64, 1))
@@ -724,7 +724,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fcmp olt f64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("olt", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.fcmp(FCmpPredicate.OLT, Parameter("a", Type.F64, 0), Parameter("b", Type.F64, 1))
@@ -739,7 +739,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fcmp ogt f64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("ogt", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.fcmp(FCmpPredicate.OGT, Parameter("a", Type.F64, 0), Parameter("b", Type.F64, 1))
@@ -754,7 +754,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fcmp ole f64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("ole", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.fcmp(FCmpPredicate.OLE, Parameter("a", Type.F64, 0), Parameter("b", Type.F64, 1))
@@ -770,7 +770,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fcmp oge f64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("oge", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.fcmp(FCmpPredicate.OGE, Parameter("a", Type.F64, 0), Parameter("b", Type.F64, 1))
@@ -786,7 +786,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fcmp false f32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("ffalse", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.fcmp(FCmpPredicate.FALSE, Parameter("a", Type.F32, 0), Parameter("b", Type.F32, 1))
@@ -800,7 +800,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fcmp true f32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("ftrue", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.fcmp(FCmpPredicate.TRUE, Parameter("a", Type.F32, 0), Parameter("b", Type.F32, 1))
@@ -814,7 +814,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `sitofp i32 to f32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("conv", listOf(Param("x", Type.I32)), Type.F32)
         ir.appendBlock("entry")
         ir.ret(ir.sitofp(Parameter("x", Type.I32, 0), Type.F32))
@@ -828,7 +828,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `sitofp i32 to f64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("conv", listOf(Param("x", Type.I32)), Type.F64)
         ir.appendBlock("entry")
         ir.ret(ir.sitofp(Parameter("x", Type.I32, 0), Type.F64))
@@ -841,7 +841,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `sitofp i64 to f64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("conv", listOf(Param("x", Type.I64)), Type.F64)
         ir.appendBlock("entry")
         ir.ret(ir.sitofp(Parameter("x", Type.I64, 0), Type.F64))
@@ -854,7 +854,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `sitofp i64 to f32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("conv", listOf(Param("x", Type.I64)), Type.F32)
         ir.appendBlock("entry")
         ir.ret(ir.sitofp(Parameter("x", Type.I64, 0), Type.F32))
@@ -867,7 +867,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fptosi f32 to i32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("conv", listOf(Param("x", Type.F32)), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.fptosi(Parameter("x", Type.F32, 0), Type.I32))
@@ -881,7 +881,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fptosi f64 to i32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("conv", listOf(Param("x", Type.F64)), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.fptosi(Parameter("x", Type.F64, 0), Type.I32))
@@ -894,7 +894,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fptosi f64 to i64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("conv", listOf(Param("x", Type.F64)), Type.I64)
         ir.appendBlock("entry")
         ir.ret(ir.fptosi(Parameter("x", Type.F64, 0), Type.I64))
@@ -907,7 +907,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fptosi f32 to i64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("conv", listOf(Param("x", Type.F32)), Type.I64)
         ir.appendBlock("entry")
         ir.ret(ir.fptosi(Parameter("x", Type.F32, 0), Type.I64))
@@ -920,7 +920,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fptoui f32 to i32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("conv", listOf(Param("x", Type.F32)), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.fptoui(Parameter("x", Type.F32, 0), Type.I32))
@@ -933,7 +933,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fptoui f64 to i64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("conv", listOf(Param("x", Type.F64)), Type.I64)
         ir.appendBlock("entry")
         ir.ret(ir.fptoui(Parameter("x", Type.F64, 0), Type.I64))
@@ -946,7 +946,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fpext f32 to f64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("conv", listOf(Param("x", Type.F32)), Type.F64)
         ir.appendBlock("entry")
         ir.ret(ir.fpext(Parameter("x", Type.F32, 0), Type.F64))
@@ -960,7 +960,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fptrunc f64 to f32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("conv", listOf(Param("x", Type.F64)), Type.F32)
         ir.appendBlock("entry")
         ir.ret(ir.fptrunc(Parameter("x", Type.F64, 0), Type.F32))
@@ -973,7 +973,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `sext i32 to i64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("conv", listOf(Param("x", Type.I32)), Type.I64)
         ir.appendBlock("entry")
         ir.ret(ir.sext(Parameter("x", Type.I32, 0), Type.I64))
@@ -987,7 +987,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `zext i32 to i64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("conv", listOf(Param("x", Type.I32)), Type.I64)
         ir.appendBlock("entry")
         ir.ret(ir.zext(Parameter("x", Type.I32, 0), Type.I64))
@@ -1001,7 +1001,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `trunc i64 to i32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("conv", listOf(Param("x", Type.I64)), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.trunc(Parameter("x", Type.I64, 0), Type.I32))
@@ -1015,7 +1015,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `select i32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("sel", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
@@ -1033,7 +1033,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `select i64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("sel", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)
@@ -1051,7 +1051,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `select f32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("sel", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.F32, 0)
@@ -1069,7 +1069,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `call internal function`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("double_", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val x = Parameter("x", Type.I32, 0)
@@ -1090,7 +1090,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `call with i64 args and return`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("addLong", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         ir.ret(ir.add(Parameter("a", Type.I64, 0), Parameter("b", Type.I64, 1)))
@@ -1108,7 +1108,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `call void function`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("noop", emptyList(), Type.Void)
         ir.appendBlock("entry")
         ir.ret()
@@ -1127,7 +1127,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `ret void`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("doNothing", emptyList(), Type.Void)
         ir.appendBlock("entry")
         ir.ret()
@@ -1139,7 +1139,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `ret i32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("get", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(99))
@@ -1151,7 +1151,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `ret i64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("get", emptyList(), Type.I64)
         ir.appendBlock("entry")
         ir.ret(Constant.I64(999999999999L))
@@ -1163,7 +1163,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `ret f32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("get", emptyList(), Type.F32)
         ir.appendBlock("entry")
         ir.ret(Constant.F32(3.14f))
@@ -1175,7 +1175,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `ret f64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("get", emptyList(), Type.F64)
         ir.appendBlock("entry")
         ir.ret(Constant.F64(3.14159))
@@ -1187,7 +1187,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `constant i32 iconst_m1`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("get", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(-1))
@@ -1199,7 +1199,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `constant i32 iconst_0 through iconst_5`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         for (i in 0..5) {
             ir.createFunction("get$i", emptyList(), Type.I32)
             ir.appendBlock("entry")
@@ -1215,7 +1215,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `constant i32 bipush range`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("get", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(100))
@@ -1227,7 +1227,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `constant i32 sipush range`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("get", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(10000))
@@ -1239,7 +1239,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `constant i32 ldc range`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("get", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(100000))
@@ -1251,7 +1251,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `constant i64 zero and one`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("zero", emptyList(), Type.I64)
         ir.appendBlock("entry")
         ir.ret(Constant.I64(0))
@@ -1268,7 +1268,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `constant i64 ldc2w`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("get", emptyList(), Type.I64)
         ir.appendBlock("entry")
         ir.ret(Constant.I64(123456789012L))
@@ -1280,7 +1280,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `constant f32 special values`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("zero", emptyList(), Type.F32)
         ir.appendBlock("entry")
         ir.ret(Constant.F32(0.0f))
@@ -1302,7 +1302,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `constant f32 ldc`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("get", emptyList(), Type.F32)
         ir.appendBlock("entry")
         ir.ret(Constant.F32(3.14f))
@@ -1314,7 +1314,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `constant f64 special values`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("zero", emptyList(), Type.F64)
         ir.appendBlock("entry")
         ir.ret(Constant.F64(0.0))
@@ -1331,7 +1331,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `constant f64 ldc2w`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("get", emptyList(), Type.F64)
         ir.appendBlock("entry")
         ir.ret(Constant.F64(2.71828))
@@ -1343,7 +1343,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `constant i1 true`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("get", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I1(true))
@@ -1355,7 +1355,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `constant i1 false`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("get", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I1(false))
@@ -1367,7 +1367,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `switch with three cases`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("sw", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val x = Parameter("x", Type.I32, 0)
@@ -1398,7 +1398,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `switch with i64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("sw", listOf(Param("x", Type.I64)), Type.I32)
         ir.appendBlock("entry")
         val x = Parameter("x", Type.I64, 0)
@@ -1425,7 +1425,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `uitofp i32 to f64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("conv", listOf(Param("x", Type.I32)), Type.F64)
         ir.appendBlock("entry")
         ir.ret(ir.uitofp(Parameter("x", Type.I32, 0), Type.F64))
@@ -1438,7 +1438,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `uitofp i32 to f32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("conv", listOf(Param("x", Type.I32)), Type.F32)
         ir.appendBlock("entry")
         ir.ret(ir.uitofp(Parameter("x", Type.I32, 0), Type.F32))
@@ -1451,7 +1451,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `chained arithmetic i32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("compute", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val x = Parameter("x", Type.I32, 0)
@@ -1468,7 +1468,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `chained arithmetic f64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("compute", listOf(Param("x", Type.F64)), Type.F64)
         ir.appendBlock("entry")
         val x = Parameter("x", Type.F64, 0)
@@ -1484,7 +1484,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `multiple i32 parameters`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("sum3", listOf(
             Param("a", Type.I32), Param("b", Type.I32), Param("c", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -1502,7 +1502,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `mixed type parameters`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("combine", listOf(
             Param("i", Type.I32), Param("l", Type.I64), Param("f", Type.F32), Param("d", Type.F64)), Type.F64)
         ir.appendBlock("entry")
@@ -1526,7 +1526,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `negative constant i32`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("get", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(-128))
@@ -1538,7 +1538,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `negative constant i64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("get", emptyList(), Type.I64)
         ir.appendBlock("entry")
         ir.ret(Constant.I64(-100L))
@@ -1550,7 +1550,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `add with constant operands`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("get", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.add(Constant.I32(10), Constant.I32(20)))
@@ -1562,7 +1562,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `fadd with constant operands f64`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("get", emptyList(), Type.F64)
         ir.appendBlock("entry")
         ir.ret(ir.fadd(Constant.F64(1.5), Constant.F64(2.5)))
@@ -1574,7 +1574,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `mul i32 overflow wraps`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("mul", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.mul(Parameter("a", Type.I32, 0), Parameter("b", Type.I32, 1)))
@@ -1588,7 +1588,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `select with constant condition true`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("sel", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.select(Constant.I1(true), Constant.I32(10), Constant.I32(20)))
@@ -1600,7 +1600,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `select with constant condition false`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("sel", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.select(Constant.I1(false), Constant.I32(10), Constant.I32(20)))
@@ -1612,7 +1612,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `call with f32 args and return`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("addF", listOf(Param("a", Type.F32), Param("b", Type.F32)), Type.F32)
         ir.appendBlock("entry")
         ir.ret(ir.fadd(Parameter("a", Type.F32, 0), Parameter("b", Type.F32, 1)))
@@ -1630,7 +1630,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `call with f64 args and return`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("addD", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
         ir.appendBlock("entry")
         ir.ret(ir.fadd(Parameter("a", Type.F64, 0), Parameter("b", Type.F64, 1)))
@@ -1648,7 +1648,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `sext i32 to i64 preserves negative`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("conv", listOf(Param("x", Type.I32)), Type.I64)
         ir.appendBlock("entry")
         ir.ret(ir.sext(Parameter("x", Type.I32, 0), Type.I64))
@@ -1661,7 +1661,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `zext i32 to i64 zero extends`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("conv", listOf(Param("x", Type.I32)), Type.I64)
         ir.appendBlock("entry")
         ir.ret(ir.zext(Parameter("x", Type.I32, 0), Type.I64))
@@ -1675,7 +1675,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `i32 constant negative sipush`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("get", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(-1000))
@@ -1687,7 +1687,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `i32 max value`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("get", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(Int.MAX_VALUE))
@@ -1699,7 +1699,7 @@ class JvmCodeGenInstructionTest {
     @Test
     fun `i32 min value`() {
         val cn = nextClassName()
-        val ir = IrBuilder(cn, Target.jvm())
+        val ir = ModuleBuilder(cn, Target.jvm())
         ir.createFunction("get", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(Int.MIN_VALUE))

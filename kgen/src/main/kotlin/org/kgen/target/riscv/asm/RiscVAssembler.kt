@@ -13,6 +13,30 @@ class RiscVAssembler {
     private val buf = ByteArrayOutputStream()
     private val labels = mutableMapOf<String, Int>()
     private val fixups = mutableListOf<Fixup>()
+    private val typedLabels = mutableListOf<Label>()
+
+    class Label internal constructor(val id: Int) {
+        internal var offset: Int = -1
+        internal val marked: Boolean get() = offset >= 0
+    }
+
+    fun label(): Label {
+        val label = Label(typedLabels.size)
+        typedLabels.add(label)
+        return label
+    }
+
+    fun mark(): Label {
+        val label = label()
+        mark(label)
+        return label
+    }
+
+    fun mark(label: Label) {
+        check(!label.marked) { "label ${label.id} already marked" }
+        label.offset = buf.size()
+        labels["__typed_label_${label.id}"] = buf.size()
+    }
 
     private data class Fixup(val offset: Int, val label: String, val kind: FixupKind)
     private enum class FixupKind { BRANCH, JAL }
@@ -557,6 +581,30 @@ class RiscVAssembler {
     fun j(label: String) = jal(X0, label)
     fun call(label: String) = jal(X1, label)
     fun ret() = jalr(X0, X1, 0)
+
+    // Typed label branch overloads
+
+    fun beq(rs1: RiscVGpReg, rs2: RiscVGpReg, label: Label) = emitBranchLabel(0x63, 0x0, rs1, rs2, "__typed_label_${label.id}")
+    fun bne(rs1: RiscVGpReg, rs2: RiscVGpReg, label: Label) = emitBranchLabel(0x63, 0x1, rs1, rs2, "__typed_label_${label.id}")
+    fun blt(rs1: RiscVGpReg, rs2: RiscVGpReg, label: Label) = emitBranchLabel(0x63, 0x4, rs1, rs2, "__typed_label_${label.id}")
+    fun bge(rs1: RiscVGpReg, rs2: RiscVGpReg, label: Label) = emitBranchLabel(0x63, 0x5, rs1, rs2, "__typed_label_${label.id}")
+    fun bltu(rs1: RiscVGpReg, rs2: RiscVGpReg, label: Label) = emitBranchLabel(0x63, 0x6, rs1, rs2, "__typed_label_${label.id}")
+    fun bgeu(rs1: RiscVGpReg, rs2: RiscVGpReg, label: Label) = emitBranchLabel(0x63, 0x7, rs1, rs2, "__typed_label_${label.id}")
+
+    fun jal(rd: RiscVGpReg, label: Label) { fixups.add(Fixup(buf.size(), "__typed_label_${label.id}", FixupKind.JAL)); emitJ(0x6F, rd, 0) }
+    fun j(label: Label) = jal(X0, label)
+    fun call(label: Label) = jal(X1, label)
+
+    fun branch(condition: RiscVCondition, rs1: RiscVGpReg, rs2: RiscVGpReg, label: Label) {
+        when (condition) {
+            RiscVCondition.EQ -> beq(rs1, rs2, label)
+            RiscVCondition.NE -> bne(rs1, rs2, label)
+            RiscVCondition.LT -> blt(rs1, rs2, label)
+            RiscVCondition.GE -> bge(rs1, rs2, label)
+            RiscVCondition.LTU -> bltu(rs1, rs2, label)
+            RiscVCondition.GEU -> bgeu(rs1, rs2, label)
+        }
+    }
 
     // --- Encoding Helpers ---
 

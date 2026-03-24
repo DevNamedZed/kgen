@@ -6,10 +6,11 @@ import org.junit.jupiter.api.condition.EnabledOnOs
 import org.junit.jupiter.api.condition.OS
 import org.kgen.binary.SectionKind
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.jit.JitEngine
-import org.kgen.pass.OptLevel
+import org.kgen.codegen.OptLevel
+import org.kgen.pipeline.pipeline
 import org.kgen.target.x86.codegen.X86CodeGenerator
 import org.kgen.target.x86.disasm.X86Disassembler
 import org.kgen.ir.instructions.*
@@ -150,7 +151,7 @@ class OptimizationEndToEndTest {
     // -- Helpers --
 
     private fun buildConstantExprModule(): Module {
-        val ir = IrBuilder("const_fold", Target.x86_64())
+        val ir = ModuleBuilder("const_fold", Target.x86_64())
         ir.createFunction("constant", emptyList(), Type.I64)
         ir.appendBlock("entry")
         val a = ir.add(Constant.I64(10), Constant.I64(20))
@@ -161,7 +162,7 @@ class OptimizationEndToEndTest {
     }
 
     private fun buildAllocaModule(): Module {
-        val ir = IrBuilder("alloca_test", Target.x86_64())
+        val ir = ModuleBuilder("alloca_test", Target.x86_64())
         val p = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val slot = ir.alloca(Type.I32)
@@ -173,7 +174,7 @@ class OptimizationEndToEndTest {
     }
 
     private fun buildPhiCandidateModule(): Module {
-        val ir = IrBuilder("phi_test", Target.x86_64())
+        val ir = ModuleBuilder("phi_test", Target.x86_64())
         val p = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
 
@@ -198,7 +199,7 @@ class OptimizationEndToEndTest {
     }
 
     private fun buildComputeModule(): Module {
-        val ir = IrBuilder("compute_mod", Target.x86_64())
+        val ir = ModuleBuilder("compute_mod", Target.x86_64())
         val p = ir.createFunction("compute", listOf(Param("x", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         val slot = ir.alloca(Type.I64)
@@ -211,7 +212,7 @@ class OptimizationEndToEndTest {
     }
 
     private fun buildBranchModule(): Module {
-        val ir = IrBuilder("branch_mod", Target.x86_64())
+        val ir = ModuleBuilder("branch_mod", Target.x86_64())
         val p = ir.createFunction("abs_val", listOf(Param("x", Type.I64)), Type.I64)
         ir.appendBlock("entry")
 
@@ -236,7 +237,7 @@ class OptimizationEndToEndTest {
     }
 
     private fun buildDeadCodeModule(): Module {
-        val ir = IrBuilder("dce_test", Target.x86_64())
+        val ir = ModuleBuilder("dce_test", Target.x86_64())
         val p = ir.createFunction("f", listOf(Param("x", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         val dead = ir.mul(p[0], Constant.I64(999)) // unused

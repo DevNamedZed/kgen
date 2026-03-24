@@ -38,7 +38,7 @@ data class ClrTables(
     val typeRefs: List<ClrTypeRef> = emptyList(),
     val typeDefs: List<ClrTypeDef> = emptyList(),
     val fields: List<ClrField> = emptyList(),
-    val methodDefs: List<ClrMethodDef> = emptyList(),
+    val methodDefs: List<ClrMethodDefinition> = emptyList(),
     val params: List<ClrParam> = emptyList(),
     val interfaceImpls: List<ClrInterfaceImpl> = emptyList(),
     val memberRefs: List<ClrMemberRef> = emptyList(),

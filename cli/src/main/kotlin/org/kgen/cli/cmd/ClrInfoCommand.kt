@@ -39,7 +39,7 @@ object ClrInfoCommand {
         }
 
         if (showTypes) printTypeDefs(clr)
-        if (showMethods) printMethodDefs(clr)
+        if (showMethods) printMethodDefinitions(clr)
         if (showRefs) printReferences(clr)
         if (showTables) printAllTables(clr)
     }
@@ -102,7 +102,7 @@ object ClrInfoCommand {
         println()
     }
 
-    private fun printMethodDefs(clr: ClrMetadata) {
+    private fun printMethodDefinitions(clr: ClrMetadata) {
         val t = clr.tables
         if (t.methodDefs.isEmpty()) return
 
@@ -176,7 +176,7 @@ object ClrInfoCommand {
         printTableCount("TypeRef", t.typeRefs.size)
         printTableCount("TypeDef", t.typeDefs.size)
         printTableCount("Field", t.fields.size)
-        printTableCount("MethodDef", t.methodDefs.size)
+        printTableCount("MethodDefinition", t.methodDefs.size)
         printTableCount("Param", t.params.size)
         printTableCount("InterfaceImpl", t.interfaceImpls.size)
         printTableCount("MemberRef", t.memberRefs.size)

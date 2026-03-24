@@ -6,7 +6,7 @@ import org.kgen.binary.*
 import org.kgen.binary.elf.ElfObjectWriter
 import org.kgen.target.x86.codegen.X86CodeGenerator
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 
 /**
@@ -14,14 +14,14 @@ import org.kgen.ir.target.Target
  */
 class ModuleEndToEndTest {
 
-    private fun buildElfObjectFile(block: IrBuilder.() -> Unit): ObjectFile {
-        val ir = IrBuilder("test", Target.x86_64())
+    private fun buildElfObjectFile(block: ModuleBuilder.() -> Unit): ObjectFile {
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.block()
         val module = ir.build()
         return X86CodeGenerator().generateObjectFile(module)
     }
 
-    private fun buildElfBytes(block: IrBuilder.() -> Unit): ByteArray {
+    private fun buildElfBytes(block: ModuleBuilder.() -> Unit): ByteArray {
         val obj = buildElfObjectFile(block)
         return ElfObjectWriter().write(obj)
     }

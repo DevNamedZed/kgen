@@ -4,13 +4,13 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
 import org.kgen.ir.instructions.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 
 class X86ICmpConstantTest {
 
-    private fun compileAndCheck(builder: (IrBuilder) -> Unit): ByteArray {
-        val ir = IrBuilder("test", Target.x86_64())
+    private fun compileAndCheck(builder: (ModuleBuilder) -> Unit): ByteArray {
+        val ir = ModuleBuilder("test", Target.x86_64())
         builder(ir)
         val obj = X86CodeGenerator().generateObjectFile(ir.build())
         val code = obj.sections.first { it.name == ".text" }.data
@@ -85,7 +85,7 @@ class X86ICmpConstantTest {
     fun `icmp sge with constant rhs in loop compiles`() {
         // Build a simple counted loop: while (i < 10) i++; return i;
         // Tests that ICmp with constant RHS works in a loop context with phis.
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.createFunction("fn", listOf(Param("n", Type.I32)), Type.I32)
 
         // We need to build blocks manually with correct phi references.

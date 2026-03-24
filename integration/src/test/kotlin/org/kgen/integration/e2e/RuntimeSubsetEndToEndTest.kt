@@ -11,7 +11,7 @@ import org.kgen.jit.JitEngine
 import org.kgen.runtime.compile.NativeCompiler
 import org.kgen.runtime.compile.NativeLibraryCompiler
 import org.kgen.runtime.compile.OutputPlatform
-import org.kgen.runtime.compile.StdlibProvider
+import org.kgen.unmanaged.lib.NativeStdlib
 import org.kgen.target.jvm.*
 import org.kgen.target.x86.codegen.X86CodeGenerator
 import java.lang.foreign.FunctionDescriptor
@@ -301,7 +301,7 @@ class RuntimeSubsetEndToEndTest {
 
     @Test
     fun stdlibProviderGeneratesValidIr() {
-        val stdlib = StdlibProvider.generate(Target.x86_64())
+        val stdlib = NativeStdlib.compile(Target.x86_64())
 
         // Should have stdlib functions
         assertTrue(stdlib.functions.isNotEmpty(), "Stdlib should generate functions")
@@ -315,14 +315,14 @@ class RuntimeSubsetEndToEndTest {
     @Test
     fun stdlibProviderNativeNameMapping() {
         // System.out.println(String) -> kgen_println_str
-        val name = StdlibProvider.nativeName("java/io/PrintStream", "println", "(Ljava/lang/String;)V")
+        val name = NativeStdlib.resolve("java/io/PrintStream", "println", "(Ljava/lang/String;)V")
         assertNotNull(name, "println(String) should map to native name")
         assertEquals("kgen_println_str", name)
     }
 
     @Test
     fun stdlibProviderMathMapping() {
-        val absName = StdlibProvider.nativeName("java/lang/Math", "abs", "(I)I")
+        val absName = NativeStdlib.resolve("java/lang/Math", "abs", "(I)I")
         assertNotNull(absName)
         assertTrue(absName!!.startsWith("kgen_math_"), "Math.abs should map to kgen_math_*: $absName")
     }

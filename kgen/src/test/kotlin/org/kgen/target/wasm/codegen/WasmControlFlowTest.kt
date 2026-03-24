@@ -23,7 +23,7 @@ class WasmControlFlowTest {
 
     @Test
     fun `br to next block falls through`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         ir.br(BlockRef("exit"))
@@ -35,7 +35,7 @@ class WasmControlFlowTest {
 
     @Test
     fun `br forward skip`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         ir.br(BlockRef("exit"))
@@ -52,7 +52,7 @@ class WasmControlFlowTest {
 
     @Test
     fun `condbr simple if-then`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("abs", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val isNeg = ir.icmp(ICmpPredicate.SLT, params[0], Constant.I32(0))
@@ -68,7 +68,7 @@ class WasmControlFlowTest {
 
     @Test
     fun `condbr if-then-else diamond`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("max", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.icmp(ICmpPredicate.SGT, params[0], params[1])
@@ -86,7 +86,7 @@ class WasmControlFlowTest {
 
     @Test
     fun `condbr with both targets same`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.icmp(ICmpPredicate.EQ, params[0], Constant.I32(0))
@@ -99,7 +99,7 @@ class WasmControlFlowTest {
 
     @Test
     fun `condbr neither target is next block`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.icmp(ICmpPredicate.SGT, params[0], Constant.I32(0))
@@ -197,7 +197,7 @@ class WasmControlFlowTest {
 
     @Test
     fun `switch with multiple cases`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("categorize", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         ir.switch(params[0], "default", listOf(
@@ -219,7 +219,7 @@ class WasmControlFlowTest {
 
     @Test
     fun `nested conditionals with merge`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("toSign", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.icmp(ICmpPredicate.SGT, params[0], Constant.I32(0))
@@ -253,7 +253,7 @@ class WasmControlFlowTest {
 
     @Test
     fun `phi with two incoming values`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("pick", listOf(Param("cond", Type.I32), Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val isTrue = ir.icmp(ICmpPredicate.NE, params[0], Constant.I32(0))
@@ -292,7 +292,7 @@ class WasmControlFlowTest {
 
     @Test
     fun `alloca basic`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("f", emptyList(), Type.I32)
         ir.appendBlock("entry")
         val ptr = ir.alloca(Type.I32)
@@ -305,7 +305,7 @@ class WasmControlFlowTest {
 
     @Test
     fun `alloca with control flow`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("f", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val ptr = ir.alloca(Type.I32)
@@ -332,7 +332,7 @@ class WasmControlFlowTest {
 
     @Test
     fun `nested if-else`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("classify", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val isPos = ir.icmp(ICmpPredicate.SGT, params[0], Constant.I32(0))
@@ -399,7 +399,7 @@ class WasmControlFlowTest {
 
     @Test
     fun `multiple returns in different blocks`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         val params = ir.createFunction("early", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val isZero = ir.icmp(ICmpPredicate.EQ, params[0], Constant.I32(0))
@@ -456,7 +456,7 @@ class WasmControlFlowTest {
 
     @Test
     fun `stackifier orders blocks correctly`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("f", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.br(BlockRef("a"))
@@ -474,7 +474,7 @@ class WasmControlFlowTest {
 
     @Test
     fun `stackifier identifies loop headers`() {
-        val ir = IrBuilder("test", Target.wasm())
+        val ir = ModuleBuilder("test", Target.wasm())
         ir.createFunction("f", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.br(BlockRef("header"))

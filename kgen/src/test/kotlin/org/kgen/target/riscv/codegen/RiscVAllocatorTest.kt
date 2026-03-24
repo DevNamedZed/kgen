@@ -2,7 +2,7 @@ package org.kgen.target.riscv.codegen
 
 import org.kgen.target.riscv.disasm.RiscVDisassembler
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
@@ -12,13 +12,13 @@ class RiscVAllocatorTest {
 
     private val disasm = RiscVDisassembler()
 
-    private fun buildModule(block: IrBuilder.() -> Unit): Module {
-        val ir = IrBuilder("test", Target.riscv64())
+    private fun buildModule(block: ModuleBuilder.() -> Unit): Module {
+        val ir = ModuleBuilder("test", Target.riscv64())
         ir.block()
         return ir.build()
     }
 
-    private fun generateAndDisassemble(block: IrBuilder.() -> Unit): List<String> {
+    private fun generateAndDisassemble(block: ModuleBuilder.() -> Unit): List<String> {
         val module = buildModule(block)
         val gen = RiscVCodeGenerator()
         val obj = gen.generateObjectFile(module)
@@ -26,7 +26,7 @@ class RiscVAllocatorTest {
         return disasm.disassemble(textSection.data).map { it.toString() }
     }
 
-    private fun generateCode(block: IrBuilder.() -> Unit): ByteArray {
+    private fun generateCode(block: ModuleBuilder.() -> Unit): ByteArray {
         val module = buildModule(block)
         val gen = RiscVCodeGenerator()
         val obj = gen.generateObjectFile(module)

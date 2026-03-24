@@ -175,7 +175,7 @@ class ClrTableWriter {
         for (r in tables.typeRefs) ctx.writeTypeRef(r)
         for (d in tables.typeDefs) ctx.writeTypeDef(d)
         for (f in tables.fields) ctx.writeField(f)
-        for (m in tables.methodDefs) ctx.writeMethodDef(m)
+        for (m in tables.methodDefs) ctx.writeMethodDefinition(m)
         for (p in tables.params) ctx.writeParam(p)
         for (i in tables.interfaceImpls) ctx.writeInterfaceImpl(i)
         for (r in tables.memberRefs) ctx.writeMemberRef(r)
@@ -248,7 +248,7 @@ private class TableWriteContext(
         writeU16(f.flags); writeStringIdx(f.name); writeBlobIdx(f.signature)
     }
 
-    fun writeMethodDef(m: ClrMethodDef) {
+    fun writeMethodDefinition(m: ClrMethodDefinition) {
         writeU32(m.rva); writeU16(m.implFlags); writeU16(m.flags)
         writeStringIdx(m.name); writeBlobIdx(m.signature); writeTableIdx(0x08, m.paramList)
     }

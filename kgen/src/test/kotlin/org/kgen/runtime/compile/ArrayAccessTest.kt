@@ -3,9 +3,9 @@ package org.kgen.runtime.compile
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
-import org.kgen.pass.Mem2Reg
+import org.kgen.pipeline.Mem2Reg
 import org.kgen.target.jvm.*
 import org.kgen.ir.instructions.*
 
@@ -49,7 +49,7 @@ class ArrayAccessTest {
     private fun compile(classBytes: ByteArray): Module {
         val target = Target.x86_64()
         val cf = JvmClassReader.read(classBytes)
-        val builder = IrBuilder(cf.thisClassName.replace('/', '_'), target)
+        val builder = ModuleBuilder(cf.thisClassName.replace('/', '_'), target)
 
         for (method in cf.methods) {
             val name = cf.string(method.nameIndex)

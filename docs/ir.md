@@ -6,21 +6,33 @@ and **high-level** operations for managed backends (JVM, WASM). A single `Module
 can contain both; lowering passes convert high-level ops to low-level equivalents
 before native code generation.
 
-**Instruction count**: 177 instruction types across both tiers, plus a generic
+**Instruction count**: 206 instruction types across 19 categories, plus a generic
 `Intrinsic` escape hatch and `InlineAsm` for target-specific needs. For
 comparison, LLVM IR has ~67 core opcodes but offloads much of its functionality
 to hundreds of intrinsics (`llvm.sadd.with.overflow`, `llvm.memcpy`, etc.).
 kgen folds these directly into the instruction set.
 
+**Code generation**: All 206 instructions, their data classes, visitor interfaces,
+instruction set interfaces, and emitter implementations are generated from YAML
+specs in `generator/src/main/resources/ir/`. Adding a new instruction means adding
+YAML and running `gradlew :generator:runIr`.
+
 ## Table of Contents
 
 - [Quick Start](#quick-start)
 - [Building IR from an AST](#building-ir-from-an-ast)
+- [InstructionBuilder: Scoped Emission](#instructionbuilder-scoped-emission)
 - [Type System](#type-system)
 - [Values](#values)
 - [Constants](#constants)
+- [Category System](#category-system)
+- [Effect System](#effect-system)
+- [Capability System](#capability-system)
+- [Pipeline Phases](#pipeline-phases)
 - [Instruction Reference: Low-Level](#instruction-reference-low-level)
 - [Instruction Reference: High-Level](#instruction-reference-high-level)
+- [Instruction Reference: Deoptimization](#instruction-reference-deoptimization)
+- [Instruction Reference: Compute](#instruction-reference-compute)
 - [Module Structure](#module-structure)
 - [Enums Reference](#enums-reference)
 - [DSL Builders](#dsl-builders)
@@ -33,9 +45,42 @@ kgen folds these directly into the instruction set.
 
 ## Quick Start
 
-```kotlin
-import org.kgen.ir.*
+### Java
 
+```java
+IrBuilder ir = new IrBuilder("example", Target.x86_64());
+NativeScope b = ir.createInstructionBuilder(NativeScope.class);
+
+try (DefinedFunction add = ir.defineFunction("add",
+        List.of(Param.of("a", Type.I32), Param.of("b", Type.I32)), Type.I32)) {
+    ir.appendBlock("entry");
+    Value sum = b.add(add.param("a"), add.param("b"));
+    b.ret(sum);
+}
+
+Module module = ir.build();
+System.out.println(IrPrinter.print(module));
+```
+
+### Kotlin
+
+```kotlin
+val ir = IrBuilder("example", Target.x86_64())
+val b = ir.createInstructionBuilder<NativeScope>()
+
+ir.defineFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32).use { fn ->
+    ir.appendBlock("entry")
+    val sum = b.add(fn.param("a"), fn.param("b"))
+    b.ret(sum)
+}
+
+val module = ir.build()
+println(IrPrinter.print(module))
+```
+
+### Kotlin DSL
+
+```kotlin
 val mod = module("example") {
     function("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32) {
         block("entry") {
@@ -44,9 +89,6 @@ val mod = module("example") {
         }
     }
 }
-
-println(IrPrinter.print(mod))
-val result = IrVerifier.verify(mod)
 ```
 
 Output:
@@ -65,102 +107,91 @@ entry:
 ## Building IR from an AST
 
 Most consumers of kgen will be translating some form of high-level AST into
-IR. kgen provides two builder APIs optimized for different use cases:
+IR. The builder API separates two concerns:
 
-### DSL Builders (tests, hand-written IR, simple cases)
+1. **IrBuilder** — module structure: functions, blocks, globals, types
+2. **InstructionBuilder** — instruction emission, scoped by category
 
-The DSL is great when you know the structure of the IR upfront:
+### Java: Compiler frontend example
 
-```kotlin
-val mod = module("test") {
-    function("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32) {
-        block("entry") {
-            val result = add(param(0), param(1))
-            ret(result)
+```java
+public class MyCompiler {
+    private final ProgramNode ast;
+    private final IrBuilder ir;
+    private final NativeScope b;
+
+    public MyCompiler(ProgramNode ast) {
+        this.ast = ast;
+        this.ir = new IrBuilder("my_module", Target.x86_64());
+        this.b = ir.createInstructionBuilder(NativeScope.class);
+    }
+
+    public Module compile() {
+        ir.setTargetTriple("x86_64-unknown-linux-gnu");
+
+        ir.declareFunction("printf", List.of(Param.of("fmt", Type.OpaquePointer)),
+            Type.I32, /* isVarArg */ true);
+
+        for (FunctionNode func : ast.getFunctions()) {
+            translateFunction(func);
+        }
+        return ir.build();
+    }
+
+    private void translateFunction(FunctionNode node) {
+        try (DefinedFunction fn = ir.defineFunction(node.getName(),
+                node.getParams().stream()
+                    .map(p -> Param.of(p.getName(), mapType(p.getType())))
+                    .collect(Collectors.toList()),
+                mapType(node.getReturnType()))) {
+
+            ir.appendBlock("entry");
+            Value result = translateExpr(fn, node.getBody());
+            b.ret(result);
         }
     }
-}
-```
 
-### IrBuilder (compiler frontends, AST-to-IR translation)
-
-Real compiler frontends discover control flow as they walk the AST.
-`IrBuilder` provides LLVM IRBuilder-style insertion point semantics:
-
-```kotlin
-class MyCompiler(val ast: ProgramNode) {
-    private val ir = IrBuilder("my_module")
-
-    fun compile(): Module {
-        ir.targetTriple = "x86_64-unknown-linux-gnu"
-
-        // Declare external functions
-        ir.declareFunction("printf", listOf(Param("fmt", Type.OpaquePointer)), Type.I32, isVarArg = true)
-
-        // Translate each function
-        for (func in ast.functions) {
-            translateFunction(func)
+    private Value translateExpr(DefinedFunction fn, ExprNode node) {
+        if (node instanceof IntLiteral lit) {
+            return new Constant.I32(lit.getValue());
+        } else if (node instanceof BinaryOp op) {
+            Value lhs = translateExpr(fn, op.getLeft());
+            Value rhs = translateExpr(fn, op.getRight());
+            return switch (op.getOp()) {
+                case "+" -> b.add(lhs, rhs);
+                case "-" -> b.sub(lhs, rhs);
+                case "*" -> b.mul(lhs, rhs);
+                case "/" -> b.sdiv(lhs, rhs);
+                default -> throw new IllegalArgumentException("Unknown op: " + op.getOp());
+            };
+        } else if (node instanceof IfExpr ifExpr) {
+            return translateIf(fn, ifExpr);
         }
-        return ir.build()
+        throw new IllegalArgumentException("Unknown node: " + node);
     }
 
-    private fun translateFunction(node: FunctionNode) {
-        val params = ir.createFunction(node.name,
-            node.params.map { it.name to mapType(it.type) },
-            mapType(node.returnType))
+    private Value translateIf(DefinedFunction fn, IfExpr node) {
+        Value cond = translateExpr(fn, node.getCondition());
 
-        val entry = ir.appendBlock("entry")
-        ir.positionAtEnd(entry)
+        BlockRef thenBlock = ir.createBlock("if.then");
+        BlockRef elseBlock = ir.createBlock("if.else");
+        BlockRef mergeBlock = ir.createBlock("if.merge");
 
-        // Translate the body
-        val result = translateExpr(node.body)
-        ir.ret(result)
+        b.condBr(cond, thenBlock, elseBlock);
 
-        ir.finalizeFunction()
-    }
+        ir.appendBlock(thenBlock);
+        Value thenVal = translateExpr(fn, node.getThenExpr());
+        b.br(mergeBlock);
 
-    private fun translateExpr(node: ExprNode): Value = when (node) {
-        is IntLiteral -> i32(node.value)
-        is BinaryOp -> {
-            val lhs = translateExpr(node.left)
-            val rhs = translateExpr(node.right)
-            when (node.op) {
-                "+" -> ir.add(lhs, rhs)
-                "-" -> ir.sub(lhs, rhs)
-                "*" -> ir.mul(lhs, rhs)
-                "/" -> ir.sdiv(lhs, rhs)
-                else -> error("Unknown op: ${node.op}")
-            }
-        }
-        is IfExpr -> translateIf(node)
-        is VarRef -> loadVariable(node.name)
-        // ...
-    }
+        ir.appendBlock(elseBlock);
+        Value elseVal = translateExpr(fn, node.getElseExpr());
+        b.br(mergeBlock);
 
-    private fun translateIf(node: IfExpr): Value {
-        val cond = translateExpr(node.condition)
-
-        val thenBb = ir.appendBlock("if.then")
-        val elseBb = ir.appendBlock("if.else")
-        val mergeBb = ir.appendBlock("if.merge")
-
-        ir.condBr(cond, thenBb, elseBb)
-
-        // Then branch
-        ir.positionAtEnd(thenBb)
-        val thenVal = translateExpr(node.thenExpr)
-        ir.br(mergeBb)
-        val thenFrom = ir.getInsertBlock()!!
-
-        // Else branch
-        ir.positionAtEnd(elseBb)
-        val elseVal = translateExpr(node.elseExpr)
-        ir.br(mergeBb)
-        val elseFrom = ir.getInsertBlock()!!
-
-        // Merge
-        ir.positionAtEnd(mergeBb)
-        return ir.phi(thenVal.type, listOf(thenVal to thenFrom, elseVal to elseFrom))
+        ir.appendBlock(mergeBlock);
+        return b.phi(Type.I32, List.of(
+            new Pair<>(thenVal, thenBlock),
+            new Pair<>(elseVal, elseBlock)
+        ));
     }
 }
 ```
@@ -172,46 +203,44 @@ with mutable variables, use the **alloca pattern** — allocate stack space for
 each variable, then load/store through it. A later `mem2reg` optimization pass
 will promote these to SSA registers:
 
-```kotlin
+```java
 // Translating: var x = 0; x = x + 1; return x
 
-val xPtr = ir.alloca(Type.I32)            // stack slot for x
-ir.store(i32(0), xPtr)                    // x = 0
+Value xPtr = b.alloca(Type.I32);             // stack slot for x
+b.store(new Constant.I32(0), xPtr);          // x = 0
 
-val xVal = ir.load(Type.I32, xPtr)        // load x
-val incremented = ir.add(xVal, i32(1))    // x + 1
-ir.store(incremented, xPtr)               // x = x + 1
+Value xVal = b.load(Type.I32, xPtr);         // load x
+Value incremented = b.add(xVal, new Constant.I32(1));  // x + 1
+b.store(incremented, xPtr);                  // x = x + 1
 
-val result = ir.load(Type.I32, xPtr)      // load final value
-ir.ret(result)
+Value result = b.load(Type.I32, xPtr);       // load final value
+b.ret(result);
 ```
 
 ### Translating Loops
 
-```kotlin
-// Translating: while (i < n) { body; i++ }
+```java
+BlockRef header = ir.createBlock("while.header");
+BlockRef body = ir.createBlock("while.body");
+BlockRef exit = ir.createBlock("while.exit");
 
-val headerBb = ir.appendBlock("while.header")
-val bodyBb = ir.appendBlock("while.body")
-val exitBb = ir.appendBlock("while.exit")
-
-ir.br(headerBb)
+b.br(header);
 
 // Header: check condition
-ir.positionAtEnd(headerBb)
-val iVal = ir.load(Type.I32, iPtr)
-val cond = ir.icmp(ICmpPredicate.SLT, iVal, nVal)
-ir.condBr(cond, bodyBb, exitBb)
+ir.appendBlock(header);
+Value iVal = b.load(Type.I32, iPtr);
+Value cond = b.icmp(ICmpPredicate.SLT, iVal, nVal);
+b.condBr(cond, body, exit);
 
 // Body
-ir.positionAtEnd(bodyBb)
+ir.appendBlock(body);
 // ... translate body ...
-val nextI = ir.add(iVal, i32(1))
-ir.store(nextI, iPtr)
-ir.br(headerBb)
+Value nextI = b.add(iVal, new Constant.I32(1));
+b.store(nextI, iPtr);
+b.br(header);
 
 // Exit
-ir.positionAtEnd(exitBb)
+ir.appendBlock(exit);
 ```
 
 ### Translating Class Definitions
@@ -242,9 +271,89 @@ val cls = classDef("Point") {
     ))
 }
 
-// Add to module
 ir.addClass(cls)
 ```
+
+---
+
+## InstructionBuilder: Scoped Emission
+
+The InstructionBuilder is a typed, scoped API for emitting instructions. You
+choose which instruction categories are available, and the compiler enforces it.
+This prevents a "sea of methods" problem where 200+ instruction methods are
+always visible.
+
+### Creating an InstructionBuilder
+
+```java
+// Java — pass the scope class
+NativeScope b = ir.createInstructionBuilder(NativeScope.class);
+```
+
+```kotlin
+// Kotlin — reified type parameter
+val b = ir.createInstructionBuilder<NativeScope>()
+```
+
+The returned object has only the methods from the requested scope:
+
+```java
+b.add(x, y);           // NativeScope includes ArithmeticInstructionSet — allowed
+b.load(Type.I32, ptr); // NativeScope includes MemoryInstructionSet — allowed
+b.ret(result);          // NativeScope includes TerminatorInstructionSet — allowed
+b.newObject("Foo");     // NOT in NativeScope — compile error
+```
+
+The instruction builder is created once and reused across all functions in the
+module. It shares the IrBuilder's instruction sink — instructions go into
+whatever block IrBuilder is currently positioned at.
+
+### Built-in Scopes
+
+| Scope | Instruction Sets | Use Case |
+|-------|-----------------|----------|
+| `NativeScope` | Arithmetic, Memory, Bitwise, Call, Comparison, Conversion, Terminator, SSA | x86/ARM64/RISC-V native code |
+| `ManagedScope` | Arithmetic, Object, Call, Comparison, Terminator, SSA, Debug | JVM/CLR bytecode |
+| `FullScope` | All commonly used (Native + Managed + Runtime, Interop, Exception, Debug) | Compiler internals, passes |
+| `ComputeScope` | Arithmetic, Memory, Bitwise, Call, Comparison, Conversion, Terminator, SSA, Compute | GPU kernels |
+
+### Custom Scopes
+
+Define your own scope by combining instruction set interfaces:
+
+```java
+public interface MyScope extends ArithmeticInstructionSet,
+    MemoryInstructionSet, TerminatorInstructionSet {}
+
+MyScope b = ir.createInstructionBuilder(MyScope.class);
+```
+
+### Instruction Set Interfaces
+
+Each of the 19 categories has a corresponding `*InstructionSet` interface and
+`*InstructionSetImpl` implementation, all generated from YAML:
+
+| Interface | Category | Example Methods |
+|-----------|----------|-----------------|
+| `ArithmeticInstructionSet` | ARITHMETIC | `add`, `sub`, `mul`, `fadd`, `fma` |
+| `MemoryInstructionSet` | MEMORY | `alloca`, `load`, `store`, `gep`, `memcpy` |
+| `BitwiseInstructionSet` | BITWISE | `and`, `or`, `xor`, `shl`, `rotl` |
+| `ComparisonInstructionSet` | COMPARISON | `icmp`, `fcmp` |
+| `ConversionInstructionSet` | CONVERSION | `trunc`, `zext`, `sext`, `bitcast` |
+| `TerminatorInstructionSet` | TERMINATOR | `ret`, `br`, `condBr`, `switchBr` |
+| `CallInstructionSet` | CALL | `call`, `invoke` |
+| `SsaInstructionSet` | SSA | `phi`, `select`, `freeze` |
+| `DebugInstructionSet` | DEBUG | `debugLoc`, `debugValue`, `assume` |
+| `ObjectInstructionSet` | OBJECT | `newObject`, `getField`, `virtualCall` |
+| `RuntimeInstructionSet` | RUNTIME | `gcAlloc`, `gcSafepoint`, `writeBarrier` |
+| `InteropInstructionSet` | INTEROP | `pin`, `unpin`, `managedCall` |
+| `ExceptionInstructionSet` | EXCEPTION | `landingPad`, `resume`, `catchSwitch` |
+| `VectorInstructionSet` | VECTOR | `extractElement`, `splat`, `vectorReduce` |
+| `AggregateInstructionSet` | AGGREGATE | `extractValue`, `insertValue` |
+| `AtomicInstructionSet` | ATOMIC | `fence`, `cmpxchg`, `atomicRMW` |
+| `IntrinsicInstructionSet` | INTRINSIC | `intrinsic`, `inlineAsm` |
+| `DeoptimizationInstructionSet` | DEOPTIMIZATION | `guard`, `deoptimize`, `frameState` |
+| `ComputeInstructionSet` | COMPUTE | `threadId`, `computeBarrier`, `warpShuffle` |
 
 ---
 
@@ -351,9 +460,14 @@ Type.Function(listOf(Type.I32), Type.Void, vararg = true)     // void (i32, ...)
 | `Parameter(name, type, index)` | Function parameter | `%a` |
 | `InstructionRef(name, type)` | SSA result | `%0` |
 | `GlobalRef(name, type)` | Global variable | `@counter` |
-| `FunctionRef(name, type)` | Function reference | `@add` |
+| `FunctionRef(name, type)` | External function reference | `@add` |
+| `DefinedFunction` | Defined function (also a `Value`) | `@add` |
 | `BlockRef(label)` | Block reference | `%entry` |
 | `Constant.*` | Compile-time constant | `42`, `null` |
+
+`DefinedFunction` implements `Value`, so it can be passed directly to `call()`
+as a function reference. `BlockRef` is used in terminators (`br`, `condBr`,
+`switch`) and in `phi` nodes.
 
 ### Parameter Attributes
 
@@ -432,11 +546,220 @@ Constant.PtrToInt(intType, ptrConst)
 
 ---
 
+## Category System
+
+Every instruction belongs to one of 19 categories, grouped into tiers that
+describe their abstraction level.
+
+### IrCategory
+
+| Tier | Category | Description |
+|------|----------|-------------|
+| STRUCTURAL | `TERMINATOR` | Control flow terminators (ret, br, switch) |
+| STRUCTURAL | `CALL` | Function calls (call, invoke, callbr) |
+| STRUCTURAL | `SSA` | SSA management (phi, select, freeze, piNode) |
+| STRUCTURAL | `DEBUG` | Debug info and optimizer hints |
+| STRUCTURAL | `INTRINSIC` | Target-specific operations |
+| MACHINE | `ARITHMETIC` | Integer and float computation |
+| MACHINE | `BITWISE` | Bit manipulation operations |
+| MACHINE | `COMPARISON` | Integer and float comparisons |
+| MACHINE | `CONVERSION` | Type conversions |
+| MACHINE | `MEMORY` | Memory operations (load, store, alloca, varargs) |
+| MACHINE | `ATOMIC` | Atomic operations (fence, cmpxchg, atomicrmw) |
+| MACHINE | `VECTOR` | SIMD vector operations |
+| MACHINE | `AGGREGATE` | Struct/array field access |
+| MACHINE | `EXCEPTION` | Native exception handling (landing pad, SEH) |
+| RUNTIME | `RUNTIME` | GC, barriers, coroutines, ref counting |
+| RUNTIME | `INTEROP` | Managed/native boundary crossing |
+| OBJECT | `OBJECT` | High-level OOP (classes, arrays, dispatch) |
+| DEOPTIMIZATION | `DEOPTIMIZATION` | Speculative optimization support |
+| COMPUTE | `COMPUTE` | GPU/compute kernel operations |
+
+### IrTier
+
+Tiers describe where instructions live in the compilation pipeline:
+
+| Tier | Description |
+|------|-------------|
+| `STRUCTURAL` | Always legal — control flow, SSA, debug |
+| `MACHINE` | Native backend instructions |
+| `RUNTIME` | Runtime integration (GC, interop) |
+| `OBJECT` | High-level managed instructions |
+| `COMPUTE` | GPU/parallel compute |
+
+### IrConstraints
+
+Predefined category whitelists for common compilation contexts:
+
+| Preset | Categories | Use Case |
+|--------|-----------|----------|
+| `STRUCTURAL` | Terminators, calls, SSA, debug, intrinsics | Minimal |
+| `NATIVE` | Structural + all machine categories | Native compilation |
+| `RUNTIME_NATIVE` | Native + runtime | GC-aware native code |
+| `MIXED` | Runtime-native + interop | Mixed managed/native |
+| `MANAGED_VM` | Structural + object | Pure JVM/CLR |
+| `MANAGED_NATIVE` | All machine + runtime + interop + object | Java-to-native |
+| `JIT` | Managed-native + deoptimization | JIT with speculation |
+| `COMPUTE_KERNEL` | Native + compute | GPU kernels |
+| `ALL` | Everything | No restrictions |
+
+```java
+// Constrain an IrBuilder to only allow native instructions
+IrBuilder ir = new IrBuilder("module", Target.x86_64(), IrConstraints.NATIVE);
+```
+
+---
+
+## Effect System
+
+Every instruction declares a static `InstructionEffects` bitmask describing its
+semantic behavior. The effect system drives optimization passes — dead code
+elimination, loop-invariant code motion, instruction reordering, and GVN all
+query effects rather than maintaining per-instruction special cases.
+
+### Effect Bits
+
+| Effect | Meaning |
+|--------|---------|
+| `readsHeapMemory` | Reads from heap (globals, fields, pointers) |
+| `writesHeapMemory` | Writes to heap |
+| `readsStackMemory` | Reads from alloca'd stack memory |
+| `writesStackMemory` | Writes to stack memory |
+| `readsArgMemory` | Reads through argument pointers |
+| `writesArgMemory` | Writes through argument pointers |
+| `canTrap` | May trap (div by zero, null deref) |
+| `canThrow` | May throw a managed exception |
+| `isSafepoint` | GC may run and relocate objects |
+| `isBarrier` | Memory barrier preventing reordering |
+| `hasSideEffects` | Cannot be removed even if result is dead |
+| `isTerminator` | Must be last instruction in block |
+| `isBranch` | Conditional control flow transfer |
+| `isCall` | Function call |
+| `isReturn` | Function return |
+| `commutes` | Operand order doesn't matter (a+b = b+a) |
+| `isDivergent` | GPU lanes may take different paths |
+
+### Derived Queries
+
+```java
+instruction.effects().isPure();         // no effects at all
+instruction.effects().readsMemory();    // reads heap, stack, or arg memory
+instruction.effects().writesMemory();   // writes heap, stack, or arg memory
+```
+
+### Predefined Effect Sets
+
+| Name | Bits |
+|------|------|
+| `PURE` | No effects |
+| `PURE_COMMUTATIVE` | No effects, operands commute |
+| `READS_HEAP` | Reads heap memory |
+| `WRITES_HEAP` | Writes heap, has side effects |
+| `CALL` | Function call |
+| `INVOKE` | Call that may throw |
+| `BRANCH` | Unconditional branch terminator |
+| `CONDITIONAL_BRANCH` | Conditional branch terminator |
+| `RETURN` | Return terminator |
+| `TRAP` | Terminator that aborts |
+| `SAFEPOINT` | GC safepoint |
+| `GC_ALLOC` | GC allocation (safepoint + side effects) |
+| `OBJECT_ALLOC` | Object allocation (writes heap) |
+| `WRITE_BARRIER` | Write barrier (writes heap) |
+| `MANAGED_THROW` | Managed exception throw (terminator) |
+
+### Effect Computation (Dynamic Refinement)
+
+`EffectComputation.computeEffects(instruction)` narrows static effects based on
+operand analysis. For example, a `WriteBarrier` storing a primitive (non-reference)
+value is refined to `PURE` since no actual barrier is needed.
+
+### Effect Ordering
+
+`EffectOrdering` determines whether two instructions must maintain their relative
+order. Seven rules govern ordering:
+
+1. Either instruction has side effects
+2. Safepoint ↔ reference-touching instruction
+3. Barrier ↔ heap access
+4. Memory conflict (at least one write)
+5. Either is a control flow instruction (terminator, branch, return)
+6. Either can trap or throw
+7. Divergent ↔ compute synchronization (barrier/fence)
+
+```java
+boolean mustKeepOrder = EffectOrdering.mustOrder(first, second);
+boolean refined = EffectOrdering.mustOrderRefined(first, second);
+```
+
+---
+
+## Capability System
+
+Capabilities describe semantic features of the compilation context — what
+runtime services are available, what memory models apply, what exception
+mechanisms exist. Unlike categories (which filter instruction opcodes),
+capabilities validate that the IR makes semantic sense for the target.
+
+### Capability Enum (28 values)
+
+| Group | Capabilities |
+|-------|-------------|
+| Memory | `GC_MANAGED`, `GC_MOVING`, `GC_BARRIERS`, `REF_COUNTED`, `NATIVE_MEMORY`, `COMPUTE_MEMORY` |
+| Types | `MANAGED_OBJECTS`, `VIRTUAL_DISPATCH`, `TYPE_CHECKS`, `GENERICS` |
+| Exceptions | `MANAGED_EXCEPTIONS`, `NATIVE_EXCEPTIONS`, `NO_EXCEPTIONS` |
+| Interop | `NATIVE_INTEROP`, `JNI`, `P_INVOKE` |
+| Control | `COROUTINES` |
+| Speculation | `DEOPTIMIZATION`, `OSR` |
+| Compute | `COMPUTE_KERNEL`, `KERNEL_LAUNCH` |
+
+### Implication Rules
+
+Some capabilities imply others:
+- `GC_MOVING` → `GC_MANAGED`
+- `VIRTUAL_DISPATCH` → `MANAGED_OBJECTS`
+- `GC_BARRIERS` → `GC_MANAGED`
+
+### Mutual Exclusivity
+
+Some capabilities cannot coexist:
+- `NO_EXCEPTIONS` conflicts with `MANAGED_EXCEPTIONS` and `NATIVE_EXCEPTIONS`
+- `COMPUTE_KERNEL` conflicts with `MANAGED_OBJECTS` and `GC_MANAGED`
+
+### Predefined Capability Sets
+
+| Name | Description |
+|------|-------------|
+| `KGEN_NATIVE` | Full-featured: native memory, managed objects, GC, deoptimization |
+| `KGEN_JIT` | KGEN_NATIVE + OSR |
+| `PLAIN_NATIVE` | Just native memory + native exceptions |
+| `EXTERNAL_VM` | For code targeting an external VM (no GC barriers) |
+| `COMPUTE_KERNEL` | Native + compute memory |
+
+---
+
+## Pipeline Phases
+
+Pipeline phases are descriptive labels for where code sits in the compilation
+pipeline. They are documentation and tooling aids, not enforcement mechanisms.
+
+| Phase | Value | Description |
+|-------|-------|-------------|
+| `FRONTEND_OBJECT` | 0 | All Object instructions present |
+| `POST_OBJECT_LOWERING` | 1 | Object instructions replaced with Runtime primitives |
+| `POST_RUNTIME_LOWERING` | 2 | Runtime expanded to machine-level sequences |
+| `BACKEND_LEGAL` | 3 | Only machine-level instructions remain |
+
+Passes can optionally declare a phase transition via the `PhasedPass` interface.
+Post-phase validators can check that specific instruction categories have been
+eliminated.
+
+---
+
 ## Instruction Reference: Low-Level
 
 Low-level instructions are consumed directly by native backends (x86-64, ARM64,
 RISC-V). All instructions implement `sealed interface Instruction` with
-`result: Value?` (null for void instructions).
+`result: Value?` (null for void instructions) and `effects: InstructionEffects`.
 
 Instructions that produce a value take a `dest: InstructionRef` as their first
 parameter. The builder auto-generates these; you only deal with the returned
@@ -461,13 +784,14 @@ parameter. The builder auto-generates these; you only deal with the returned
 
 **Constraints**: `lhs` and `rhs` must have the same integer type.
 **Result type**: Same as operands.
+**Effects**: `PURE_COMMUTATIVE`
 **Semantics**: Two's complement addition. If `nuw` is set and unsigned overflow
 occurs, the result is poison. If `nsw` is set and signed overflow occurs, the
 result is poison.
 
-```kotlin
-val sum = add(a, b)                        // %0 = add i32 %a, %b
-val safe = add(a, b, nuw = true, nsw = true) // poison on any overflow
+```java
+Value sum = b.add(a, b);
+Value safe = b.add(a, b, true, true);  // poison on any overflow
 ```
 
 ---
@@ -479,10 +803,7 @@ val safe = add(a, b, nuw = true, nsw = true) // poison on any overflow
 ```
 
 Same constraints and flags as `Add`. Computes `lhs - rhs`.
-
-```kotlin
-val diff = sub(a, b)
-```
+**Effects**: `PURE`
 
 ---
 
@@ -493,10 +814,7 @@ val diff = sub(a, b)
 ```
 
 Same constraints and flags as `Add`. Computes `lhs * rhs`.
-
-```kotlin
-val prod = mul(a, b, nsw = true)
-```
+**Effects**: `PURE_COMMUTATIVE`
 
 ---
 
@@ -512,12 +830,7 @@ val prod = mul(a, b, nsw = true)
 
 **Constraints**: Both operands same integer type. Division by zero is UB.
 **Result type**: Same as operands.
-**Semantics**: Unsigned division, result truncated toward zero.
-
-```kotlin
-val q = udiv(a, b)
-val exact_q = udiv(a, b, exact = true)  // poison if a % b != 0
-```
+**Effects**: `MAY_TRAP`
 
 ---
 
@@ -529,10 +842,6 @@ val exact_q = udiv(a, b, exact = true)  // poison if a % b != 0
 
 Same as `UDiv` but signed. Division by zero and `INT_MIN / -1` are both UB.
 
-```kotlin
-val q = sdiv(a, b)
-```
-
 ---
 
 #### `URem` — Unsigned integer remainder
@@ -542,12 +851,7 @@ val q = sdiv(a, b)
 ```
 
 **Constraints**: Both operands same integer type. Remainder by zero is UB.
-**Result type**: Same as operands.
-**Semantics**: `lhs - (lhs udiv rhs) * rhs`.
-
-```kotlin
-val r = urem(a, b)
-```
+**Effects**: `MAY_TRAP`
 
 ---
 
@@ -567,20 +871,15 @@ Same as `URem` but signed. Sign of result matches sign of dividend.
 %result = neg <type> %operand
 ```
 
-**Constraints**: Operand must be integer type.
-**Result type**: Same as operand.
-**Semantics**: Equivalent to `sub 0, %operand`. Note: negating `INT_MIN`
-wraps to `INT_MIN` in two's complement.
-
-```kotlin
-val negated = neg(x)
-```
+**Effects**: `PURE`
+**Semantics**: Equivalent to `sub 0, %operand`.
 
 ---
 
 ### Overflow-Checked Arithmetic (6 instructions)
 
 These return a struct `{result_type, i1}` where the `i1` indicates overflow.
+**Effects**: `PURE` / `PURE_COMMUTATIVE`
 
 ---
 
@@ -593,11 +892,11 @@ These return a struct `{result_type, i1}` where the `i1` indicates overflow.
 
 **Result type**: `{<type>, i1}` — the sum and an overflow flag.
 
-```kotlin
-val result = saddOverflow(a, b)
-val sum = extractValue(result, 0)         // the actual sum
-val overflow = extractValue(result, 1)    // i1: did overflow occur?
-condBr(overflow, "overflow_handler", "continue")
+```java
+Value result = b.saddOverflow(a, b);
+Value sum = b.extractValue(result, 0);
+Value overflow = b.extractValue(result, 1);
+b.condBr(overflow, overflowHandler, continueBlock);
 ```
 
 ---
@@ -615,6 +914,7 @@ Same structure. Detects when multiplication result doesn't fit in the type.
 ### Saturating Arithmetic (4 instructions)
 
 Clamp results to the representable range instead of wrapping.
+**Effects**: `PURE` / `PURE_COMMUTATIVE`
 
 ---
 
@@ -628,11 +928,6 @@ Clamp results to the representable range instead of wrapping.
 **Semantics**: `SAddSat` clamps to `[INT_MIN, INT_MAX]`. `UAddSat` clamps to
 `[0, UINT_MAX]`.
 
-```kotlin
-val clamped = saddSat(i8(127), i8(1))    // result: 127 (not -128)
-val uclamped = uaddSat(i8(255), i8(1))   // result: 255 (not 0)
-```
-
 ---
 
 #### `SSubSat` / `USubSat` — Saturating subtract
@@ -642,6 +937,8 @@ Same semantics with subtraction.
 ---
 
 ### Integer Min/Max/Abs (5 instructions)
+
+**Effects**: `PURE_COMMUTATIVE` (min/max), `PURE` (abs)
 
 ---
 
@@ -655,11 +952,6 @@ Same semantics with subtraction.
 **Semantics**: Returns the smaller/larger of the two operands, using
 signed or unsigned comparison.
 
-```kotlin
-val minimum = smin(a, b)   // signed min
-val maximum = umax(a, b)   // unsigned max
-```
-
 ---
 
 #### `Abs` — Integer absolute value
@@ -672,9 +964,6 @@ val maximum = umax(a, b)   // unsigned max
 |-------|------|-------------|
 | `isIntMin` | `Boolean` | Result is poison when input is `INT_MIN` |
 
-**Semantics**: Returns `|operand|`. When `isIntMin = true`, the backend
-can use more efficient instructions that don't handle the `INT_MIN` case.
-
 ---
 
 ### Float Arithmetic (16 instructions)
@@ -685,22 +974,11 @@ can use more efficient instructions that don't handle the `INT_MIN` case.
 
 ```
 %result = fadd [fast-math-flags] <type> %lhs, %rhs
-%result = fsub [fast-math-flags] <type> %lhs, %rhs
-%result = fmul [fast-math-flags] <type> %lhs, %rhs
-%result = fdiv [fast-math-flags] <type> %lhs, %rhs
-%result = frem [fast-math-flags] <type> %lhs, %rhs
 ```
 
 **Constraints**: Both operands same float type.
 **Result type**: Same as operands.
-**Semantics**: IEEE 754 arithmetic. `FRem` computes the IEEE remainder
-(sign of result matches dividend, unlike C `fmod`).
-
-```kotlin
-val sum = fadd(x, y)
-val fast_sum = fadd(x, y, FastMathFlags.FAST)
-val product = fmul(x, y, FastMathFlags(reassoc = true, allowContract = true))
-```
+**Effects**: `PURE_COMMUTATIVE` (fadd, fmul), `PURE` (fsub, fdiv, frem)
 
 #### Fast-Math Flags
 
@@ -720,90 +998,53 @@ Presets: `FastMathFlags.NONE` (strict IEEE), `FastMathFlags.FAST` (all flags).
 
 #### `FNeg` — Float negation
 
-```
-%result = fneg [fast-math-flags] <type> %operand
-```
-
+**Effects**: `PURE`
 **Semantics**: Flips the sign bit. `fneg(-0.0) = +0.0`.
-
----
 
 #### `FAbs` — Float absolute value
 
-```
-%result = fabs <type> %operand
-```
-
-**Semantics**: Clears the sign bit. `fabs(-inf) = +inf`, `fabs(NaN)` = NaN
-with sign bit cleared.
-
----
+**Effects**: `PURE`
+**Semantics**: Clears the sign bit.
 
 #### `FMA` — Fused multiply-add
 
-```
-%result = fma <type> %a, %b, %c
-```
-
-**Semantics**: Computes `a * b + c` with a single rounding step (more
-accurate than separate multiply and add). Maps to hardware FMA instructions.
-
-```kotlin
-val result = fma(a, b, c)   // a*b + c, single rounding
-```
-
----
+**Effects**: `PURE`
+**Semantics**: Computes `a * b + c` with a single rounding step.
 
 #### `FMin` / `FMax` — IEEE 754 minimum/maximum
 
-```
-%result = fmin <type> %lhs, %rhs
-%result = fmax <type> %lhs, %rhs
-```
-
+**Effects**: `PURE_COMMUTATIVE`
 **Semantics**: IEEE 754-2019 minimum/maximum. If either operand is NaN,
-returns the non-NaN operand. `fmin(-0.0, +0.0) = -0.0`.
-
----
+returns the non-NaN operand.
 
 #### `Sqrt` — Square root
 
-```
-%result = sqrt <type> %operand
-```
+**Effects**: `PURE`
 
-**Semantics**: IEEE 754 square root. `sqrt(negative) = NaN`,
-`sqrt(+inf) = +inf`, `sqrt(-0.0) = -0.0`.
-
----
-
-#### `Ceil` / `Floor` / `Round` / `Trunc` — Rounding
+#### `Ceil` / `Floor` / `Round` / `FTrunc` — Rounding
 
 ```
 %result = ceil <type> %operand     ; round toward +inf
 %result = floor <type> %operand    ; round toward -inf
 %result = round <type> %operand    ; round to nearest, ties away from zero
-%result = trunc <type> %operand    ; round toward zero
+%result = ftrunc <type> %operand   ; round toward zero
 ```
 
-**Note**: `Trunc` (float rounding) is `Instruction.Trunc`. Integer truncation
-is `Instruction.IntTrunc`. In the builder, use `ftrunc()` for float rounding
-and `trunc()` for integer truncation.
+**Effects**: `PURE`
 
----
+**Note**: `FTrunc` is float rounding toward zero. Integer truncation is
+`IntTrunc`. In the builder, use `ftrunc()` for float rounding and `trunc()`
+for integer truncation.
 
 #### `CopySign` — Copy sign bit
 
-```
-%result = copysign <type> %magnitude, %sign
-```
-
+**Effects**: `PURE`
 **Semantics**: Returns a value with the magnitude of `magnitude` and the sign
 of `sign`.
 
 ---
 
-### Bitwise Operations (10 instructions)
+### Bitwise Operations (14 instructions)
 
 ---
 
@@ -815,17 +1056,13 @@ of `sign`.
 %result = xor <type> %lhs, %rhs
 ```
 
-**Constraints**: Both operands same integer type.
-**Result type**: Same as operands.
+**Effects**: `PURE_COMMUTATIVE`
 
 ---
 
 #### `Not` — Bitwise complement
 
-```
-%result = not <type> %operand
-```
-
+**Effects**: `PURE`
 **Semantics**: One's complement. Equivalent to `xor %operand, -1`.
 
 ---
@@ -836,10 +1073,8 @@ of `sign`.
 %result = shl [nuw] [nsw] <type> %lhs, %rhs
 ```
 
+**Effects**: `PURE`
 **Semantics**: Shift `lhs` left by `rhs` bits, filling with zeros.
-Shift amount must be less than bit width (UB otherwise).
-`nuw`: result is poison if any shifted-out bits are non-zero.
-`nsw`: result is poison if the sign bit changes.
 
 ---
 
@@ -849,8 +1084,8 @@ Shift amount must be less than bit width (UB otherwise).
 %result = lshr [exact] <type> %lhs, %rhs
 ```
 
+**Effects**: `PURE`
 **Semantics**: Shift right, filling with zeros (unsigned shift).
-`exact`: result is poison if any shifted-out bits are non-zero.
 
 ---
 
@@ -860,22 +1095,20 @@ Shift amount must be less than bit width (UB otherwise).
 %result = ashr [exact] <type> %lhs, %rhs
 ```
 
+**Effects**: `PURE`
 **Semantics**: Shift right, filling with the sign bit (signed shift).
 
 ---
 
-#### `RotateLeft` / `RotateRight` — Bit rotation
+#### `Rotl` / `Rotr` — Bit rotation
 
 ```
 %result = rotl <type> %value, %amount
 %result = rotr <type> %value, %amount
 ```
 
+**Effects**: `PURE`
 **Semantics**: Circular shift. Bits shifted out one end re-enter the other.
-
----
-
-### Bit Manipulation (5 instructions)
 
 ---
 
@@ -889,9 +1122,7 @@ Shift amount must be less than bit width (UB otherwise).
 |-------|------|-------------|
 | `isZeroPoison` | `Boolean` | Result is poison when operand is 0 |
 
-**Result type**: Same as operand.
-**Semantics**: Returns the number of leading zero bits. For an N-bit type,
-returns N when the operand is 0 (unless `isZeroPoison` is set).
+**Effects**: `PURE`
 
 ---
 
@@ -903,20 +1134,14 @@ Same structure as `Ctlz`. Counts from the least significant bit.
 
 #### `Ctpop` — Population count
 
-```
-%result = ctpop <type> %operand
-```
-
+**Effects**: `PURE`
 **Semantics**: Returns the number of set (1) bits.
 
 ---
 
 #### `BSwap` — Byte swap
 
-```
-%result = bswap <type> %operand
-```
-
+**Effects**: `PURE`
 **Constraints**: Operand bit width must be a multiple of 16.
 **Semantics**: Reverses the byte order. `bswap(0x12345678) = 0x78563412`.
 
@@ -924,10 +1149,7 @@ Same structure as `Ctlz`. Counts from the least significant bit.
 
 #### `BitReverse` — Bit reversal
 
-```
-%result = bitreverse <type> %operand
-```
-
+**Effects**: `PURE`
 **Semantics**: Reverses the order of all bits.
 
 ---
@@ -943,17 +1165,13 @@ Same structure as `Ctlz`. Counts from the least significant bit.
 ```
 
 **Result type**: `i1`.
+**Effects**: `PURE`
 
 | Predicate | Meaning |
 |-----------|---------|
 | `EQ` / `NE` | Equal / Not equal |
 | `UGT` / `UGE` / `ULT` / `ULE` | Unsigned comparisons |
 | `SGT` / `SGE` / `SLT` / `SLE` | Signed comparisons |
-
-```kotlin
-val isEqual = icmp(ICmpPredicate.EQ, a, b)
-val isLess = icmp(ICmpPredicate.SLT, a, b)    // signed less than
-```
 
 ---
 
@@ -964,6 +1182,7 @@ val isLess = icmp(ICmpPredicate.SLT, a, b)    // signed less than
 ```
 
 **Result type**: `i1`.
+**Effects**: `PURE`
 
 | Predicate | Meaning |
 |-----------|---------|
@@ -972,17 +1191,9 @@ val isLess = icmp(ICmpPredicate.SLT, a, b)    // signed less than
 | `UEQ` / `UGT` / `UGE` / `ULT` / `ULE` / `UNE` | Unordered (true if NaN) |
 | `ORD` / `UNO` | Neither is NaN / Either is NaN |
 
-**Ordered vs. Unordered**: Ordered comparisons return false if either operand
-is NaN. Unordered comparisons return true if either is NaN.
-
-```kotlin
-val lt = fcmp(FCmpPredicate.OLT, x, y)    // x < y, false if NaN
-val isNaN = fcmp(FCmpPredicate.UNO, x, x) // true if x is NaN
-```
-
 ---
 
-### Memory (14 instructions)
+### Memory (16 instructions)
 
 ---
 
@@ -999,15 +1210,7 @@ val isNaN = fcmp(FCmpPredicate.UNO, x, x) // true if x is NaN
 | `align` | `Int?` | Alignment in bytes |
 
 **Result type**: `Pointer(allocType)`.
-**Semantics**: Allocates space on the stack frame. Automatically freed on
-function return. Each `alloca` in a loop allocates additional stack space
-(use `stackSave`/`stackRestore` to avoid stack growth).
-
-```kotlin
-val ptr = alloca(Type.I32)                     // one i32
-val arr = alloca(Type.I32, numElements = i32(10))  // 10 i32s
-val aligned = alloca(Type.I32, align = 16)     // 16-byte aligned
-```
+**Effects**: `WRITES_STACK`
 
 ---
 
@@ -1017,22 +1220,8 @@ val aligned = alloca(Type.I32, align = 16)     // 16-byte aligned
 %val = load [volatile] <type>, ptr %ptr [, align <n>] [, <ordering>]
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `loadType` | `Type` | Type of value to load |
-| `ptr` | `Value` | Pointer to load from |
-| `align` | `Int?` | Alignment in bytes |
-| `volatile` | `Boolean` | Cannot be reordered/eliminated |
-| `ordering` | `AtomicOrdering?` | Atomic ordering (null = non-atomic) |
-
 **Result type**: `loadType`.
-**Semantics**: Reads a value from memory. Volatile loads cannot be optimized
-away or reordered with other volatile operations.
-
-```kotlin
-val v = load(Type.I32, ptr)
-val atomic = load(Type.I32, ptr, ordering = AtomicOrdering.ACQUIRE)
-```
+**Effects**: `READS_HEAP` (or `READS_ALL_MEMORY` for volatile)
 
 ---
 
@@ -1043,12 +1232,7 @@ store [volatile] <type> %val, ptr %ptr [, align <n>] [, <ordering>]
 ```
 
 **Result**: None (void instruction).
-**Semantics**: Writes a value to memory.
-
-```kotlin
-store(i32(42), ptr)
-store(value, ptr, ordering = AtomicOrdering.RELEASE)
-```
+**Effects**: `WRITES_HEAP`
 
 ---
 
@@ -1059,23 +1243,58 @@ store(value, ptr, ordering = AtomicOrdering.RELEASE)
 ```
 
 **Result type**: Pointer.
+**Effects**: `PURE`
 **Semantics**: Computes a pointer to a sub-element **without accessing memory**.
-The first index offsets from the base pointer. Subsequent indices drill into
-aggregate types.
 
-```kotlin
+```java
 // Array element: &base[i]
-val elemPtr = gep(Type.I32, basePtr, i32(i))
+Value elemPtr = b.gep(Type.I32, basePtr, new Constant.I32(i));
 
 // Struct field: &ptr->fields[2]
-val fieldPtr = gep(structType, ptr, i32(0), i32(2))
-
-// The first i32(0) means "don't offset the base pointer"
-// The second i32(2) means "third field of the struct"
+Value fieldPtr = b.gep(structType, ptr, new Constant.I32(0), new Constant.I32(2));
 ```
 
-`inBounds = true` (default): result is poison if the computed pointer is outside
-the allocated object. This enables alias analysis optimizations.
+---
+
+#### `MemCpy` / `MemSet` / `MemMove` — Bulk memory operations
+
+**Effects**: `WRITES_ALL_MEMORY` (with side effects)
+- `MemCpy`: copies `len` bytes. Source and destination must not overlap.
+- `MemSet`: fills `len` bytes with `val`.
+- `MemMove`: copies `len` bytes. Handles overlapping regions correctly.
+
+---
+
+#### `Prefetch` — Cache prefetch hint
+
+**Effects**: has side effects (hint to hardware)
+
+---
+
+#### `StackSave` / `StackRestore` — Save/restore stack pointer
+
+**Effects**: `READS_STACK` / `WRITES_STACK`
+
+#### `LifetimeStart` / `LifetimeEnd` — Lifetime markers
+
+**Effects**: has side effects (hints for stack slot reuse)
+
+---
+
+#### `VAStart` / `VAEnd` / `VACopy` / `VAArg` — Varargs
+
+```
+va_start ptr %ap
+va_end   ptr %ap
+va_copy  ptr %dst, ptr %src
+%val = va_arg ptr %ap, <type>
+```
+
+**Effects**: `WRITES_ALL_MEMORY` (vastart/vaend/vacopy), `READ_WRITE_ALL_MEMORY` (vaarg)
+
+---
+
+### Atomic Operations (3 instructions)
 
 ---
 
@@ -1085,9 +1304,7 @@ the allocated object. This enables alias analysis optimizations.
 fence [syncscope] <ordering>
 ```
 
-**Result**: None.
-**Semantics**: Memory barrier. Orders memory operations before and after the
-fence according to the specified ordering.
+**Effects**: `FENCE`
 
 ---
 
@@ -1099,15 +1316,7 @@ fence according to the specified ordering.
 ```
 
 **Result type**: `{<type>, i1}` — old value and success flag.
-**Semantics**: Atomically reads `*ptr`. If it equals `cmp`, stores `new`.
-Returns `{old_value, was_equal}`. `weak = true` allows spurious failures.
-
-```kotlin
-val result = cmpxchg(ptr, expected, desired,
-    AtomicOrdering.SEQ_CST, AtomicOrdering.MONOTONIC)
-val oldVal = extractValue(result, 0)
-val success = extractValue(result, 1)
-```
+**Effects**: `ATOMIC_RMW`
 
 ---
 
@@ -1118,6 +1327,7 @@ val success = extractValue(result, 1)
 ```
 
 **Result type**: Same as `val` (the old value).
+**Effects**: `ATOMIC_RMW`
 
 | Op | Operation |
 |----|-----------|
@@ -1128,62 +1338,11 @@ val success = extractValue(result, 1)
 | `UMAX` / `UMIN` | Unsigned max/min |
 | `FADD` / `FSUB` / `FMAX` / `FMIN` | Float operations |
 
-```kotlin
-val old = atomicRMW(AtomicRMWOp.ADD, ptr, i32(1), AtomicOrdering.SEQ_CST)
-```
-
----
-
-#### `MemCpy` / `MemSet` / `MemMove` — Bulk memory operations
-
-```
-memcpy  [volatile] ptr %dst, ptr %src, <len_type> %len
-memset  [volatile] ptr %dst, i8 %val, <len_type> %len
-memmove [volatile] ptr %dst, ptr %src, <len_type> %len
-```
-
-**Result**: None.
-- `MemCpy`: copies `len` bytes. Source and destination must not overlap.
-- `MemSet`: fills `len` bytes with `val`.
-- `MemMove`: copies `len` bytes. Handles overlapping regions correctly.
-
----
-
-#### `Prefetch` — Cache prefetch hint
-
-```
-prefetch ptr %addr, <rw>, <locality>, <cache_type>
-```
-
-- `rw`: 0 = read, 1 = write
-- `locality`: 0 (no locality) to 3 (high locality)
-- `cacheType`: 0 = instruction cache, 1 = data cache
-
----
-
-### Stack / Lifetime (4 instructions)
-
-#### `StackSave` / `StackRestore` — Save/restore stack pointer
-
-```
-%sp = stacksave
-stackrestore ptr %sp
-```
-
-Useful for dynamic stack allocation (e.g., `alloca` in loops).
-
-#### `LifetimeStart` / `LifetimeEnd` — Lifetime markers
-
-```
-lifetime.start ptr %p, <size>
-lifetime.end   ptr %p, <size>
-```
-
-Hints for stack slot reuse optimization.
-
 ---
 
 ### Conversions (13 instructions)
+
+**Effects**: All `PURE`.
 
 ---
 
@@ -1195,23 +1354,12 @@ Hints for stack slot reuse optimization.
 | `ZExt` | `zext(v, type)` | narrower int → wider int | Fill with zeros |
 | `SExt` | `sext(v, type)` | narrower int → wider int | Fill with sign bit |
 
-```kotlin
-val wide = sext(i8_val, Type.I64)    // i8 → i64, sign-extended
-val narrow = trunc(i32_val, Type.I8) // i32 → i8, drop top 24 bits
-val zero = zext(i8_val, Type.I32)    // i8 → i32, zero-extended
-```
-
 #### Float Conversions
 
 | Instruction | Builder | From → To | Operation |
 |-------------|---------|-----------|-----------|
 | `FPTrunc` | `fptrunc(v, type)` | wider float → narrower float | Round to fit |
 | `FPExt` | `fpext(v, type)` | narrower float → wider float | Extend precision |
-
-```kotlin
-val single = fptrunc(f64_val, Type.F32)  // f64 → f32 (may lose precision)
-val dbl = fpext(f32_val, Type.F64)       // f32 → f64 (exact)
-```
 
 #### Float ↔ Integer Conversions
 
@@ -1221,11 +1369,6 @@ val dbl = fpext(f32_val, Type.F64)       // f32 → f64 (exact)
 | `FPToSI` | `fptosi(v, type)` | float → signed int | Truncate toward zero |
 | `UIToFP` | `uitofp(v, type)` | unsigned int → float | Nearest representable |
 | `SIToFP` | `sitofp(v, type)` | signed int → float | Nearest representable |
-
-```kotlin
-val fp = sitofp(int_val, Type.F64)    // signed i32 → f64
-val i = fptosi(fp_val, Type.I32)      // f64 → i32 (truncates toward zero)
-```
 
 #### Pointer Conversions
 
@@ -1251,11 +1394,11 @@ ret <type> %val
 ret void
 ```
 
-**Constraints**: Return value type must match function's return type.
+**Effects**: `RETURN`
 
-```kotlin
-ret(i32(0))   // return 0
-ret()          // return void
+```java
+b.ret(new Constant.I32(0));   // return 0
+b.ret();                       // return void
 ```
 
 ---
@@ -1266,8 +1409,10 @@ ret()          // return void
 br label %target
 ```
 
-```kotlin
-br("next_block")
+**Effects**: `BRANCH`
+
+```java
+b.br(nextBlock);
 ```
 
 ---
@@ -1278,10 +1423,11 @@ br("next_block")
 br i1 %cond, label %true, label %false
 ```
 
+**Effects**: `CONDITIONAL_BRANCH`
 **Constraints**: `condition` must be `i1`.
 
-```kotlin
-condBr(cond, "then", "else")
+```java
+b.condBr(cond, thenBlock, elseBlock);
 ```
 
 ---
@@ -1295,45 +1441,30 @@ switch <type> %val, label %default [
 ]
 ```
 
-**Constraints**: Case values must be constants with the same type as `val`.
+**Effects**: `CONDITIONAL_BRANCH`
 
-```kotlin
-switch(value, "default", listOf(
-    i32(0) to "case_zero",
-    i32(1) to "case_one",
-))
+```java
+b.switchBr(value, defaultBlock, List.of(
+    new Pair<>(new Constant.I32(0), caseZeroBlock),
+    new Pair<>(new Constant.I32(1), caseOneBlock)
+));
 ```
 
 ---
 
 #### `IndirectBr` — Indirect branch
 
-```
-indirectbr ptr %addr, [label %t1, label %t2, ...]
-```
-
+**Effects**: `BRANCH`
 **Semantics**: Branch to address. Target list is for the verifier/optimizer.
-
----
 
 #### `Unreachable` — Mark unreachable code
 
-```
-unreachable
-```
-
-**Semantics**: If execution reaches this point, behavior is undefined. Used
-after `noreturn` calls or in impossible branches.
-
----
+**Effects**: `TRAP`
+**Semantics**: If execution reaches this point, behavior is undefined.
 
 #### `Trap` / `DebugTrap` — Abort / breakpoint
 
-```
-trap
-debugtrap
-```
-
+**Effects**: `TRAP`
 `Trap` aborts immediately. `DebugTrap` hits a debugger breakpoint.
 
 ---
@@ -1356,11 +1487,11 @@ debugtrap
 | `callingConv` | `CallingConvention` | Calling convention |
 | `tailCall` | `TailCallKind` | Tail call optimization |
 
-```kotlin
-val result = call("add", listOf(a, b), Type.I32)   // direct call
-call("printf", listOf(fmt), Type.Void)              // void call
-call(funcPtr, listOf(arg), Type.I32,                // indirect call
-    tailCall = TailCallKind.MUSTTAIL)
+**Effects**: `CALL`
+
+```java
+Value result = b.call(addFunction, List.of(a, b), Type.I32);
+b.call(printfRef, List.of(fmt), Type.Void);
 ```
 
 ---
@@ -1372,6 +1503,7 @@ call(funcPtr, listOf(arg), Type.I32,                // indirect call
     to label %normal unwind label %unwind
 ```
 
+**Effects**: `INVOKE` (call + may throw + terminator)
 **Semantics**: Like `Call`, but if the callee throws, control goes to
 `unwindDest` instead of `normalDest`. This is a **terminator**.
 
@@ -1379,11 +1511,7 @@ call(funcPtr, listOf(arg), Type.I32,                // indirect call
 
 #### `CallBr` — Call with multiple successors
 
-```
-[%result =] callbr <ret_type> @func(<args>)
-    to label %fallthrough [label %indirect1, ...]
-```
-
+**Effects**: `CALL` + `IS_TERMINATOR`
 Used with inline assembly that may branch to multiple destinations.
 
 ---
@@ -1402,31 +1530,6 @@ Used with inline assembly that may branch to multiple destinations.
 | `AAPCS` / `AAPCS_VFP` | ARM |
 | `WASM` | WebAssembly |
 | `GHC` / `HHVM` | Haskell / HipHop VM |
-
----
-
-### Varargs (4 instructions)
-
-#### `VAStart` / `VAEnd` / `VACopy` / `VAArg`
-
-```
-va_start ptr %ap
-va_end   ptr %ap
-va_copy  ptr %dst, ptr %src
-%val = va_arg ptr %ap, <type>
-```
-
-```kotlin
-function("variadic", listOf(Param("n", Type.I32)), Type.Void, isVarArg = true) {
-    block("entry") {
-        val ap = alloca(Type.OpaquePointer)
-        vaStart(ap)
-        val arg1 = vaArg(ap, Type.I32)
-        vaEnd(ap)
-        ret()
-    }
-}
-```
 
 ---
 
@@ -1463,7 +1566,7 @@ block("handler") {
 
 ---
 
-### SSA (3 instructions)
+### SSA (4 instructions)
 
 ---
 
@@ -1473,17 +1576,16 @@ block("handler") {
 %result = phi <type> [%val1, %block1], [%val2, %block2], ...
 ```
 
+**Effects**: `PURE`
 **Constraints**: Must appear at the beginning of a block (before non-phi
 instructions). All incoming values must have the same type. Each predecessor
 block must have exactly one entry.
 
-```kotlin
-block("merge") {
-    val result = phi(Type.I32, listOf(
-        i32(0) to "entry",
-        nextI to "loop_body"
-    ))
-}
+```java
+Value result = b.phi(Type.I32, List.of(
+    new Pair<>(new Constant.I32(0), entryBlock),
+    new Pair<>(nextI, loopBodyBlock)
+));
 ```
 
 ---
@@ -1494,12 +1596,8 @@ block("merge") {
 %result = select i1 %cond, <type> %true_val, <type> %false_val
 ```
 
-Like a ternary operator. Unlike `CondBr`, this is not a terminator —
-both values are computed and one is selected.
-
-```kotlin
-val max = select(icmp(ICmpPredicate.SGT, a, b), a, b)
-```
+**Effects**: `PURE`
+Like a ternary operator. Unlike `CondBr`, this is not a terminator.
 
 ---
 
@@ -1509,13 +1607,29 @@ val max = select(icmp(ICmpPredicate.SGT, a, b), a, b)
 %result = freeze <type> %val
 ```
 
+**Effects**: `PURE`
 **Semantics**: If `val` is undef or poison, returns an arbitrary but fixed
-value. If `val` is a normal value, returns it unchanged. Prevents poison
-propagation.
+value. If `val` is a normal value, returns it unchanged.
+
+---
+
+#### `PiNode` — Type refinement pseudo-instruction
+
+```
+%result = pi <type> %base, refined <refined_type>
+```
+
+**Effects**: `PURE`
+**Semantics**: Produces a new SSA value with a narrowed type for a value proven
+to be of that type at a given program point (e.g., after a guard). Emits no
+machine code — eliminated before instruction selection by the `PiNodeElimination`
+pass.
 
 ---
 
 ### Vector Operations (5 instructions)
+
+**Effects**: All `PURE`.
 
 ---
 
@@ -1525,17 +1639,11 @@ propagation.
 %elem = extractelement <vec_type> %vec, i32 %idx
 ```
 
-**Result type**: Element type of the vector.
-
----
-
 #### `InsertElement` — Insert scalar into vector
 
 ```
 %new_vec = insertelement <vec_type> %vec, <elem_type> %elem, i32 %idx
 ```
-
----
 
 #### `ShuffleVector` — Shuffle lanes from two vectors
 
@@ -1543,29 +1651,11 @@ propagation.
 %result = shufflevector <vec_type> %v1, <vec_type> %v2, <mask>
 ```
 
-**Result type**: Vector with `len(mask)` lanes.
-
-```kotlin
-// Interleave two 4-element vectors into an 8-element vector
-val interleaved = shuffleVector(v1, v2, listOf(0, 4, 1, 5, 2, 6, 3, 7))
-
-// Reverse a 4-element vector
-val reversed = shuffleVector(v, v, listOf(3, 2, 1, 0))
-```
-
----
-
 #### `Splat` — Broadcast scalar to vector
 
 ```
 %vec = splat <elem_type> %scalar, <vec_type>
 ```
-
-```kotlin
-val broadcast = splat(f32(1.0f), Type.Vector(Type.F32, 4))  // <1.0, 1.0, 1.0, 1.0>
-```
-
----
 
 #### `VectorReduce` — Reduce vector to scalar
 
@@ -1580,24 +1670,16 @@ val broadcast = splat(f32(1.0f), Type.Vector(Type.F32, 4))  // <1.0, 1.0, 1.0, 1
 | `SMIN` / `SMAX` / `UMIN` / `UMAX` | Integer min/max |
 | `FADD` / `FMUL` / `FMIN` / `FMAX` | Float reduction |
 
-```kotlin
-val sum = vectorReduce(VectorReduceOp.ADD, intVec)
-val hmax = vectorReduce(VectorReduceOp.FMAX, floatVec)
-```
-
 ---
 
 ### Aggregate Operations (2 instructions)
+
+**Effects**: `PURE`.
 
 #### `ExtractValue` — Extract from struct/array
 
 ```
 %field = extractvalue <agg_type> %agg, <idx1> [, <idx2>, ...]
-```
-
-```kotlin
-val y = extractValue(point, 1)         // second field
-val nested = extractValue(outer, 0, 2) // field 2 of field 0
 ```
 
 #### `InsertValue` — Insert into struct/array
@@ -1608,36 +1690,32 @@ val nested = extractValue(outer, 0, 2) // field 2 of field 0
 
 ---
 
-### Debug / Metadata (3 instructions)
+### Debug / Metadata (5 instructions)
 
 #### `DebugLoc` — Source location
 
-```kotlin
-debugLoc(42, 10, "main.c")
-debugLoc(42, 10, "main.c", inlinedAt = "caller.c:100")
+```java
+b.debugLoc(42, 10, "main.c");
+b.debugLoc(42, 10, "main.c", "caller.c:100");
 ```
 
 #### `DebugValue` / `DebugDeclare` — Variable tracking
 
-```kotlin
-debugValue("x", someValue)
-debugDeclare("arr", allocaPtr)
+```java
+b.debugValue("x", someValue);
+b.debugDeclare("arr", allocaPtr);
 ```
-
----
-
-### Optimizer Hints (2 instructions)
 
 #### `Assume` — Assert condition for optimizer
 
-```kotlin
-assume(icmp(ICmpPredicate.SGT, len, i32(0)))  // optimizer can assume len > 0
+```java
+b.assume(b.icmp(ICmpPredicate.SGT, len, new Constant.I32(0)));
 ```
 
 #### `Expect` — Branch prediction hint
 
-```kotlin
-val likely = expect(flag, i1(true))  // flag is expected to be true
+```java
+Value likely = b.expect(flag, new Constant.I1(true));
 ```
 
 ---
@@ -1646,21 +1724,15 @@ val likely = expect(flag, i1(true))  // flag is expected to be true
 
 #### `InlineAsm` — Inline assembly
 
-```kotlin
-val result = inlineAsm(
-    assembly = "mov \$1, \$0",
-    constraints = "=r,r",
-    args = listOf(input),
-    returnType = Type.I32,
-    sideEffects = true,
-    dialect = AsmDialect.ATT    // or INTEL
-)
+```java
+Value result = b.inlineAsm("mov $1, $0", "=r,r", List.of(input),
+    Type.I32, true, AsmDialect.ATT);
 ```
 
 #### `Intrinsic` — Target-specific operation
 
-```kotlin
-val result = intrinsic("llvm.x86.sse2.pmovmskb.128", listOf(vec), Type.I32)
+```java
+Value result = b.intrinsic("llvm.x86.sse2.pmovmskb.128", List.of(vec), Type.I32);
 ```
 
 ---
@@ -1675,30 +1747,24 @@ for native backends.
 
 #### `NewObject` — Allocate object
 
-```
-%obj = new <ClassName> [<TypeArgs>]
-```
+**Effects**: `OBJECT_ALLOC`
 
-```kotlin
-val obj = newObject("Point")
-val generic = newObject("List", typeArgs = listOf(Type.I32))
+```java
+Value obj = b.newObject("Point");
+Value generic = b.newObject("List", List.of(Type.I32));
 ```
 
 #### `NewArray` — Allocate managed array
 
-```
-%arr = newarray <elem_type>, <size_type> %size
-```
+**Effects**: `OBJECT_ALLOC`
 
-```kotlin
-val arr = newArray(Type.I32, i32(10))
+```java
+Value arr = b.newArray(Type.I32, new Constant.I32(10));
 ```
 
 #### `NewMultiArray` — Allocate multi-dimensional array
 
-```
-%arr = newmultiarray <elem_type>, [%dim1, %dim2, ...]
-```
+**Effects**: `OBJECT_ALLOC`
 
 ---
 
@@ -1706,22 +1772,16 @@ val arr = newArray(Type.I32, i32(10))
 
 #### `GetField` / `PutField` — Instance fields
 
-```
-%val = getfield <Class>.<field>: <type>, %obj
-putfield <Class>.<field>: <type>, %obj, %val
-```
+**Effects**: `READS_HEAP` (get), `WRITES_HEAP` (put)
 
-```kotlin
-val x = getField(point, "Point", "x", Type.F64)
-putField(point, "Point", "x", Type.F64, f64(5.0))
+```java
+Value x = b.getField(point, "Point", "x", Type.F64);
+b.putField(point, "Point", "x", Type.F64, new Constant.F64(5.0));
 ```
 
 #### `GetStatic` / `PutStatic` — Static fields
 
-```
-%val = getstatic <Class>.<field>: <type>
-putstatic <Class>.<field>: <type>, %val
-```
+**Effects**: `READS_HEAP` (get), `WRITES_HEAP` (put)
 
 ---
 
@@ -1729,47 +1789,31 @@ putstatic <Class>.<field>: <type>, %val
 
 #### `VirtualCall` — Virtual method dispatch
 
-```
-%r = virtualcall %obj.<Class>::<method>(<args>): <ret_type>
-```
-
+**Effects**: `CALL`
 Dispatches through the vtable. The actual method called depends on the
 runtime type of `obj`.
 
 #### `InterfaceCall` — Interface method dispatch
 
-```
-%r = interfacecall %obj.<Interface>::<method>(<args>): <ret_type>
-```
+**Effects**: `CALL`
 
 #### `SpecialCall` — Direct call (super/private/init)
 
-```
-%r = specialcall %obj.<Class>::<method>(<args>): <ret_type>
-```
-
+**Effects**: `CALL`
 No virtual dispatch. Used for `super` calls, private methods, and constructors.
 
 #### `StaticCall` — Static method call
 
-```
-%r = staticcall <Class>::<method>(<args>): <ret_type>
-```
+**Effects**: `CALL`
 
 #### `DynamicCall` — invokedynamic-style dispatch
 
-```
-%r = dynamiccall <bootstrap> "<name>" (<args>): <ret_type>
-```
-
+**Effects**: `CALL`
 Used for lambdas, string concatenation, and other dynamic dispatch in JVM.
 
 #### `ConstructorCall` — Constructor invocation
 
-```
-constructorcall %obj.<Class>::<init>(<args>)
-```
-
+**Effects**: `CALL`
 **Result**: None (void). Initializes `obj` in place.
 
 ---
@@ -1778,30 +1822,27 @@ constructorcall %obj.<Class>::<init>(<args>)
 
 #### `InstanceOf` — Type check
 
-```
-%b = instanceof %obj, <Type>    ; result: i1
-```
+**Effects**: `PURE`
+**Result type**: `i1`
 
 #### `CheckCast` — Type cast
 
-```
-%c = checkcast %obj to <Type>   ; throws on failure
-```
+**Effects**: can throw, has side effects
+**Semantics**: Throws on failure.
 
 #### `TypeId` — Runtime type identifier
 
-```
-%t = typeid %obj                ; result: i32
-```
+**Effects**: `PURE`
+**Result type**: `i32`
 
 ---
 
 ### Managed Array Operations (3 instructions)
 
-```kotlin
-val len = arrayLength(arr)                    // %0 = arraylength %arr
-val elem = arrayGet(arr, i32(0), Type.I32)    // %1 = arrayget i32 %arr, 0
-arraySet(arr, i32(0), i32(42), Type.I32)      // arrayset i32 %arr, 0, 42
+```java
+Value len = b.arrayLength(arr);
+Value elem = b.arrayGet(arr, new Constant.I32(0), Type.I32);
+b.arraySet(arr, new Constant.I32(0), new Constant.I32(42), Type.I32);
 ```
 
 Includes bounds checking on managed backends (unlike raw load/store).
@@ -1810,9 +1851,11 @@ Includes bounds checking on managed backends (unlike raw load/store).
 
 ### Monitor / Synchronization (2 instructions)
 
-```kotlin
-monitorEnter(lockObj)    // acquire object monitor
-monitorExit(lockObj)     // release object monitor
+**Effects**: `MONITOR`
+
+```java
+b.monitorEnter(lockObj);
+b.monitorExit(lockObj);
 ```
 
 ---
@@ -1821,94 +1864,365 @@ monitorExit(lockObj)     // release object monitor
 
 #### `Throw` — Throw exception (terminator)
 
-```kotlin
-throwException(exceptionObj)
+**Effects**: `MANAGED_THROW`
+
+```java
+b.throwException(exceptionObj);
 ```
 
 #### `TryCatchRegion` — Try/catch/finally
 
-```kotlin
-tryCatch("try_body", listOf(
-    CatchHandler(Type.ClassRef("IOException"), "io_handler"),
-    CatchHandler(Type.ClassRef("Exception"), "generic_handler"),
-), finallyBlock = "cleanup")
+```java
+b.tryCatch(tryBlock, List.of(
+    new CatchHandler(Type.ClassRef("IOException"), ioHandlerBlock),
+    new CatchHandler(Type.ClassRef("Exception"), genericHandlerBlock)
+), cleanupBlock);
 ```
 
 ---
 
 ### Boxing / Unboxing (2 instructions)
 
-```kotlin
-val boxed = box(i32(42), Type.ClassRef("Integer"))
-val unboxed = unbox(boxed, Type.I32)
+```java
+Value boxed = b.box(new Constant.I32(42), Type.ClassRef("Integer"));
+Value unboxed = b.unbox(boxed, Type.I32);
 ```
 
 ---
 
-### Closures / Lambdas (2 instructions)
+### Closures / Lambdas (3 instructions)
 
-```kotlin
-val closure = closureCreate(funcRef, captures = listOf(x, y), closureType)
-val result = closureInvoke(closure, args = listOf(i32(5)), Type.I32)
+#### `ClosureCreate` — Create closure
+
+**Effects**: `OBJECT_ALLOC`
+
+```java
+Value closure = b.closureCreate(funcRef, List.of(x, y), closureType);
 ```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `escaping` | `Boolean` | If false, environment may be stack-allocated (default: true) |
+
+#### `ClosureInvoke` — Invoke closure
+
+**Effects**: `CALL`
+
+```java
+Value result = b.closureInvoke(closure, List.of(new Constant.I32(5)), Type.I32);
+```
+
+#### `ClosureInvokeOnce` — Invoke with move semantics (FnOnce)
+
+**Effects**: `CALL`
+**Semantics**: The closure value is consumed on invocation — no further uses
+are legal. The verifier checks that the closure SSA value has no uses after
+`ClosureInvokeOnce`. Lowers to the same indirect call as `ClosureInvoke`.
 
 ---
 
 ### Tagged Unions / ADTs (4 instructions)
 
-```kotlin
-val some = constructVariant(optionType, "Some", listOf(i32(42)))
-
-tagSwitch(optionVal, listOf(
-    "Some" to "handle_some",
-    "None" to "handle_none",
-))
-
-// In handle_some:
-val inner = getVariantField(optionVal, "Some", 0, Type.I32)
-val tag = getTag(optionVal)
+```java
+Value some = b.constructVariant(optionType, "Some", List.of(new Constant.I32(42)));
+b.tagSwitch(optionVal, List.of(
+    new Pair<>("Some", handleSomeBlock),
+    new Pair<>("None", handleNoneBlock)
+));
+Value inner = b.getVariantField(optionVal, "Some", 0, Type.I32);
+Value tag = b.getTag(optionVal);
 ```
 
 ---
 
-### GC Integration (3 instructions)
+### Catch and Weak References (4 instructions)
 
-```kotlin
-val obj = gcAlloc(Type.ClassRef("Node"))
-gcRoot(localPtr, null)    // register stack root with GC
-gcSafepoint()             // allow GC to run here
+#### `CatchValue` — Retrieve caught exception
+
+**Effects**: has side effects
+
+```java
+Value exception = b.catchValue(Type.ClassRef("Exception"));
 ```
+
+#### `MakeWeakRef` — Create weak reference
+
+**Effects**: writes heap
+
+#### `ReadWeakRef` — Read weak reference
+
+**Effects**: reads heap
+**Semantics**: Returns null if the referent has been collected.
+
+#### `ClearWeakRef` — Clear weak reference
+
+**Effects**: writes heap
+
+---
+
+### GC Integration (4 instructions)
+
+```java
+Value obj = b.gcAlloc(Type.ClassRef("Node"));
+b.gcRoot(localPtr, null);
+b.gcSafepoint();
+```
+
+#### `GCRelocate` — Post-safepoint reference relocation
+
+**Effects**: `PURE`
+**Semantics**: After any instruction with `isSafepoint=true`, live GC references
+may have been moved by a compacting collector. `GCRelocate` produces a new SSA
+value representing the post-safepoint location. For non-moving GC strategies,
+`GCRelocate` is the identity and is eliminated.
+
+```java
+Value relocated = b.gcRelocate(safepointInst, baseRef, derivedRef);
+```
+
+---
+
+### Write / Read Barriers (2 instructions)
+
+```java
+b.writeBarrier(obj, fieldIndex, value);
+Value loaded = b.readBarrier(ref);
+```
+
+**Effects**: `WRITE_BARRIER` / `READS_HEAP`
 
 ---
 
 ### Reference Counting (3 instructions)
 
-```kotlin
-refRetain(sharedObj)      // increment ref count
-refRelease(sharedObj)     // decrement (may dealloc at 0)
-val count = refCount(obj) // get current count
+```java
+b.refRetain(sharedObj);
+b.refRelease(sharedObj);
+Value count = b.refCount(obj);
 ```
 
 ---
 
 ### Coroutines (6 instructions)
 
-```kotlin
-val frameSize = coroSize()
-val mem = call("malloc", listOf(frameSize), Type.OpaquePointer)!!
-val handle = coroBegin(coroId, mem)
-
-// Suspend point
-val state = coroSuspend(null, isFinal = false)
-// state: 0 = resumed, 1 = cleanup
-
-// Resume from another context
-coroResume(handle)
-
-// Cleanup
-coroEnd(handle, unwind = false)
-coroDestroy(handle)
+```java
+Value frameSize = b.coroSize();
+Value handle = b.coroBegin(coroId, mem);
+Value state = b.coroSuspend(null, false);
+b.coroResume(handle);
+b.coroEnd(handle, false);
+b.coroDestroy(handle);
 ```
+
+---
+
+### Interop (6 instructions)
+
+#### `Pin` / `Unpin` — Pin/unpin managed objects
+
+**Effects**: has side effects
+**Semantics**: Prevents GC from relocating the object while pinned.
+
+#### `InteriorPtr` — Interior pointer
+
+**Effects**: `PURE`
+**Semantics**: Computes a pointer to an element within a managed object.
+
+#### `ManagedCall` — Cross-boundary call
+
+**Effects**: `CALL`
+**Semantics**: Calls across the managed/native boundary with appropriate
+transition logic.
+
+#### `ManagedToDevice` — Transfer to GPU
+
+**Effects**: has side effects
+**Semantics**: Pins a managed reference into GPU-accessible memory.
+
+#### `DeviceRelease` — Release GPU pin
+
+**Effects**: has side effects
+**Semantics**: Releases a ManagedToDevice pin after confirming no in-flight
+kernel holds the pointer.
+
+---
+
+## Instruction Reference: Deoptimization
+
+Deoptimization instructions support JIT compilation with speculative
+optimization. These are in the `DEOPTIMIZATION` category and require the
+`IrConstraints.JIT` preset.
+
+### `FrameState` — Capture interpreter state
+
+**Effects**: `PURE` (pseudo-instruction, not emitted as machine code)
+
+```java
+b.frameState(methodRef, bci, locals, stack, locks, outerFrame, virtualObjects);
+```
+
+Captures interpreter state for deoptimization. Must exist for every instruction
+with `mayDeopt=true` or `isSafepoint=true` in managed compilation contexts.
+
+### `Guard` — Floating conditional deoptimization
+
+**Effects**: has side effects
+
+```java
+b.guard(condition, false, DeoptReason.NULL_CHECK, DeoptAction.INVALIDATE_RECOMPILE,
+    null, frameState);
+```
+
+Deoptimize if condition is false (or true if negated). May float freely
+between its anchor and the first use of any value it protects. Lowered by
+the `GuardLowering` pass to `CondBr` + `Deoptimize` stub blocks.
+
+### `FixedGuard` — Control-flow-fixed guard
+
+**Effects**: has side effects
+
+Unlike `Guard`, `FixedGuard` is structurally fixed in the control flow and
+cannot float. Must be lowered to an explicit conditional branch.
+
+### `Deoptimize` — Unconditional deoptimization (terminator)
+
+**Effects**: terminator, has side effects
+
+Must be the last instruction in a basic block. Immediately triggers
+deoptimization with the attached frame state.
+
+### `OSREntry` — On-stack replacement entry
+
+**Effects**: `PURE`
+
+Used to transition from the interpreter to compiled code at a loop header.
+
+### Supporting Types
+
+| Type | Values |
+|------|--------|
+| `DeoptReason` | `NULL_CHECK`, `BOUNDS_CHECK`, `CLASS_CAST`, `ARRAY_STORE`, `ARITHMETIC_EXCEPTION`, `TYPE_CHECK_VIOLATED`, `UNREACHED_CODE`, `ALIASING`, `TRANSFER_TO_INTERPRETER`, `RUNTIME_CONSTRAINT`, `SPECULATIVE_INLINING`, `LOOP_LIMIT_CHECK` |
+| `DeoptAction` | `NONE`, `INVALIDATE_REPROFILE`, `INVALIDATE_RECOMPILE`, `INVALIDATE_STOP_COMPILING` |
+| `SpeculationId` | Stable identifier for speculative assumptions |
+| `VirtualObjectState` | Escape-analyzed object (type + fields) for FrameState materialization |
+| `MonitorId` | Opaque identifier for locks in FrameState |
+
+---
+
+## Instruction Reference: Compute
+
+Compute instructions represent operations specific to massively parallel
+execution contexts (GPU kernels). These are in the `COMPUTE` category and
+require the `IrConstraints.COMPUTE_KERNEL` preset.
+
+### Thread/Grid Identification (6 instructions)
+
+**Effects**: `PURE` — hardware register reads.
+
+| Instruction | Description | Result |
+|-------------|-------------|--------|
+| `ThreadId(dim)` | Thread ID within block | `i32` |
+| `BlockId(dim)` | Block ID within grid | `i32` |
+| `WarpId` | Warp/wavefront ID within block | `i32` |
+| `LaneId` | Lane ID within warp | `i32` |
+| `BlockDim(dim)` | Threads per block in dimension | `i32` |
+| `GridDim(dim)` | Blocks in grid in dimension | `i32` |
+
+`dim` is a `ThreadDim` enum: `X`, `Y`, or `Z`.
+
+```java
+Value threadX = b.threadId(ThreadDim.X);
+Value blockSize = b.blockDim(ThreadDim.X);
+Value globalIdx = b.add(b.mul(b.blockId(ThreadDim.X), blockSize), threadX);
+```
+
+### Synchronization (2 instructions)
+
+#### `ComputeBarrier` — Thread synchronization
+
+**Effects**: has side effects
+**Semantics**: All threads in the scope must reach the barrier before any can
+proceed. Scope is a `ComputeScope` enum: `WARP`, `BLOCK`, or `DEVICE`.
+
+#### `ComputeFence` — Memory ordering fence
+
+**Effects**: has side effects
+**Semantics**: Ensures memory operations are visible to threads at the specified
+scope. Takes a `ComputeScope` and `MemorySpace`.
+
+### Kernel Launch (1 instruction)
+
+#### `KernelLaunch` — Launch compute kernel
+
+**Effects**: has side effects
+**Semantics**: Host-side instruction that launches a kernel asynchronously.
+
+```java
+b.kernelLaunch(kernelFn, gridDims, blockDims, sharedMemSize, stream, args);
+```
+
+### Compute Atomics (4 instructions)
+
+**Effects**: reads + writes heap, has side effects.
+
+| Instruction | Operation |
+|-------------|-----------|
+| `ComputeAtomicAdd` | GPU-native atomic add |
+| `ComputeAtomicMin` | GPU-native atomic min |
+| `ComputeAtomicMax` | GPU-native atomic max |
+| `ComputeAtomicCAS` | GPU-native compare-and-swap |
+
+All take a pointer, value, `AtomicOrdering`, and `MemorySpace`.
+
+### Warp Shuffle (4 instructions)
+
+**Effects**: `PURE` — intra-warp register exchange.
+
+| Instruction | Source Lane |
+|-------------|------------|
+| `WarpShuffle` | Arbitrary source lane |
+| `WarpShuffleDown` | Current lane + delta |
+| `WarpShuffleUp` | Current lane - delta |
+| `WarpShuffleXor` | Current lane XOR mask |
+
+All return the same type as their value operand. Optional `width` parameter
+(default 32) for sub-warp operations.
+
+### Warp Vote (2 instructions)
+
+**Effects**: `PURE`
+
+| Instruction | Description | Result |
+|-------------|-------------|--------|
+| `Ballot` | Bitmask of lanes where predicate is true | `i32` |
+| `WarpVote(op)` | Lane-predicate reduction | `i1` |
+
+`VoteOp` enum: `ALL` (all lanes true?), `ANY` (any lane true?), `BALLOT`.
+
+### Shared Memory (1 instruction)
+
+#### `SharedMemAlloc` — Allocate workgroup-local memory
+
+**Effects**: has side effects
+**Result type**: `ptr`
+**Semantics**: Memory is shared among all threads in the block.
+
+### Divergence (1 instruction)
+
+#### `DivergentBranch` — Branch with expected lane divergence
+
+**Effects**: terminator, branch, divergent, has side effects
+**Semantics**: Signals that different lanes may take different paths. May be
+lowered to predicated instructions.
+
+### Supporting Types
+
+| Type | Values |
+|------|--------|
+| `ThreadDim` | `X`, `Y`, `Z` |
+| `ComputeScope` | `WARP`, `BLOCK`, `DEVICE` |
+| `MemorySpace` | `GENERIC(0)`, `GLOBAL(1)`, `CONSTANT(2)`, `SHARED(3)`, `LOCAL(4)`, `MANAGED_HEAP(5)` |
+| `VoteOp` | `ALL`, `ANY`, `BALLOT` |
 
 ---
 
@@ -2048,6 +2362,24 @@ See source files `Module.kt` for full data class definitions.
 
 `GENERAL_DYNAMIC`, `LOCAL_DYNAMIC`, `INITIAL_EXEC`, `LOCAL_EXEC`
 
+### CaptureMode
+
+| Value | Description |
+|-------|-------------|
+| `BY_VALUE` | Capture by value (copy) |
+| `BY_REF` | Capture by shared reference |
+| `BY_MUT_REF` | Capture by mutable reference |
+
+### BarrierType
+
+| Value | Description |
+|-------|-------------|
+| `FIELD` | Instance field store |
+| `ARRAY` | Array element store |
+| `WEAK_FIELD` | Weak reference field |
+| `STATIC` | Static field store |
+| `UNKNOWN` | Unclassified barrier |
+
 ### Other Enums
 
 - **`UnnamedAddr`**: `NONE`, `UNNAMED_ADDR`, `LOCAL_UNNAMED_ADDR`
@@ -2057,6 +2389,7 @@ See source files `Module.kt` for full data class definitions.
 - **`MemberVisibility`**: `PUBLIC`, `PROTECTED`, `PACKAGE_PRIVATE`, `PRIVATE`
 - **`AnnotationRetention`**: `SOURCE`, `CLASS`, `RUNTIME`
 - **`TypeVariance`**: `INVARIANT`, `COVARIANT`, `CONTRAVARIANT`
+- **`ManagedCallDirection`**: `MANAGED_TO_NATIVE`, `NATIVE_TO_MANAGED`
 
 ---
 
@@ -2128,38 +2461,70 @@ function("flexible", listOf(Param("x", Type.I32)), Type.I32) {
 ## Imperative Builder (IrBuilder)
 
 `IrBuilder` provides LLVM IRBuilder-style semantics for compiler frontends.
-Instead of nested DSL blocks, you create blocks and switch insertion points
-freely.
+It manages module structure (functions, blocks, globals, types) while
+`InstructionBuilder` handles instruction emission through scoped interfaces.
 
-```kotlin
-val ir = IrBuilder("my_module")
-ir.targetTriple = "x86_64-unknown-linux-gnu"
+### Java Example
 
-// Declare external functions
-ir.declareFunction("printf", listOf(Param("fmt", Type.OpaquePointer)), Type.I32, isVarArg = true)
+```java
+IrBuilder ir = new IrBuilder("my_module", Target.x86_64());
+NativeScope b = ir.createInstructionBuilder(NativeScope.class);
+
+// Declare external function
+FunctionRef printf = ir.declareFunction("printf",
+    List.of(Param.of("fmt", Type.OpaquePointer)), Type.I32, true);
 
 // Add globals
-val counter = ir.addGlobal("counter", Type.I32, i32(0))
+GlobalRef counter = ir.addGlobal("counter", Type.I32, new Constant.I32(0));
 
-// Create a function
-val params = ir.createFunction("main", listOf(Param("argc", Type.I32)), Type.I32)
+// Define a function
+try (DefinedFunction main = ir.defineFunction("main",
+        List.of(Param.of("argc", Type.I32)), Type.I32)) {
 
-// Create and position at blocks
-val entry = ir.appendBlock("entry")
-ir.positionAtEnd(entry)
+    // Create forward-reference blocks
+    BlockRef thenBlock = ir.createBlock("then");
+    BlockRef elseBlock = ir.createBlock("else");
 
-val cmp = ir.icmp(ICmpPredicate.SGT, params[0], i32(0))
-val thenBb = ir.appendBlock("then")
-val elseBb = ir.appendBlock("else")
-ir.condBr(cmp, thenBb, elseBb)
+    // Create entry block (positions insertion point)
+    ir.appendBlock("entry");
+    Value cmp = b.icmp(ICmpPredicate.SGT, main.param("argc"), new Constant.I32(0));
+    b.condBr(cmp, thenBlock, elseBlock);
 
-ir.positionAtEnd(thenBb)
-ir.ret(i32(1))
+    // Switch to then block
+    ir.appendBlock(thenBlock);
+    b.ret(new Constant.I32(1));
 
-ir.positionAtEnd(elseBb)
-ir.ret(i32(0))
+    // Switch to else block
+    ir.appendBlock(elseBlock);
+    b.ret(new Constant.I32(0));
+}
 
-ir.finalizeFunction()
+Module module = ir.build();
+```
+
+### Kotlin Example
+
+```kotlin
+val ir = IrBuilder("my_module", Target.x86_64())
+val b = ir.createInstructionBuilder<NativeScope>()
+
+val printf = ir.declareFunction("printf", listOf(Param("fmt", Type.OpaquePointer)), Type.I32, isVarArg = true)
+val counter = ir.addGlobal("counter", Type.I32, Constant.I32(0))
+
+ir.defineFunction("main", listOf(Param("argc", Type.I32)), Type.I32).use { main ->
+    val thenBlock = ir.createBlock("then")
+    val elseBlock = ir.createBlock("else")
+
+    ir.appendBlock("entry")
+    val cmp = b.icmp(ICmpPredicate.SGT, main.param("argc"), Constant.I32(0))
+    b.condBr(cmp, thenBlock, elseBlock)
+
+    ir.appendBlock(thenBlock)
+    b.ret(Constant.I32(1))
+
+    ir.appendBlock(elseBlock)
+    b.ret(Constant.I32(0))
+}
 
 val module = ir.build()
 ```
@@ -2168,20 +2533,35 @@ val module = ir.build()
 
 | Method | Description |
 |--------|-------------|
-| `createFunction(name, params, retType, ...)` | Start function definition, returns params |
-| `declareFunction(name, params, retType)` | External function declaration |
-| `finalizeFunction()` | Finish current function |
-| `appendBlock(label)` | Create a new block, returns label |
-| `positionAtEnd(label)` | Set insertion point to end of block |
+| `defineFunction(name, params, retType)` | Start function definition, returns `DefinedFunction` |
+| `declareFunction(name, params, retType)` | External function declaration, returns `FunctionRef` |
+| `finalizeFunction()` | Finish current function (or use `DefinedFunction.close()`) |
+| `createBlock(label?)` | Create block reference without positioning (forward reference) |
+| `appendBlock(label?)` | Create and position at new block, returns `BlockRef` |
+| `appendBlock(blockRef)` | Position at existing block |
 | `getInsertBlock()` | Get current block label |
-| `param(index)` | Get function parameter |
-| `addGlobal(name, type, ...)` | Add global variable, returns GlobalRef |
+| `createInstructionBuilder(scope)` | Create scoped instruction emitter |
+| `addGlobal(name, type, ...)` | Add global variable, returns `GlobalRef` |
 | `addStruct(name, fields, ...)` | Add struct type |
 | `addClass(cls)` | Add class definition |
-| `build()` | Finalize and return Module |
+| `build()` | Finalize and return `Module` |
 
-All instruction methods from `InstructionEmitter` are available directly on
-`IrBuilder` (`add`, `sub`, `load`, `store`, `call`, etc.).
+### DefinedFunction
+
+`DefinedFunction` implements `Value` (usable as function reference in `call`)
+and `AutoCloseable` (for try-with-resources / `use {}`).
+
+| Method | Description |
+|--------|-------------|
+| `param(index)` | Get parameter by index |
+| `param(name)` | Get parameter by name |
+| `ref()` | Get `FunctionRef` for this function |
+
+### BlockRef
+
+`BlockRef` is used for all block references in terminators and phi nodes.
+Created by `createBlock()` or `appendBlock()`. Anonymous blocks use
+auto-generated names (`bb0`, `bb1`, `bb2`, ...).
 
 ---
 
@@ -2220,6 +2600,7 @@ if (!result.isValid) {
 - No duplicate function/global/struct names
 - External functions have no body
 - Conversion type categories are correct
+- `ClosureInvokeOnce` linear-use check (same closure not reused)
 
 ---
 
@@ -2241,39 +2622,23 @@ val restored = serializer.deserialize(bytes)
 
 | Category | Count | Instructions |
 |----------|-------|-------------|
-| Integer arithmetic | 9 | Add, Sub, Mul, UDiv, SDiv, URem, SRem, Neg |
-| Overflow-checked | 6 | S/UAddOverflow, S/USubOverflow, S/UMulOverflow |
-| Saturating | 4 | S/UAddSat, S/USubSat |
-| Min/Max/Abs | 5 | SMin, SMax, UMin, UMax, Abs |
-| Float arithmetic | 16 | FAdd, FSub, FMul, FDiv, FRem, FNeg, FAbs, FMA, FMin, FMax, Sqrt, Ceil, Floor, Round, Trunc, CopySign |
-| Bitwise | 10 | And, Or, Xor, Not, Shl, LShr, AShr, RotateLeft, RotateRight |
-| Bit manipulation | 5 | Ctlz, Cttz, Ctpop, BSwap, BitReverse |
+| Arithmetic | 39 | Add, Sub, Mul, UDiv, SDiv, URem, SRem, Neg, FAdd, FSub, FMul, FDiv, FRem, FNeg, FAbs, FMA, FMin, FMax, Sqrt, Ceil, Floor, Round, FTrunc, CopySign, S/UAddOverflow, S/USubOverflow, S/UMulOverflow, S/UAddSat, S/USubSat, SMin, SMax, UMin, UMax, Abs |
+| Bitwise | 14 | And, Or, Xor, Not, Shl, LShr, AShr, Rotl, Rotr, Ctlz, Cttz, Ctpop, BSwap, BitReverse |
 | Comparison | 2 | ICmp, FCmp |
-| Memory | 14 | Alloca, Load, Store, GEP, Fence, CmpXchg, AtomicRMW, MemCpy, MemSet, MemMove, Prefetch, StackSave, StackRestore, LifetimeStart/End |
-| Conversions | 13 | IntTrunc, ZExt, SExt, FPTrunc, FPExt, FPToUI, FPToSI, UIToFP, SIToFP, PtrToInt, IntToPtr, BitCast, AddrSpaceCast |
-| Control flow | 8 | Ret, Br, CondBr, Switch, IndirectBr, Unreachable, Trap, DebugTrap |
-| Calls | 3 | Call, Invoke, CallBr |
-| Varargs | 4 | VAStart, VAEnd, VACopy, VAArg |
-| Exception handling (native) | 7 | LandingPad, Resume, CatchSwitch, CatchPad, CleanupPad, CatchRet, CleanupRet |
-| SSA | 3 | Phi, Select, Freeze |
+| Conversion | 13 | IntTrunc, ZExt, SExt, FPTrunc, FPExt, FPToUI, FPToSI, UIToFP, SIToFP, PtrToInt, IntToPtr, BitCast, AddrSpaceCast |
+| Memory | 16 | Alloca, Load, Store, GEP, MemCpy, MemSet, MemMove, Prefetch, StackSave, StackRestore, LifetimeStart, LifetimeEnd, VAStart, VAEnd, VACopy, VAArg |
+| Atomic | 3 | Fence, CmpXchg, AtomicRMW |
 | Vector | 5 | ExtractElement, InsertElement, ShuffleVector, Splat, VectorReduce |
 | Aggregate | 2 | ExtractValue, InsertValue |
-| Debug | 3 | DebugLoc, DebugValue, DebugDeclare |
-| Hints | 2 | Assume, Expect |
-| Assembly/Intrinsic | 2 | InlineAsm, Intrinsic |
-| **Low-level total** | **~122** | |
-| Object lifecycle | 3 | NewObject, NewArray, NewMultiArray |
-| Field access | 4 | GetField, PutField, GetStatic, PutStatic |
-| Method dispatch | 6 | VirtualCall, InterfaceCall, SpecialCall, StaticCall, DynamicCall, ConstructorCall |
-| Type operations | 3 | InstanceOf, CheckCast, TypeId |
-| Managed arrays | 3 | ArrayGet, ArraySet, ArrayLength |
-| Monitors | 2 | MonitorEnter, MonitorExit |
-| Exception handling (managed) | 2 | Throw, TryCatchRegion |
-| Boxing | 2 | Box, Unbox |
-| Closures | 2 | ClosureCreate, ClosureInvoke |
-| Tagged unions | 4 | ConstructVariant, GetTag, GetVariantField, TagSwitch |
-| GC | 3 | GCAlloc, GCSafepoint, GCRoot |
-| Ref counting | 3 | RefRetain, RefRelease, RefCount |
-| Coroutines | 6 | CoroBegin, CoroEnd, CoroSuspend, CoroResume, CoroDestroy, CoroSize |
-| **High-level total** | **~43** | |
-| **Grand total** | **~165** | |
+| Terminator | 8 | Ret, Br, CondBr, Switch, IndirectBr, Unreachable, Trap, DebugTrap |
+| Call | 3 | Call, Invoke, CallBr |
+| SSA | 4 | Phi, Select, Freeze, PiNode |
+| Debug | 5 | DebugLoc, DebugValue, DebugDeclare, Assume, Expect |
+| Intrinsic | 2 | Intrinsic, InlineAsm |
+| Exception | 7 | LandingPad, Resume, CatchSwitch, CatchPad, CleanupPad, CatchRet, CleanupRet |
+| Runtime | 15 | GCAlloc, GCSafepoint, GCRoot, WriteBarrier, ReadBarrier, RefRetain, RefRelease, RefCount, CoroBegin, CoroEnd, CoroSuspend, CoroResume, CoroDestroy, CoroSize, GCRelocate |
+| Interop | 6 | Pin, Unpin, InteriorPtr, ManagedCall, ManagedToDevice, DeviceRelease |
+| Object | 36 | NewObject, NewArray, NewMultiArray, GetField, PutField, GetStatic, PutStatic, VirtualCall, InterfaceCall, SpecialCall, StaticCall, DynamicCall, ConstructorCall, InstanceOf, CheckCast, TypeId, ArrayGet, ArraySet, ArrayLength, MonitorEnter, MonitorExit, Throw, TryCatchRegion, Box, Unbox, ClosureCreate, ClosureInvoke, ClosureInvokeOnce, ConstructVariant, GetTag, GetVariantField, TagSwitch, CatchValue, MakeWeakRef, ReadWeakRef, ClearWeakRef |
+| Deoptimization | 5 | FrameState, Guard, FixedGuard, Deoptimize, OSREntry |
+| Compute | 21 | ThreadId, BlockId, WarpId, LaneId, BlockDim, GridDim, ComputeBarrier, ComputeFence, KernelLaunch, ComputeAtomicAdd, ComputeAtomicMin, ComputeAtomicMax, ComputeAtomicCAS, WarpShuffle, WarpShuffleDown, WarpShuffleUp, WarpShuffleXor, Ballot, WarpVote, SharedMemAlloc, DivergentBranch |
+| **Total** | **206** | |

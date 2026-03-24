@@ -167,35 +167,35 @@ class MetadataTest {
     }
 
     @Nested
-    inner class AnnotationDefTests {
+    inner class AnnotationDefinitionTests {
 
         @Test
         fun hasCorrectType() {
-            val ann = AnnotationDef("java.lang.Override")
+            val ann = AnnotationDefinition("java.lang.Override")
             assertEquals("java.lang.Override", ann.type)
         }
 
         @Test
         fun defaultValuesAreEmpty() {
-            val ann = AnnotationDef("Override")
+            val ann = AnnotationDefinition("Override")
             assertTrue(ann.values.isEmpty())
         }
 
         @Test
         fun defaultRetentionIsRuntime() {
-            val ann = AnnotationDef("Override")
+            val ann = AnnotationDefinition("Override")
             assertEquals(AnnotationRetention.RUNTIME, ann.retention)
         }
 
         @Test
         fun customRetention() {
-            val ann = AnnotationDef("SuppressWarnings", retention = AnnotationRetention.SOURCE)
+            val ann = AnnotationDefinition("SuppressWarnings", retention = AnnotationRetention.SOURCE)
             assertEquals(AnnotationRetention.SOURCE, ann.retention)
         }
 
         @Test
         fun withValues() {
-            val ann = AnnotationDef(
+            val ann = AnnotationDefinition(
                 "RequestMapping",
                 mapOf("path" to AnnotationValue.StringVal("/api"))
             )
@@ -204,15 +204,15 @@ class MetadataTest {
 
         @Test
         fun equality() {
-            val a = AnnotationDef("Test", mapOf("timeout" to AnnotationValue.IntVal(5000L)))
-            val b = AnnotationDef("Test", mapOf("timeout" to AnnotationValue.IntVal(5000L)))
+            val a = AnnotationDefinition("Test", mapOf("timeout" to AnnotationValue.IntVal(5000L)))
+            val b = AnnotationDefinition("Test", mapOf("timeout" to AnnotationValue.IntVal(5000L)))
             assertEquals(a, b)
             assertEquals(a.hashCode(), b.hashCode())
         }
 
         @Test
         fun inequalityByType() {
-            assertNotEquals(AnnotationDef("A"), AnnotationDef("B"))
+            assertNotEquals(AnnotationDefinition("A"), AnnotationDefinition("B"))
         }
     }
 
@@ -273,7 +273,7 @@ class MetadataTest {
 
         @Test
         fun annotationVal() {
-            val inner = AnnotationDef("Inner", mapOf("x" to AnnotationValue.IntVal(1L)))
+            val inner = AnnotationDefinition("Inner", mapOf("x" to AnnotationValue.IntVal(1L)))
             val v = AnnotationValue.AnnotationVal(inner)
             assertEquals("Inner", v.annotation.type)
         }

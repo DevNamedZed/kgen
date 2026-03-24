@@ -21,6 +21,30 @@ class JvmAssembler : JvmAssemblerOps() {
     private val buffer = mutableListOf<Byte>()
     private val labels = mutableMapOf<String, Int>()
     private val patches = mutableListOf<BranchPatch>()
+    private val typedLabels = mutableListOf<Label>()
+
+    class Label internal constructor(val id: Int) {
+        internal var offset: Int = -1
+        internal val marked: Boolean get() = offset >= 0
+    }
+
+    fun label(): Label {
+        val label = Label(typedLabels.size)
+        typedLabels.add(label)
+        return label
+    }
+
+    fun mark(): Label {
+        val label = label()
+        mark(label)
+        return label
+    }
+
+    fun mark(label: Label) {
+        check(!label.marked) { "label ${label.id} already marked" }
+        label.offset = buffer.size
+        labels["__typed_label_${label.id}"] = buffer.size
+    }
 
     private data class BranchPatch(
         val offset: Int,    // offset of the branch operand in the buffer
@@ -97,6 +121,26 @@ class JvmAssembler : JvmAssemblerOps() {
     override fun fstore(index: Int) = emitLocalAccess(JvmOpCode.FSTORE.code, index, 0x43)
     override fun dstore(index: Int) = emitLocalAccess(JvmOpCode.DSTORE.code, index, 0x47)
     override fun astore(index: Int) = emitLocalAccess(JvmOpCode.ASTORE.code, index, 0x4B)
+
+    // Typed label branch overloads
+
+    fun goto(label: Label) = goto("__typed_label_${label.id}")
+    fun ifeq(label: Label) = ifeq("__typed_label_${label.id}")
+    fun ifne(label: Label) = ifne("__typed_label_${label.id}")
+    fun iflt(label: Label) = iflt("__typed_label_${label.id}")
+    fun ifge(label: Label) = ifge("__typed_label_${label.id}")
+    fun ifgt(label: Label) = ifgt("__typed_label_${label.id}")
+    fun ifle(label: Label) = ifle("__typed_label_${label.id}")
+    fun ifIcmpeq(label: Label) = ifIcmpeq("__typed_label_${label.id}")
+    fun ifIcmpne(label: Label) = ifIcmpne("__typed_label_${label.id}")
+    fun ifIcmplt(label: Label) = ifIcmplt("__typed_label_${label.id}")
+    fun ifIcmpge(label: Label) = ifIcmpge("__typed_label_${label.id}")
+    fun ifIcmpgt(label: Label) = ifIcmpgt("__typed_label_${label.id}")
+    fun ifIcmple(label: Label) = ifIcmple("__typed_label_${label.id}")
+    fun ifAcmpeq(label: Label) = ifAcmpeq("__typed_label_${label.id}")
+    fun ifAcmpne(label: Label) = ifAcmpne("__typed_label_${label.id}")
+    fun ifnull(label: Label) = ifnull("__typed_label_${label.id}")
+    fun ifnonnull(label: Label) = ifnonnull("__typed_label_${label.id}")
 
     // ── Convenience methods ──
 

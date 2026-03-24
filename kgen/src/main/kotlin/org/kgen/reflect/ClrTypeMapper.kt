@@ -198,7 +198,7 @@ internal object ClrTypeMapper {
         return TypeKind.CLASS
     }
 
-    private fun methodFlags(md: ClrMethodDef): Set<MethodFlag> = buildSet {
+    private fun methodFlags(md: ClrMethodDefinition): Set<MethodFlag> = buildSet {
         val access = md.flags and MD_MEMBER_ACCESS_MASK
         if (access == MD_PUBLIC) add(MethodFlag.PUBLIC)
         if (access == MD_PRIVATE) add(MethodFlag.PRIVATE)

@@ -15,7 +15,7 @@ class IrTextNestedTest {
         @Test
         fun simpleStructPrintsCorrectly() {
             val module = Module("test", structs = listOf(
-                StructDef("Point", listOf(Param("x", Type.F64), Param("y", Type.F64)))
+                StructDefinition("Point", listOf(Param("x", Type.F64), Param("y", Type.F64)))
             ))
             val text = IrPrinter.print(module)
             assertTrue(text.contains("struct %Point"))
@@ -26,7 +26,7 @@ class IrTextNestedTest {
         @Test
         fun packedStructIncludesKeyword() {
             val module = Module("test", structs = listOf(
-                StructDef("Compact", listOf(Param("a", Type.I8), Param("b", Type.I32)), packed = true)
+                StructDefinition("Compact", listOf(Param("a", Type.I8), Param("b", Type.I32)), packed = true)
             ))
             val text = IrPrinter.print(module)
             assertTrue(text.contains("packed"))
@@ -38,10 +38,10 @@ class IrTextNestedTest {
 
         @Test
         fun classWithFieldsAndMethods() {
-            val cls = ClassDef(
+            val cls = ClassDefinition(
                 name = "Animal",
-                fields = listOf(FieldDef("name", Type.OpaquePointer, MemberVisibility.PRIVATE)),
-                methods = listOf(MethodDef("speak", emptyList(), Type.Void, visibility = MemberVisibility.PUBLIC)),
+                fields = listOf(FieldDefinition("name", Type.OpaquePointer, MemberVisibility.PRIVATE)),
+                methods = listOf(MethodDefinition("speak", emptyList(), Type.Void, visibility = MemberVisibility.PUBLIC)),
             )
             val module = Module("test", classes = listOf(cls))
             val text = IrPrinter.print(module)
@@ -52,7 +52,7 @@ class IrTextNestedTest {
 
         @Test
         fun classWithInheritance() {
-            val cls = ClassDef(
+            val cls = ClassDefinition(
                 name = "Dog",
                 superClass = "Animal",
                 interfaces = listOf("Runnable"),
@@ -65,8 +65,8 @@ class IrTextNestedTest {
 
         @Test
         fun abstractFinalClass() {
-            val absCls = ClassDef(name = "Base", isAbstract = true)
-            val finCls = ClassDef(name = "Leaf", isFinal = true)
+            val absCls = ClassDefinition(name = "Base", isAbstract = true)
+            val finCls = ClassDefinition(name = "Leaf", isFinal = true)
             val module = Module("test", classes = listOf(absCls, finCls))
             val text = IrPrinter.print(module)
             assertTrue(text.contains("abstract class Base"))
@@ -79,9 +79,9 @@ class IrTextNestedTest {
 
         @Test
         fun interfaceWithMethods() {
-            val iface = InterfaceDef(
+            val iface = InterfaceDefinition(
                 name = "Drawable",
-                methods = listOf(MethodDef("draw", emptyList(), Type.Void, visibility = MemberVisibility.PUBLIC, isAbstract = true)),
+                methods = listOf(MethodDefinition("draw", emptyList(), Type.Void, visibility = MemberVisibility.PUBLIC, isAbstract = true)),
             )
             val module = Module("test", interfaces = listOf(iface))
             val text = IrPrinter.print(module)
@@ -91,7 +91,7 @@ class IrTextNestedTest {
 
         @Test
         fun interfaceWithSuperInterfaces() {
-            val iface = InterfaceDef(name = "ReadWritable", superInterfaces = listOf("Readable", "Writable"))
+            val iface = InterfaceDefinition(name = "ReadWritable", superInterfaces = listOf("Readable", "Writable"))
             val module = Module("test", interfaces = listOf(iface))
             val text = IrPrinter.print(module)
             assertTrue(text.contains("extends Readable, Writable"))
@@ -103,7 +103,7 @@ class IrTextNestedTest {
 
         @Test
         fun enumWithVariants() {
-            val enumDef = EnumDef(
+            val enumDef = EnumDefinition(
                 name = "Color",
                 variants = listOf(
                     EnumVariant("RED", 0),
@@ -344,7 +344,7 @@ class IrTextNestedTest {
         @Test
         fun comdatPrints() {
             val module = Module("test",
-                comdats = listOf(ComdatDef("grp", ComdatSelectionKind.ANY)))
+                comdats = listOf(ComdatDefinition("grp", ComdatSelectionKind.ANY)))
             val text = IrPrinter.print(module)
             assertTrue(text.contains("comdat @grp"))
             assertTrue(text.contains("any"))

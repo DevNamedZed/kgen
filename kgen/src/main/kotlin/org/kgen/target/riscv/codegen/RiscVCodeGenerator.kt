@@ -197,6 +197,7 @@ class RiscVCodeGenerator : CodeGenerator {
                 val v = c.value
                 ByteArray(8) { i -> ((v shr (i * 8)) and 0xFF).toByte() }
             }
+            is Constant.NullPtr -> ByteArray(8)
             is Constant.ZeroInitializer -> ByteArray(sizeOfType(c.type))
             is Constant.ArrayConst -> c.elements.map { serializeConstant(it) }.reduce { a, b -> a + b }
             else -> error("Cannot serialize constant: ${c::class.simpleName}")

@@ -8,6 +8,7 @@ class X86Assembler : X86AssemblerOps() {
     private val buffer = ByteArrayOutputStream()
     private val labels = mutableMapOf<String, Int>()
     private val fixups = mutableListOf<Fixup>()
+    private val typedLabels = mutableListOf<Label>()
 
     private data class Fixup(
         val offset: Int,
@@ -16,6 +17,80 @@ class X86Assembler : X86AssemblerOps() {
         val relative: Boolean,
         val addend: Int = 0,
     )
+
+    class Label internal constructor(val id: Int) {
+        internal var offset: Int = -1
+        internal val marked: Boolean get() = offset >= 0
+    }
+
+    fun label(): Label {
+        val label = Label(typedLabels.size)
+        typedLabels.add(label)
+        return label
+    }
+
+    fun mark(): Label {
+        val label = label()
+        mark(label)
+        return label
+    }
+
+    fun mark(label: Label) {
+        check(!label.marked) { "label ${label.id} already marked" }
+        label.offset = buffer.size()
+        labels["__typed_label_${label.id}"] = buffer.size()
+    }
+
+    // Typed label branch overloads
+
+    fun jmp(label: Label) {
+        emitByte(0xE9)
+        emitLabelFixup(label, 4)
+    }
+
+    fun jcc(condition: X86Condition, label: Label) {
+        emitByte(0x0F)
+        emitByte(0x80 + condition.ordinal)
+        emitLabelFixup(label, 4)
+    }
+
+    fun je(label: Label) = jcc(X86Condition.EQUAL, label)
+    fun jz(label: Label) = je(label)
+    fun jne(label: Label) = jcc(X86Condition.NOT_EQUAL, label)
+    fun jnz(label: Label) = jne(label)
+    fun jl(label: Label) = jcc(X86Condition.LESS, label)
+    fun jge(label: Label) = jcc(X86Condition.GREATER_EQUAL, label)
+    fun jle(label: Label) = jcc(X86Condition.LESS_EQUAL, label)
+    fun jg(label: Label) = jcc(X86Condition.GREATER, label)
+    fun jb(label: Label) = jcc(X86Condition.BELOW, label)
+    fun jae(label: Label) = jcc(X86Condition.ABOVE_EQUAL, label)
+    fun ja(label: Label) = jcc(X86Condition.ABOVE, label)
+    fun jbe(label: Label) = jcc(X86Condition.BELOW_EQUAL, label)
+    fun jo(label: Label) = jcc(X86Condition.OVERFLOW, label)
+    fun jno(label: Label) = jcc(X86Condition.NOT_OVERFLOW, label)
+    fun js(label: Label) = jcc(X86Condition.SIGN, label)
+    fun jns(label: Label) = jcc(X86Condition.NOT_SIGN, label)
+
+    fun call(label: Label) {
+        emitByte(0xE8)
+        emitLabelFixup(label, 4)
+    }
+
+    private fun emitLabelFixup(label: Label, size: Int) {
+        if (label.marked) {
+            val rel = label.offset - (buffer.size() + size)
+            when (size) {
+                1 -> emitByte(rel)
+                4 -> emitInt32(rel)
+            }
+        } else {
+            fixups.add(Fixup(buffer.size(), "__typed_label_${label.id}", size, relative = true))
+            when (size) {
+                1 -> emitByte(0)
+                4 -> emitInt32(0)
+            }
+        }
+    }
 
     fun position(): Int = buffer.size()
 

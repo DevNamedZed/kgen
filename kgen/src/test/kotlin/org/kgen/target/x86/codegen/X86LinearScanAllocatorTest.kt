@@ -2,7 +2,7 @@ package org.kgen.target.x86.codegen
 
 import org.kgen.target.x86.disasm.X86Disassembler
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.codegen.CodeGenOptions
 import org.kgen.codegen.OutputFormat
@@ -14,14 +14,14 @@ class X86LinearScanAllocatorTest {
 
     private val disasm = X86Disassembler()
 
-    private fun buildModule(triple: String? = null, block: IrBuilder.() -> Unit): Module {
-        val ir = IrBuilder("test", Target.x86_64())
+    private fun buildModule(triple: String? = null, block: ModuleBuilder.() -> Unit): Module {
+        val ir = ModuleBuilder("test", Target.x86_64())
         if (triple != null) ir.targetTriple = triple
         ir.block()
         return ir.build()
     }
 
-    private fun generateAndDisassemble(triple: String? = null, block: IrBuilder.() -> Unit): List<String> {
+    private fun generateAndDisassemble(triple: String? = null, block: ModuleBuilder.() -> Unit): List<String> {
         val module = buildModule(triple, block)
         val gen = X86CodeGenerator()
         val obj = gen.generateObjectFile(module)
@@ -29,7 +29,7 @@ class X86LinearScanAllocatorTest {
         return disasm.disassembleRaw(textSection.data).map { it.toString() }
     }
 
-    private fun generateCode(triple: String? = null, block: IrBuilder.() -> Unit): ByteArray {
+    private fun generateCode(triple: String? = null, block: ModuleBuilder.() -> Unit): ByteArray {
         val module = buildModule(triple, block)
         val gen = X86CodeGenerator()
         val obj = gen.generateObjectFile(module)
@@ -549,8 +549,9 @@ class X86LinearScanAllocatorTest {
                 finalizeFunction()
             }
             val allText = lines.joinToString(" ")
-            // Callee-saved: rbx, r12-r15 — param should be moved to one of these
-            val hasCalleeSaved = allText.contains("rbx") || allText.contains("r12") ||
+            // Callee-saved (Win64): rbx, rdi, rsi, r12-r15
+            val hasCalleeSaved = allText.contains("rbx") || allText.contains("rdi") ||
+                allText.contains("rsi") || allText.contains("r12") ||
                 allText.contains("r13") || allText.contains("r14") || allText.contains("r15")
             assertTrue(hasCalleeSaved, "Should use callee-saved reg for value across call: $lines")
         }
@@ -627,7 +628,8 @@ class X86LinearScanAllocatorTest {
                 finalizeFunction()
             }
             val allText = lines.joinToString(" ")
-            val hasCalleeSaved = allText.contains("rbx") || allText.contains("r12") ||
+            val hasCalleeSaved = allText.contains("rbx") || allText.contains("rdi") ||
+                allText.contains("rsi") || allText.contains("r12") ||
                 allText.contains("r13") || allText.contains("r14") || allText.contains("r15")
             assertTrue(hasCalleeSaved, "Param across call should be moved to callee-saved: $lines")
         }

@@ -1,7 +1,7 @@
 package org.kgen.reflect.emit
 
 import org.kgen.ir.Parameter
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.reflect.NativeCode
 import org.kgen.reflect.Signature
@@ -25,7 +25,7 @@ class NativeDynamicMethod(
     private val target: Target,
 ) : DynamicMethod(name, signature) {
 
-    private var bodyBlock: ((IrBuilder, List<Parameter>) -> Unit)? = null
+    private var bodyBlock: ((ModuleBuilder, List<Parameter>) -> Unit)? = null
     private var compiled: NativeCode? = null
 
     /**
@@ -33,7 +33,7 @@ class NativeDynamicMethod(
      * The lambda receives the IR builder positioned at the entry block
      * and the list of function parameters.
      */
-    fun body(block: (IrBuilder, List<Parameter>) -> Unit): NativeDynamicMethod {
+    fun body(block: (ModuleBuilder, List<Parameter>) -> Unit): NativeDynamicMethod {
         this.bodyBlock = block
         return this
     }

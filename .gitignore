@@ -1,6 +1,19 @@
 .gradle/
-build/
+.gradle-cli/
+.gradle-dist/
+.gradle-dist-new/
 .idea/
 *.iml
 .kotlin/
 hs_err_pid*.log
+
+# Gradle build output (per-module)
+/build/
+/kgen/build/
+/cli/build/
+/generator/build/
+/integration/build/
+/examples/*/build/
+/wark/build/
+/wark/examples/*/build/
+/wark/examples/*/*/build/

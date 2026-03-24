@@ -3,7 +3,7 @@ package org.kgen.target
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.target.x86.codegen.X86CodeGenerator
 import org.kgen.target.x86.disasm.X86Disassembler
@@ -15,7 +15,7 @@ import org.kgen.target.riscv.disasm.RiscVDisassembler
 class IndirectBrCodegenTest {
 
     private fun buildIndirectBrModule(target: Target): Module {
-        val ir = IrBuilder("indirectbr_test", target)
+        val ir = ModuleBuilder("indirectbr_test", target)
         val params = ir.createFunction("dispatch", listOf(Param("addr", Type.Pointer(Type.I8))), Type.I32)
         ir.appendBlock("entry")
         ir.indirectBr(params[0], listOf(BlockRef("target_a"), BlockRef("target_b")))
@@ -71,7 +71,7 @@ class IndirectBrCodegenTest {
 
     @Test
     fun `x86 indirectBr with single target`() {
-        val ir = IrBuilder("single_target", Target.x86_64())
+        val ir = ModuleBuilder("single_target", Target.x86_64())
         val params = ir.createFunction("go", listOf(Param("addr", Type.Pointer(Type.I8))), Type.I32)
         ir.appendBlock("entry")
         ir.indirectBr(params[0], listOf(BlockRef("dest")))

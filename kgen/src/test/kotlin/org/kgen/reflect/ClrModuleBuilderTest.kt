@@ -138,7 +138,7 @@ class ClrModuleBuilderTest {
         main.il().call(helper.token())
         main.il().ret()
 
-        assertTrue(helper.token().isMethodDef)
+        assertTrue(helper.token().isMethodDefinition)
         assertEquals(0x06000001, helper.token().value)
         assertTrue(mod.toBytes().isNotEmpty())
     }

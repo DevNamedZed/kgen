@@ -12,7 +12,7 @@ import org.kgen.target.riscv.codegen.RiscVCodeGenerator
 class EhFrameEmissionTest {
 
     private fun buildSimpleModule(target: Target): Module {
-        val ir = IrBuilder("test", target)
+        val ir = ModuleBuilder("test", target)
         val params = ir.createFunction(
             "add",
             listOf(Param("a", Type.I64), Param("b", Type.I64)),
@@ -26,7 +26,7 @@ class EhFrameEmissionTest {
     }
 
     private fun buildMultiFunctionModule(target: Target): Module {
-        val ir = IrBuilder("test", target)
+        val ir = ModuleBuilder("test", target)
 
         val p1 = ir.createFunction("func1", listOf(Param("x", Type.I64)), Type.I64)
         ir.appendBlock("entry")

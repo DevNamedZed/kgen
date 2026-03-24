@@ -3,7 +3,7 @@ package org.kgen.integration.reflect
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.target.x86.codegen.X86CodeGenerator
 import org.kgen.binary.*
@@ -18,14 +18,14 @@ class ModuleReflectTest {
 
     private val isWindows = System.getProperty("os.name").lowercase().contains("win")
 
-    private fun buildIrModule(block: IrBuilder.() -> Unit): org.kgen.ir.Module {
-        val ir = IrBuilder("reflect_test", Target.x86_64())
+    private fun buildIrModule(block: ModuleBuilder.() -> Unit): org.kgen.ir.Module {
+        val ir = ModuleBuilder("reflect_test", Target.x86_64())
         if (isWindows) ir.targetTriple = "x86_64-unknown-windows-msvc"
         ir.block()
         return ir.build()
     }
 
-    private fun generateAndReflect(block: IrBuilder.() -> Unit): ReflectModule {
+    private fun generateAndReflect(block: ModuleBuilder.() -> Unit): ReflectModule {
         val irModule = buildIrModule(block)
         val obj = X86CodeGenerator().generateObjectFile(irModule)
         return ReflectModule.fromObjectFile(obj, "test.o")

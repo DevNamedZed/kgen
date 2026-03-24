@@ -1,28 +1,29 @@
 package org.kgen.examples.api
 
-import org.kgen.codegen.CodeGenOptions
 import org.kgen.codegen.CompiledCode
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
+import org.kgen.ir.build.scope.NativeScope
 import org.kgen.ir.target.Target
 import org.kgen.target.x86.X86Memory
 import org.kgen.target.x86.X86Register
 import org.kgen.target.x86.asm.X86Assembler
+import org.kgen.target.x86.asm.x86
 import org.kgen.target.x86.codegen.X86CodeGenerator
 import org.kgen.target.x86.disasm.X86Disassembler
 
 /**
  * Demonstrates the three-layer code generation API:
  *
- * 1. **Assembler** — emit raw machine code instructions
+ * 1. **Assembler** — emit raw machine code instructions (DSL block syntax)
  * 2. **CodeGenerator** — compile IR modules to machine code
  * 3. **Disassembler** — decode machine code back to instructions
  */
 object AssemblerExample {
 
     /**
-     * Uses the x86-64 assembler directly to emit a function that adds two integers.
-     * This is the lowest-level API — you control every byte.
+     * Uses the x86-64 assembler DSL to emit a function that adds two integers.
+     * No `assembler.` prefix — instructions are called directly inside the block.
      *
      * ```asm
      * add_ints:
@@ -31,19 +32,14 @@ object AssemblerExample {
      * ```
      */
     @JvmStatic
-    fun assembleAddFunction(): ByteArray {
-        val assembler = X86Assembler()
-
-        // System V AMD64 ABI: first arg in EDI, second in ESI, return in EAX
-        assembler.lea(X86Register.EAX,
-            X86Memory.base(X86Register.RDI).index(X86Register.RSI).build())
-        assembler.ret()
-
-        return assembler.toByteArray()
+    fun assembleAddFunction(): ByteArray = x86 {
+        lea(X86Register.EAX, X86Memory.base(X86Register.RDI).index(X86Register.RSI).build())
+        ret()
     }
 
     /**
-     * Uses the x86-64 assembler to emit a loop that sums integers from 1 to N.
+     * Uses the x86-64 assembler DSL with typed labels for a loop.
+     * `mark()` creates a backward label, `label()` creates a forward reference.
      *
      * ```asm
      * sum_to_n:
@@ -57,45 +53,54 @@ object AssemblerExample {
      * ```
      */
     @JvmStatic
-    fun assembleSumLoop(): ByteArray {
-        val assembler = X86Assembler()
+    fun assembleSumLoop(): ByteArray = x86 {
+        xor_(X86Register.EAX, X86Register.EAX)
+        mov(X86Register.ECX, X86Register.EDI)
 
-        assembler.xor_(X86Register.EAX, X86Register.EAX)
-        assembler.mov(X86Register.ECX, X86Register.EDI)
+        val loop = mark()
+        add(X86Register.EAX, X86Register.ECX)
+        dec(X86Register.ECX)
+        jnz(loop)
 
-        assembler.label("loop")
-        assembler.add(X86Register.EAX, X86Register.ECX)
-        assembler.dec(X86Register.ECX)
-        assembler.jccLabel(0x05, "loop") // JNZ
+        ret()
+    }
 
-        assembler.ret()
-
-        return assembler.toByteArray()
+    /**
+     * Forward reference example — jump over a section of code.
+     *
+     * ```asm
+     *   test esi, esi
+     *   jz .skip               ; forward jump — label allocated, bound later
+     *   add eax, esi
+     * .skip:
+     *   ret
+     * ```
+     */
+    @JvmStatic
+    fun assembleForwardJump(): ByteArray = x86 {
+        val skip = label()
+        test(X86Register.ESI, X86Register.ESI)
+        jz(skip)
+        add(X86Register.EAX, X86Register.ESI)
+        mark(skip)
+        ret()
     }
 
     /**
      * Compiles an IR module to x86-64 machine code using the CodeGenerator.
-     * This is the mid-level API — you build IR, and the code generator handles
-     * register allocation, instruction selection, and encoding.
+     * Uses the new scoped API with FunctionBuilder + typed proxy.
      */
     @JvmStatic
     fun compileIrToMachineCode(): CompiledCode {
-        val builder = IrBuilder("codegen_example", Target.x86_64())
+        val module = ModuleBuilder("codegen_example", Target.x86_64())
 
-        builder.createFunction(
-            "multiply",
-            listOf(Param("a", Type.I32), Param("b", Type.I32)),
-            Type.I32
-        )
-        builder.appendBlock("entry")
-        val product = builder.mul(builder.param(0), builder.param(1))
-        builder.ret(product)
-        builder.finalizeFunction()
+        module.defineFunction(NativeScope::class.java, "multiply",
+            listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32) { fn ->
+            val ins = fn.instructions
+            fn.ret(ins.mul(fn.param(0), fn.param(1)))
+        }
 
-        val module = builder.build()
-
-        val codeGenerator = X86CodeGenerator()
-        return codeGenerator.generateCode(module)
+        return X86CodeGenerator().generateCode(module.build())
     }
 
     /**
@@ -128,6 +133,12 @@ object AssemblerExample {
         val sumCode = assembleSumLoop()
         println("  ${sumCode.size} bytes of machine code")
         disassembleAndPrint(sumCode)
+
+        println()
+        println("=== Direct Assembly: forward jump ===")
+        val fwdCode = assembleForwardJump()
+        println("  ${fwdCode.size} bytes of machine code")
+        disassembleAndPrint(fwdCode)
 
         println()
         println("=== IR CodeGen: multiply(a, b) ===")

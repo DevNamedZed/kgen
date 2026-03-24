@@ -12,10 +12,10 @@ package org.kgen.ir
  * Constraint resolution order:
  * 1. Per-function override (if set)
  * 2. Submodule constraints
- * 3. Module-level constraints (IrBuilder.allowedCategories)
+ * 3. Module-level constraints (ModuleBuilder.allowedCategories)
  *
  * ```kotlin
- * val ir = IrBuilder("mixed", Target.x86_64())
+ * val ir = ModuleBuilder("mixed", Target.x86_64())
  * ir.beginSubmodule("gc", IrConstraints.RUNTIME_NATIVE)
  * // ... functions here are restricted to RUNTIME_NATIVE
  * ir.endSubmodule()

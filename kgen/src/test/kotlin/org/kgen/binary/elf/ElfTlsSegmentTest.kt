@@ -280,7 +280,7 @@ class ElfTlsSegmentTest {
     @Test
     fun gottpoffRelocationProducesValidBinary() {
         // End-to-end test: use X86CodeGenerator with INITIAL_EXEC, link statically
-        val ir = org.kgen.ir.build.IrBuilder("test", org.kgen.ir.target.Target.x86_64())
+        val ir = org.kgen.ir.build.ModuleBuilder("test", org.kgen.ir.target.Target.x86_64())
         ir.addGlobal("tls_ie", org.kgen.ir.Type.I32, org.kgen.ir.Constant.I32(99),
             threadLocal = org.kgen.ir.ThreadLocalMode.INITIAL_EXEC)
         ir.createFunction("_start", emptyList(), org.kgen.ir.Type.I32)
@@ -351,7 +351,7 @@ class ElfTlsSegmentTest {
 
     @Test
     fun tlsgdEndToEndProducesValidBinary() {
-        val ir = org.kgen.ir.build.IrBuilder("test", org.kgen.ir.target.Target.x86_64())
+        val ir = org.kgen.ir.build.ModuleBuilder("test", org.kgen.ir.target.Target.x86_64())
         ir.addGlobal("tls_gd", org.kgen.ir.Type.I32, org.kgen.ir.Constant.I32(77),
             threadLocal = org.kgen.ir.ThreadLocalMode.GENERAL_DYNAMIC)
         ir.createFunction("_start", emptyList(), org.kgen.ir.Type.I32)

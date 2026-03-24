@@ -468,40 +468,40 @@ class TypeSystemExtendedTest {
         }
     }
 
-    // --- ClassDef edge cases ---
+    // --- ClassDefinition edge cases ---
 
     @Test
     fun classDefNoFieldsNoMethods() {
-        val cls = ClassDef(name = "Empty")
+        val cls = ClassDefinition(name = "Empty")
         assertEquals(0, cls.fields.size)
         assertEquals(0, cls.methods.size)
     }
 
     @Test
     fun classDefFinal() {
-        val cls = ClassDef(name = "Final", isFinal = true)
+        val cls = ClassDefinition(name = "Final", isFinal = true)
         assertTrue(cls.isFinal)
         assertFalse(cls.isAbstract)
     }
 
     @Test
     fun classDefAbstract() {
-        val cls = ClassDef(name = "Abstract", isAbstract = true)
+        val cls = ClassDefinition(name = "Abstract", isAbstract = true)
         assertTrue(cls.isAbstract)
         assertFalse(cls.isFinal)
     }
 
     @Test
     fun classDefWithMultipleInterfaces() {
-        val cls = ClassDef(name = "Multi", interfaces = listOf("A", "B", "C", "D"))
+        val cls = ClassDefinition(name = "Multi", interfaces = listOf("A", "B", "C", "D"))
         assertEquals(4, cls.interfaces.size)
     }
 
-    // --- FieldDef ---
+    // --- FieldDefinition ---
 
     @Test
     fun fieldDefDefault() {
-        val f = FieldDef("x", Type.I32)
+        val f = FieldDefinition("x", Type.I32)
         assertEquals("x", f.name)
         assertEquals(Type.I32, f.type)
         assertEquals(MemberVisibility.PRIVATE, f.visibility)
@@ -510,16 +510,16 @@ class TypeSystemExtendedTest {
 
     @Test
     fun fieldDefPublicFinal() {
-        val f = FieldDef("count", Type.I32, isFinal = true, visibility = MemberVisibility.PUBLIC)
+        val f = FieldDefinition("count", Type.I32, isFinal = true, visibility = MemberVisibility.PUBLIC)
         assertTrue(f.isFinal)
         assertEquals(MemberVisibility.PUBLIC, f.visibility)
     }
 
-    // --- MethodDef ---
+    // --- MethodDefinition ---
 
     @Test
     fun methodDefDefault() {
-        val m = MethodDef("foo", emptyList(), Type.Void)
+        val m = MethodDefinition("foo", emptyList(), Type.Void)
         assertEquals("foo", m.name)
         assertEquals(0, m.params.size)
         assertEquals(Type.Void, m.returnType)
@@ -530,22 +530,22 @@ class TypeSystemExtendedTest {
 
     @Test
     fun methodDefWithParams() {
-        val m = MethodDef("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
+        val m = MethodDefinition("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         assertEquals(2, m.params.size)
         assertEquals("a", m.params[0].name)
     }
 
     @Test
     fun methodDefAbstract() {
-        val m = MethodDef("draw", emptyList(), Type.Void, isAbstract = true)
+        val m = MethodDefinition("draw", emptyList(), Type.Void, isAbstract = true)
         assertTrue(m.isAbstract)
     }
 
-    // --- EnumDef ---
+    // --- EnumDefinition ---
 
     @Test
     fun enumDefEmpty() {
-        val e = EnumDef("Empty", emptyList())
+        val e = EnumDefinition("Empty", emptyList())
         assertEquals(0, e.variants.size)
     }
 
@@ -557,17 +557,17 @@ class TypeSystemExtendedTest {
         assertEquals(0, v.fields.size)
     }
 
-    // --- StructDef ---
+    // --- StructDefinition ---
 
     @Test
     fun structDefEmpty() {
-        val s = StructDef("Empty", emptyList())
+        val s = StructDefinition("Empty", emptyList())
         assertEquals(0, s.fields.size)
     }
 
     @Test
     fun structDefWithAlignment() {
-        val s = StructDef("Aligned", listOf(Param("x", Type.I32)), align = 16)
+        val s = StructDefinition("Aligned", listOf(Param("x", Type.I32)), align = 16)
         assertEquals(16, s.align)
     }
 

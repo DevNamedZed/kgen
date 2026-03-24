@@ -150,6 +150,16 @@ class WasmAssembler private constructor() : WasmAssemblerOps() {
         imports.add(Import.Table(module, name, refType, minSize, maxSize))
     }
 
+    /**
+     * Add an active element segment that initializes a table with function references.
+     * @param tableIndex the table to initialize (usually 0)
+     * @param offset the starting index in the table
+     * @param functionIndices the function indices to place in the table
+     */
+    fun activeElement(tableIndex: Int, offset: Int, functionIndices: List<Int>) {
+        elements.add(ElementSegment(offset, functionIndices))
+    }
+
     fun exportFunction(name: String, funcName: String = name) {
         val idx = resolveFuncIndex(funcName)
         exports.add(Export(name, ExportKind.FUNCTION, idx))
@@ -280,6 +290,8 @@ class WasmAssembler private constructor() : WasmAssemblerOps() {
         return WasmLabel(blockDepth)
     }
 
+    fun markBlock(type: WasmBlockType = WasmBlockType.Void): WasmLabel = beginBlock(type)
+
     fun endBlock() {
         end()
         blockDepth--
@@ -291,6 +303,8 @@ class WasmAssembler private constructor() : WasmAssemblerOps() {
         return WasmLabel(blockDepth)
     }
 
+    fun markLoop(type: WasmBlockType = WasmBlockType.Void): WasmLabel = beginLoop(type)
+
     fun endLoop() {
         end()
         blockDepth--
@@ -301,6 +315,8 @@ class WasmAssembler private constructor() : WasmAssemblerOps() {
         blockDepth++
         return WasmLabel(blockDepth)
     }
+
+    fun markIf(type: WasmBlockType = WasmBlockType.Void): WasmLabel = beginIf(type)
 
     fun beginElse() {
         else_()

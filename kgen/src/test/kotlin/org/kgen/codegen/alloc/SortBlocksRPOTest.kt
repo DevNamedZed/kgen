@@ -4,14 +4,14 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.ir.ICmpPredicate
 
 class SortBlocksRPOTest {
 
-    private fun buildFunction(block: IrBuilder.() -> Unit): IrFunction {
-        val ir = IrBuilder("test", Target.x86_64())
+    private fun buildFunction(block: ModuleBuilder.() -> Unit): IrFunction {
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.block()
         val module = ir.build()
         return module.functions.last { !it.isExternal }
@@ -137,7 +137,7 @@ class SortBlocksRPOTest {
     inner class UnreachableBlocks {
 
         @Test
-        fun unreachableBlocksAppendedAtEnd() {
+        fun unreachableBlocksExcludedFromRpo() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
                 val entry = createBlock("entry")
@@ -153,15 +153,13 @@ class SortBlocksRPOTest {
             }
             val sorted = LivenessAnalysis.sortBlocksRPO(fn)
             assertEquals("entry", sorted[0].label)
-            // dead block should be last since it's unreachable
-            val deadIdx = sorted.indexOfFirst { it.label == "dead" }
-            val normalIdx = sorted.indexOfFirst { it.label == "normal" }
-            assertTrue(deadIdx > normalIdx,
-                "Unreachable block should come after reachable blocks")
+            assertTrue(sorted.any { it.label == "normal" })
+            assertFalse(sorted.any { it.label == "dead" },
+                "Unreachable block should be excluded from RPO")
         }
 
         @Test
-        fun allBlocksPreserved() {
+        fun onlyReachableBlocksReturned() {
             val fn = buildFunction {
                 createFunction("f", emptyList(), Type.Void)
                 val entry = createBlock("entry")
@@ -173,8 +171,8 @@ class SortBlocksRPOTest {
                 finalizeFunction()
             }
             val sorted = LivenessAnalysis.sortBlocksRPO(fn)
-            assertEquals(fn.blocks.size, sorted.size)
-            assertTrue(sorted.any { it.label == "dead" })
+            assertEquals(1, sorted.size)
+            assertFalse(sorted.any { it.label == "dead" })
         }
     }
 }

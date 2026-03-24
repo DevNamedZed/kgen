@@ -4,13 +4,13 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.kgen.ir.*;
-import org.kgen.ir.build.IrBuilder;
+import org.kgen.ir.build.ModuleBuilder;
 import org.kgen.ir.target.Arch;
 import org.kgen.ir.target.Target;
 import org.kgen.ir.verify.IrVerifier;
 import org.kgen.ir.verify.VerificationResult;
 import org.kgen.ir.text.IrPrinter;
-import org.kgen.pass.*;
+import org.kgen.pipeline.*;
 
 import java.util.List;
 import java.util.Set;
@@ -31,7 +31,7 @@ public class JavaInteropTest {
 
     @Test
     void createModuleWithFunction() {
-        var builder = new IrBuilder("test", Target.x86_64());
+        var builder = new ModuleBuilder("test", Target.x86_64());
         var params = builder.createFunction("add",
             List.of(new Param("a", I32), new Param("b", I32)), I32);
 
@@ -110,7 +110,7 @@ public class JavaInteropTest {
 
     @Test
     void buildAndVerifyModule() {
-        var builder = new IrBuilder("verify_test", Target.x86_64());
+        var builder = new ModuleBuilder("verify_test", Target.x86_64());
         var params = builder.createFunction("identity",
             List.of(new Param("x", I32)), I32);
         builder.appendBlock("entry");
@@ -126,7 +126,7 @@ public class JavaInteropTest {
 
     @Test
     void printModule() {
-        var builder = new IrBuilder("print_test", Target.x86_64());
+        var builder = new ModuleBuilder("print_test", Target.x86_64());
         var params = builder.createFunction("square",
             List.of(new Param("x", I32)), I32);
         builder.appendBlock("entry");
@@ -144,7 +144,7 @@ public class JavaInteropTest {
 
     @Test
     void arithmeticInstructions() {
-        var builder = new IrBuilder("arith", Target.x86_64());
+        var builder = new ModuleBuilder("arith", Target.x86_64());
         var params = builder.createFunction("compute",
             List.of(new Param("a", I32), new Param("b", I32)), I32);
         builder.appendBlock("entry");
@@ -165,7 +165,7 @@ public class JavaInteropTest {
 
     @Test
     void controlFlow() {
-        var builder = new IrBuilder("cf", Target.x86_64());
+        var builder = new ModuleBuilder("cf", Target.x86_64());
         var params = builder.createFunction("abs",
             List.of(new Param("x", I32)), I32);
 
@@ -188,7 +188,7 @@ public class JavaInteropTest {
 
     @Test
     void declareFunctionExternal() {
-        var builder = new IrBuilder("extern", Target.x86_64());
+        var builder = new ModuleBuilder("extern", Target.x86_64());
         builder.declareFunction("printf",
             List.of(new Param("fmt", Type.pointer(I8))), I32);
 
@@ -204,7 +204,7 @@ public class JavaInteropTest {
 
     @Test
     void passPipeline() {
-        var builder = new IrBuilder("pipeline", Target.x86_64());
+        var builder = new ModuleBuilder("pipeline", Target.x86_64());
         var params = builder.createFunction("test",
             List.of(new Param("x", I32)), I32);
         builder.appendBlock("entry");
@@ -213,7 +213,7 @@ public class JavaInteropTest {
         builder.finalizeFunction();
 
         org.kgen.ir.Module module = builder.build();
-        var pipeline = new PassPipeline();
+        var pipeline = new Pipeline();
         pipeline.add(new ConstantFolding());
         pipeline.add(new DeadCodeElimination());
         org.kgen.ir.Module optimized = pipeline.execute(module);
@@ -235,7 +235,7 @@ public class JavaInteropTest {
 
     @Test
     void functionAttributes() {
-        var builder = new IrBuilder("attrs", Target.x86_64());
+        var builder = new ModuleBuilder("attrs", Target.x86_64());
         var params = builder.createFunction("hot_func",
             List.of(new Param("x", I32)), I32,
             Linkage.EXTERNAL, Visibility.DEFAULT, CallingConvention.C,
@@ -266,7 +266,7 @@ public class JavaInteropTest {
 
     @Test
     void callInstruction() {
-        var builder = new IrBuilder("call_test", Target.x86_64());
+        var builder = new ModuleBuilder("call_test", Target.x86_64());
         builder.declareFunction("helper", List.of(new Param("x", I32)), I32);
 
         var params = builder.createFunction("caller",
@@ -284,7 +284,7 @@ public class JavaInteropTest {
 
     @Test
     void floatingPointInstructions() {
-        var builder = new IrBuilder("fp", Target.x86_64());
+        var builder = new ModuleBuilder("fp", Target.x86_64());
         var params = builder.createFunction("fma",
             List.of(new Param("a", F64), new Param("b", F64), new Param("c", F64)), F64);
         builder.appendBlock("entry");
@@ -303,7 +303,7 @@ public class JavaInteropTest {
 
     @Test
     void memoryInstructions() {
-        var builder = new IrBuilder("mem", Target.x86_64());
+        var builder = new ModuleBuilder("mem", Target.x86_64());
         var params = builder.createFunction("loadStore",
             List.of(new Param("ptr", Type.pointer(I32))), I32);
         builder.appendBlock("entry");

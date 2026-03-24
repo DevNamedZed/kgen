@@ -1,7 +1,7 @@
 package org.kgen.jit
 
 import org.kgen.ir.Module
-import org.kgen.pass.PassPipeline
+import org.kgen.pipeline.Pipeline
 
 /**
  * Tiered compilation strategy — compile functions at low optimization first,
@@ -33,8 +33,8 @@ class TieredCompilation(
     /** Number of calls before triggering tier-2 recompilation. 0 = disabled. */
     var tier2Threshold: Int = 0,
 ) {
-    private var tier1Pipeline: PassPipeline? = null
-    private var tier2Pipeline: PassPipeline? = null
+    private var tier1Pipeline: Pipeline? = null
+    private var tier2Pipeline: Pipeline? = null
     private val callCounts = mutableMapOf<String, Int>()
     private val currentTier = mutableMapOf<String, Int>()
     private val moduleForFunction = mutableMapOf<String, Module>()
@@ -43,23 +43,23 @@ class TieredCompilation(
      * Set the optimization pipeline for tier-1 (optimized) recompilation.
      * If not set, tier-1 uses the engine's default pipeline.
      */
-    fun setTier1Pipeline(pipeline: PassPipeline) {
+    fun setTier1Pipeline(pipeline: Pipeline) {
         this.tier1Pipeline = pipeline
     }
 
     /** The tier-1 pipeline, if set. */
-    fun tier1Pipeline(): PassPipeline? = tier1Pipeline
+    fun tier1Pipeline(): Pipeline? = tier1Pipeline
 
     /**
      * Set the optimization pipeline for tier-2 (aggressively optimized) recompilation.
      * Only used if [tier2Threshold] > 0.
      */
-    fun setTier2Pipeline(pipeline: PassPipeline) {
+    fun setTier2Pipeline(pipeline: Pipeline) {
         this.tier2Pipeline = pipeline
     }
 
     /** The tier-2 pipeline, if set. */
-    fun tier2Pipeline(): PassPipeline? = tier2Pipeline
+    fun tier2Pipeline(): Pipeline? = tier2Pipeline
 
     /**
      * Register the source module for a function, enabling future recompilation.
@@ -101,7 +101,7 @@ class TieredCompilation(
     /**
      * Get the pipeline for the next tier of a function, or null if no more tiers.
      */
-    internal fun pipelineForNextTier(name: String): PassPipeline? {
+    internal fun pipelineForNextTier(name: String): Pipeline? {
         val tier = currentTier.getOrDefault(name, 0)
         return when (tier) {
             0 -> tier1Pipeline

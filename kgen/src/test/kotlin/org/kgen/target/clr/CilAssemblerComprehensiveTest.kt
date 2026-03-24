@@ -2196,7 +2196,7 @@ class CilAssemblerComprehensiveTest {
         val methodToken = CilToken.methodDef(5)
         assertEquals(0x06, methodToken.tableId)
         assertEquals(5, methodToken.rowIndex)
-        assertTrue(methodToken.isMethodDef)
+        assertTrue(methodToken.isMethodDefinition)
 
         val fieldToken = CilToken.field(3)
         assertEquals(0x04, fieldToken.tableId)

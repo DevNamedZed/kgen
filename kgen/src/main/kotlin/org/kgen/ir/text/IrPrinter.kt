@@ -116,7 +116,7 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
         }
     }
 
-    private fun printClass(cls: ClassDef) {
+    private fun printClass(cls: ClassDefinition) {
         val vis = if (cls.visibility != ClassVisibility.PUBLIC) "${cls.visibility.name.lowercase()} " else ""
         val abs = if (cls.isAbstract) "abstract " else ""
         val fin = if (cls.isFinal) "final " else ""
@@ -128,21 +128,21 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
             val ffin = if (f.isFinal) " final" else ""
             line("  field $fvis$ffin ${f.name}: ${typeStr(f.type)}")
         }
-        for (m in cls.methods) printMethodDef(m)
-        for (c in cls.constructors) printMethodDef(c)
+        for (m in cls.methods) printMethodDefinition(m)
+        for (c in cls.constructors) printMethodDefinition(c)
         line("}")
         blank()
     }
 
-    private fun printInterface(iface: InterfaceDef) {
+    private fun printInterface(iface: InterfaceDefinition) {
         val supers = if (iface.superInterfaces.isNotEmpty()) " extends ${iface.superInterfaces.joinToString(", ")}" else ""
         line("interface ${iface.name}$supers {")
-        for (m in iface.methods) printMethodDef(m)
+        for (m in iface.methods) printMethodDefinition(m)
         line("}")
         blank()
     }
 
-    private fun printEnum(enum: EnumDef) {
+    private fun printEnum(enum: EnumDefinition) {
         line("enum ${enum.name} {")
         for (v in enum.variants) {
             val fields = if (v.fields.isNotEmpty()) "(${v.fields.joinToString(", ") { (n, t) -> "$n: ${typeStr(t)}" }})" else ""
@@ -152,7 +152,7 @@ class IrPrinter(private val sb: StringBuilder = StringBuilder()) {
         blank()
     }
 
-    private fun printMethodDef(m: MethodDef) {
+    private fun printMethodDefinition(m: MethodDefinition) {
         val vis = m.visibility.name.lowercase()
         val abs = if (m.isAbstract) " abstract" else ""
         val fin = if (m.isFinal) " final" else ""

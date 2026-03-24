@@ -101,7 +101,7 @@ class RuntimeSubsetIntegrationTest {
             jit.addRuntimeClass(buildAddClass())
 
             // Build IR module that calls the runtime "add" method
-            val ir = org.kgen.ir.build.IrBuilder("caller", org.kgen.ir.target.Target.x86_64())
+            val ir = org.kgen.ir.build.ModuleBuilder("caller", org.kgen.ir.target.Target.x86_64())
             ir.declareFunction("add", listOf(
                 org.kgen.ir.Param("a", org.kgen.ir.Type.I32),
                 org.kgen.ir.Param("b", org.kgen.ir.Type.I32),

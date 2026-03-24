@@ -6,14 +6,14 @@ import org.junit.jupiter.api.condition.EnabledOnOs
 import org.junit.jupiter.api.condition.OS
 import org.kgen.target.x86.codegen.X86CodeGenerator
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 
 @EnabledOnOs(OS.WINDOWS, OS.LINUX)
 class CodeCacheTest {
 
     private fun buildModule(name: String, funcName: String, value: Long): Module {
-        val ir = IrBuilder(name, Target.x86_64())
+        val ir = ModuleBuilder(name, Target.x86_64())
         ir.createFunction(funcName, emptyList(), Type.I64)
         ir.appendBlock("entry")
         ir.ret(Constant.I64(value))

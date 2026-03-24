@@ -14,8 +14,8 @@ import org.kgen.ir.*
 import org.kgen.ir.instructions.*
 import org.kgen.ir.target.Arch
 import org.kgen.ir.target.Target
-import org.kgen.pass.Mem2Reg
-import org.kgen.unmanaged.lib.StdlibProvider
+import org.kgen.pipeline.Mem2Reg
+import org.kgen.unmanaged.lib.NativeStdlib
 
 /**
  * AOT compiler that translates JVM `.class` files into standalone native executables.
@@ -99,7 +99,7 @@ class NativeCompiler(
                     .mapNotNull { (it.function as? GlobalRef)?.name }
             }
         }.toSet()
-        val stdlib = StdlibProvider.generate(target)
+        val stdlib = NativeStdlib.compile(target)
         val stdlibNames = stdlib.functions.filter { !it.isExternal }.map { it.name }.toSet()
         if (referencedNames.any { it in stdlibNames }) {
             allFunctions.addAll(stdlib.functions)
@@ -276,7 +276,7 @@ class NativeCompiler(
             }
         }.toSet()
 
-        val stdlib = StdlibProvider.generate(target)
+        val stdlib = NativeStdlib.compile(target)
         val stdlibNames = stdlib.functions.filter { !it.isExternal }.map { it.name }.toSet()
         if (referencedNames.none { it in stdlibNames }) return module
 

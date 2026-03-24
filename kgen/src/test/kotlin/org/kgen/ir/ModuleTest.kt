@@ -3,7 +3,7 @@ package org.kgen.ir
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.kgen.ir.types.StructDef
+import org.kgen.ir.types.StructDefinition
 
 class ModuleTest {
 
@@ -49,7 +49,7 @@ class ModuleTest {
                 blocks = listOf(BasicBlock("entry", emptyList())),
             )
             val global = Global(name = "counter", type = Type.I32)
-            val structDef = StructDef(name = "Point", fields = listOf(Param("x", Type.F64), Param("y", Type.F64)))
+            val structDef = StructDefinition(name = "Point", fields = listOf(Param("x", Type.F64), Param("y", Type.F64)))
             val alias = TypeAlias(name = "Int", type = Type.I32)
             val ctor = GlobalCtor(function = "init", priority = 100)
             val dtor = GlobalCtor(function = "cleanup", priority = 200)
@@ -58,7 +58,7 @@ class ModuleTest {
                 resolverFunction = "memcpy_resolver",
                 type = Type.Function(listOf(Type.OpaquePointer), Type.OpaquePointer),
             )
-            val comdat = ComdatDef(name = "group1", selectionKind = ComdatSelectionKind.ANY)
+            val comdat = ComdatDefinition(name = "group1", selectionKind = ComdatSelectionKind.ANY)
             val submodule = Submodule(
                 name = "gc",
                 constraints = setOf(IrCategory.MEMORY, IrCategory.RUNTIME),
@@ -245,7 +245,7 @@ class ModuleTest {
 
         @Test
         fun comdatDef() {
-            val comdat = ComdatDef(name = "group", selectionKind = ComdatSelectionKind.EXACT_MATCH)
+            val comdat = ComdatDefinition(name = "group", selectionKind = ComdatSelectionKind.EXACT_MATCH)
             assertEquals("group", comdat.name)
             assertEquals(ComdatSelectionKind.EXACT_MATCH, comdat.selectionKind)
         }

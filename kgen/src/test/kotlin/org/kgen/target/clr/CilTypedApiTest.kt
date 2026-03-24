@@ -170,7 +170,7 @@ class CilTypedApiTest {
     fun `CilToken methodDef`() {
         val token = CilToken.methodDef(1)
         assertEquals(0x06000001, token.value)
-        assertTrue(token.isMethodDef)
+        assertTrue(token.isMethodDefinition)
         assertFalse(token.isMemberRef)
         assertEquals(0x06, token.tableId)
         assertEquals(1, token.rowIndex)

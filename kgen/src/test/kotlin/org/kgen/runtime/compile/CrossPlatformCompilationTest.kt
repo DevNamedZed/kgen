@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test
 import org.kgen.binary.elf.ElfReader
 import org.kgen.binary.pe.PeReader
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.target.jvm.*
 

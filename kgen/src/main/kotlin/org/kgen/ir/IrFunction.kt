@@ -1,7 +1,7 @@
 package org.kgen.ir
 
 import org.kgen.ir.instructions.Instruction
-import org.kgen.ir.types.TypeParamDef
+import org.kgen.ir.types.TypeParamDefinition
 
 /**
  * A function definition or declaration in SSA form.
@@ -16,7 +16,7 @@ import org.kgen.ir.types.TypeParamDef
  *
  * **Example usage (via builder):**
  * ```java
- * var ir = new IrBuilder("module", Target.x86_64());
+ * var ir = new ModuleBuilder("module", Target.x86_64());
  * List<Parameter> params = ir.createFunction("add",
  *     List.of(new Param("a", Type.I32), new Param("b", Type.I32)), Type.I32);
  * ir.appendBlock("entry");
@@ -60,7 +60,7 @@ data class IrFunction(
     val align: Int? = null,
     val gc: String? = null,
     val isVarArg: Boolean = false,
-    val typeParams: List<TypeParamDef> = emptyList(),
+    val typeParams: List<TypeParamDefinition> = emptyList(),
     val personality: FunctionRef? = null,
     val comdat: String? = null,
     val prefixData: Constant? = null,

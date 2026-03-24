@@ -171,7 +171,7 @@ class ClrWriterTest {
                     methodList = 1,
                 ),
             ),
-            methodDefs = listOf(ClrMethodDef(
+            methodDefs = listOf(ClrMethodDefinition(
                 rva = 0,
                 implFlags = 0,
                 flags = 0x0086, // public static hidebysig

@@ -3,13 +3,13 @@ package org.kgen.runtime.compile
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 
 class CHeaderGeneratorTest {
 
     private fun moduleWith(vararg fns: Triple<String, Type, List<Param>>): Module {
-        val builder = IrBuilder("test", Target.x86_64())
+        val builder = ModuleBuilder("test", Target.x86_64())
         for ((name, retType, params) in fns) {
             builder.createFunction(name, params, retType)
             builder.appendBlock("entry")
@@ -113,7 +113,7 @@ class CHeaderGeneratorTest {
 
     @Test
     fun `external declarations excluded`() {
-        val builder = IrBuilder("test", Target.x86_64())
+        val builder = ModuleBuilder("test", Target.x86_64())
         // Declare (external) — should NOT appear
         builder.declareFunction("external_fn", listOf(
             Param("x", Type.I32)

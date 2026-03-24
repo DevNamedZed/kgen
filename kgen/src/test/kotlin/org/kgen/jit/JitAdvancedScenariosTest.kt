@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.condition.EnabledOnOs
 import org.junit.jupiter.api.condition.OS
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.target.x86.codegen.X86CodeGenerator
 
@@ -13,7 +13,7 @@ import org.kgen.target.x86.codegen.X86CodeGenerator
 class JitAdvancedScenariosTest {
 
     private fun buildConstantModule(name: String, funcName: String, value: Long): Module {
-        val ir = IrBuilder(name, Target.x86_64())
+        val ir = ModuleBuilder(name, Target.x86_64())
         ir.createFunction(funcName, emptyList(), Type.I64)
         ir.appendBlock("entry")
         ir.ret(Constant.I64(value))
@@ -22,7 +22,7 @@ class JitAdvancedScenariosTest {
     }
 
     private fun buildAddModule(moduleName: String, funcName: String): Module {
-        val ir = IrBuilder(moduleName, Target.x86_64())
+        val ir = ModuleBuilder(moduleName, Target.x86_64())
         ir.createFunction(funcName, listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I64, 0)

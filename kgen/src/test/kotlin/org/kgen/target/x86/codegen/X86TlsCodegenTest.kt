@@ -12,7 +12,7 @@ class X86TlsCodegenTest {
 
     @Test
     fun tlsGlobalGoesToTdataSection() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.addGlobal("tls_var", Type.I32, Constant.I32(42), threadLocal = ThreadLocalMode.LOCAL_EXEC)
         ir.createFunction("get", emptyList(), Type.I32)
         ir.appendBlock("entry")
@@ -26,8 +26,8 @@ class X86TlsCodegenTest {
     }
 
     @Test
-    fun nonTlsGlobalGoesToRodata() {
-        val ir = IrBuilder("test", Target.x86_64())
+    fun nonTlsGlobalGoesToDataSection() {
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.addGlobal("normal_var", Type.I32, Constant.I32(42))
         ir.createFunction("get", emptyList(), Type.I32)
         ir.appendBlock("entry")
@@ -36,13 +36,13 @@ class X86TlsCodegenTest {
         val module = ir.build()
 
         val code = X86CodeGenerator().generateCode(module)
-        assertTrue(code.rodataBytes.isNotEmpty())
+        assertTrue(code.dataBytes.isNotEmpty(), "Mutable global should go to .data section")
         assertTrue(code.tdataBytes.isEmpty())
     }
 
     @Test
     fun tlsObjectFileHasTdataSection() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.addGlobal("tls_counter", Type.I64, Constant.I64(0), threadLocal = ThreadLocalMode.LOCAL_EXEC)
         ir.createFunction("inc", emptyList(), Type.Void)
         ir.appendBlock("entry")
@@ -59,7 +59,7 @@ class X86TlsCodegenTest {
 
     @Test
     fun tlsLoadGeneratesFsSegmentPrefix() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.addGlobal("tls_val", Type.I32, Constant.I32(0), threadLocal = ThreadLocalMode.LOCAL_EXEC)
         ir.createFunction("read_tls", emptyList(), Type.I32)
         ir.appendBlock("entry")
@@ -80,7 +80,7 @@ class X86TlsCodegenTest {
 
     @Test
     fun windowsTlsUsesGsSegment() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.targetTriple = "x86_64-windows"
         ir.addGlobal("tls_val", Type.I32, Constant.I32(0), threadLocal = ThreadLocalMode.LOCAL_EXEC)
         ir.createFunction("read_tls", emptyList(), Type.I32)
@@ -98,7 +98,7 @@ class X86TlsCodegenTest {
 
     @Test
     fun tlsStoreGeneratesSegmentPrefix() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.addGlobal("tls_counter", Type.I32, Constant.I32(0), threadLocal = ThreadLocalMode.LOCAL_EXEC)
         val params = ir.createFunction("set_tls", listOf(Param("v", Type.I32)), Type.Void)
         ir.appendBlock("entry")
@@ -113,7 +113,7 @@ class X86TlsCodegenTest {
 
     @Test
     fun tlsGepGeneratesSegmentPrefix() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         val structType = Type.Struct(null, listOf(Type.I32, Type.I64))
         ir.addGlobal("tls_struct", structType, Constant.ZeroInitializer(structType), threadLocal = ThreadLocalMode.LOCAL_EXEC)
         ir.createFunction("get_field", emptyList(), Type.I64)
@@ -130,7 +130,7 @@ class X86TlsCodegenTest {
 
     @Test
     fun initialExecTlsUsesGottpoff() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.addGlobal("tls_ie", Type.I32, Constant.I32(0), threadLocal = ThreadLocalMode.INITIAL_EXEC)
         ir.createFunction("read_ie", emptyList(), Type.I32)
         ir.appendBlock("entry")
@@ -152,7 +152,7 @@ class X86TlsCodegenTest {
 
     @Test
     fun initialExecTlsEmitsAddInstruction() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.addGlobal("tls_ie", Type.I32, Constant.I32(0), threadLocal = ThreadLocalMode.INITIAL_EXEC)
         ir.createFunction("read_ie", emptyList(), Type.I32)
         ir.appendBlock("entry")
@@ -169,7 +169,7 @@ class X86TlsCodegenTest {
 
     @Test
     fun initialExecTlsStoreWorks() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.addGlobal("tls_ie", Type.I32, Constant.I32(0), threadLocal = ThreadLocalMode.INITIAL_EXEC)
         val params = ir.createFunction("write_ie", listOf(Param("v", Type.I32)), Type.Void)
         ir.appendBlock("entry")
@@ -185,7 +185,7 @@ class X86TlsCodegenTest {
 
     @Test
     fun generalDynamicTlsUsesTlsgdRelocation() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.addGlobal("tls_gd", Type.I32, Constant.I32(0), threadLocal = ThreadLocalMode.GENERAL_DYNAMIC)
         ir.createFunction("read_gd", emptyList(), Type.I32)
         ir.appendBlock("entry")
@@ -207,7 +207,7 @@ class X86TlsCodegenTest {
 
     @Test
     fun generalDynamicTlsEmitsCallInstruction() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.addGlobal("tls_gd", Type.I32, Constant.I32(0), threadLocal = ThreadLocalMode.GENERAL_DYNAMIC)
         ir.createFunction("read_gd", emptyList(), Type.I32)
         ir.appendBlock("entry")
@@ -227,7 +227,7 @@ class X86TlsCodegenTest {
 
     @Test
     fun generalDynamicTlsStoreWorks() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.addGlobal("tls_gd", Type.I32, Constant.I32(0), threadLocal = ThreadLocalMode.GENERAL_DYNAMIC)
         val params = ir.createFunction("write_gd", listOf(Param("v", Type.I32)), Type.Void)
         ir.appendBlock("entry")
@@ -243,7 +243,7 @@ class X86TlsCodegenTest {
 
     @Test
     fun generalDynamicTlsEmitsCorrectSequence() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.addGlobal("tls_gd", Type.I32, Constant.I32(0), threadLocal = ThreadLocalMode.GENERAL_DYNAMIC)
         ir.createFunction("read_gd", emptyList(), Type.I32)
         ir.appendBlock("entry")
@@ -269,7 +269,7 @@ class X86TlsCodegenTest {
 
     @Test
     fun mixedTlsAndNormalGlobals() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.addGlobal("normal", Type.I32, Constant.I32(10))
         ir.addGlobal("tls_var", Type.I32, Constant.I32(20), threadLocal = ThreadLocalMode.LOCAL_EXEC)
         ir.createFunction("func", emptyList(), Type.I32)
@@ -279,7 +279,7 @@ class X86TlsCodegenTest {
         val module = ir.build()
 
         val code = X86CodeGenerator().generateCode(module)
-        assertTrue(code.rodataBytes.isNotEmpty(), "Normal global should be in rodata")
+        assertTrue(code.dataBytes.isNotEmpty(), "Mutable global should be in data section")
         assertTrue(code.tdataBytes.isNotEmpty(), "TLS global should be in tdata")
     }
 }

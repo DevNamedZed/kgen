@@ -12,7 +12,7 @@ import org.kgen.target.riscv.codegen.RiscVCodeGenerator
 class StackMapEmissionTest {
 
     private fun buildModuleWithSafepoint(target: Target): Module {
-        val ir = IrBuilder("test", target)
+        val ir = ModuleBuilder("test", target)
         // Use OpaquePointer for the parameter — at the machine level, GC references are pointers.
         // The GC strategy + GCSafepoint instruction is what triggers stack map recording.
         val params = ir.createFunction(
@@ -30,7 +30,7 @@ class StackMapEmissionTest {
     }
 
     private fun buildModuleWithGCRoot(target: Target): Module {
-        val ir = IrBuilder("test", target)
+        val ir = ModuleBuilder("test", target)
         val params = ir.createFunction(
             "rootFunc",
             listOf(Param("x", Type.I64)),
@@ -47,7 +47,7 @@ class StackMapEmissionTest {
     }
 
     private fun buildModuleNoGcStrategy(target: Target): Module {
-        val ir = IrBuilder("test", target)
+        val ir = ModuleBuilder("test", target)
         val params = ir.createFunction(
             "noGc",
             listOf(Param("a", Type.I32), Param("b", Type.I32)),
@@ -62,7 +62,7 @@ class StackMapEmissionTest {
     }
 
     private fun buildModuleMultipleSafepoints(target: Target): Module {
-        val ir = IrBuilder("test", target)
+        val ir = ModuleBuilder("test", target)
         val params = ir.createFunction(
             "multiSafe",
             listOf(Param("a", Type.I64), Param("b", Type.I64)),
@@ -186,7 +186,7 @@ class StackMapEmissionTest {
 
     @Test
     fun `x86 shadow stack strategy also produces stack maps`() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         val params = ir.createFunction(
             "shadowFunc",
             listOf(Param("a", Type.I64)),

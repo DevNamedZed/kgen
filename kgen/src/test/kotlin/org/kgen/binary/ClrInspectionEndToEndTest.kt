@@ -187,7 +187,7 @@ class ClrInspectionEndToEndTest {
         assertEquals("Repository", meta.strings.get(classDef.name))
         assertEquals("Data", meta.strings.get(classDef.namespace))
 
-        // MethodDef table
+        // MethodDefinition table
         assertEquals(2, meta.tables.methodDefs.size)
         assertEquals("Connect", meta.strings.get(meta.tables.methodDefs[0].name))
         assertEquals("Query", meta.strings.get(meta.tables.methodDefs[1].name))
@@ -226,7 +226,7 @@ class ClrInspectionEndToEndTest {
 
         val meta = builder.build()
 
-        // Entry point should be set to first method (MethodDef token 0x06000001)
+        // Entry point should be set to first method (MethodDefinition token 0x06000001)
         assertEquals(0x06000001, meta.entryPointToken)
 
         // Two methods: Main and GetTickCount

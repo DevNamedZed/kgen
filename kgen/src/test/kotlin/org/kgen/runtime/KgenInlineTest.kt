@@ -104,7 +104,7 @@ class KgenInlineTest {
         val compiler = RuntimeCompiler(Target.x86_64())
 
         // Build module but check IR before inlining by using the builder directly
-        val builder = org.kgen.ir.build.IrBuilder("test", Target.x86_64())
+        val builder = org.kgen.ir.build.ModuleBuilder("test", Target.x86_64())
         val method = cf.methods[0] // doubleIt
         val name = cf.string(method.nameIndex)
         val desc = cf.string(method.descriptorIndex)

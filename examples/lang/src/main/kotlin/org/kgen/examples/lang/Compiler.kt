@@ -1,7 +1,7 @@
 package org.kgen.examples.lang
 
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 
 /**
@@ -14,7 +14,7 @@ import org.kgen.ir.target.Target
 class Compiler(private val target: Target = Target.x86_64()) {
 
     fun compile(program: Program): Module {
-        val ir = IrBuilder(moduleName(program), target)
+        val ir = ModuleBuilder(moduleName(program), target)
 
         // First pass: declare all extern functions
         val declaredExterns = mutableSetOf<String>()
@@ -58,7 +58,7 @@ class Compiler(private val target: Target = Target.x86_64()) {
         return "${firstName}_module"
     }
 
-    private fun compileFunction(ir: IrBuilder, fn: FunDecl, program: Program) {
+    private fun compileFunction(ir: ModuleBuilder, fn: FunDecl, program: Program) {
         val params = fn.params.map { Param(it.name, langTypeToIr(it.type)) }
         val retType = langTypeToIr(fn.returnType)
 
@@ -356,7 +356,7 @@ class Compiler(private val target: Target = Target.x86_64()) {
 }
 
 private class FunctionContext(
-    val ir: IrBuilder,
+    val ir: ModuleBuilder,
     val fn: FunDecl,
     val program: Program,
 ) {

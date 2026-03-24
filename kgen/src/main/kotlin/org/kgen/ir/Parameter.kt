@@ -3,7 +3,7 @@ package org.kgen.ir
 /**
  * A function's formal parameter, usable as a [Value] operand within the function body.
  *
- * Parameters are created by [org.kgen.ir.build.IrBuilder.createFunction] and returned
+ * Parameters are created by [org.kgen.ir.build.ModuleBuilder.createFunction] and returned
  * as a list. They can be used directly as operands to instructions:
  *
  * ```java

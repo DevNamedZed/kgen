@@ -14,7 +14,7 @@ import org.kgen.binary.mangling.UniversalDemangler
 import org.kgen.codegen.CodeGenOptions
 import org.kgen.codegen.OutputFormat
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.target.x86.codegen.X86CodeGenerator
 import org.kgen.target.x86.disasm.X86Disassembler
@@ -179,7 +179,7 @@ class BinaryAnalysisPipelineTest {
 
     @Test
     fun stringExtraction() {
-        val ir = IrBuilder("str_test", Target.x86_64())
+        val ir = ModuleBuilder("str_test", Target.x86_64())
         val strType = Type.Array(Type.I8, 14)
         ir.addGlobal("msg", strType, Constant.StringConst("Hello, World!"),
             isConstant = true, linkage = Linkage.INTERNAL)
@@ -200,7 +200,7 @@ class BinaryAnalysisPipelineTest {
     // -- Helpers --
 
     private fun buildModule(): Module {
-        val ir = IrBuilder("analysis_test", Target.x86_64())
+        val ir = ModuleBuilder("analysis_test", Target.x86_64())
         val p = ir.createFunction("compute", listOf(Param("x", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         val doubled = ir.add(p[0], p[0])
@@ -211,7 +211,7 @@ class BinaryAnalysisPipelineTest {
     }
 
     private fun buildModuleWithExternalCall(): Module {
-        val ir = IrBuilder("reloc_test", Target.x86_64())
+        val ir = ModuleBuilder("reloc_test", Target.x86_64())
         ir.declareFunction("external_fn", listOf(Param("x", Type.I64)), Type.I64)
         ir.createFunction("caller", listOf(Param("x", Type.I64)), Type.I64)
         ir.appendBlock("entry")

@@ -194,7 +194,7 @@ class JvmComprehensiveTest {
 
     @Test
     fun `ClassFileBuilder adds private field by default`() {
-        val cf = ClassFileBuilder("FieldDefault")
+        val cf = ClassFileBuilder("FieldDefinitionault")
             .field("x", "I")
             .build()
         assertEquals(1, cf.fields.size)

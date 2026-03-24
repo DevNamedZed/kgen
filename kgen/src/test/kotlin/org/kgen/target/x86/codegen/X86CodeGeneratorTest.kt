@@ -19,7 +19,7 @@ class X86CodeGeneratorTest {
     private fun le(bytes: ByteArray) = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
 
     private fun buildAddModule(): Module {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         val params = ir.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val sum = ir.add(params[0], params[1])
@@ -59,7 +59,7 @@ class X86CodeGeneratorTest {
     @Test
     fun `generates linked ELF executable from IR`() {
         // Build a module with main() that calls an external function
-        val ir = IrBuilder("hello", Target.x86_64())
+        val ir = ModuleBuilder("hello", Target.x86_64())
         ir.declareFunction("puts", listOf(Param("s", Type.OpaquePointer)), Type.I32)
 
         val params = ir.createFunction("main", emptyList(), Type.I32)
@@ -81,7 +81,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles arithmetic expressions`() {
-        val ir = IrBuilder("math", Target.x86_64())
+        val ir = ModuleBuilder("math", Target.x86_64())
         val params = ir.createFunction("compute", listOf(
             Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -101,7 +101,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles multi-function module`() {
-        val ir = IrBuilder("multi", Target.x86_64())
+        val ir = ModuleBuilder("multi", Target.x86_64())
 
         // helper(x) = x + 1
         val helperParams = ir.createFunction("helper", listOf(Param("x", Type.I32)), Type.I32)
@@ -128,7 +128,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `hello world IR to ELF executable with puts`() {
-        val ir = IrBuilder("hello", Target.x86_64())
+        val ir = ModuleBuilder("hello", Target.x86_64())
 
         // Global string constant
         val strType = Type.Array(Type.I8, 14)
@@ -177,7 +177,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `generates rodata section for string globals`() {
-        val ir = IrBuilder("strings", Target.x86_64())
+        val ir = ModuleBuilder("strings", Target.x86_64())
         val strType = Type.Array(Type.I8, 6)
         ir.addGlobal("msg", strType, Constant.StringConst("hello"), isConstant = true,
             linkage = Linkage.INTERNAL)
@@ -217,7 +217,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `hello world IR to PE executable with puts`() {
-        val ir = IrBuilder("hello_pe", Target.x86_64())
+        val ir = ModuleBuilder("hello_pe", Target.x86_64())
         ir.targetTriple = "x86_64-unknown-windows-msvc"
 
         val strType = Type.Array(Type.I8, 14)
@@ -274,7 +274,7 @@ class X86CodeGeneratorTest {
     fun `register allocator handles many variables with spilling`() {
         // Create a function with more live variables than available registers
         // to exercise the spill/reload paths
-        val ir = IrBuilder("spill_test", Target.x86_64())
+        val ir = ModuleBuilder("spill_test", Target.x86_64())
         val params = ir.createFunction("many_vars",
             listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -324,7 +324,7 @@ class X86CodeGeneratorTest {
     @Test
     fun `register allocator saves and restores callee-saved registers`() {
         // Use enough variables to require callee-saved registers (rbx, r12-r15)
-        val ir = IrBuilder("callee_save_test", Target.x86_64())
+        val ir = ModuleBuilder("callee_save_test", Target.x86_64())
         val params = ir.createFunction("uses_callee_saved",
             listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -359,7 +359,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles conditional branch`() {
-        val ir = IrBuilder("branch_test", Target.x86_64())
+        val ir = ModuleBuilder("branch_test", Target.x86_64())
         val params = ir.createFunction("abs", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val cond = ir.icmp(ICmpPredicate.SLT, params[0], Constant.I32(0))
@@ -394,7 +394,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles unconditional branch`() {
-        val ir = IrBuilder("br_test", Target.x86_64())
+        val ir = ModuleBuilder("br_test", Target.x86_64())
         ir.createFunction("jump", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.br(BlockRef("target"))
@@ -418,7 +418,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles select instruction`() {
-        val ir = IrBuilder("select_test", Target.x86_64())
+        val ir = ModuleBuilder("select_test", Target.x86_64())
         val params = ir.createFunction("max", listOf(
             Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -447,7 +447,7 @@ class X86CodeGeneratorTest {
     @Test
     fun `compiles if-else diamond pattern`() {
         // if (x > 0) return x + 1; else return x - 1;
-        val ir = IrBuilder("diamond", Target.x86_64())
+        val ir = ModuleBuilder("diamond", Target.x86_64())
         val params = ir.createFunction("adjust", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val cond = ir.icmp(ICmpPredicate.SGT, params[0], Constant.I32(0))
@@ -481,7 +481,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles signed and unsigned division`() {
-        val ir = IrBuilder("div_test", Target.x86_64())
+        val ir = ModuleBuilder("div_test", Target.x86_64())
         val params = ir.createFunction("div_ops",
             listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -499,7 +499,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles unsigned division and remainder`() {
-        val ir = IrBuilder("udiv_test", Target.x86_64())
+        val ir = ModuleBuilder("udiv_test", Target.x86_64())
         val params = ir.createFunction("udiv_ops",
             listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -515,7 +515,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles shift operations`() {
-        val ir = IrBuilder("shift_test", Target.x86_64())
+        val ir = ModuleBuilder("shift_test", Target.x86_64())
         val params = ir.createFunction("shifts",
             listOf(Param("x", Type.I32), Param("n", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -531,7 +531,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles negation`() {
-        val ir = IrBuilder("neg_test", Target.x86_64())
+        val ir = ModuleBuilder("neg_test", Target.x86_64())
         val params = ir.createFunction("negate",
             listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -550,7 +550,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles zero extension i32 to i64`() {
-        val ir = IrBuilder("zext_test", Target.x86_64())
+        val ir = ModuleBuilder("zext_test", Target.x86_64())
         val params = ir.createFunction("widen",
             listOf(Param("x", Type.I32)), Type.I64)
         ir.appendBlock("entry")
@@ -564,7 +564,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles sign extension i32 to i64`() {
-        val ir = IrBuilder("sext_test", Target.x86_64())
+        val ir = ModuleBuilder("sext_test", Target.x86_64())
         val params = ir.createFunction("sign_widen",
             listOf(Param("x", Type.I32)), Type.I64)
         ir.appendBlock("entry")
@@ -578,7 +578,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles truncation i64 to i32`() {
-        val ir = IrBuilder("trunc_test", Target.x86_64())
+        val ir = ModuleBuilder("trunc_test", Target.x86_64())
         val params = ir.createFunction("narrow",
             listOf(Param("x", Type.I64)), Type.I32)
         ir.appendBlock("entry")
@@ -592,7 +592,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles 64-bit arithmetic`() {
-        val ir = IrBuilder("i64_test", Target.x86_64())
+        val ir = ModuleBuilder("i64_test", Target.x86_64())
         val params = ir.createFunction("math64",
             listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
@@ -608,7 +608,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles 64-bit division`() {
-        val ir = IrBuilder("div64_test", Target.x86_64())
+        val ir = ModuleBuilder("div64_test", Target.x86_64())
         val params = ir.createFunction("div64",
             listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
@@ -622,7 +622,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles 64-bit shifts`() {
-        val ir = IrBuilder("shift64_test", Target.x86_64())
+        val ir = ModuleBuilder("shift64_test", Target.x86_64())
         val params = ir.createFunction("shifts64",
             listOf(Param("x", Type.I64)), Type.I64)
         ir.appendBlock("entry")
@@ -637,7 +637,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles 64-bit bitwise operations`() {
-        val ir = IrBuilder("bitwise64_test", Target.x86_64())
+        val ir = ModuleBuilder("bitwise64_test", Target.x86_64())
         val params = ir.createFunction("bitops64",
             listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
@@ -653,7 +653,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles 64-bit comparison`() {
-        val ir = IrBuilder("cmp64_test", Target.x86_64())
+        val ir = ModuleBuilder("cmp64_test", Target.x86_64())
         val params = ir.createFunction("cmp64",
             listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I32)
         ir.appendBlock("entry")
@@ -670,7 +670,7 @@ class X86CodeGeneratorTest {
     fun `compiles complex control flow with arithmetic`() {
         // fibonacci-like: if n <= 1 return n; else return compute(n-1) + compute(n-2)
         // We can't do recursion yet, so just test the branching pattern
-        val ir = IrBuilder("complex_cf", Target.x86_64())
+        val ir = ModuleBuilder("complex_cf", Target.x86_64())
         val params = ir.createFunction("classify",
             listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -717,7 +717,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles f64 addition`() {
-        val ir = IrBuilder("float_add", Target.x86_64())
+        val ir = ModuleBuilder("float_add", Target.x86_64())
         val params = ir.createFunction("fadd_test", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
         ir.appendBlock("entry")
         val sum = ir.fadd(params[0], params[1])
@@ -734,7 +734,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles f64 arithmetic chain`() {
-        val ir = IrBuilder("float_arith", Target.x86_64())
+        val ir = ModuleBuilder("float_arith", Target.x86_64())
         val params = ir.createFunction("fchain", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
         ir.appendBlock("entry")
         val sum = ir.fadd(params[0], params[1])
@@ -757,7 +757,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles f64 negation`() {
-        val ir = IrBuilder("float_neg", Target.x86_64())
+        val ir = ModuleBuilder("float_neg", Target.x86_64())
         val params = ir.createFunction("fneg_test", listOf(Param("a", Type.F64)), Type.F64)
         ir.appendBlock("entry")
         val neg = ir.fneg(params[0])
@@ -775,7 +775,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles sitofp i32 to f64`() {
-        val ir = IrBuilder("sitofp", Target.x86_64())
+        val ir = ModuleBuilder("sitofp", Target.x86_64())
         val params = ir.createFunction("int_to_double", listOf(Param("x", Type.I32)), Type.F64)
         ir.appendBlock("entry")
         val f = ir.sitofp(params[0], Type.F64)
@@ -792,7 +792,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles fptosi f64 to i32`() {
-        val ir = IrBuilder("fptosi", Target.x86_64())
+        val ir = ModuleBuilder("fptosi", Target.x86_64())
         val params = ir.createFunction("double_to_int", listOf(Param("x", Type.F64)), Type.I32)
         ir.appendBlock("entry")
         val i = ir.fptosi(params[0], Type.I32)
@@ -804,12 +804,12 @@ class X86CodeGeneratorTest {
         assertValidCodegen(code)
 
         val insts = org.kgen.target.x86.disasm.X86Disassembler().disassembleRaw(code)
-        assertTrue(insts.any { it.mnemonic == "cvtsd2si" }, "Should contain cvtsd2si: ${insts.map { it.text() }}")
+        assertTrue(insts.any { it.mnemonic == "cvttsd2si" }, "Should contain cvttsd2si: ${insts.map { it.text() }}")
     }
 
     @Test
     fun `compiles f64 comparison`() {
-        val ir = IrBuilder("fcmp", Target.x86_64())
+        val ir = ModuleBuilder("fcmp", Target.x86_64())
         val params = ir.createFunction("flt_test", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.fcmp(FCmpPredicate.OLT, params[0], params[1])
@@ -827,7 +827,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles f64 constant loading`() {
-        val ir = IrBuilder("fconst", Target.x86_64())
+        val ir = ModuleBuilder("fconst", Target.x86_64())
         ir.createFunction("return_pi", emptyList(), Type.F64)
         ir.appendBlock("entry")
         ir.ret(Constant.F64(3.14159265))
@@ -843,7 +843,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles mixed int and float function`() {
-        val ir = IrBuilder("mixed", Target.x86_64())
+        val ir = ModuleBuilder("mixed", Target.x86_64())
         val params = ir.createFunction("scale", listOf(Param("n", Type.I32), Param("factor", Type.F64)), Type.F64)
         ir.appendBlock("entry")
         val asFloat = ir.sitofp(params[0], Type.F64)
@@ -862,7 +862,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles call with stack arguments`() {
-        val ir = IrBuilder("stack_args", Target.x86_64())
+        val ir = ModuleBuilder("stack_args", Target.x86_64())
 
         // Declare a function with 8 i32 params (exceeds 6 GP regs in System V)
         ir.declareFunction("many_args", (1..8).map { Param("p$it", Type.I32) }, Type.I32)
@@ -880,9 +880,9 @@ class X86CodeGeneratorTest {
         val disasm = org.kgen.target.x86.disasm.X86Disassembler()
         val insts = disasm.disassembleRaw(code)
 
-        // Should have push instructions for the 2 overflow args (args 7 and 8)
-        assertTrue(insts.any { it.mnemonic == "push" && it.text() != "push rbp" },
-            "Should push stack args: ${insts.map { it.text() }}")
+        // Stack args are written via mov [rsp+offset] (pre-allocated in prologue)
+        assertTrue(insts.any { it.text().contains("[rsp") && it.text().contains("r11") },
+            "Should write stack args to [rsp+offset]: ${insts.map { it.text() }}")
         // Should have call instruction
         assertTrue(insts.any { it.mnemonic == "call" },
             "Should have call: ${insts.map { it.text() }}")
@@ -890,7 +890,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles call with mixed int and float stack arguments`() {
-        val ir = IrBuilder("mixed_stack", Target.x86_64())
+        val ir = ModuleBuilder("mixed_stack", Target.x86_64())
 
         // 6 GP + 2 float = 8 params; the floats should use xmm regs, not overflow
         // But let's use 7 GP + 2 float to force GP overflow
@@ -919,7 +919,7 @@ class X86CodeGeneratorTest {
     @Test
     fun `compiles phi nodes from diamond pattern`() {
         // if (x > 0) v = x + 1 else v = x - 1; return v
-        val ir = IrBuilder("phi_test", Target.x86_64())
+        val ir = ModuleBuilder("phi_test", Target.x86_64())
         val params = ir.createFunction("phi_diamond", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val cond = ir.icmp(ICmpPredicate.SGT, params[0], Constant.I32(0))
@@ -952,7 +952,7 @@ class X86CodeGeneratorTest {
     @Test
     fun `compiles phi with constant incoming values`() {
         // if (x > 0) goto then else goto else; then: br merge; else: br merge; merge: phi [1, then], [0, else]
-        val ir = IrBuilder("phi_const", Target.x86_64())
+        val ir = ModuleBuilder("phi_const", Target.x86_64())
         val params = ir.createFunction("is_positive", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val cond = ir.icmp(ICmpPredicate.SGT, params[0], Constant.I32(0))
@@ -977,7 +977,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles phi with i64 type`() {
-        val ir = IrBuilder("phi64", Target.x86_64())
+        val ir = ModuleBuilder("phi64", Target.x86_64())
         val params = ir.createFunction("phi64_fn", listOf(Param("x", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         val cond = ir.icmp(ICmpPredicate.SGT, params[0], Constant.I64(0))
@@ -1003,7 +1003,7 @@ class X86CodeGeneratorTest {
     @Test
     fun `compiles phi after mem2reg optimization`() {
         // Build IR with alloca/store/load, run mem2reg, then compile
-        val ir = IrBuilder("mem2reg_phi", Target.x86_64())
+        val ir = ModuleBuilder("mem2reg_phi", Target.x86_64())
         val params = ir.createFunction("abs_val", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val slot = ir.alloca(Type.I32)
@@ -1026,7 +1026,7 @@ class X86CodeGeneratorTest {
         ir.finalizeFunction()
 
         // Run mem2reg to convert alloca/store/load into phi nodes
-        val optimized = org.kgen.pass.Mem2Reg().run(ir.build())
+        val optimized = org.kgen.pipeline.Mem2Reg().run(ir.build())
 
         // Verify phi was inserted
         val mergeBlock = optimized.functions[0].blocks.find { it.label == "done" }
@@ -1042,7 +1042,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles alloca store load pattern`() {
-        val ir = IrBuilder("alloca_test", Target.x86_64())
+        val ir = ModuleBuilder("alloca_test", Target.x86_64())
         val params = ir.createFunction("use_alloca", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val slot = ir.alloca(Type.I32)
@@ -1064,7 +1064,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles multiple allocas`() {
-        val ir = IrBuilder("multi_alloca", Target.x86_64())
+        val ir = ModuleBuilder("multi_alloca", Target.x86_64())
         val params = ir.createFunction("swap_add", listOf(
             Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -1084,7 +1084,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles switch instruction`() {
-        val ir = IrBuilder("switch_test", Target.x86_64())
+        val ir = ModuleBuilder("switch_test", Target.x86_64())
         val params = ir.createFunction("classify", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         ir.switch(params[0], "default", listOf(
@@ -1121,7 +1121,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles musttail call as jmp`() {
-        val ir = IrBuilder("tailcall", Target.x86_64())
+        val ir = ModuleBuilder("tailcall", Target.x86_64())
 
         // helper(x) = x + 1
         val helperParams = ir.createFunction("helper", listOf(Param("x", Type.I32)), Type.I32)
@@ -1161,7 +1161,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles bitwise not`() {
-        val ir = IrBuilder("not_test", Target.x86_64())
+        val ir = ModuleBuilder("not_test", Target.x86_64())
         val params = ir.createFunction("bit_not", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val result = ir.not(params[0])
@@ -1177,7 +1177,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles ptrtoint and inttoptr`() {
-        val ir = IrBuilder("ptr_conv", Target.x86_64())
+        val ir = ModuleBuilder("ptr_conv", Target.x86_64())
         val params = ir.createFunction("ptr_ops", listOf(Param("p", Type.Pointer(Type.I32))), Type.Pointer(Type.I32))
         ir.appendBlock("entry")
         val asInt = ir.ptrtoint(params[0], Type.I64)
@@ -1192,7 +1192,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `compiles unsigned int to float`() {
-        val ir = IrBuilder("uitofp_test", Target.x86_64())
+        val ir = ModuleBuilder("uitofp_test", Target.x86_64())
         val params = ir.createFunction("uint_to_double", listOf(Param("x", Type.I32)), Type.F64)
         ir.appendBlock("entry")
         val f = ir.uitofp(params[0], Type.F64)
@@ -1205,7 +1205,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `PE uses Windows x64 ABI registers`() {
-        val ir = IrBuilder("winabi", Target.x86_64())
+        val ir = ModuleBuilder("winabi", Target.x86_64())
         ir.targetTriple = "x86_64-unknown-windows-msvc"
 
         val params = ir.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
@@ -1228,7 +1228,7 @@ class X86CodeGeneratorTest {
     @Test
     fun `compiles GEP with struct field offset`() {
         val pointType = Type.Struct(null, listOf(Type.I32, Type.I32))
-        val ir = IrBuilder("gep_struct", Target.x86_64())
+        val ir = ModuleBuilder("gep_struct", Target.x86_64())
         val params = ir.createFunction("getY", listOf(Param("p", Type.OpaquePointer)), Type.I32)
         ir.appendBlock("entry")
         // GEP to get pointer to field 1 (y) — offset should be 4 bytes
@@ -1253,7 +1253,7 @@ class X86CodeGeneratorTest {
     @Test
     fun `compiles GEP with array element offset`() {
         val arrType = Type.Array(Type.I32, 10)
-        val ir = IrBuilder("gep_array", Target.x86_64())
+        val ir = ModuleBuilder("gep_array", Target.x86_64())
         val params = ir.createFunction("getElem", listOf(Param("p", Type.OpaquePointer)), Type.I32)
         ir.appendBlock("entry")
         // GEP to element [3] — offset should be 12 bytes
@@ -1276,7 +1276,7 @@ class X86CodeGeneratorTest {
     fun `compiles GEP with nested struct`() {
         val innerType = Type.Struct(null, listOf(Type.I32, Type.I64))
         val outerType = Type.Struct(null, listOf(innerType, Type.I32))
-        val ir = IrBuilder("gep_nested", Target.x86_64())
+        val ir = ModuleBuilder("gep_nested", Target.x86_64())
         val params = ir.createFunction("getInnerField", listOf(Param("p", Type.OpaquePointer)), Type.I64)
         ir.appendBlock("entry")
         // GEP: outer[0].inner.field1 (the i64) — offset = 4 (past the i32)
@@ -1294,7 +1294,7 @@ class X86CodeGeneratorTest {
     @Test
     fun `compiles SROA then mem2reg on struct`() {
         val pointType = Type.Struct(null, listOf(Type.I32, Type.I32))
-        val ir = IrBuilder("sroa_struct", Target.x86_64())
+        val ir = ModuleBuilder("sroa_struct", Target.x86_64())
         val params = ir.createFunction("sumFields", listOf(
             Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -1310,8 +1310,8 @@ class X86CodeGeneratorTest {
         ir.finalizeFunction()
 
         // Run SROA + Mem2Reg to eliminate the struct
-        val sroa = org.kgen.pass.ScalarReplacementOfAggregates()
-        val mem2reg = org.kgen.pass.Mem2Reg()
+        val sroa = org.kgen.pipeline.ScalarReplacementOfAggregates()
+        val mem2reg = org.kgen.pipeline.Mem2Reg()
         val optimized = mem2reg.run(sroa.run(ir.build()))
 
         // Verify no allocas remain
@@ -1335,7 +1335,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `selects shl for multiply by power of 2`() {
-        val ir = IrBuilder("mul_pow2", Target.x86_64())
+        val ir = ModuleBuilder("mul_pow2", Target.x86_64())
         val params = ir.createFunction("double", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val result = ir.mul(params[0], Constant.I32(8)) // * 8 = shl 3
@@ -1355,7 +1355,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `selects test for comparison with zero`() {
-        val ir = IrBuilder("cmp_zero", Target.x86_64())
+        val ir = ModuleBuilder("cmp_zero", Target.x86_64())
         val params = ir.createFunction("isZero", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val cmp = ir.icmp(ICmpPredicate.EQ, params[0], Constant.I32(0))
@@ -1373,7 +1373,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `selects xor for zero constant`() {
-        val ir = IrBuilder("zero", Target.x86_64())
+        val ir = ModuleBuilder("zero", Target.x86_64())
         ir.createFunction("retZero", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(0))
@@ -1390,7 +1390,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `sets al for vararg calls on System V`() {
-        val ir = IrBuilder("vararg_call", Target.x86_64())
+        val ir = ModuleBuilder("vararg_call", Target.x86_64())
         // Declare vararg function taking one i32 param + varargs
         val vfn = ir.declareFunction("varfn", listOf(Param("n", Type.I32)), Type.I32, isVarArg = true)
         ir.createFunction("main", emptyList(), Type.I32)
@@ -1411,7 +1411,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `does not set al for non-vararg calls`() {
-        val ir = IrBuilder("no_vararg", Target.x86_64())
+        val ir = ModuleBuilder("no_vararg", Target.x86_64())
         ir.declareFunction("regular", listOf(Param("a", Type.F64)), Type.I32)
         ir.createFunction("main", emptyList(), Type.I32)
         ir.appendBlock("entry")
@@ -1431,7 +1431,7 @@ class X86CodeGeneratorTest {
     @Test
     fun `returns small struct in rax`() {
         val structType = Type.Struct(null, listOf(Type.I32, Type.I32))
-        val ir = IrBuilder("struct_ret", Target.x86_64())
+        val ir = ModuleBuilder("struct_ret", Target.x86_64())
         val params = ir.createFunction("makePair", listOf(Param("a", Type.I32), Param("b", Type.I32)), structType)
         ir.appendBlock("entry")
         val undef = Constant.Undef(structType)
@@ -1453,7 +1453,7 @@ class X86CodeGeneratorTest {
     @Test
     fun `receives struct return from call`() {
         val structType = Type.Struct(null, listOf(Type.I64, Type.I64))
-        val ir = IrBuilder("struct_call", Target.x86_64())
+        val ir = ModuleBuilder("struct_call", Target.x86_64())
         ir.declareFunction("getPair", emptyList(), structType)
         ir.createFunction("main", emptyList(), Type.I64)
         ir.appendBlock("entry")
@@ -1471,7 +1471,7 @@ class X86CodeGeneratorTest {
     fun `returns large struct via sret`() {
         // Struct > 16 bytes: should use hidden sret pointer
         val structType = Type.Struct(null, listOf(Type.I64, Type.I64, Type.I64))
-        val ir = IrBuilder("large_struct_ret", Target.x86_64())
+        val ir = ModuleBuilder("large_struct_ret", Target.x86_64())
         val params = ir.createFunction("makeTriple",
             listOf(Param("a", Type.I64), Param("b", Type.I64), Param("c", Type.I64)), structType)
         ir.appendBlock("entry")
@@ -1496,7 +1496,7 @@ class X86CodeGeneratorTest {
     @Test
     fun `calls function returning large struct via sret`() {
         val structType = Type.Struct(null, listOf(Type.I64, Type.I64, Type.I64))
-        val ir = IrBuilder("call_large_struct", Target.x86_64())
+        val ir = ModuleBuilder("call_large_struct", Target.x86_64())
         ir.declareFunction("getTriple", emptyList(), structType)
         ir.createFunction("main", emptyList(), Type.I64)
         ir.appendBlock("entry")
@@ -1519,7 +1519,7 @@ class X86CodeGeneratorTest {
     @Test
     fun `compiles va_start and va_arg`() {
         // Vararg function: int sum(int count, ...)
-        val ir = IrBuilder("varargs", Target.x86_64())
+        val ir = ModuleBuilder("varargs", Target.x86_64())
         val params = ir.createFunction("sum",
             listOf(Param("count", Type.I32)), Type.I32, isVarArg = true)
         ir.appendBlock("entry")
@@ -1548,7 +1548,7 @@ class X86CodeGeneratorTest {
     fun `large struct sret with parameters shifted`() {
         // When sret uses the first GP arg (RDI), the actual params shift to RSI, RDX, ...
         val structType = Type.Struct(null, listOf(Type.I64, Type.I64, Type.I64))
-        val ir = IrBuilder("sret_shifted", Target.x86_64())
+        val ir = ModuleBuilder("sret_shifted", Target.x86_64())
         val params = ir.createFunction("fillStruct",
             listOf(Param("x", Type.I64)), structType)
         ir.appendBlock("entry")
@@ -1572,7 +1572,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `generates ctlz instruction`() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         val params = ir.createFunction("clz", listOf(Param("a", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.ctlz(params[0]))
@@ -1583,7 +1583,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `generates cttz instruction`() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         val params = ir.createFunction("ctz", listOf(Param("a", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.cttz(params[0]))
@@ -1594,7 +1594,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `generates ctpop instruction`() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         val params = ir.createFunction("popcount", listOf(Param("a", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.ctpop(params[0]))
@@ -1605,7 +1605,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `generates bswap instruction`() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         val params = ir.createFunction("swap", listOf(Param("a", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.bswap(params[0]))
@@ -1616,7 +1616,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `generates sqrt instruction`() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         val params = ir.createFunction("mySqrt", listOf(Param("a", Type.F64)), Type.F64)
         ir.appendBlock("entry")
         ir.ret(ir.sqrt(params[0]))
@@ -1627,7 +1627,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `generates ceil instruction`() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         val params = ir.createFunction("myCeil", listOf(Param("a", Type.F64)), Type.F64)
         ir.appendBlock("entry")
         ir.ret(ir.ceil(params[0]))
@@ -1638,7 +1638,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `generates floor instruction`() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         val params = ir.createFunction("myFloor", listOf(Param("a", Type.F64)), Type.F64)
         ir.appendBlock("entry")
         ir.ret(ir.floor(params[0]))
@@ -1649,7 +1649,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `generates memcpy instruction`() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         val params = ir.createFunction("copy", listOf(
             Param("dst", Type.OpaquePointer), Param("src", Type.OpaquePointer), Param("len", Type.I64)
         ), Type.Void)
@@ -1663,7 +1663,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `generates memset instruction`() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         val params = ir.createFunction("fill", listOf(
             Param("dst", Type.OpaquePointer), Param("val", Type.I32), Param("len", Type.I64)
         ), Type.Void)
@@ -1677,7 +1677,7 @@ class X86CodeGeneratorTest {
 
     @Test
     fun `generates unreachable as ud2`() {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.createFunction("trap", emptyList(), Type.Void)
         ir.appendBlock("entry")
         ir.unreachable()

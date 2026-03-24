@@ -3,7 +3,7 @@ package org.kgen.codegen.alloc
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 
 class LinearScanRegisterAllocatorTest {
@@ -29,8 +29,8 @@ class LinearScanRegisterAllocatorTest {
         returnRegisters = listOf(r0),
     )
 
-    private fun buildFunction(block: IrBuilder.() -> Unit): IrFunction {
-        val ir = IrBuilder("test", Target.x86_64())
+    private fun buildFunction(block: ModuleBuilder.() -> Unit): IrFunction {
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.block()
         val module = ir.build()
         return module.functions.last { !it.isExternal }

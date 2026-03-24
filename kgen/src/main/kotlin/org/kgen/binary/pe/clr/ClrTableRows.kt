@@ -7,7 +7,7 @@ data class ClrTypeDef(
     val extends: Int, val fieldList: Int, val methodList: Int,
 )
 data class ClrField(val flags: Int, val name: Int, val signature: Int)
-data class ClrMethodDef(
+data class ClrMethodDefinition(
     val rva: Int, val implFlags: Int, val flags: Int,
     val name: Int, val signature: Int, val paramList: Int,
 )

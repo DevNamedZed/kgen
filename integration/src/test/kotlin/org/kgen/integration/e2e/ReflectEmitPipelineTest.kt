@@ -8,7 +8,7 @@ import org.kgen.binary.ObjectFormat
 import org.kgen.binary.SectionKind
 import org.kgen.binary.SymbolKind
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.reflect.Module as ReflectModule
 import org.kgen.reflect.Signature
@@ -99,7 +99,7 @@ class ReflectEmitPipelineTest {
 
     @Test
     fun reflectFromWindowsBinary() {
-        val ir = IrBuilder("pe_reflect", Target.x86_64())
+        val ir = ModuleBuilder("pe_reflect", Target.x86_64())
         ir.targetTriple = "x86_64-unknown-windows-msvc"
         val p = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
@@ -118,7 +118,7 @@ class ReflectEmitPipelineTest {
     @Test
     fun fullReflectPipeline() {
         // 1. Build IR
-        val ir = IrBuilder("pipeline", Target.x86_64())
+        val ir = ModuleBuilder("pipeline", Target.x86_64())
 
         val addP = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
@@ -161,7 +161,7 @@ class ReflectEmitPipelineTest {
     // -- Helpers --
 
     private fun buildModule(): Module {
-        val ir = IrBuilder("reflect_test", Target.x86_64())
+        val ir = ModuleBuilder("reflect_test", Target.x86_64())
         val p = ir.createFunction("compute", listOf(Param("x", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         ir.ret(ir.mul(p[0], Constant.I64(2)))
@@ -170,7 +170,7 @@ class ReflectEmitPipelineTest {
     }
 
     private fun buildMultiModule(): Module {
-        val ir = IrBuilder("multi_reflect", Target.x86_64())
+        val ir = ModuleBuilder("multi_reflect", Target.x86_64())
 
         val addP = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")

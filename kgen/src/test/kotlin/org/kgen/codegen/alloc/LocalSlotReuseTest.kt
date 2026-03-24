@@ -4,13 +4,13 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 
 class LocalSlotReuseTest {
 
-    private fun buildFunction(block: IrBuilder.() -> Unit): IrFunction {
-        val ir = IrBuilder("test", Target.x86_64())
+    private fun buildFunction(block: ModuleBuilder.() -> Unit): IrFunction {
+        val ir = ModuleBuilder("test", Target.x86_64())
         ir.block()
         return ir.build().functions.last { !it.isExternal }
     }

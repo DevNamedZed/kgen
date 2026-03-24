@@ -505,12 +505,12 @@ class ClrMetadataComprehensiveTest {
     }
 
     @Test
-    fun `round-trip MethodDef table`() {
+    fun `round-trip MethodDefinition table`() {
         val h = makeHeaps()
         val name = h.strings.add("Execute")
         val sig = h.blobs.add(byteArrayOf(0x00, 0x00, 0x01))
         val tables = ClrTables(methodDefs = listOf(
-            ClrMethodDef(rva = 0x2050, implFlags = 0, flags = 0x0086, name = name, signature = sig, paramList = 1)
+            ClrMethodDefinition(rva = 0x2050, implFlags = 0, flags = 0x0086, name = name, signature = sig, paramList = 1)
         ))
         val parsed = buildAndParse(tables, h.strings.build(), h.blobs.build(), h.guids.build(), h.userStrings.build())
         assertEquals(1, parsed.tables.methodDefs.size)
@@ -578,10 +578,10 @@ class ClrMetadataComprehensiveTest {
         val value = h.blobs.add(byteArrayOf(0x01, 0x00, 0x00, 0x00))
         val tables = ClrTables(
             typeDefs = listOf(ClrTypeDef(0, h.strings.add("<Module>"), h.strings.add(""), 0, 1, 1)),
-            methodDefs = listOf(ClrMethodDef(0, 0, 0x0086, h.strings.add(".ctor"), h.blobs.add(byteArrayOf(0x20, 0x00, 0x01)), 1)),
+            methodDefs = listOf(ClrMethodDefinition(0, 0, 0x0086, h.strings.add(".ctor"), h.blobs.add(byteArrayOf(0x20, 0x00, 0x01)), 1)),
             customAttributes = listOf(ClrCustomAttribute(
                 parent = (1 shl 5) or 2, // TypeDef tag=2
-                type = (1 shl 3) or 2,   // MethodDef tag=2
+                type = (1 shl 3) or 2,   // MethodDefinition tag=2
                 value = value,
             ))
         )
@@ -651,11 +651,11 @@ class ClrMetadataComprehensiveTest {
         val h = makeHeaps()
         val importName = h.strings.add("MessageBoxA")
         val tables = ClrTables(
-            methodDefs = listOf(ClrMethodDef(0, 0, 0x0086, h.strings.add("MsgBox"), h.blobs.add(byteArrayOf(0x00, 0x00, 0x01)), 1)),
+            methodDefs = listOf(ClrMethodDefinition(0, 0, 0x0086, h.strings.add("MsgBox"), h.blobs.add(byteArrayOf(0x00, 0x00, 0x01)), 1)),
             moduleRefs = listOf(ClrModuleRef(h.strings.add("user32.dll"))),
             implMaps = listOf(ClrImplMap(
                 mappingFlags = 0x0001, // CharSetAnsi
-                memberForwarded = (1 shl 1) or 1, // MethodDef #1, tag=1
+                memberForwarded = (1 shl 1) or 1, // MethodDefinition #1, tag=1
                 importName = importName,
                 importScope = 1,
             ))
@@ -755,7 +755,7 @@ class ClrMetadataComprehensiveTest {
         val h = makeHeaps()
         val inst = h.blobs.add(byteArrayOf(0x0A, 0x01, 0x08))
         val tables = ClrTables(
-            methodDefs = listOf(ClrMethodDef(0, 0, 0x0086, h.strings.add("M"), h.blobs.add(byteArrayOf(0x10, 0x01, 0x00, 0x01)), 1)),
+            methodDefs = listOf(ClrMethodDefinition(0, 0, 0x0086, h.strings.add("M"), h.blobs.add(byteArrayOf(0x10, 0x01, 0x00, 0x01)), 1)),
             methodSpecs = listOf(ClrMethodSpec(method = (1 shl 1) or 0, instantiation = inst))
         )
         val parsed = buildAndParse(tables, h.strings.build(), h.blobs.build(), h.guids.build(), h.userStrings.build())
@@ -794,13 +794,13 @@ class ClrMetadataComprehensiveTest {
     }
 
     @Test
-    fun `round-trip multiple MethodDefs`() {
+    fun `round-trip multiple MethodDefinitions`() {
         val h = makeHeaps()
         val sig = h.blobs.add(byteArrayOf(0x00, 0x00, 0x01))
         val tables = ClrTables(methodDefs = listOf(
-            ClrMethodDef(0, 0, 0x0086, h.strings.add("A"), sig, 1),
-            ClrMethodDef(0x100, 0, 0x0086, h.strings.add("B"), sig, 1),
-            ClrMethodDef(0x200, 0, 0x0086, h.strings.add("C"), sig, 1),
+            ClrMethodDefinition(0, 0, 0x0086, h.strings.add("A"), sig, 1),
+            ClrMethodDefinition(0x100, 0, 0x0086, h.strings.add("B"), sig, 1),
+            ClrMethodDefinition(0x200, 0, 0x0086, h.strings.add("C"), sig, 1),
         ))
         val parsed = buildAndParse(tables, h.strings.build(), h.blobs.build(), h.guids.build(), h.userStrings.build())
         assertEquals(3, parsed.tables.methodDefs.size)
@@ -886,7 +886,7 @@ class ClrMetadataComprehensiveTest {
                 ClrTypeDef(0x00100001, h.strings.add("Program"), h.strings.add("App"), 0, 1, 1),
             ),
             methodDefs = listOf(
-                ClrMethodDef(0x2050, 0, 0x0096, h.strings.add("Main"), sig, 1),
+                ClrMethodDefinition(0x2050, 0, 0x0096, h.strings.add("Main"), sig, 1),
             ),
             params = listOf(ClrParam(0, 1, h.strings.add("args"))),
             assemblies = listOf(ClrAssembly(0x8004, 1, 0, 0, 0, 0, 0, h.strings.add("App"), h.strings.add(""))),
@@ -945,7 +945,7 @@ class ClrMetadataComprehensiveTest {
     fun `ClrCodedIndex METHOD_DEF_OR_REF has correct tables`() {
         val tables = ClrCodedIndex.METHOD_DEF_OR_REF
         assertEquals(2, tables.size)
-        assertEquals(0x06, tables[0]) // MethodDef
+        assertEquals(0x06, tables[0]) // MethodDefinition
         assertEquals(0x0A, tables[1]) // MemberRef
     }
 
@@ -954,7 +954,7 @@ class ClrMetadataComprehensiveTest {
         val tables = ClrCodedIndex.TYPE_OR_METHOD_DEF
         assertEquals(2, tables.size)
         assertEquals(0x02, tables[0]) // TypeDef
-        assertEquals(0x06, tables[1]) // MethodDef
+        assertEquals(0x06, tables[1]) // MethodDefinition
     }
 
     @Test
@@ -964,7 +964,7 @@ class ClrMetadataComprehensiveTest {
         assertEquals(0x02, tables[0]) // TypeDef
         assertEquals(0x01, tables[1]) // TypeRef
         assertEquals(0x1A, tables[2]) // ModuleRef
-        assertEquals(0x06, tables[3]) // MethodDef
+        assertEquals(0x06, tables[3]) // MethodDefinition
         assertEquals(0x1B, tables[4]) // TypeSpec
     }
 
@@ -973,14 +973,14 @@ class ClrMetadataComprehensiveTest {
         val tables = ClrCodedIndex.MEMBER_FORWARDED
         assertEquals(2, tables.size)
         assertEquals(0x04, tables[0]) // Field
-        assertEquals(0x06, tables[1]) // MethodDef
+        assertEquals(0x06, tables[1]) // MethodDefinition
     }
 
     @Test
     fun `ClrCodedIndex CUSTOM_ATTRIBUTE_TYPE has correct tables`() {
         val tables = ClrCodedIndex.CUSTOM_ATTRIBUTE_TYPE
         assertEquals(5, tables.size)
-        assertEquals(0x06, tables[2]) // MethodDef
+        assertEquals(0x06, tables[2]) // MethodDefinition
         assertEquals(0x0A, tables[3]) // MemberRef
     }
 
@@ -988,7 +988,7 @@ class ClrMetadataComprehensiveTest {
     fun `ClrCodedIndex HAS_CUSTOM_ATTRIBUTE has many tables`() {
         val tables = ClrCodedIndex.HAS_CUSTOM_ATTRIBUTE
         assertTrue(tables.size > 10)
-        assertEquals(0x06, tables[0]) // MethodDef
+        assertEquals(0x06, tables[0]) // MethodDefinition
     }
 
     @Test
@@ -1038,16 +1038,16 @@ class ClrMetadataComprehensiveTest {
     }
 
     @Test
-    fun `coded index encoding MethodDefOrRef with MethodDef`() {
+    fun `coded index encoding MethodDefinitionOrRef with MethodDefinition`() {
         val row = 10
-        val coded = (row shl 1) or 0 // MethodDef tag=0 (1-bit tag)
+        val coded = (row shl 1) or 0 // MethodDefinition tag=0 (1-bit tag)
         assertEquals(20, coded)
         assertEquals(10, coded shr 1)
         assertEquals(0, coded and 1)
     }
 
     @Test
-    fun `coded index encoding TypeOrMethodDef with TypeDef`() {
+    fun `coded index encoding TypeOrMethodDefinition with TypeDef`() {
         val row = 4
         val coded = (row shl 1) or 0 // TypeDef tag=0
         assertEquals(8, coded)
@@ -1056,9 +1056,9 @@ class ClrMetadataComprehensiveTest {
     }
 
     @Test
-    fun `coded index encoding TypeOrMethodDef with MethodDef`() {
+    fun `coded index encoding TypeOrMethodDefinition with MethodDefinition`() {
         val row = 3
-        val coded = (row shl 1) or 1 // MethodDef tag=1
+        val coded = (row shl 1) or 1 // MethodDefinition tag=1
         assertEquals(7, coded)
         assertEquals(3, coded shr 1)
         assertEquals(1, coded and 1)
@@ -1086,8 +1086,8 @@ class ClrMetadataComprehensiveTest {
     }
 
     @Test
-    fun `ClrMethodDef data class properties`() {
-        val m = ClrMethodDef(rva = 0x2000, implFlags = 0x10, flags = 0x86, name = 1, signature = 2, paramList = 3)
+    fun `ClrMethodDefinition data class properties`() {
+        val m = ClrMethodDefinition(rva = 0x2000, implFlags = 0x10, flags = 0x86, name = 1, signature = 2, paramList = 3)
         assertEquals(0x2000, m.rva)
         assertEquals(0x10, m.implFlags)
         assertEquals(0x86, m.flags)
@@ -1298,7 +1298,7 @@ class ClrMetadataComprehensiveTest {
                 ClrTypeDef(0x00100001, h.strings.add("MyClass"), h.strings.add("NS"), (1 shl 2) or 1, 1, 1),
             ),
             fields = listOf(ClrField(0x0006, h.strings.add("_val"), fieldSig)),
-            methodDefs = listOf(ClrMethodDef(0x2050, 0, 0x0086, h.strings.add("Run"), sig, 1)),
+            methodDefs = listOf(ClrMethodDefinition(0x2050, 0, 0x0086, h.strings.add("Run"), sig, 1)),
             params = listOf(ClrParam(0, 1, h.strings.add("arg"))),
             memberRefs = listOf(ClrMemberRef((1 shl 3) or 1, h.strings.add(".ctor"), sig)),
             assemblies = listOf(ClrAssembly(0x8004, 1, 0, 0, 0, 0, 0, h.strings.add("Full"), h.strings.add(""))),
@@ -1426,7 +1426,7 @@ class ClrMetadataComprehensiveTest {
         val tables = ClrCodedIndex.HAS_DECL_SECURITY
         assertEquals(3, tables.size)
         assertEquals(0x02, tables[0]) // TypeDef
-        assertEquals(0x06, tables[1]) // MethodDef
+        assertEquals(0x06, tables[1]) // MethodDefinition
         assertEquals(0x20, tables[2]) // Assembly
     }
 }

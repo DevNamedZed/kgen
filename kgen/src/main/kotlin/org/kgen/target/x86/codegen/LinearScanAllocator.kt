@@ -19,6 +19,7 @@ data class AllocResult(
     val usedCalleeRegs64: Set<X86Register64>,
     val usedCalleeRegs32: Set<X86Register32>,
     val paramMoves: Map<String, Int> = emptyMap(),
+    val intervals: List<org.kgen.codegen.alloc.LiveInterval> = emptyList(),
 )
 
 class LinearScanAllocator(
@@ -49,7 +50,70 @@ class LinearScanAllocator(
     fun allocate(): AllocResult {
         val intervals = LivenessAnalysis(fn).intervals()
         val hints = buildRegisterHints()
-        return linearScan(intervals, hints)
+        val result = linearScan(intervals, hints)
+        verifyNoOverlap(intervals, result)
+        return result
+    }
+
+    private fun verifyNoOverlap(intervals: List<LiveInterval>, result: AllocResult) {
+        // Check spill slot overlaps
+        val spillsByOffset = mutableMapOf<Int, MutableList<LiveInterval>>()
+        for (interval in intervals) {
+            val location = result.locations[interval.name]
+            if (location is Location.Spill) {
+                spillsByOffset.getOrPut(location.offset) { mutableListOf() }.add(interval)
+            }
+        }
+        for ((offset, occupants) in spillsByOffset) {
+            val sorted = occupants.sortedBy { it.start }
+            for (index in 0 until sorted.size - 1) {
+                val current = sorted[index]
+                val next = sorted[index + 1]
+                if (current.end >= next.start) {
+                    throw IllegalStateException(
+                        "Spill slot overlap in ${fn.name} at offset $offset: " +
+                                "${current.name}[${current.start}-${current.end}] overlaps " +
+                                "${next.name}[${next.start}-${next.end}]"
+                    )
+                }
+            }
+        }
+
+        // Check register overlaps — two values in the same register with overlapping lifetimes
+        fun regKey(location: Location): Int? = when (location) {
+            is Location.Reg32 -> (location.reg as X86Register).encoding
+            is Location.Reg64 -> (location.reg as X86Register).encoding
+            is Location.RegXmm -> (location.reg as X86Register).encoding + 100
+            else -> null
+        }
+        val byRegister = mutableMapOf<Int, MutableList<LiveInterval>>()
+        for (interval in intervals) {
+            val location = result.locations[interval.name] ?: continue
+            val key = regKey(location) ?: continue
+            byRegister.getOrPut(key) { mutableListOf() }.add(interval)
+        }
+        for ((regId, occupants) in byRegister) {
+            val sorted = occupants.sortedBy { it.start }
+            for (index in 0 until sorted.size - 1) {
+                val current = sorted[index]
+                val next = sorted[index + 1]
+                if (current.end >= next.start) {
+                    val regName = occupants.firstNotNullOfOrNull { iv ->
+                        when (val loc = result.locations[iv.name]) {
+                            is Location.Reg32 -> loc.reg.toString()
+                            is Location.Reg64 -> loc.reg.toString()
+                            is Location.RegXmm -> loc.reg.toString()
+                            else -> null
+                        }
+                    } ?: "reg$regId"
+                    throw IllegalStateException(
+                        "Register overlap in ${fn.name} at $regName: " +
+                                "${current.name}[${current.start}-${current.end}] overlaps " +
+                                "${next.name}[${next.start}-${next.end}]"
+                    )
+                }
+            }
+        }
     }
 
     /**
@@ -97,13 +161,11 @@ class LinearScanAllocator(
                     if (destName != null) hints[destName] = lhsName
                 }
 
-                // Copy-like: bitcast, trunc, zext, sext — dest should prefer source register
+                // Copy-like: only same-width BitCast is a true register copy
                 val copyPair: Pair<String, String>? = when (inst) {
-                    is BitCast -> inst.dest.name to inst.value.name
-                    is FTrunc -> inst.dest.name to inst.operand.name
-                    is ZExt -> inst.dest.name to inst.value.name
-                    is SExt -> inst.dest.name to inst.value.name
-                    is IntTrunc -> inst.dest.name to inst.value.name
+                    is BitCast -> {
+                        if (inst.value.type == inst.dest.type) inst.dest.name to inst.value.name else null
+                    }
                     else -> null
                 }
                 if (copyPair != null) {
@@ -118,7 +180,7 @@ class LinearScanAllocator(
         fn.blocks.any { block ->
             block.instructions.any {
                 it is SDiv || it is UDiv ||
-                it is SRem || it is URem
+                        it is SRem || it is URem
             }
         }
     }
@@ -148,6 +210,33 @@ class LinearScanAllocator(
             }
         }
 
+        fun allocateFresh(): Int = ++maxSlots
+
+        /**
+         * Acquire a slot that doesn't conflict with the given liveness range.
+         * The codegen eagerly stores values to their spill slot at the definition
+         * site, so a slot can only be reused if no existing reservation's range
+         * overlaps with [start, end].
+         */
+        fun acquireSafe(
+            start: Int,
+            end: Int,
+            reservations: List<Triple<Int, Int, Int>>,
+        ): Int {
+            val iterator = freeSlots.iterator()
+            while (iterator.hasNext()) {
+                val candidate = iterator.next()
+                val conflicts = reservations.any { (slot, resStart, resEnd) ->
+                    slot == candidate && resEnd >= start && resStart <= end
+                }
+                if (!conflicts) {
+                    iterator.remove()
+                    return candidate
+                }
+            }
+            return ++maxSlots
+        }
+
         fun release(slot: Int) {
             freeSlots.add(slot)
         }
@@ -168,6 +257,16 @@ class LinearScanAllocator(
         return cost
     }
 
+    private fun corresponding32(reg64: X86Register64): X86Register32? {
+        val encoding = (reg64 as X86Register).encoding
+        return availableRegs32.firstOrNull { (it as X86Register).encoding == encoding }
+    }
+
+    private fun corresponding64(reg32: X86Register32): X86Register64? {
+        val encoding = (reg32 as X86Register).encoding
+        return availableRegs64.firstOrNull { (it as X86Register).encoding == encoding }
+    }
+
     private fun linearScan(intervals: List<LiveInterval>, hints: Map<String, String> = emptyMap()): AllocResult {
         val locations = mutableMapOf<String, Location>()
         val active64 = mutableListOf<Pair<LiveInterval, X86Register64>>()
@@ -180,33 +279,67 @@ class LinearScanAllocator(
         val usedCallee32 = mutableSetOf<X86Register32>()
         val spillPool = SpillSlotPool()
 
-        val spilledIntervals = mutableMapOf<String, Int>()
+        data class SpillEntry(val slot: Int, val end: Int)
+        val spilledIntervals = mutableMapOf<String, SpillEntry>()
+
+        fun allocate64(reg: X86Register64) {
+            free64.remove(reg)
+            corresponding32(reg)?.let { free32.remove(it) }
+        }
+
+        fun allocate32(reg: X86Register32) {
+            free32.remove(reg)
+            corresponding64(reg)?.let { free64.remove(it) }
+        }
+
+        fun release64(reg: X86Register64) {
+            free64.add(reg)
+            val r32 = corresponding32(reg) ?: return
+            if (active32.none { it.second == r32 }) {
+                free32.add(r32)
+            }
+        }
+
+        fun release32(reg: X86Register32) {
+            free32.add(reg)
+            val r64 = corresponding64(reg) ?: return
+            if (active64.none { it.second == r64 }) {
+                free64.add(r64)
+            }
+        }
 
         fun expireOld(currentStart: Int) {
             active64.removeAll { (iv, reg) ->
-                if (iv.end < currentStart) { free64.add(reg); true } else false
+                if (iv.end < currentStart) { release64(reg); true } else false
             }
             active32.removeAll { (iv, reg) ->
-                if (iv.end < currentStart) { free32.add(reg); true } else false
+                if (iv.end < currentStart) { release32(reg); true } else false
             }
             activeXmm.removeAll { (iv, reg) ->
                 if (iv.end < currentStart) { freeXmm.add(reg); true } else false
             }
-            val expired = spilledIntervals.entries.filter { (name, _) ->
-                val iv = intervals.firstOrNull { it.name == name }
-                iv != null && iv.end < currentStart
+            val expired = spilledIntervals.entries.filter { (_, entry) ->
+                entry.end < currentStart
             }
-            for ((name, slot) in expired) {
+            for ((name, entry) in expired) {
                 spilledIntervals.remove(name)
-                spillPool.release(slot)
+                spillPool.release(entry.slot)
             }
         }
 
-        fun spillToPool(name: String): Location.Spill {
-            val slot = spillPool.acquire()
-            spilledIntervals[name] = slot
+        // Track all slot reservations by their full [start, end] range.
+        // This prevents the pool from reusing a slot while another value
+        // whose liveness overlaps has been eagerly stored there.
+        val slotReservations = mutableListOf<Triple<Int, Int, Int>>() // (slot, start, end)
+
+        fun spillToPool(interval: LiveInterval): Location.Spill {
+            val reserveStart = if (interval.isPhi) { 1 } else { interval.start }
+            val slot = spillPool.acquireSafe(reserveStart, interval.end, slotReservations)
+            spilledIntervals[interval.name] = SpillEntry(slot, interval.end)
+            slotReservations.add(Triple(slot, reserveStart, interval.end))
             return Location.Spill(spillPool.offsetFor(slot))
         }
+
 
         // Pre-assign parameter registers
         var gpIdx = gpParamOffset
@@ -229,34 +362,41 @@ class LinearScanAllocator(
             } else if (param.type == Type.I64 || param.type == Type.OpaquePointer || param.type is Type.Pointer) {
                 if (gpIdx < paramRegs64.size) {
                     val reg = paramRegs64[gpIdx]
-                    val needsMove = interval.acrossCall || (hasDiv && reg !in availableRegs64)
+                    val needsMove = interval.acrossCall || reg !in availableRegs64
                     if (needsMove) {
                         paramMoves[param.name] = gpIdx
                     } else {
                         locations[param.name] = Location.Reg64(reg)
-                        free64.remove(reg)
+                        allocate64(reg)
                         active64.add(interval to reg)
                         if (reg in calleeSaved64) usedCallee64.add(reg)
                     }
-                    gpIdx++
+                } else {
+                    // Stack parameter: on Win64, at [RBP + 0x10 + gpIdx*8]
+                    val stackOffset = 0x10 + gpIdx * 8
+                    locations[param.name] = Location.Spill(stackOffset)
                 }
+                gpIdx++
             } else {
                 if (gpIdx < paramRegs32.size) {
                     val reg = paramRegs32[gpIdx]
-                    val needsMove = interval.acrossCall || (hasDiv && reg !in availableRegs32)
+                    val needsMove = interval.acrossCall || reg !in availableRegs32
                     if (needsMove) {
                         paramMoves[param.name] = gpIdx
                     } else {
                         locations[param.name] = Location.Reg32(reg)
-                        free32.remove(reg)
+                        allocate32(reg)
                         active32.add(interval to reg)
                         if (reg in calleeSaved32) {
                             usedCallee32.add(reg)
                             calleeSaved32to64[reg]?.let { usedCallee64.add(it) }
                         }
                     }
-                    gpIdx++
+                } else {
+                    val stackOffset = 0x10 + gpIdx * 8
+                    locations[param.name] = Location.Spill(stackOffset)
                 }
+                gpIdx++
             }
         }
 
@@ -267,15 +407,19 @@ class LinearScanAllocator(
             when {
                 interval.type is Type.Struct -> {
                     val slotsNeeded = ((structSize(interval.type as Type.Struct) + 7) / 8).coerceAtLeast(1)
-                    val firstSlot = if (slotsNeeded == 1) spillPool.acquire()
-                        else spillPool.acquireContiguous(slotsNeeded)
-                    spilledIntervals[interval.name] = firstSlot
+                    val firstSlot = if (slotsNeeded == 1) {
+                        spillPool.acquireSafe(interval.start, interval.end, slotReservations)
+                    } else {
+                        spillPool.acquireContiguous(slotsNeeded)
+                    }
+                    spilledIntervals[interval.name] = SpillEntry(firstSlot, interval.end)
+                    slotReservations.add(Triple(firstSlot, interval.start, interval.end))
                     locations[interval.name] = Location.Spill(spillPool.offsetFor(firstSlot))
                 }
                 isFloatType(interval.type) -> {
                     if (interval.acrossCall) {
                         // All XMM registers are caller-saved — must spill across calls
-                        locations[interval.name] = spillToPool(interval.name)
+                        locations[interval.name] = spillToPool(interval)
                     } else if (freeXmm.isNotEmpty()) {
                         val reg = pickBestXmm(freeXmm, interval, hints, locations)
                         locations[interval.name] = Location.RegXmm(reg)
@@ -285,39 +429,48 @@ class LinearScanAllocator(
                         if (evicted != null) {
                             val (evictedIv, evictedReg) = evicted
                             activeXmm.remove(evicted)
-                            locations[evictedIv.name] = spillToPool(evictedIv.name)
+                            locations[evictedIv.name] = spillToPool(evictedIv)
                             locations[interval.name] = Location.RegXmm(evictedReg)
                             activeXmm.add(interval to evictedReg)
                         } else {
-                            locations[interval.name] = spillToPool(interval.name)
+                            locations[interval.name] = spillToPool(interval)
                         }
                     }
                 }
                 interval.type == Type.I64 || interval.type == Type.OpaquePointer || interval.type is Type.Pointer -> {
                     val reg = pickBestReg64(free64, interval, hints, locations)
                     if (reg != null) {
-                        free64.remove(reg)
+                        allocate64(reg)
                         locations[interval.name] = Location.Reg64(reg)
                         active64.add(interval to reg)
                         if (reg in calleeSaved64) usedCallee64.add(reg)
                     } else {
-                        val evicted = tryEvict64(interval, active64)
+                        // When the interval is live across a call, we can only place it
+                        // in a callee-saved register — caller-saved would be destroyed.
+                        // Filter eviction candidates accordingly; if no callee-saved
+                        // holder can be evicted, the interval correctly spills.
+                        val candidates = if (interval.acrossCall) {
+                            active64.filter { it.second in calleeSaved64 }
+                        } else {
+                            active64
+                        }
+                        val evicted = tryEvict64(interval, candidates)
                         if (evicted != null) {
                             val (evictedIv, evictedReg) = evicted
                             active64.remove(evicted)
-                            locations[evictedIv.name] = spillToPool(evictedIv.name)
+                            locations[evictedIv.name] = spillToPool(evictedIv)
                             locations[interval.name] = Location.Reg64(evictedReg)
                             active64.add(interval to evictedReg)
                             if (evictedReg in calleeSaved64) usedCallee64.add(evictedReg)
                         } else {
-                            locations[interval.name] = spillToPool(interval.name)
+                            locations[interval.name] = spillToPool(interval)
                         }
                     }
                 }
                 interval.type == Type.I32 || interval.type == Type.I16 || interval.type == Type.I8 || interval.type == Type.I1 -> {
                     val reg = pickBestReg32(free32, interval, hints, locations)
                     if (reg != null) {
-                        free32.remove(reg)
+                        allocate32(reg)
                         locations[interval.name] = Location.Reg32(reg)
                         active32.add(interval to reg)
                         if (reg in calleeSaved32) {
@@ -325,11 +478,16 @@ class LinearScanAllocator(
                             calleeSaved32to64[reg]?.let { usedCallee64.add(it) }
                         }
                     } else {
-                        val evicted = tryEvict32(interval, active32)
+                        val candidates = if (interval.acrossCall) {
+                            active32.filter { it.second in calleeSaved32 }
+                        } else {
+                            active32
+                        }
+                        val evicted = tryEvict32(interval, candidates)
                         if (evicted != null) {
                             val (evictedIv, evictedReg) = evicted
                             active32.remove(evicted)
-                            locations[evictedIv.name] = spillToPool(evictedIv.name)
+                            locations[evictedIv.name] = spillToPool(evictedIv)
                             locations[interval.name] = Location.Reg32(evictedReg)
                             active32.add(interval to evictedReg)
                             if (evictedReg in calleeSaved32) {
@@ -337,19 +495,19 @@ class LinearScanAllocator(
                                 calleeSaved32to64[evictedReg]?.let { usedCallee64.add(it) }
                             }
                         } else {
-                            locations[interval.name] = spillToPool(interval.name)
+                            locations[interval.name] = spillToPool(interval)
                         }
                     }
                 }
                 else -> {
                     val reg = pickBestReg64(free64, interval, hints, locations)
                     if (reg != null) {
-                        free64.remove(reg)
+                        allocate64(reg)
                         locations[interval.name] = Location.Reg64(reg)
                         active64.add(interval to reg)
                         if (reg in calleeSaved64) usedCallee64.add(reg)
                     } else {
-                        locations[interval.name] = spillToPool(interval.name)
+                        locations[interval.name] = spillToPool(interval)
                     }
                 }
             }
@@ -361,6 +519,7 @@ class LinearScanAllocator(
             usedCalleeRegs64 = usedCallee64,
             usedCalleeRegs32 = usedCallee32,
             paramMoves = paramMoves,
+            intervals = intervals,
         )
     }
 

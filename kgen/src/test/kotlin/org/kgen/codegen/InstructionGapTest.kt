@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.target.x86.codegen.X86CodeGenerator
 import org.kgen.target.arm64.codegen.Arm64CodeGenerator
@@ -17,8 +17,8 @@ class InstructionGapTest {
 
     // --- Helpers ---
 
-    private fun buildI64Module(target: Target, block: (IrBuilder, List<Value>) -> Unit): Module {
-        val ir = IrBuilder("test", target)
+    private fun buildI64Module(target: Target, block: (ModuleBuilder, List<Value>) -> Unit): Module {
+        val ir = ModuleBuilder("test", target)
         val params = ir.createFunction("test_func", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         block(ir, params)
@@ -26,8 +26,8 @@ class InstructionGapTest {
         return ir.build()
     }
 
-    private fun buildF64Module(target: Target, block: (IrBuilder, List<Value>) -> Unit): Module {
-        val ir = IrBuilder("test", target)
+    private fun buildF64Module(target: Target, block: (ModuleBuilder, List<Value>) -> Unit): Module {
+        val ir = ModuleBuilder("test", target)
         val params = ir.createFunction("test_func", listOf(Param("a", Type.F64), Param("b", Type.F64)), Type.F64)
         ir.appendBlock("entry")
         block(ir, params)
@@ -35,8 +35,8 @@ class InstructionGapTest {
         return ir.build()
     }
 
-    private fun buildVoidModule(target: Target, block: (IrBuilder, List<Value>) -> Unit): Module {
-        val ir = IrBuilder("test", target)
+    private fun buildVoidModule(target: Target, block: (ModuleBuilder, List<Value>) -> Unit): Module {
+        val ir = ModuleBuilder("test", target)
         val params = ir.createFunction("test_func", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.Void)
         ir.appendBlock("entry")
         block(ir, params)
@@ -44,8 +44,8 @@ class InstructionGapTest {
         return ir.build()
     }
 
-    private fun buildPtrModule(target: Target, block: (IrBuilder, List<Value>) -> Unit): Module {
-        val ir = IrBuilder("test", target)
+    private fun buildPtrModule(target: Target, block: (ModuleBuilder, List<Value>) -> Unit): Module {
+        val ir = ModuleBuilder("test", target)
         val params = ir.createFunction("test_func", listOf(Param("ptr", Type.OpaquePointer), Param("n", Type.I64)), Type.I64)
         ir.appendBlock("entry")
         block(ir, params)
@@ -53,8 +53,8 @@ class InstructionGapTest {
         return ir.build()
     }
 
-    private fun buildPtrRetModule(target: Target, block: (IrBuilder, List<Value>) -> Unit): Module {
-        val ir = IrBuilder("test", target)
+    private fun buildPtrRetModule(target: Target, block: (ModuleBuilder, List<Value>) -> Unit): Module {
+        val ir = ModuleBuilder("test", target)
         val params = ir.createFunction("test_func", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.OpaquePointer)
         ir.appendBlock("entry")
         block(ir, params)
@@ -774,8 +774,8 @@ class InstructionGapTest {
         })
     }
 
-    private fun buildF64TernaryModule(target: Target, block: (IrBuilder, List<Value>) -> Unit): Module {
-        val ir = IrBuilder("test", target)
+    private fun buildF64TernaryModule(target: Target, block: (ModuleBuilder, List<Value>) -> Unit): Module {
+        val ir = ModuleBuilder("test", target)
         val params = ir.createFunction("test_func",
             listOf(Param("a", Type.F64), Param("b", Type.F64), Param("c", Type.F64)), Type.F64)
         ir.appendBlock("entry")

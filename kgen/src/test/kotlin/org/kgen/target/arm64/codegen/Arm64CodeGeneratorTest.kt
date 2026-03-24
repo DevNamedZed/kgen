@@ -3,7 +3,7 @@ package org.kgen.target.arm64.codegen
 import org.kgen.target.arm64.disasm.Arm64Disassembler
 import org.kgen.ir.*
 import org.kgen.ir.FCmpPredicate
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.codegen.CodeGenOptions
 import org.kgen.codegen.OutputFormat
 import org.kgen.ir.target.Target
@@ -14,8 +14,8 @@ class Arm64CodeGeneratorTest {
 
     private val disasm = Arm64Disassembler()
 
-    private fun buildAndDisassemble(block: IrBuilder.() -> Unit): List<String> {
-        val ir = IrBuilder("test", Target.arm64())
+    private fun buildAndDisassemble(block: ModuleBuilder.() -> Unit): List<String> {
+        val ir = ModuleBuilder("test", Target.arm64())
         ir.block()
         val module = ir.build()
         val gen = Arm64CodeGenerator()
@@ -130,7 +130,7 @@ class Arm64CodeGeneratorTest {
 
     @Test
     fun `produces valid object file`() {
-        val ir = IrBuilder("test", Target.arm64())
+        val ir = ModuleBuilder("test", Target.arm64())
         val params = ir.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.add(params[0], params[1]))
@@ -150,7 +150,7 @@ class Arm64CodeGeneratorTest {
 
     @Test
     fun `generates ELF object bytes`() {
-        val ir = IrBuilder("test", Target.arm64())
+        val ir = ModuleBuilder("test", Target.arm64())
         ir.createFunction("main", emptyList(), Type.I32)
         ir.appendBlock("entry")
         ir.ret(Constant.I32(42))

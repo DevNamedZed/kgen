@@ -1035,7 +1035,7 @@ class IrVerifierTest {
                 Global("y", Type.I64, Constant.I64(100)),
             ),
             structs = listOf(
-                StructDef("Point", listOf(Param("x", Type.F64), Param("y", Type.F64))),
+                StructDefinition("Point", listOf(Param("x", Type.F64), Param("y", Type.F64))),
             ),
             functions = listOf(
                 IrFunction("f", emptyList(), Type.Void, listOf(BasicBlock("entry", listOf(Ret(null))))),
@@ -1066,8 +1066,8 @@ class IrVerifierTest {
         val mod = Module(
             name = "bad",
             structs = listOf(
-                StructDef("S", listOf(Param("a", Type.I32))),
-                StructDef("S", listOf(Param("b", Type.I64))),
+                StructDefinition("S", listOf(Param("a", Type.I32))),
+                StructDefinition("S", listOf(Param("b", Type.I64))),
             ),
         )
 

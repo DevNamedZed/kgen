@@ -2,7 +2,7 @@ package org.kgen.target.riscv.codegen
 
 import org.kgen.target.riscv.disasm.RiscVDisassembler
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
@@ -11,8 +11,8 @@ class RiscVCodeGeneratorExtendedTest {
 
     private val disasm = RiscVDisassembler()
 
-    private fun buildAndDisassemble(block: IrBuilder.() -> Unit): List<String> {
-        val ir = IrBuilder("test", Target.riscv64())
+    private fun buildAndDisassemble(block: ModuleBuilder.() -> Unit): List<String> {
+        val ir = ModuleBuilder("test", Target.riscv64())
         ir.block()
         val module = ir.build()
         val gen = RiscVCodeGenerator()
@@ -404,7 +404,7 @@ class RiscVCodeGeneratorExtendedTest {
 
     @Test
     fun `generates multiple functions in same module`() {
-        val ir = IrBuilder("test", Target.riscv64())
+        val ir = ModuleBuilder("test", Target.riscv64())
 
         val paramsA = ir.createFunction("funcA", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")

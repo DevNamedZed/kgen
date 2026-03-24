@@ -415,12 +415,12 @@ class IrTextComprehensiveTest {
 
     @Test
     fun `round-trip class def`() {
-        val cls = ClassDef(
+        val cls = ClassDefinition(
             name = "Animal",
             superClass = "Object",
             interfaces = listOf("Serializable"),
-            fields = listOf(FieldDef("name", Type.OpaquePointer, visibility = MemberVisibility.PRIVATE)),
-            methods = listOf(MethodDef("speak", emptyList(), Type.Void, isAbstract = true)),
+            fields = listOf(FieldDefinition("name", Type.OpaquePointer, visibility = MemberVisibility.PRIVATE)),
+            methods = listOf(MethodDefinition("speak", emptyList(), Type.Void, isAbstract = true)),
         )
         val mod = Module(name = "test", classes = listOf(cls))
         val parsed = roundTrip(mod)
@@ -431,10 +431,10 @@ class IrTextComprehensiveTest {
 
     @Test
     fun `round-trip interface def`() {
-        val iface = InterfaceDef(
+        val iface = InterfaceDefinition(
             name = "Drawable",
             superInterfaces = listOf("Renderable"),
-            methods = listOf(MethodDef("draw", emptyList(), Type.Void)),
+            methods = listOf(MethodDefinition("draw", emptyList(), Type.Void)),
         )
         val mod = Module(name = "test", interfaces = listOf(iface))
         val parsed = roundTrip(mod)
@@ -444,7 +444,7 @@ class IrTextComprehensiveTest {
 
     @Test
     fun `round-trip enum def`() {
-        val enum = EnumDef(
+        val enum = EnumDefinition(
             name = "Color",
             variants = listOf(
                 EnumVariant("RED", 0),
@@ -459,7 +459,7 @@ class IrTextComprehensiveTest {
 
     @Test
     fun `round-trip enum with fields`() {
-        val enum = EnumDef(
+        val enum = EnumDefinition(
             name = "Shape",
             variants = listOf(
                 EnumVariant("Circle", 0, listOf(Param("radius", Type.F64))),

@@ -200,7 +200,7 @@ class ModuleBuilderExecutionTest {
 
     @EnabledOnOs(OS.WINDOWS, OS.LINUX)
     @Test
-    fun nativeDynamicMethodDefaultReturnsZero() {
+    fun nativeDynamicMethodDefinitionaultReturnsZero() {
         val method = DynamicMethod.native_("zero", Signature.returning(TypeRef.I64).build())
         method.use {
             assertEquals(0L, it.invoke())

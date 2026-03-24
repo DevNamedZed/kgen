@@ -12,14 +12,14 @@ import org.kgen.binary.patch.ElfBinaryPatcher
 import org.kgen.codegen.CodeGenOptions
 import org.kgen.codegen.OutputFormat
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.target.x86.codegen.X86CodeGenerator
 
 class BinaryToolsComprehensiveTest {
 
     private fun buildAddModule(): Module {
-        val ir = IrBuilder("test", Target.x86_64())
+        val ir = ModuleBuilder("test", Target.x86_64())
         val params = ir.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val sum = ir.add(params[0], params[1])
@@ -29,7 +29,7 @@ class BinaryToolsComprehensiveTest {
     }
 
     private fun buildHelloModule(): Module {
-        val ir = IrBuilder("hello", Target.x86_64())
+        val ir = ModuleBuilder("hello", Target.x86_64())
         val strType = Type.Array(Type.I8, 14)
         val strRef = ir.addGlobal("hello_str", strType,
             Constant.StringConst("Hello, World!"), isConstant = true,
@@ -44,7 +44,7 @@ class BinaryToolsComprehensiveTest {
     }
 
     private fun buildSubModule(): Module {
-        val ir = IrBuilder("sub_test", Target.x86_64())
+        val ir = ModuleBuilder("sub_test", Target.x86_64())
         val params = ir.createFunction("subtract", listOf(Param("x", Type.I32), Param("y", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val diff = ir.sub(params[0], params[1])
@@ -54,7 +54,7 @@ class BinaryToolsComprehensiveTest {
     }
 
     private fun buildMultiFunctionModule(): Module {
-        val ir = IrBuilder("multi", Target.x86_64())
+        val ir = ModuleBuilder("multi", Target.x86_64())
         val addParams = ir.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         ir.ret(ir.add(addParams[0], addParams[1]))

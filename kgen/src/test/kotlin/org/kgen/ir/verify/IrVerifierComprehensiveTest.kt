@@ -118,7 +118,7 @@ class IrVerifierComprehensiveTest {
     @Test
     fun `valid function with structs passes`() {
         val mod = Module(name = "test",
-            structs = listOf(StructDef("Point", listOf(Param("x", Type.F64), Param("y", Type.F64)))),
+            structs = listOf(StructDefinition("Point", listOf(Param("x", Type.F64), Param("y", Type.F64)))),
             functions = listOf(simpleFunc()),
         )
         assertValid(mod)
@@ -252,8 +252,8 @@ class IrVerifierComprehensiveTest {
     fun `duplicate struct names fails`() {
         assertInvalid(
             Module(name = "test", structs = listOf(
-                StructDef("S", listOf(Param("a", Type.I32))),
-                StructDef("S", listOf(Param("b", Type.I64))),
+                StructDefinition("S", listOf(Param("a", Type.I32))),
+                StructDefinition("S", listOf(Param("b", Type.I64))),
             )),
             "Duplicate struct name"
         )

@@ -7,7 +7,7 @@ package org.kgen.ir
  * Set via `IrFunction.gc` field using the strategy's [id] string.
  *
  * ```java
- * // In IrBuilder
+ * // In ModuleBuilder
  * builder.createFunction("f", params, returnType);
  * builder.setGCStrategy(GCStrategy.STATEPOINT);
  * ```

@@ -5,12 +5,13 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.condition.EnabledOnOs
 import org.junit.jupiter.api.condition.OS
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.jit.FfmNativeLoader
 import org.kgen.jit.JitEngine
 import org.kgen.jit.SymbolResolver
-import org.kgen.pass.OptLevel
+import org.kgen.codegen.OptLevel
+import org.kgen.pipeline.pipeline
 import org.kgen.target.x86.codegen.X86CodeGenerator
 import java.lang.foreign.*
 import java.lang.foreign.ValueLayout.*
@@ -28,8 +29,8 @@ class JitEndToEndTest {
     private val loader = FfmNativeLoader()
     private val linker = Linker.nativeLinker()
 
-    private fun generateObjectFile(block: IrBuilder.() -> Unit): org.kgen.binary.ObjectFile {
-        val ir = IrBuilder("jit_e2e", Target.x86_64())
+    private fun generateObjectFile(block: ModuleBuilder.() -> Unit): org.kgen.binary.ObjectFile {
+        val ir = ModuleBuilder("jit_e2e", Target.x86_64())
         if (isWindows) ir.targetTriple = "x86_64-unknown-windows-msvc"
         ir.block()
         return X86CodeGenerator().generateObjectFile(ir.build())
@@ -40,7 +41,7 @@ class JitEndToEndTest {
     @Test
     fun irToJitArithmetic() {
         JitEngine(X86CodeGenerator()).use { jit ->
-            val ir = IrBuilder("add_mod", Target.x86_64())
+            val ir = ModuleBuilder("add_mod", Target.x86_64())
             val p = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
             ir.appendBlock("entry")
             ir.ret(ir.add(p[0], p[1]))
@@ -56,7 +57,7 @@ class JitEndToEndTest {
     @Test
     fun irToJitBranching() {
         JitEngine(X86CodeGenerator()).use { jit ->
-            val ir = IrBuilder("max_mod", Target.x86_64())
+            val ir = ModuleBuilder("max_mod", Target.x86_64())
             val p = ir.createFunction("max", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
             ir.appendBlock("entry")
             val cond = ir.icmp(ICmpPredicate.SGT, p[0], p[1])
@@ -78,7 +79,7 @@ class JitEndToEndTest {
     @Test
     fun irToJitMultipleFunctions() {
         JitEngine(X86CodeGenerator()).use { jit ->
-            val ir = IrBuilder("multi_mod", Target.x86_64())
+            val ir = ModuleBuilder("multi_mod", Target.x86_64())
 
             val addP = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
             ir.appendBlock("entry")
@@ -104,7 +105,7 @@ class JitEndToEndTest {
     @Test
     fun optimizedIrToJitExecution() {
         JitEngine(X86CodeGenerator()).use { jit ->
-            val ir = IrBuilder("opt_mod", Target.x86_64())
+            val ir = ModuleBuilder("opt_mod", Target.x86_64())
             val p = ir.createFunction("compute", listOf(Param("x", Type.I64)), Type.I64)
             ir.appendBlock("entry")
 
@@ -193,7 +194,7 @@ class JitEndToEndTest {
             val upcall = linker.upcallStub(target, FunctionDescriptor.of(JAVA_LONG), arena)
             jit.addResolver(SymbolResolver.map(mapOf("tick" to upcall.address())))
 
-            val ir = IrBuilder("callback_mod", Target.x86_64())
+            val ir = ModuleBuilder("callback_mod", Target.x86_64())
             ir.declareFunction("tick", emptyList(), Type.I64)
             ir.createFunction("call_tick_twice", emptyList(), Type.I64)
             ir.appendBlock("entry")
@@ -217,7 +218,7 @@ class JitEndToEndTest {
     fun jitModuleHotSwap() {
         JitEngine(X86CodeGenerator()).use { jit ->
             // V1: returns 1
-            val ir1 = IrBuilder("v1", Target.x86_64())
+            val ir1 = ModuleBuilder("v1", Target.x86_64())
             ir1.createFunction("getValue", emptyList(), Type.I64)
             ir1.appendBlock("entry")
             ir1.ret(Constant.I64(1))
@@ -229,7 +230,7 @@ class JitEndToEndTest {
             jit.removeModule(m1)
 
             // V2: returns 2
-            val ir2 = IrBuilder("v2", Target.x86_64())
+            val ir2 = ModuleBuilder("v2", Target.x86_64())
             ir2.createFunction("getValue", emptyList(), Type.I64)
             ir2.appendBlock("entry")
             ir2.ret(Constant.I64(2))
@@ -245,7 +246,7 @@ class JitEndToEndTest {
     @Test
     fun jitStressTest() {
         JitEngine(X86CodeGenerator()).use { jit ->
-            val ir = IrBuilder("stress", Target.x86_64())
+            val ir = ModuleBuilder("stress", Target.x86_64())
             val p = ir.createFunction("add", listOf(Param("a", Type.I64), Param("b", Type.I64)), Type.I64)
             ir.appendBlock("entry")
             ir.ret(ir.add(p[0], p[1]))

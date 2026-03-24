@@ -3,7 +3,7 @@ package org.kgen.codegen
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.ir.verify.IrVerifier
 import org.kgen.target.x86.codegen.X86CodeGenerator
@@ -14,8 +14,8 @@ import org.kgen.binary.SectionKind
 
 class CrossTargetCodegenTest {
 
-    private fun buildModule(target: Target, block: IrBuilder.() -> Unit): Module {
-        val ir = IrBuilder("cross_target_test", target)
+    private fun buildModule(target: Target, block: ModuleBuilder.() -> Unit): Module {
+        val ir = ModuleBuilder("cross_target_test", target)
         ir.block()
         val mod = ir.build()
         assertTrue(IrVerifier.verify(mod).isValid, "IR should be valid before codegen")

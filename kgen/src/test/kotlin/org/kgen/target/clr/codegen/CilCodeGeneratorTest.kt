@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.kgen.ir.*
 import org.kgen.ir.FCmpPredicate
-import org.kgen.ir.build.IrBuilder
+import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
 import org.kgen.target.clr.CilOpCode
 import org.kgen.target.clr.asm.CilDisassembler
@@ -12,8 +12,8 @@ import org.kgen.target.clr.asm.CilInstruction
 
 class CilCodeGeneratorTest {
 
-    private fun buildAndDisassemble(block: (IrBuilder) -> Unit): List<CilInstruction> {
-        val ir = IrBuilder("test", Target.msil())
+    private fun buildAndDisassemble(block: (ModuleBuilder) -> Unit): List<CilInstruction> {
+        val ir = ModuleBuilder("test", Target.msil())
         block(ir)
         val module = ir.build()
         val gen = CilCodeGenerator()
@@ -320,7 +320,7 @@ class CilCodeGeneratorTest {
 
     @Test
     fun callFunction() {
-        val ir = IrBuilder("test", Target.msil())
+        val ir = ModuleBuilder("test", Target.msil())
 
         ir.createFunction("helper", listOf(Param("x", Type.I32)), Type.I32)
         ir.appendBlock("entry")
@@ -345,7 +345,7 @@ class CilCodeGeneratorTest {
 
     @Test
     fun singleMethodGenerate() {
-        val ir = IrBuilder("test", Target.msil())
+        val ir = ModuleBuilder("test", Target.msil())
         ir.createFunction("add", listOf(Param("a", Type.I32), Param("b", Type.I32)), Type.I32)
         ir.appendBlock("entry")
         val a = Parameter("a", Type.I32, 0)
