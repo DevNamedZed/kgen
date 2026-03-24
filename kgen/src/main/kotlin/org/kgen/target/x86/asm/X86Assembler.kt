@@ -239,11 +239,15 @@ class X86Assembler : X86AssemblerOps() {
             else -> null
         }
 
+        // SPL/BPL/SIL/DIL (encoding 4-7, 8-bit) require REX to distinguish from AH/CH/DH/BH
+        val hasRexByteReg = regs.any { it.bits() == 8 && it.encoding in 4..7 && it.name() in rexByteRegNames }
+
         val needRex = enc.rexW
             || (regOp != null && !enc.plusReg && regOp.encoding >= 8)
             || (rmReg != null && rmReg.encoding >= 8)
             || (enc.plusReg && regs.isNotEmpty() && regs[0].encoding >= 8)
             || (mem != null && (mem.base >= 8 || mem.index >= 8))
+            || hasRexByteReg
 
         if (needRex) {
             var rex = 0x40
@@ -615,6 +619,8 @@ class X86Assembler : X86AssemblerOps() {
     }
 
     companion object {
+        private val rexByteRegNames = setOf("spl", "bpl", "sil", "dil")
+
         private fun putInt32(bytes: ByteArray, offset: Int, value: Int) {
             bytes[offset] = value.toByte()
             bytes[offset + 1] = (value shr 8).toByte()

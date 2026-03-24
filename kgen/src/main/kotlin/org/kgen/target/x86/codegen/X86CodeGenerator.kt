@@ -3260,18 +3260,17 @@ class X86CodeGenerator : CodeGenerator {
 
             when (inst.op) {
                 AtomicRMWOp.XCHG -> {
-                    val ptrMem = X86Memory.base(ptrReg).build()
                     when (inst.dest.type) {
                         Type.I64, Type.OpaquePointer, is Type.Pointer -> {
                             val dest = getDest64(inst.dest.name)
                             loadValue64(inst.value, dest)
-                            asm.xchg(ptrMem as X86Operand64, dest)
+                            asm.xchg(X86Memory.base(ptrReg).build() as X86Operand64, dest)
                             if (isSpilled(inst.dest.name)) storeTo(inst.dest.name, reg64 = dest)
                         }
                         else -> {
                             val dest = getDest32(inst.dest.name)
                             loadValue32(inst.value, dest)
-                            asm.xchg(ptrMem as X86Operand32, dest)
+                            asm.xchg(X86Memory.base(ptrReg).build() as X86Operand32, dest)
                             if (isSpilled(inst.dest.name)) storeTo(inst.dest.name, reg32 = dest)
                         }
                     }
@@ -4014,6 +4013,30 @@ class X86CodeGenerator : CodeGenerator {
             asm.movsx(dest, reg32to16(src) as X86Operand16)
         }
 
+        private fun reg32to16(r: X86Register32): X86Register16 = when ((r as X86Register).encoding) {
+            0 -> X86Register.AX; 1 -> X86Register.CX
+            2 -> X86Register.DX; 3 -> X86Register.BX
+            4 -> X86Register.SP; 5 -> X86Register.BP
+            6 -> X86Register.SI; 7 -> X86Register.DI
+            8 -> X86Register.R8W; 9 -> X86Register.R9W
+            10 -> X86Register.R10W; 11 -> X86Register.R11W
+            12 -> X86Register.R12W; 13 -> X86Register.R13W
+            14 -> X86Register.R14W; 15 -> X86Register.R15W
+            else -> error("Unknown 32-bit register encoding: ${(r as X86Register).encoding}")
+        }
+
+        private fun reg32to8(r: X86Register32): X86Register8 = when ((r as X86Register).encoding) {
+            0 -> X86Register.AL; 1 -> X86Register.CL
+            2 -> X86Register.DL; 3 -> X86Register.BL
+            4 -> X86Register.SPL; 5 -> X86Register.BPL
+            6 -> X86Register.SIL; 7 -> X86Register.DIL
+            8 -> X86Register.R8B; 9 -> X86Register.R9B
+            10 -> X86Register.R10B; 11 -> X86Register.R11B
+            12 -> X86Register.R12B; 13 -> X86Register.R13B
+            14 -> X86Register.R14B; 15 -> X86Register.R15B
+            else -> error("Unknown 32-bit register encoding: ${(r as X86Register).encoding}")
+        }
+
         private fun reg64to32(r: X86Register64): X86Register32 = when (r) {
             rax64 -> eax32; rbx64 -> ebx32
             rcx64 -> ecx32; rdx64 -> edx32
@@ -4034,30 +4057,6 @@ class X86CodeGenerator : CodeGenerator {
             r12d32 -> r12_64; r13d32 -> r13_64
             r14d32 -> r14_64; r15d32 -> r15_64
             else -> error("Unknown 32-bit register: $r")
-        }
-
-        private fun reg32to8(r: X86Register32): X86Register8 = when ((r as X86Register).encoding) {
-            0 -> X86Register.AL; 1 -> X86Register.CL
-            2 -> X86Register.DL; 3 -> X86Register.BL
-            4 -> X86Register.SPL; 5 -> X86Register.BPL
-            6 -> X86Register.SIL; 7 -> X86Register.DIL
-            8 -> X86Register.R8B; 9 -> X86Register.R9B
-            10 -> X86Register.R10B; 11 -> X86Register.R11B
-            12 -> X86Register.R12B; 13 -> X86Register.R13B
-            14 -> X86Register.R14B; 15 -> X86Register.R15B
-            else -> error("Unknown 32-bit register encoding: ${(r as X86Register).encoding}")
-        }
-
-        private fun reg32to16(r: X86Register32): X86Register16 = when ((r as X86Register).encoding) {
-            0 -> X86Register.AX; 1 -> X86Register.CX
-            2 -> X86Register.DX; 3 -> X86Register.BX
-            4 -> X86Register.SP; 5 -> X86Register.BP
-            6 -> X86Register.SI; 7 -> X86Register.DI
-            8 -> X86Register.R8W; 9 -> X86Register.R9W
-            10 -> X86Register.R10W; 11 -> X86Register.R11W
-            12 -> X86Register.R12W; 13 -> X86Register.R13W
-            14 -> X86Register.R14W; 15 -> X86Register.R15W
-            else -> error("Unknown 32-bit register encoding: ${(r as X86Register).encoding}")
         }
 
         /**
