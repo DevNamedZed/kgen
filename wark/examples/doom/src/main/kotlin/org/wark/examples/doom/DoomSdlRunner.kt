@@ -73,8 +73,10 @@ object DoomSdlRunner {
         val wasmBytes = Files.readAllBytes(wasmPath)
         val wadBytes = Files.readAllBytes(wadPath)
 
-        println("Loading DOOM...")
-        val runtime = WarkRuntime.create(WasmTarget.V2_0, ExecutionMode.JIT)
+        val useInterpreter = args.contains("--interpret")
+        val mode = if (useInterpreter) ExecutionMode.INTERPRET else ExecutionMode.JIT
+        println("Loading DOOM (${mode.name})...")
+        val runtime = WarkRuntime.create(WasmTarget.V2_0, mode)
         val module = runtime.load(wasmBytes)
 
         var host: DoomHost? = null

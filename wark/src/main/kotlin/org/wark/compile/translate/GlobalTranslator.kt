@@ -1,33 +1,28 @@
 package org.wark.compile.translate
 
 import org.kgen.ir.*
+import org.kgen.target.wasm.WasmOpCode
 import org.kgen.target.wasm.WasmValueType
 import org.kgen.target.wasm.disasm.WasmInstruction
 import org.kgen.target.wasm.disasm.WasmInstruction.Operands
 import org.wark.compile.CompilationContext
 import org.wark.compile.WasmToIrCompiler
 
-/**
- * Translates global variable access and memory management instructions.
- *
- * Globals use the WASM type (I32/I64/F32/F64), stored as IR globals
- * named `__wasm_global_N`.
- */
 class GlobalTranslator : InstructionTranslator {
 
     private val handled = setOf(
-        "global.get", "global.set",
-        "memory.size", "memory.grow",
+        WasmOpCode.GLOBAL_GET, WasmOpCode.GLOBAL_SET,
+        WasmOpCode.MEMORY_SIZE, WasmOpCode.MEMORY_GROW,
     )
 
-    override fun canHandle(mnemonic: String): Boolean = mnemonic in handled
+    override fun canHandle(opcode: WasmOpCode): Boolean = opcode in handled
 
     override fun translate(context: CompilationContext, instruction: WasmInstruction) {
         val builder = context.builder
         val stack = context.stack
 
-        when (instruction.opcode.mnemonic) {
-            "global.get" -> {
+        when (instruction.opcode) {
+            WasmOpCode.GLOBAL_GET -> {
                 val index = (instruction.operands as Operands.Index).value
                 val globalName = "__wasm_global_$index"
                 val wasmType = resolveGlobalType(context, index)
@@ -35,7 +30,7 @@ class GlobalTranslator : InstructionTranslator {
                 val globalRef = GlobalRef(globalName, irType)
                 stack.push(builder.load(irType, globalRef))
             }
-            "global.set" -> {
+            WasmOpCode.GLOBAL_SET -> {
                 val index = (instruction.operands as Operands.Index).value
                 val globalName = "__wasm_global_$index"
                 val wasmType = resolveGlobalType(context, index)
@@ -55,11 +50,11 @@ class GlobalTranslator : InstructionTranslator {
                 }
                 builder.store(storeValue, globalRef)
             }
-            "memory.size" -> {
+            WasmOpCode.MEMORY_SIZE -> {
                 val result = builder.call("__wark_memory_size", listOf(context.contextPointer), Type.I32)
                 if (result != null) { stack.push(result) }
             }
-            "memory.grow" -> {
+            WasmOpCode.MEMORY_GROW -> {
                 val delta = stack.pop()
                 val result = builder.call("__wark_memory_grow", listOf(context.contextPointer, delta), Type.I32)
                 if (result != null) { stack.push(result) }
@@ -67,6 +62,7 @@ class GlobalTranslator : InstructionTranslator {
                 // to prevent any caching of the pre-grow base address
                 context.loadMemoryBase()
             }
+            else -> { }
         }
     }
 

@@ -1,6 +1,7 @@
 package org.wark.compile.translate
 
 import org.kgen.ir.*
+import org.kgen.target.wasm.WasmOpCode
 import org.kgen.target.wasm.disasm.WasmInstruction
 import org.kgen.target.wasm.disasm.WasmInstruction.Operands
 import org.wark.compile.CompilationContext
@@ -8,34 +9,35 @@ import org.wark.compile.CompilationContext
 class BlockTranslator : InstructionTranslator {
 
     private val handled = setOf(
-        "block", "loop", "if", "else", "end",
-        "br", "br_if", "br_table",
+        WasmOpCode.BLOCK, WasmOpCode.LOOP, WasmOpCode.IF, WasmOpCode.ELSE, WasmOpCode.END,
+        WasmOpCode.BR, WasmOpCode.BR_IF, WasmOpCode.BR_TABLE,
     )
 
-    override fun canHandle(mnemonic: String): Boolean = mnemonic in handled
+    override fun canHandle(opcode: WasmOpCode): Boolean = opcode in handled
 
     override fun translate(context: CompilationContext, instruction: WasmInstruction) {
         val builder = context.builder
         val controlStack = context.controlStack
 
-        when (instruction.opcode.mnemonic) {
-            "block" -> {
+        when (instruction.opcode) {
+            WasmOpCode.BLOCK -> {
                 val endLabel = context.freshLabel("block_end")
                 val resultCount = blockResultCount(instruction)
                 context.stack.save()
                 controlStack.push(ControlEntry(ControlKind.BLOCK, endLabel, resultCount = resultCount))
             }
 
-            "loop" -> {
+            WasmOpCode.LOOP -> {
                 val headerLabel = context.freshLabel("loop_header")
                 context.stack.save()
                 builder.br(headerLabel)
                 builder.appendBlock(headerLabel)
+                context.currentBlockLabel = headerLabel
                 context.emitBlockTrace()
                 controlStack.push(ControlEntry(ControlKind.LOOP, headerLabel, resultCount = 0))
             }
 
-            "if" -> {
+            WasmOpCode.IF -> {
                 val condition = context.stack.pop()
                 val thenLabel = context.freshLabel("if_then")
                 val elseLabel = context.freshLabel("if_else")
@@ -51,64 +53,85 @@ class BlockTranslator : InstructionTranslator {
                 context.stack.save()
                 builder.condBr(i32Cond, thenLabel, elseLabel)
                 builder.appendBlock(thenLabel)
+                context.currentBlockLabel = thenLabel
                 context.emitBlockTrace()
                 controlStack.push(ControlEntry(ControlKind.IF, endLabel, elseLabel, resultCount))
             }
 
-            "else" -> {
+            WasmOpCode.ELSE -> {
                 val entry = controlStack.peek()
                 if (entry.kind == ControlKind.IF) {
                     val elseLabel = entry.elseLabel ?: return
+                    recordResultsForEntry(context, entry)
                     context.stack.restore(entry.resultCount)
                     context.stack.save()
                     builder.br(entry.label)
                     builder.appendBlock(elseLabel)
+                    context.currentBlockLabel = elseLabel
                     context.emitBlockTrace()
                     entry.elseLabel = null
                 }
             }
 
-            "end" -> {
+            WasmOpCode.END -> {
                 if (controlStack.isEmpty()) {
                     return
                 }
                 val entry = controlStack.pop()
-                context.stack.restore(entry.resultCount)
                 when (entry.kind) {
                     ControlKind.BLOCK -> {
+                        recordResultsForEntry(context, entry)
+                        context.stack.restore(entry.resultCount)
                         builder.br(entry.label)
                         builder.appendBlock(entry.label)
+                        context.currentBlockLabel = entry.label
                         context.emitBlockTrace()
+                        emitPhiResults(context, entry)
                     }
                     ControlKind.LOOP -> {
+                        context.stack.restore(entry.resultCount)
                     }
                     ControlKind.IF -> {
+                        recordResultsForEntry(context, entry)
+                        context.stack.restore(entry.resultCount)
                         if (entry.elseLabel != null) {
                             builder.br(entry.label)
                             builder.appendBlock(entry.elseLabel!!)
+                            context.currentBlockLabel = entry.elseLabel!!
                             context.emitBlockTrace()
                         }
                         builder.br(entry.label)
                         builder.appendBlock(entry.label)
+                        context.currentBlockLabel = entry.label
                         context.emitBlockTrace()
+                        emitPhiResults(context, entry)
                     }
                 }
             }
 
-            "br" -> {
+            WasmOpCode.BR -> {
                 val depth = (instruction.operands as Operands.Index).value
+                val entry = controlStack.entryAt(depth)
+                recordBranchResults(context, entry)
                 val target = controlStack.targetAt(depth)
                 builder.br(target)
                 val unreachableLabel = context.freshLabel("unreachable")
                 builder.appendBlock(unreachableLabel)
+                context.currentBlockLabel = unreachableLabel
                 context.emitBlockTrace()
             }
 
-            "br_if" -> {
+            WasmOpCode.BR_IF -> {
                 val depth = (instruction.operands as Operands.Index).value
                 val condition = context.stack.pop()
+                val entry = controlStack.entryAt(depth)
                 val target = controlStack.targetAt(depth)
                 val continueLabel = context.freshLabel("br_if_cont")
+
+                if (entry.resultCount > 0 && entry.kind != ControlKind.LOOP) {
+                    val resultValue = context.stack.peek()
+                    entry.pendingResults.add(resultValue to context.currentBlockLabel)
+                }
 
                 val i32Cond = if (condition.type == Type.I1) {
                     condition
@@ -118,28 +141,64 @@ class BlockTranslator : InstructionTranslator {
 
                 builder.condBr(i32Cond, target, continueLabel)
                 builder.appendBlock(continueLabel)
+                context.currentBlockLabel = continueLabel
                 context.emitBlockTrace()
             }
 
-            "br_table" -> {
+            WasmOpCode.BR_TABLE -> {
                 val operands = instruction.operands as Operands.BrTable
                 val index = context.stack.pop()
 
                 for ((tableIndex, depth) in operands.labels.withIndex()) {
+                    val entry = controlStack.entryAt(depth)
+                    recordBranchResults(context, entry)
                     val target = controlStack.targetAt(depth)
                     val nextLabel = context.freshLabel("br_table_next_$tableIndex")
                     val cmp = builder.icmp(ICmpPredicate.EQ, index, Constant.I32(tableIndex))
                     builder.condBr(cmp, target, nextLabel)
                     builder.appendBlock(nextLabel)
+                    context.currentBlockLabel = nextLabel
                     context.emitBlockTrace()
                 }
 
+                val defaultEntry = controlStack.entryAt(operands.default)
+                recordBranchResults(context, defaultEntry)
                 val defaultTarget = controlStack.targetAt(operands.default)
                 builder.br(defaultTarget)
                 val unreachableLabel = context.freshLabel("br_table_unreachable")
                 builder.appendBlock(unreachableLabel)
+                context.currentBlockLabel = unreachableLabel
                 context.emitBlockTrace()
             }
+            else -> { }
+        }
+    }
+
+    private fun recordResultsForEntry(context: CompilationContext, entry: ControlEntry) {
+        if (entry.resultCount > 0 && context.stack.size() > 0) {
+            val resultValue = context.stack.peek()
+            entry.pendingResults.add(resultValue to context.currentBlockLabel)
+        }
+    }
+
+    private fun recordBranchResults(context: CompilationContext, entry: ControlEntry) {
+        if (entry.resultCount > 0 && entry.kind != ControlKind.LOOP && context.stack.size() > 0) {
+            val resultValue = context.stack.peek()
+            entry.pendingResults.add(resultValue to context.currentBlockLabel)
+        }
+    }
+
+    private fun emitPhiResults(context: CompilationContext, entry: ControlEntry) {
+        if (entry.resultCount > 0 && entry.pendingResults.size > 1) {
+            val resultType = entry.pendingResults[0].first.type
+            val incoming = entry.pendingResults.map { (value, label) ->
+                value to org.kgen.ir.BlockRef(label)
+            }
+            val ref = context.builder.nextRef(resultType)
+            context.builder.emit(org.kgen.ir.instructions.Phi(ref, incoming))
+            context.stack.push(ref)
+        } else if (entry.resultCount > 0 && entry.pendingResults.size == 1) {
+            context.stack.push(entry.pendingResults[0].first)
         }
     }
 
@@ -164,6 +223,7 @@ class ControlEntry(
     val label: String,
     var elseLabel: String? = null,
     val resultCount: Int = 0,
+    val pendingResults: MutableList<Pair<Value, String>> = mutableListOf(),
 )
 
 class ControlStack {
@@ -174,9 +234,12 @@ class ControlStack {
     fun peek(): ControlEntry = entries.last()
     fun isEmpty(): Boolean = entries.isEmpty()
 
-    fun targetAt(depth: Int): String {
+    fun entryAt(depth: Int): ControlEntry {
         val index = entries.size - 1 - depth
-        val entry = entries[index]
-        return entry.label
+        return entries[index]
+    }
+
+    fun targetAt(depth: Int): String {
+        return entryAt(depth).label
     }
 }

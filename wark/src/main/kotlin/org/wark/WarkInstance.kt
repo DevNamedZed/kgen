@@ -548,32 +548,86 @@ class WarkInstance(
         val lookup = java.lang.invoke.MethodHandles.lookup()
         val ji = java.lang.foreign.ValueLayout.JAVA_INT
         val jl = java.lang.foreign.ValueLayout.JAVA_LONG
+        val jf = java.lang.foreign.ValueLayout.JAVA_FLOAT
         val jd = java.lang.foreign.ValueLayout.JAVA_DOUBLE
 
-        val clzHandle = lookup.findStatic(WarkInstance::class.java, "i32Clz",
-            java.lang.invoke.MethodType.methodType(Int::class.java, Int::class.java))
-        val clzStub = linker.upcallStub(clzHandle, java.lang.foreign.FunctionDescriptor.of(ji, ji), upcallArena)
-        runtimeEngine.addSymbol("__wark_i32_clz", clzStub.address())
+        registerStaticStub(runtimeEngine, linker, lookup, "i32Clz", "__wark_i32_clz", ji, ji)
+        registerStaticStub(runtimeEngine, linker, lookup, "i32Ctz", "__wark_i32_ctz", ji, ji)
+        registerStaticStub(runtimeEngine, linker, lookup, "i32Popcnt", "__wark_i32_popcnt", ji, ji)
+        registerStaticStub(runtimeEngine, linker, lookup, "i64Clz", "__wark_i64_clz", jl, jl)
+        registerStaticStub(runtimeEngine, linker, lookup, "i64Ctz", "__wark_i64_ctz", jl, jl)
+        registerStaticStub(runtimeEngine, linker, lookup, "i64Popcnt", "__wark_i64_popcnt", jl, jl)
 
-        val ctzHandle = lookup.findStatic(WarkInstance::class.java, "i32Ctz",
-            java.lang.invoke.MethodType.methodType(Int::class.java, Int::class.java))
-        val ctzStub = linker.upcallStub(ctzHandle, java.lang.foreign.FunctionDescriptor.of(ji, ji), upcallArena)
-        runtimeEngine.addSymbol("__wark_i32_ctz", ctzStub.address())
+        registerStaticStub(runtimeEngine, linker, lookup, "f32Abs", "__wark_f32_abs", jf, jf)
+        registerStaticStub(runtimeEngine, linker, lookup, "f64Abs", "__wark_f64_abs", jd, jd)
+        registerStaticStub(runtimeEngine, linker, lookup, "f32Sqrt", "__wark_f32_sqrt", jf, jf)
+        registerStaticStub(runtimeEngine, linker, lookup, "f64Sqrt", "__wark_f64_sqrt", jd, jd)
+        registerStaticStub(runtimeEngine, linker, lookup, "f32Ceil", "__wark_f32_ceil", jf, jf)
+        registerStaticStub(runtimeEngine, linker, lookup, "f64Ceil", "__wark_f64_ceil", jd, jd)
+        registerStaticStub(runtimeEngine, linker, lookup, "f32Floor", "__wark_f32_floor", jf, jf)
+        registerStaticStub(runtimeEngine, linker, lookup, "f64Floor", "__wark_f64_floor", jd, jd)
+        registerStaticStub(runtimeEngine, linker, lookup, "f32Trunc", "__wark_f32_trunc", jf, jf)
+        registerStaticStub(runtimeEngine, linker, lookup, "f64Trunc", "__wark_f64_trunc", jd, jd)
+        registerStaticStub(runtimeEngine, linker, lookup, "f32Nearest", "__wark_f32_nearest", jf, jf)
+        registerStaticStub(runtimeEngine, linker, lookup, "f64Nearest", "__wark_f64_nearest", jd, jd)
 
-        val popcntHandle = lookup.findStatic(WarkInstance::class.java, "i32Popcnt",
-            java.lang.invoke.MethodType.methodType(Int::class.java, Int::class.java))
-        val popcntStub = linker.upcallStub(popcntHandle, java.lang.foreign.FunctionDescriptor.of(ji, ji), upcallArena)
-        runtimeEngine.addSymbol("__wark_i32_popcnt", popcntStub.address())
+        registerStaticStub2(runtimeEngine, linker, lookup, "f32Min", "__wark_f32_min", jf, jf, jf)
+        registerStaticStub2(runtimeEngine, linker, lookup, "f64Min", "__wark_f64_min", jd, jd, jd)
+        registerStaticStub2(runtimeEngine, linker, lookup, "f32Max", "__wark_f32_max", jf, jf, jf)
+        registerStaticStub2(runtimeEngine, linker, lookup, "f64Max", "__wark_f64_max", jd, jd, jd)
+        registerStaticStub2(runtimeEngine, linker, lookup, "f32Copysign", "__wark_f32_copysign", jf, jf, jf)
+        registerStaticStub2(runtimeEngine, linker, lookup, "f64Copysign", "__wark_f64_copysign", jd, jd, jd)
 
-        val fabsHandle = lookup.findStatic(WarkInstance::class.java, "fabs",
-            java.lang.invoke.MethodType.methodType(Double::class.java, Double::class.java))
-        val fabsStub = linker.upcallStub(fabsHandle, java.lang.foreign.FunctionDescriptor.of(jd, jd), upcallArena)
-        runtimeEngine.addSymbol("__wark_fabs", fabsStub.address())
+        registerStaticStub(runtimeEngine, linker, lookup, "i32TruncSatS", "__wark_i32_trunc_sat_s", ji, jd)
+        registerStaticStub(runtimeEngine, linker, lookup, "i32TruncSatU", "__wark_i32_trunc_sat_u", ji, jd)
+        registerStaticStub(runtimeEngine, linker, lookup, "i64TruncSatS", "__wark_i64_trunc_sat_s", jl, jd)
+        registerStaticStub(runtimeEngine, linker, lookup, "i64TruncSatU", "__wark_i64_trunc_sat_u", jl, jd)
+    }
 
-        val copysignHandle = lookup.findStatic(WarkInstance::class.java, "f64Copysign",
-            java.lang.invoke.MethodType.methodType(Double::class.java, Double::class.java, Double::class.java))
-        val copysignStub = linker.upcallStub(copysignHandle, java.lang.foreign.FunctionDescriptor.of(jd, jd, jd), upcallArena)
-        runtimeEngine.addSymbol("__wark_f64_copysign", copysignStub.address())
+    private fun registerStaticStub(
+        runtimeEngine: RuntimeEngine,
+        linker: java.lang.foreign.Linker,
+        lookup: java.lang.invoke.MethodHandles.Lookup,
+        methodName: String,
+        symbolName: String,
+        returnLayout: java.lang.foreign.ValueLayout,
+        paramLayout: java.lang.foreign.ValueLayout,
+    ) {
+        val returnClass = layoutToClass(returnLayout)
+        val paramClass = layoutToClass(paramLayout)
+        val handle = lookup.findStatic(WarkInstance::class.java, methodName,
+            java.lang.invoke.MethodType.methodType(returnClass, paramClass))
+        val descriptor = java.lang.foreign.FunctionDescriptor.of(returnLayout, paramLayout)
+        val stub = linker.upcallStub(handle, descriptor, upcallArena)
+        runtimeEngine.addSymbol(symbolName, stub.address())
+    }
+
+    private fun registerStaticStub2(
+        runtimeEngine: RuntimeEngine,
+        linker: java.lang.foreign.Linker,
+        lookup: java.lang.invoke.MethodHandles.Lookup,
+        methodName: String,
+        symbolName: String,
+        returnLayout: java.lang.foreign.ValueLayout,
+        param1Layout: java.lang.foreign.ValueLayout,
+        param2Layout: java.lang.foreign.ValueLayout,
+    ) {
+        val returnClass = layoutToClass(returnLayout)
+        val param1Class = layoutToClass(param1Layout)
+        val param2Class = layoutToClass(param2Layout)
+        val handle = lookup.findStatic(WarkInstance::class.java, methodName,
+            java.lang.invoke.MethodType.methodType(returnClass, param1Class, param2Class))
+        val descriptor = java.lang.foreign.FunctionDescriptor.of(returnLayout, param1Layout, param2Layout)
+        val stub = linker.upcallStub(handle, descriptor, upcallArena)
+        runtimeEngine.addSymbol(symbolName, stub.address())
+    }
+
+    private fun layoutToClass(layout: java.lang.foreign.ValueLayout): Class<*> = when (layout) {
+        java.lang.foreign.ValueLayout.JAVA_INT -> Int::class.java
+        java.lang.foreign.ValueLayout.JAVA_LONG -> Long::class.java
+        java.lang.foreign.ValueLayout.JAVA_FLOAT -> Float::class.java
+        java.lang.foreign.ValueLayout.JAVA_DOUBLE -> Double::class.java
+        else -> Long::class.java
     }
 
     private fun registerTrapStub(runtimeEngine: RuntimeEngine) {
@@ -649,10 +703,105 @@ class WarkInstance(
         fun i32Popcnt(value: Int): Int = Integer.bitCount(value)
 
         @JvmStatic
-        fun fabs(value: Double): Double = kotlin.math.abs(value)
+        fun i64Clz(value: Long): Long = java.lang.Long.numberOfLeadingZeros(value).toLong()
+
+        @JvmStatic
+        fun i64Ctz(value: Long): Long = java.lang.Long.numberOfTrailingZeros(value).toLong()
+
+        @JvmStatic
+        fun i64Popcnt(value: Long): Long = java.lang.Long.bitCount(value).toLong()
+
+        @JvmStatic
+        fun f32Abs(value: Float): Float = kotlin.math.abs(value)
+
+        @JvmStatic
+        fun f64Abs(value: Double): Double = kotlin.math.abs(value)
+
+        @JvmStatic
+        fun f32Sqrt(value: Float): Float = kotlin.math.sqrt(value.toDouble()).toFloat()
+
+        @JvmStatic
+        fun f64Sqrt(value: Double): Double = kotlin.math.sqrt(value)
+
+        @JvmStatic
+        fun f32Ceil(value: Float): Float = kotlin.math.ceil(value.toDouble()).toFloat()
+
+        @JvmStatic
+        fun f64Ceil(value: Double): Double = kotlin.math.ceil(value)
+
+        @JvmStatic
+        fun f32Floor(value: Float): Float = kotlin.math.floor(value.toDouble()).toFloat()
+
+        @JvmStatic
+        fun f64Floor(value: Double): Double = kotlin.math.floor(value)
+
+        @JvmStatic
+        fun f32Trunc(value: Float): Float {
+            if (value.isNaN() || value.isInfinite()) { return value }
+            return if (value >= 0f) { kotlin.math.floor(value.toDouble()).toFloat() } else { kotlin.math.ceil(value.toDouble()).toFloat() }
+        }
+
+        @JvmStatic
+        fun f64Trunc(value: Double): Double {
+            if (value.isNaN() || value.isInfinite()) { return value }
+            return if (value >= 0.0) { kotlin.math.floor(value) } else { kotlin.math.ceil(value) }
+        }
+
+        @JvmStatic
+        fun f32Nearest(value: Float): Float = Math.rint(value.toDouble()).toFloat()
+
+        @JvmStatic
+        fun f64Nearest(value: Double): Double = Math.rint(value)
+
+        @JvmStatic
+        fun f32Min(a: Float, b: Float): Float = kotlin.math.min(a, b)
+
+        @JvmStatic
+        fun f64Min(a: Double, b: Double): Double = kotlin.math.min(a, b)
+
+        @JvmStatic
+        fun f32Max(a: Float, b: Float): Float = kotlin.math.max(a, b)
+
+        @JvmStatic
+        fun f64Max(a: Double, b: Double): Double = kotlin.math.max(a, b)
+
+        @JvmStatic
+        fun f32Copysign(magnitude: Float, sign: Float): Float = Math.copySign(magnitude, sign)
 
         @JvmStatic
         fun f64Copysign(magnitude: Double, sign: Double): Double = Math.copySign(magnitude, sign)
+
+        @JvmStatic
+        fun i32TruncSatS(value: Double): Int {
+            if (value.isNaN()) { return 0 }
+            if (value >= Int.MAX_VALUE.toDouble()) { return Int.MAX_VALUE }
+            if (value <= Int.MIN_VALUE.toDouble()) { return Int.MIN_VALUE }
+            return value.toInt()
+        }
+
+        @JvmStatic
+        fun i32TruncSatU(value: Double): Int {
+            if (value.isNaN()) { return 0 }
+            if (value >= 4294967295.0) { return -1 }
+            if (value <= 0.0) { return 0 }
+            return value.toLong().toInt()
+        }
+
+        @JvmStatic
+        fun i64TruncSatS(value: Double): Long {
+            if (value.isNaN()) { return 0L }
+            if (value >= Long.MAX_VALUE.toDouble()) { return Long.MAX_VALUE }
+            if (value <= Long.MIN_VALUE.toDouble()) { return Long.MIN_VALUE }
+            return value.toLong()
+        }
+
+        @JvmStatic
+        fun i64TruncSatU(value: Double): Long {
+            if (value.isNaN()) { return 0L }
+            if (value <= 0.0) { return 0L }
+            if (value >= 18446744073709551615.0) { return -1L }
+            return value.toLong()
+        }
 
         @JvmStatic
         fun onOobTrap(wasmAddress: Long, memorySize: Long) {

@@ -42,7 +42,7 @@ class WasmOpcodeAudit(private val wasmModule: WasmModule) {
                 val stat = stats.getOrPut(mnemonic) { OpcodeStats(mnemonic) }
                 stat.count++
                 if (!stat.jitHandled) {
-                    stat.jitHandled = translators.any { it.canHandle(mnemonic) }
+                    stat.jitHandled = translators.any { it.canHandle(instruction.opcode) }
                 }
                 if (!stat.interpreterHandled) {
                     stat.interpreterHandled = INTERPRETER_OPCODES.contains(mnemonic)

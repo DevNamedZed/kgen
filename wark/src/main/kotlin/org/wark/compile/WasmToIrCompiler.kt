@@ -3,6 +3,7 @@ package org.wark.compile
 import org.kgen.ir.*
 import org.kgen.ir.build.ModuleBuilder
 import org.kgen.ir.target.Target
+import org.kgen.target.wasm.WasmOpCode
 import org.kgen.target.wasm.WasmValueType
 import org.kgen.target.wasm.disasm.WasmDisassembler
 import org.kgen.target.wasm.disasm.WasmInstruction
@@ -59,6 +60,12 @@ class WasmToIrCompiler(
         val locals = initializeLocals(builder, params, funcType, function)
         val instructions = WasmDisassembler().disassemble(function.body)
         val context = CompilationContext(builder, params, params[0], locals, wasmModule)
+        for (paramType in funcType.params) {
+            context.localTypes.add(wasmTypeToIr(paramType))
+        }
+        for (localType in function.locals) {
+            context.localTypes.add(wasmTypeToIr(localType))
+        }
 
         translateAll(context, instructions)
         emitDefaultReturn(context, returnType)
@@ -114,6 +121,12 @@ class WasmToIrCompiler(
             val locals = initializeLocals(builder, params, funcType, function)
             val instructions = WasmDisassembler().disassemble(function.body)
             val context = CompilationContext(builder, params, params[0], locals, wasmModule)
+            for (paramType in funcType.params) {
+                context.localTypes.add(wasmTypeToIr(paramType))
+            }
+            for (localType in function.locals) {
+                context.localTypes.add(wasmTypeToIr(localType))
+            }
             context.boundsCheckEnabled = boundsCheckEnabled
             context.traceEnabled = traceEnabled
             context.functionIndex = index
@@ -148,17 +161,41 @@ class WasmToIrCompiler(
         val importedFunctions = wasmModule.imports.filterIsInstance<WasmModule.Import.Func>()
         val importCount = wasmModule.importedFunctionCount
 
-        // Group table entries by type index (full signature match)
-        val entriesByTypeIndex = mutableMapOf<Int, MutableList<Pair<Int, Int>>>()
-        for ((tableSlot, funcIndex) in functionTable.withIndex()) {
-            if (funcIndex < 0) { continue }
-            val typeIndex = functionTypeIndex(funcIndex, importedFunctions, importCount)
-            entriesByTypeIndex.getOrPut(typeIndex) { mutableListOf() }.add(tableSlot to funcIndex)
-        }
+        // Collect all type indices referenced by call_indirect instructions.
+        // For each, find table entries whose signature structurally matches.
+        // WASM allows duplicate signatures under different type indices, so
+        // we must match by structure, not by type index equality.
+        val callIndirectTypeIndices = collectCallIndirectTypeIndices()
 
-        for ((typeIndex, entries) in entriesByTypeIndex) {
+        for (typeIndex in callIndirectTypeIndices) {
+            val expectedSig = wasmModule.types[typeIndex]
+            val entries = mutableListOf<Pair<Int, Int>>()
+            for ((tableSlot, funcIndex) in functionTable.withIndex()) {
+                if (funcIndex < 0) { continue }
+                val funcTypeIdx = functionTypeIndex(funcIndex, importedFunctions, importCount)
+                val funcSig = wasmModule.types[funcTypeIdx]
+                if (funcSig.params == expectedSig.params && funcSig.results == expectedSig.results) {
+                    entries.add(tableSlot to funcIndex)
+                }
+            }
             generateDispatcherForType(builder, typeIndex, entries, importedFunctions, importCount)
         }
+    }
+
+    private fun collectCallIndirectTypeIndices(): Set<Int> {
+        val indices = mutableSetOf<Int>()
+        val disassembler = org.kgen.target.wasm.disasm.WasmDisassembler()
+        for (func in wasmModule.functions) {
+            for (instruction in disassembler.disassemble(func.body)) {
+                if (instruction.mnemonic == "call_indirect") {
+                    val operands = instruction.operands
+                    if (operands is org.kgen.target.wasm.disasm.WasmInstruction.Operands.CallIndirect) {
+                        indices.add(operands.typeIndex)
+                    }
+                }
+            }
+        }
+        return indices
     }
 
     private fun functionTypeIndex(
@@ -299,30 +336,31 @@ class WasmToIrCompiler(
             if (context.terminated) {
                 break
             }
-            val mnemonic = instruction.opcode.mnemonic
+            val opcode = instruction.opcode
 
             if (deadDepth > 0) {
-                when (mnemonic) {
-                    "block", "loop", "if" -> deadDepth++
-                    "end" -> {
+                when (opcode) {
+                    WasmOpCode.BLOCK, WasmOpCode.LOOP, WasmOpCode.IF -> deadDepth++
+                    WasmOpCode.END -> {
                         deadDepth--
                         if (deadDepth == 0) {
-                            val translator = translators.firstOrNull { it.canHandle(mnemonic) }
+                            val translator = translators.firstOrNull { it.canHandle(opcode) }
                             translator?.translate(context, instruction)
                         }
                     }
-                    "else" -> {
+                    WasmOpCode.ELSE -> {
                         if (deadDepth == 1) {
                             deadDepth = 0
-                            val translator = translators.firstOrNull { it.canHandle(mnemonic) }
+                            val translator = translators.firstOrNull { it.canHandle(opcode) }
                             translator?.translate(context, instruction)
                         }
                     }
+                    else -> { }
                 }
                 continue
             }
 
-            val translator = translators.firstOrNull { it.canHandle(mnemonic) }
+            val translator = translators.firstOrNull { it.canHandle(opcode) }
             if (translator == null) {
                 throw IllegalStateException("Unhandled WASM opcode: '${instruction.text()}' (offset ${instruction.offset})")
             }
@@ -332,7 +370,7 @@ class WasmToIrCompiler(
                 throw IllegalStateException("at instruction '${instruction.text()}' (offset ${instruction.offset}): ${exception.message}", exception)
             }
 
-            if (mnemonic == "br" || mnemonic == "br_table" || mnemonic == "return" || mnemonic == "unreachable") {
+            if (opcode == WasmOpCode.BR || opcode == WasmOpCode.BR_TABLE || opcode == WasmOpCode.RETURN || opcode == WasmOpCode.UNREACHABLE) {
                 deadDepth = 1
             }
         }
@@ -477,6 +515,7 @@ class CompilationContext(
     var boundsCheckEnabled = false
     var traceEnabled = false
     var functionIndex = 0
+    var currentBlockLabel = "entry"
     var blockTraceEnabled = false
     var blockCounter = 0
 
@@ -509,17 +548,11 @@ class CompilationContext(
         builder.appendBlock(okLabel)
     }
 
-    private val paramTypes: List<Type> by lazy {
-        if (params.size > 1) {
-            params.subList(1, params.size).map { it.type }
-        } else {
-            emptyList()
-        }
-    }
+    val localTypes: MutableList<Type> = mutableListOf()
 
     fun localType(index: Int): Type {
-        if (index < paramTypes.size) {
-            return paramTypes[index]
+        if (index < localTypes.size) {
+            return localTypes[index]
         }
         return Type.I32
     }

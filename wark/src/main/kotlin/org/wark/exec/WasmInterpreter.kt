@@ -1,5 +1,6 @@
 package org.wark.exec
 
+import org.kgen.target.wasm.WasmOpCode
 import org.kgen.target.wasm.WasmValueType
 import org.kgen.target.wasm.disasm.WasmDisassembler
 import org.kgen.target.wasm.disasm.WasmInstruction
@@ -69,6 +70,10 @@ class WasmInterpreter(
     }
     private val disassembler = WasmDisassembler()
     private val functionBodies = mutableMapOf<Int, List<WasmInstruction>>()
+    private val importedFunctions: List<WasmModule.Import.Func> =
+        wasmModule.imports.filterIsInstance<WasmModule.Import.Func>()
+    private val calleeTypeCache = mutableMapOf<Int, WasmModule.FuncType>()
+    private val blockStructureCache = mutableMapOf<Int, BlockStructure>()
 
     var traceEnabled = false
     private val tracedCalls = mutableListOf<String>()
@@ -84,7 +89,7 @@ class WasmInterpreter(
         }
 
         if (functionIndex < importCount) {
-            val importDecl = wasmModule.imports.filterIsInstance<WasmModule.Import.Func>()[functionIndex]
+            val importDecl = importedFunctions[functionIndex]
             val hostFunc = imports.resolveFunction(importDecl.module, importDecl.name)
                 ?: throw WasmTrap("unresolved import: ${importDecl.module}.${importDecl.name}")
             return hostFunc.call(instance, args)
@@ -113,7 +118,7 @@ class WasmInterpreter(
         callDepth++
         val frame = InterpreterFrame(locals, funcType)
         try {
-            return execute(frame, instructions)
+            return execute(frame, instructions, localIndex)
         } finally {
             callDepth--
             currentFunctionIndex = previousFunctionIndex
@@ -145,15 +150,21 @@ class WasmInterpreter(
         private set
 
     /** Snapshot of state at the current instruction, for debugger inspection. */
-    data class StepInfo(
+    class StepInfo(
         val functionIndex: Int,
         val programCounter: Int,
         val mnemonic: String,
-        val stack: List<Long>,
-        val locals: LongArray,
+        private val stackRef: ArrayDeque<Long>,
+        private val localsRef: LongArray,
         val callDepth: Int,
         val totalInstructions: Long,
-    )
+    ) {
+        fun stack(): List<Long> = stackRef.toList()
+        fun locals(): LongArray = localsRef.clone()
+        fun stackSize(): Int = stackRef.size
+        fun stackPeek(index: Int): Long = stackRef[stackRef.size - 1 - index]
+        fun local(index: Int): Long = localsRef[index]
+    }
 
     /** Paused state — set when onStep returns false. */
     var paused = false
@@ -161,13 +172,14 @@ class WasmInterpreter(
 
     private var currentFunctionIndex = -1
 
-    private fun execute(frame: InterpreterFrame, instructions: List<WasmInstruction>): LongArray {
+    private fun execute(frame: InterpreterFrame, instructions: List<WasmInstruction>, localIndex: Int): LongArray {
         val stack = frame.stack
         val locals = frame.locals
         var programCounter = 0
+        val blockStructure = getBlockStructure(localIndex, instructions)
 
         val controlStack = mutableListOf<ControlFrame>()
-        val functionEndPc = instructions.indexOfLast { it.opcode.mnemonic == "end" }
+        val functionEndPc = instructions.indexOfLast { it.opcode == WasmOpCode.END }
         controlStack.add(ControlFrame(ControlKind.BLOCK, if (functionEndPc >= 0) { functionEndPc } else { instructions.size }, 0))
 
         while (programCounter < instructions.size) {
@@ -176,12 +188,13 @@ class WasmInterpreter(
                 throw WasmTrap("instruction limit exceeded ($instructionLimit)")
             }
 
+            val instruction = instructions[programCounter]
+
             val stepCallback = onStep
             if (stepCallback != null) {
-                val instruction = instructions[programCounter]
                 val info = StepInfo(
                     currentFunctionIndex, programCounter, instruction.opcode.mnemonic,
-                    stack.toList(), locals.clone(), callDepth, totalInstructions,
+                    stack, locals, callDepth, totalInstructions,
                 )
                 if (!stepCallback(info)) {
                     paused = true
@@ -189,210 +202,209 @@ class WasmInterpreter(
                 }
             }
 
-            val instruction = instructions[programCounter]
             programCounter++
 
-            when (instruction.opcode.mnemonic) {
-                "i32.const" -> stack.addLast((instruction.operands as Operands.I32).value.toLong())
-                "i64.const" -> stack.addLast((instruction.operands as Operands.I64).value)
-                "f32.const" -> stack.addLast(java.lang.Float.floatToRawIntBits((instruction.operands as Operands.F32).value).toLong())
-                "f64.const" -> stack.addLast(java.lang.Double.doubleToRawLongBits((instruction.operands as Operands.F64).value))
+            when (instruction.opcode) {
+                WasmOpCode.I32_CONST -> stack.addLast((instruction.operands as Operands.I32).value.toLong())
+                WasmOpCode.I64_CONST -> stack.addLast((instruction.operands as Operands.I64).value)
+                WasmOpCode.F32_CONST -> stack.addLast(java.lang.Float.floatToRawIntBits((instruction.operands as Operands.F32).value).toLong())
+                WasmOpCode.F64_CONST -> stack.addLast(java.lang.Double.doubleToRawLongBits((instruction.operands as Operands.F64).value))
 
-                "local.get" -> stack.addLast(locals[(instruction.operands as Operands.Index).value])
-                "local.set" -> locals[(instruction.operands as Operands.Index).value] = stack.removeLast()
-                "local.tee" -> locals[(instruction.operands as Operands.Index).value] = stack.last()
+                WasmOpCode.LOCAL_GET -> stack.addLast(locals[(instruction.operands as Operands.Index).value])
+                WasmOpCode.LOCAL_SET -> locals[(instruction.operands as Operands.Index).value] = stack.removeLast()
+                WasmOpCode.LOCAL_TEE -> locals[(instruction.operands as Operands.Index).value] = stack.last()
 
-                "i32.add" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast((a + b).toLong()) }
-                "i32.sub" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast((a - b).toLong()) }
-                "i32.mul" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast((a * b).toLong()) }
-                "i32.div_s" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); if (b == 0) throw WasmTrap("division by zero"); stack.addLast((a / b).toLong()) }
-                "i32.div_u" -> { val b = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; val a = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; if (b == 0L) throw WasmTrap("division by zero"); stack.addLast(a / b) }
-                "i32.rem_s" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); if (b == 0) throw WasmTrap("division by zero"); stack.addLast((a % b).toLong()) }
-                "i32.rem_u" -> { val b = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; val a = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; if (b == 0L) throw WasmTrap("division by zero"); stack.addLast(a % b) }
-                "i32.and" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast((a and b).toLong()) }
-                "i32.or" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast((a or b).toLong()) }
-                "i32.xor" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast((a xor b).toLong()) }
-                "i32.shl" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast((a shl (b and 31)).toLong()) }
-                "i32.shr_s" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast((a shr (b and 31)).toLong()) }
-                "i32.shr_u" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast((a ushr (b and 31)).toLong()) }
-                "i32.rotl" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast(Integer.rotateLeft(a, b).toLong()) }
-                "i32.rotr" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast(Integer.rotateRight(a, b).toLong()) }
+                WasmOpCode.I32_ADD -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast((a + b).toLong()) }
+                WasmOpCode.I32_SUB -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast((a - b).toLong()) }
+                WasmOpCode.I32_MUL -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast((a * b).toLong()) }
+                WasmOpCode.I32_DIV_S -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); if (b == 0) throw WasmTrap("division by zero"); stack.addLast((a / b).toLong()) }
+                WasmOpCode.I32_DIV_U -> { val b = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; val a = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; if (b == 0L) throw WasmTrap("division by zero"); stack.addLast(a / b) }
+                WasmOpCode.I32_REM_S -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); if (b == 0) throw WasmTrap("division by zero"); stack.addLast((a % b).toLong()) }
+                WasmOpCode.I32_REM_U -> { val b = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; val a = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; if (b == 0L) throw WasmTrap("division by zero"); stack.addLast(a % b) }
+                WasmOpCode.I32_AND -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast((a and b).toLong()) }
+                WasmOpCode.I32_OR -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast((a or b).toLong()) }
+                WasmOpCode.I32_XOR -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast((a xor b).toLong()) }
+                WasmOpCode.I32_SHL -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast((a shl (b and 31)).toLong()) }
+                WasmOpCode.I32_SHR_S -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast((a shr (b and 31)).toLong()) }
+                WasmOpCode.I32_SHR_U -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast((a ushr (b and 31)).toLong()) }
+                WasmOpCode.I32_ROTL -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast(Integer.rotateLeft(a, b).toLong()) }
+                WasmOpCode.I32_ROTR -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast(Integer.rotateRight(a, b).toLong()) }
 
-                "i64.add" -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(a + b) }
-                "i64.sub" -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(a - b) }
-                "i64.mul" -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(a * b) }
-                "i64.div_s" -> { val b = stack.removeLast(); val a = stack.removeLast(); if (b == 0L) throw WasmTrap("division by zero"); stack.addLast(a / b) }
-                "i64.rem_s" -> { val b = stack.removeLast(); val a = stack.removeLast(); if (b == 0L) throw WasmTrap("division by zero"); stack.addLast(a % b) }
-                "i64.and" -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(a and b) }
-                "i64.or" -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(a or b) }
-                "i64.xor" -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(a xor b) }
-                "i64.shl" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast(); stack.addLast(a shl (b and 63)) }
-                "i64.shr_s" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast(); stack.addLast(a shr (b and 63)) }
-                "i64.shr_u" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast(); stack.addLast(a ushr (b and 63)) }
-                "i64.rotl" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast(); stack.addLast(java.lang.Long.rotateLeft(a, b)) }
-                "i64.rotr" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast(); stack.addLast(java.lang.Long.rotateRight(a, b)) }
+                WasmOpCode.I64_ADD -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(a + b) }
+                WasmOpCode.I64_SUB -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(a - b) }
+                WasmOpCode.I64_MUL -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(a * b) }
+                WasmOpCode.I64_DIV_S -> { val b = stack.removeLast(); val a = stack.removeLast(); if (b == 0L) throw WasmTrap("division by zero"); stack.addLast(a / b) }
+                WasmOpCode.I64_REM_S -> { val b = stack.removeLast(); val a = stack.removeLast(); if (b == 0L) throw WasmTrap("division by zero"); stack.addLast(a % b) }
+                WasmOpCode.I64_AND -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(a and b) }
+                WasmOpCode.I64_OR -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(a or b) }
+                WasmOpCode.I64_XOR -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(a xor b) }
+                WasmOpCode.I64_SHL -> { val b = stack.removeLast().toInt(); val a = stack.removeLast(); stack.addLast(a shl (b and 63)) }
+                WasmOpCode.I64_SHR_S -> { val b = stack.removeLast().toInt(); val a = stack.removeLast(); stack.addLast(a shr (b and 63)) }
+                WasmOpCode.I64_SHR_U -> { val b = stack.removeLast().toInt(); val a = stack.removeLast(); stack.addLast(a ushr (b and 63)) }
+                WasmOpCode.I64_ROTL -> { val b = stack.removeLast().toInt(); val a = stack.removeLast(); stack.addLast(java.lang.Long.rotateLeft(a, b)) }
+                WasmOpCode.I64_ROTR -> { val b = stack.removeLast().toInt(); val a = stack.removeLast(); stack.addLast(java.lang.Long.rotateRight(a, b)) }
 
-                "f32.add" -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(fi(a + b)) }
-                "f32.sub" -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(fi(a - b)) }
-                "f32.mul" -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(fi(a * b)) }
-                "f32.div" -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(fi(a / b)) }
-                "f32.neg" -> { stack.addLast(fi(-f(stack.removeLast()))) }
-                "f32.abs" -> { stack.addLast(fi(kotlin.math.abs(f(stack.removeLast())))) }
-                "f32.sqrt" -> { stack.addLast(fi(kotlin.math.sqrt(f(stack.removeLast()).toDouble()).toFloat())) }
-                "f32.ceil" -> { stack.addLast(fi(kotlin.math.ceil(f(stack.removeLast()).toDouble()).toFloat())) }
-                "f32.floor" -> { stack.addLast(fi(kotlin.math.floor(f(stack.removeLast()).toDouble()).toFloat())) }
-                "f32.trunc" -> { stack.addLast(fi(truncateFloat(f(stack.removeLast())))) }
-                "f32.nearest" -> { stack.addLast(fi(nearestFloat(f(stack.removeLast())))) }
-                "f32.min" -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(fi(wasmMinF32(a, b))) }
-                "f32.max" -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(fi(wasmMaxF32(a, b))) }
-                "f32.copysign" -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(fi(Math.copySign(a, b))) }
-                "f32.eq" -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(if (a == b) 1L else 0L) }
-                "f32.ne" -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(if (a != b) 1L else 0L) }
-                "f32.lt" -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(if (a < b) 1L else 0L) }
-                "f32.gt" -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(if (a > b) 1L else 0L) }
-                "f32.le" -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(if (a <= b) 1L else 0L) }
-                "f32.ge" -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(if (a >= b) 1L else 0L) }
+                WasmOpCode.F32_ADD -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(fi(a + b)) }
+                WasmOpCode.F32_SUB -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(fi(a - b)) }
+                WasmOpCode.F32_MUL -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(fi(a * b)) }
+                WasmOpCode.F32_DIV -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(fi(a / b)) }
+                WasmOpCode.F32_NEG -> { stack.addLast(fi(-f(stack.removeLast()))) }
+                WasmOpCode.F32_ABS -> { stack.addLast(fi(kotlin.math.abs(f(stack.removeLast())))) }
+                WasmOpCode.F32_SQRT -> { stack.addLast(fi(kotlin.math.sqrt(f(stack.removeLast()).toDouble()).toFloat())) }
+                WasmOpCode.F32_CEIL -> { stack.addLast(fi(kotlin.math.ceil(f(stack.removeLast()).toDouble()).toFloat())) }
+                WasmOpCode.F32_FLOOR -> { stack.addLast(fi(kotlin.math.floor(f(stack.removeLast()).toDouble()).toFloat())) }
+                WasmOpCode.F32_TRUNC -> { stack.addLast(fi(truncateFloat(f(stack.removeLast())))) }
+                WasmOpCode.F32_NEAREST -> { stack.addLast(fi(nearestFloat(f(stack.removeLast())))) }
+                WasmOpCode.F32_MIN -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(fi(wasmMinF32(a, b))) }
+                WasmOpCode.F32_MAX -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(fi(wasmMaxF32(a, b))) }
+                WasmOpCode.F32_COPYSIGN -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(fi(Math.copySign(a, b))) }
+                WasmOpCode.F32_EQ -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(if (a == b) 1L else 0L) }
+                WasmOpCode.F32_NE -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(if (a != b) 1L else 0L) }
+                WasmOpCode.F32_LT -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(if (a < b) 1L else 0L) }
+                WasmOpCode.F32_GT -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(if (a > b) 1L else 0L) }
+                WasmOpCode.F32_LE -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(if (a <= b) 1L else 0L) }
+                WasmOpCode.F32_GE -> { val b = f(stack.removeLast()); val a = f(stack.removeLast()); stack.addLast(if (a >= b) 1L else 0L) }
 
-                "f64.add" -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(l(a + b)) }
-                "f64.sub" -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(l(a - b)) }
-                "f64.mul" -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(l(a * b)) }
-                "f64.div" -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(l(a / b)) }
-                "f64.neg" -> { stack.addLast(l(-d(stack.removeLast()))) }
-                "f64.abs" -> { stack.addLast(l(kotlin.math.abs(d(stack.removeLast())))) }
-                "f64.sqrt" -> { stack.addLast(l(kotlin.math.sqrt(d(stack.removeLast())))) }
-                "f64.ceil" -> { stack.addLast(l(kotlin.math.ceil(d(stack.removeLast())))) }
-                "f64.floor" -> { stack.addLast(l(kotlin.math.floor(d(stack.removeLast())))) }
-                "f64.trunc" -> { stack.addLast(l(truncateDouble(d(stack.removeLast())))) }
-                "f64.nearest" -> { stack.addLast(l(nearestDouble(d(stack.removeLast())))) }
-                "f64.min" -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(l(wasmMinF64(a, b))) }
-                "f64.max" -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(l(wasmMaxF64(a, b))) }
-                "f64.copysign" -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(l(Math.copySign(a, b))) }
-                "f64.eq" -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(if (a == b) 1L else 0L) }
-                "f64.ne" -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(if (a != b) 1L else 0L) }
-                "f64.lt" -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(if (a < b) 1L else 0L) }
-                "f64.gt" -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(if (a > b) 1L else 0L) }
-                "f64.le" -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(if (a <= b) 1L else 0L) }
-                "f64.ge" -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(if (a >= b) 1L else 0L) }
+                WasmOpCode.F64_ADD -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(l(a + b)) }
+                WasmOpCode.F64_SUB -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(l(a - b)) }
+                WasmOpCode.F64_MUL -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(l(a * b)) }
+                WasmOpCode.F64_DIV -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(l(a / b)) }
+                WasmOpCode.F64_NEG -> { stack.addLast(l(-d(stack.removeLast()))) }
+                WasmOpCode.F64_ABS -> { stack.addLast(l(kotlin.math.abs(d(stack.removeLast())))) }
+                WasmOpCode.F64_SQRT -> { stack.addLast(l(kotlin.math.sqrt(d(stack.removeLast())))) }
+                WasmOpCode.F64_CEIL -> { stack.addLast(l(kotlin.math.ceil(d(stack.removeLast())))) }
+                WasmOpCode.F64_FLOOR -> { stack.addLast(l(kotlin.math.floor(d(stack.removeLast())))) }
+                WasmOpCode.F64_TRUNC -> { stack.addLast(l(truncateDouble(d(stack.removeLast())))) }
+                WasmOpCode.F64_NEAREST -> { stack.addLast(l(nearestDouble(d(stack.removeLast())))) }
+                WasmOpCode.F64_MIN -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(l(wasmMinF64(a, b))) }
+                WasmOpCode.F64_MAX -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(l(wasmMaxF64(a, b))) }
+                WasmOpCode.F64_COPYSIGN -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(l(Math.copySign(a, b))) }
+                WasmOpCode.F64_EQ -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(if (a == b) 1L else 0L) }
+                WasmOpCode.F64_NE -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(if (a != b) 1L else 0L) }
+                WasmOpCode.F64_LT -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(if (a < b) 1L else 0L) }
+                WasmOpCode.F64_GT -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(if (a > b) 1L else 0L) }
+                WasmOpCode.F64_LE -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(if (a <= b) 1L else 0L) }
+                WasmOpCode.F64_GE -> { val b = d(stack.removeLast()); val a = d(stack.removeLast()); stack.addLast(if (a >= b) 1L else 0L) }
 
-                "i64.eqz" -> stack.addLast(if (stack.removeLast() == 0L) 1L else 0L)
-                "i64.eq" -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(if (a == b) 1L else 0L) }
-                "i64.ne" -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(if (a != b) 1L else 0L) }
-                "i64.lt_s" -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(if (a < b) 1L else 0L) }
-                "i64.gt_s" -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(if (a > b) 1L else 0L) }
-                "i64.le_s" -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(if (a <= b) 1L else 0L) }
-                "i64.ge_s" -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(if (a >= b) 1L else 0L) }
+                WasmOpCode.I64_EQZ -> stack.addLast(if (stack.removeLast() == 0L) 1L else 0L)
+                WasmOpCode.I64_EQ -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(if (a == b) 1L else 0L) }
+                WasmOpCode.I64_NE -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(if (a != b) 1L else 0L) }
+                WasmOpCode.I64_LT_S -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(if (a < b) 1L else 0L) }
+                WasmOpCode.I64_GT_S -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(if (a > b) 1L else 0L) }
+                WasmOpCode.I64_LE_S -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(if (a <= b) 1L else 0L) }
+                WasmOpCode.I64_GE_S -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(if (a >= b) 1L else 0L) }
 
-                "i32.wrap_i64" -> stack.addLast(stack.removeLast() and 0xFFFFFFFFL)
-                "i64.extend_i32_s" -> stack.addLast(stack.removeLast().toInt().toLong())
-                "i64.extend_i32_u" -> stack.addLast(stack.removeLast() and 0xFFFFFFFFL)
-                "f64.convert_i32_s" -> stack.addLast(l(stack.removeLast().toInt().toDouble()))
-                "f64.convert_i32_u" -> stack.addLast(l((stack.removeLast().toInt().toLong() and 0xFFFFFFFFL).toDouble()))
-                "f64.convert_i64_s" -> stack.addLast(l(stack.removeLast().toDouble()))
-                "f64.convert_i64_u" -> {
+                WasmOpCode.I32_WRAP_I64 -> stack.addLast(stack.removeLast() and 0xFFFFFFFFL)
+                WasmOpCode.I64_EXTEND_I32_S -> stack.addLast(stack.removeLast().toInt().toLong())
+                WasmOpCode.I64_EXTEND_I32_U -> stack.addLast(stack.removeLast() and 0xFFFFFFFFL)
+                WasmOpCode.F64_CONVERT_I32_S -> stack.addLast(l(stack.removeLast().toInt().toDouble()))
+                WasmOpCode.F64_CONVERT_I32_U -> stack.addLast(l((stack.removeLast().toInt().toLong() and 0xFFFFFFFFL).toDouble()))
+                WasmOpCode.F64_CONVERT_I64_S -> stack.addLast(l(stack.removeLast().toDouble()))
+                WasmOpCode.F64_CONVERT_I64_U -> {
                     val value = stack.removeLast()
                     val result = if (value >= 0) { value.toDouble() } else { (value ushr 1).toDouble() * 2.0 + (value and 1L).toDouble() }
                     stack.addLast(l(result))
                 }
-                "f32.convert_i32_s" -> stack.addLast(fi(stack.removeLast().toInt().toFloat()))
-                "f32.convert_i32_u" -> stack.addLast(fi((stack.removeLast().toInt().toLong() and 0xFFFFFFFFL).toFloat()))
-                "f32.convert_i64_s" -> stack.addLast(fi(stack.removeLast().toFloat()))
-                "f32.convert_i64_u" -> {
+                WasmOpCode.F32_CONVERT_I32_S -> stack.addLast(fi(stack.removeLast().toInt().toFloat()))
+                WasmOpCode.F32_CONVERT_I32_U -> stack.addLast(fi((stack.removeLast().toInt().toLong() and 0xFFFFFFFFL).toFloat()))
+                WasmOpCode.F32_CONVERT_I64_S -> stack.addLast(fi(stack.removeLast().toFloat()))
+                WasmOpCode.F32_CONVERT_I64_U -> {
                     val value = stack.removeLast()
                     val result = if (value >= 0) { value.toFloat() } else { (value ushr 1).toFloat() * 2.0f + (value and 1L).toFloat() }
                     stack.addLast(fi(result))
                 }
-                "i32.trunc_f64_s" -> stack.addLast(d(stack.removeLast()).toInt().toLong())
-                "i32.trunc_f64_u" -> {
+                WasmOpCode.I32_TRUNC_F64_S -> stack.addLast(d(stack.removeLast()).toInt().toLong())
+                WasmOpCode.I32_TRUNC_F64_U -> {
                     val value = d(stack.removeLast())
                     if (value.isNaN()) { throw WasmTrap("invalid conversion to integer") }
                     if (value >= 4294967296.0 || value < 0.0) { throw WasmTrap("integer overflow") }
                     stack.addLast(value.toLong() and 0xFFFFFFFFL)
                 }
-                "i32.trunc_f32_s" -> stack.addLast(f(stack.removeLast()).toInt().toLong())
-                "i32.trunc_f32_u" -> {
+                WasmOpCode.I32_TRUNC_F32_S -> stack.addLast(f(stack.removeLast()).toInt().toLong())
+                WasmOpCode.I32_TRUNC_F32_U -> {
                     val value = f(stack.removeLast())
                     if (value.isNaN()) { throw WasmTrap("invalid conversion to integer") }
                     if (value >= 4294967296.0f || value < 0.0f) { throw WasmTrap("integer overflow") }
                     stack.addLast(value.toLong() and 0xFFFFFFFFL)
                 }
-                "i64.trunc_f64_s" -> {
+                WasmOpCode.I64_TRUNC_F64_S -> {
                     val value = d(stack.removeLast())
                     if (value.isNaN()) { throw WasmTrap("invalid conversion to integer") }
                     stack.addLast(value.toLong())
                 }
-                "i64.trunc_f64_u" -> {
+                WasmOpCode.I64_TRUNC_F64_U -> {
                     val value = d(stack.removeLast())
                     if (value.isNaN()) { throw WasmTrap("invalid conversion to integer") }
                     if (value < 0.0 || value >= 1.8446744073709552E19) { throw WasmTrap("integer overflow") }
                     stack.addLast(if (value < 9.223372036854776E18) { value.toLong() } else { (value - 9.223372036854776E18).toLong() + Long.MIN_VALUE })
                 }
-                "i64.trunc_f32_s" -> {
+                WasmOpCode.I64_TRUNC_F32_S -> {
                     val value = f(stack.removeLast())
                     if (value.isNaN()) { throw WasmTrap("invalid conversion to integer") }
                     stack.addLast(value.toLong())
                 }
-                "i64.trunc_f32_u" -> {
+                WasmOpCode.I64_TRUNC_F32_U -> {
                     val value = f(stack.removeLast()).toDouble()
                     if (value.isNaN()) { throw WasmTrap("invalid conversion to integer") }
                     if (value < 0.0 || value >= 1.8446744073709552E19) { throw WasmTrap("integer overflow") }
                     stack.addLast(if (value < 9.223372036854776E18) { value.toLong() } else { (value - 9.223372036854776E18).toLong() + Long.MIN_VALUE })
                 }
-                "f64.promote_f32" -> stack.addLast(l(f(stack.removeLast()).toDouble()))
-                "f32.demote_f64" -> stack.addLast(fi(d(stack.removeLast()).toFloat()))
-                "i32.reinterpret_f32" -> { }
-                "f32.reinterpret_i32" -> { }
-                "i64.reinterpret_f64" -> { }
-                "f64.reinterpret_i64" -> { }
-                "i32.extend8_s" -> stack.addLast(stack.removeLast().toByte().toLong())
-                "i32.extend16_s" -> stack.addLast(stack.removeLast().toShort().toLong())
-                "i64.extend8_s" -> stack.addLast(stack.removeLast().toByte().toLong())
-                "i64.extend16_s" -> stack.addLast(stack.removeLast().toShort().toLong())
-                "i64.extend32_s" -> stack.addLast(stack.removeLast().toInt().toLong())
+                WasmOpCode.F64_PROMOTE_F32 -> stack.addLast(l(f(stack.removeLast()).toDouble()))
+                WasmOpCode.F32_DEMOTE_F64 -> stack.addLast(fi(d(stack.removeLast()).toFloat()))
+                WasmOpCode.I32_REINTERPRET_F32 -> { }
+                WasmOpCode.F32_REINTERPRET_I32 -> { }
+                WasmOpCode.I64_REINTERPRET_F64 -> { }
+                WasmOpCode.F64_REINTERPRET_I64 -> { }
+                WasmOpCode.I32_EXTEND8_S -> stack.addLast(stack.removeLast().toByte().toLong())
+                WasmOpCode.I32_EXTEND16_S -> stack.addLast(stack.removeLast().toShort().toLong())
+                WasmOpCode.I64_EXTEND8_S -> stack.addLast(stack.removeLast().toByte().toLong())
+                WasmOpCode.I64_EXTEND16_S -> stack.addLast(stack.removeLast().toShort().toLong())
+                WasmOpCode.I64_EXTEND32_S -> stack.addLast(stack.removeLast().toInt().toLong())
 
-                "i32.eqz" -> stack.addLast(if (stack.removeLast().toInt() == 0) 1L else 0L)
-                "i32.eq" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast(if (a == b) 1L else 0L) }
-                "i32.ne" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast(if (a != b) 1L else 0L) }
-                "i32.lt_s" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast(if (a < b) 1L else 0L) }
-                "i32.lt_u" -> { val b = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; val a = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; stack.addLast(if (a < b) 1L else 0L) }
-                "i32.gt_s" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast(if (a > b) 1L else 0L) }
-                "i32.gt_u" -> { val b = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; val a = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; stack.addLast(if (a > b) 1L else 0L) }
-                "i32.le_s" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast(if (a <= b) 1L else 0L) }
-                "i32.le_u" -> { val b = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; val a = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; stack.addLast(if (a <= b) 1L else 0L) }
-                "i32.ge_s" -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast(if (a >= b) 1L else 0L) }
-                "i32.ge_u" -> { val b = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; val a = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; stack.addLast(if (a >= b) 1L else 0L) }
-                "i32.clz" -> stack.addLast(Integer.numberOfLeadingZeros(stack.removeLast().toInt()).toLong())
-                "i32.ctz" -> stack.addLast(Integer.numberOfTrailingZeros(stack.removeLast().toInt()).toLong())
-                "i32.popcnt" -> stack.addLast(Integer.bitCount(stack.removeLast().toInt()).toLong())
-                "i64.clz" -> stack.addLast(java.lang.Long.numberOfLeadingZeros(stack.removeLast()).toLong())
-                "i64.ctz" -> stack.addLast(java.lang.Long.numberOfTrailingZeros(stack.removeLast()).toLong())
-                "i64.popcnt" -> stack.addLast(java.lang.Long.bitCount(stack.removeLast()).toLong())
-                "i64.lt_u" -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(if (java.lang.Long.compareUnsigned(a, b) < 0) 1L else 0L) }
-                "i64.gt_u" -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(if (java.lang.Long.compareUnsigned(a, b) > 0) 1L else 0L) }
-                "i64.le_u" -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(if (java.lang.Long.compareUnsigned(a, b) <= 0) 1L else 0L) }
-                "i64.ge_u" -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(if (java.lang.Long.compareUnsigned(a, b) >= 0) 1L else 0L) }
-                "i64.div_u" -> { val b = stack.removeLast(); val a = stack.removeLast(); if (b == 0L) throw WasmTrap("division by zero"); stack.addLast(java.lang.Long.divideUnsigned(a, b)) }
-                "i64.rem_u" -> { val b = stack.removeLast(); val a = stack.removeLast(); if (b == 0L) throw WasmTrap("division by zero"); stack.addLast(java.lang.Long.remainderUnsigned(a, b)) }
+                WasmOpCode.I32_EQZ -> stack.addLast(if (stack.removeLast().toInt() == 0) 1L else 0L)
+                WasmOpCode.I32_EQ -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast(if (a == b) 1L else 0L) }
+                WasmOpCode.I32_NE -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast(if (a != b) 1L else 0L) }
+                WasmOpCode.I32_LT_S -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast(if (a < b) 1L else 0L) }
+                WasmOpCode.I32_LT_U -> { val b = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; val a = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; stack.addLast(if (a < b) 1L else 0L) }
+                WasmOpCode.I32_GT_S -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast(if (a > b) 1L else 0L) }
+                WasmOpCode.I32_GT_U -> { val b = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; val a = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; stack.addLast(if (a > b) 1L else 0L) }
+                WasmOpCode.I32_LE_S -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast(if (a <= b) 1L else 0L) }
+                WasmOpCode.I32_LE_U -> { val b = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; val a = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; stack.addLast(if (a <= b) 1L else 0L) }
+                WasmOpCode.I32_GE_S -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast(if (a >= b) 1L else 0L) }
+                WasmOpCode.I32_GE_U -> { val b = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; val a = stack.removeLast().toInt().toLong() and 0xFFFFFFFFL; stack.addLast(if (a >= b) 1L else 0L) }
+                WasmOpCode.I32_CLZ -> stack.addLast(Integer.numberOfLeadingZeros(stack.removeLast().toInt()).toLong())
+                WasmOpCode.I32_CTZ -> stack.addLast(Integer.numberOfTrailingZeros(stack.removeLast().toInt()).toLong())
+                WasmOpCode.I32_POPCNT -> stack.addLast(Integer.bitCount(stack.removeLast().toInt()).toLong())
+                WasmOpCode.I64_CLZ -> stack.addLast(java.lang.Long.numberOfLeadingZeros(stack.removeLast()).toLong())
+                WasmOpCode.I64_CTZ -> stack.addLast(java.lang.Long.numberOfTrailingZeros(stack.removeLast()).toLong())
+                WasmOpCode.I64_POPCNT -> stack.addLast(java.lang.Long.bitCount(stack.removeLast()).toLong())
+                WasmOpCode.I64_LT_U -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(if (java.lang.Long.compareUnsigned(a, b) < 0) 1L else 0L) }
+                WasmOpCode.I64_GT_U -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(if (java.lang.Long.compareUnsigned(a, b) > 0) 1L else 0L) }
+                WasmOpCode.I64_LE_U -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(if (java.lang.Long.compareUnsigned(a, b) <= 0) 1L else 0L) }
+                WasmOpCode.I64_GE_U -> { val b = stack.removeLast(); val a = stack.removeLast(); stack.addLast(if (java.lang.Long.compareUnsigned(a, b) >= 0) 1L else 0L) }
+                WasmOpCode.I64_DIV_U -> { val b = stack.removeLast(); val a = stack.removeLast(); if (b == 0L) throw WasmTrap("division by zero"); stack.addLast(java.lang.Long.divideUnsigned(a, b)) }
+                WasmOpCode.I64_REM_U -> { val b = stack.removeLast(); val a = stack.removeLast(); if (b == 0L) throw WasmTrap("division by zero"); stack.addLast(java.lang.Long.remainderUnsigned(a, b)) }
 
-                "i32.load" -> {
+                WasmOpCode.I32_LOAD -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val base = stack.removeLast()
                     val address = checkedAddress("i32.load", base, memArg.offset, 4)
                     stack.addLast(memories[0].readI32(address).toLong())
                 }
-                "i32.store" -> {
+                WasmOpCode.I32_STORE -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val value = stack.removeLast().toInt()
                     val base = stack.removeLast()
                     val address = checkedAddress("i32.store", base, memArg.offset, 4)
                     memories[0].writeI32(address, value)
                 }
-                "i64.load" -> {
+                WasmOpCode.I64_LOAD -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val base = stack.removeLast()
                     val address = checkedAddress("i64.load", base, memArg.offset, 8)
                     stack.addLast(memories[0].readI64(address))
                 }
-                "i64.store" -> {
+                WasmOpCode.I64_STORE -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val value = stack.removeLast()
                     val base = stack.removeLast()
@@ -400,22 +412,22 @@ class WasmInterpreter(
                     memories[0].writeI64(address, value)
                 }
 
-                "global.get" -> stack.addLast(globals[(instruction.operands as Operands.Index).value])
-                "global.set" -> globals[(instruction.operands as Operands.Index).value] = stack.removeLast()
+                WasmOpCode.GLOBAL_GET -> stack.addLast(globals[(instruction.operands as Operands.Index).value])
+                WasmOpCode.GLOBAL_SET -> globals[(instruction.operands as Operands.Index).value] = stack.removeLast()
 
-                "memory.copy" -> {
+                WasmOpCode.MEMORY_COPY -> {
                     val length = stack.removeLast().toInt()
                     val source = stack.removeLast().toInt()
                     val destination = stack.removeLast().toInt()
                     if (memories.isNotEmpty()) { memories[0].copy(destination, source, length) }
                 }
-                "memory.fill" -> {
+                WasmOpCode.MEMORY_FILL -> {
                     val length = stack.removeLast().toInt()
                     val value = stack.removeLast().toByte()
                     val destination = stack.removeLast().toInt()
                     if (memories.isNotEmpty()) { memories[0].fill(destination, value, length) }
                 }
-                "memory.init" -> {
+                WasmOpCode.MEMORY_INIT -> {
                     val operands = instruction.operands as Operands.TwoIndex
                     val dataIndex = operands.first
                     val length = stack.removeLast().toInt()
@@ -432,13 +444,13 @@ class WasmInterpreter(
                         }
                     }
                 }
-                "data.drop" -> {
+                WasmOpCode.DATA_DROP -> {
                     val operands = instruction.operands as Operands.Index
                     dataSegments.remove(operands.value)
                 }
 
-                "memory.size" -> stack.addLast(if (memories.isNotEmpty()) memories[0].pages().toLong() else 0L)
-                "memory.grow" -> {
+                WasmOpCode.MEMORY_SIZE -> stack.addLast(if (memories.isNotEmpty()) memories[0].pages().toLong() else 0L)
+                WasmOpCode.MEMORY_GROW -> {
                     val delta = stack.removeLast().toInt()
                     if (memories.isNotEmpty()) {
                         val result = memories[0].grow(delta)
@@ -448,19 +460,19 @@ class WasmInterpreter(
                     }
                 }
 
-                "i32.load8_s" -> {
+                WasmOpCode.I32_LOAD8_S -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val base = stack.removeLast()
                     val address = checkedAddress("i32.load8_s", base, memArg.offset, 1)
                     stack.addLast(memories[0].readByte(address).toLong())
                 }
-                "i32.load8_u" -> {
+                WasmOpCode.I32_LOAD8_U -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val base = stack.removeLast()
                     val address = checkedAddress("i32.load8_u", base, memArg.offset, 1)
                     stack.addLast((memories[0].readByte(address).toInt() and 0xFF).toLong())
                 }
-                "i32.load16_s" -> {
+                WasmOpCode.I32_LOAD16_S -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val base = stack.removeLast()
                     val address = checkedAddress("i32.load16_s", base, memArg.offset, 2)
@@ -468,7 +480,7 @@ class WasmInterpreter(
                     val high = memories[0].readByte(address + 1).toInt()
                     stack.addLast(((high shl 8) or low).toLong())
                 }
-                "i32.load16_u" -> {
+                WasmOpCode.I32_LOAD16_U -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val base = stack.removeLast()
                     val address = checkedAddress("i32.load16_u", base, memArg.offset, 2)
@@ -476,14 +488,14 @@ class WasmInterpreter(
                     val high = memories[0].readByte(address + 1).toInt() and 0xFF
                     stack.addLast(((high shl 8) or low).toLong())
                 }
-                "i32.store8" -> {
+                WasmOpCode.I32_STORE8 -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val value = stack.removeLast().toByte()
                     val base = stack.removeLast()
                     val address = checkedAddress("i32.store8", base, memArg.offset, 1)
                     memories[0].writeByte(address, value)
                 }
-                "i32.store16" -> {
+                WasmOpCode.I32_STORE16 -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val value = stack.removeLast().toInt()
                     val base = stack.removeLast()
@@ -491,19 +503,19 @@ class WasmInterpreter(
                     memories[0].writeByte(address, (value and 0xFF).toByte())
                     memories[0].writeByte(address + 1, ((value shr 8) and 0xFF).toByte())
                 }
-                "i64.load8_s" -> {
+                WasmOpCode.I64_LOAD8_S -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val base = stack.removeLast()
                     val address = checkedAddress("i64.load8_s", base, memArg.offset, 1)
                     stack.addLast(memories[0].readByte(address).toLong())
                 }
-                "i64.load8_u" -> {
+                WasmOpCode.I64_LOAD8_U -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val base = stack.removeLast()
                     val address = checkedAddress("i64.load8_u", base, memArg.offset, 1)
                     stack.addLast((memories[0].readByte(address).toLong() and 0xFF))
                 }
-                "i64.load16_s" -> {
+                WasmOpCode.I64_LOAD16_S -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val base = stack.removeLast()
                     val address = checkedAddress("i64.load16_s", base, memArg.offset, 2)
@@ -511,7 +523,7 @@ class WasmInterpreter(
                     val high = memories[0].readByte(address + 1).toInt()
                     stack.addLast(((high shl 8) or low).toLong())
                 }
-                "i64.load16_u" -> {
+                WasmOpCode.I64_LOAD16_U -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val base = stack.removeLast()
                     val address = checkedAddress("i64.load16_u", base, memArg.offset, 2)
@@ -519,26 +531,26 @@ class WasmInterpreter(
                     val high = memories[0].readByte(address + 1).toInt() and 0xFF
                     stack.addLast(((high shl 8) or low).toLong())
                 }
-                "i64.load32_s" -> {
+                WasmOpCode.I64_LOAD32_S -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val base = stack.removeLast()
                     val address = checkedAddress("i64.load32_s", base, memArg.offset, 4)
                     stack.addLast(memories[0].readI32(address).toLong())
                 }
-                "i64.load32_u" -> {
+                WasmOpCode.I64_LOAD32_U -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val base = stack.removeLast()
                     val address = checkedAddress("i64.load32_u", base, memArg.offset, 4)
                     stack.addLast(memories[0].readI32(address).toLong() and 0xFFFFFFFFL)
                 }
-                "i64.store8" -> {
+                WasmOpCode.I64_STORE8 -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val value = stack.removeLast().toByte()
                     val base = stack.removeLast()
                     val address = checkedAddress("i64.store8", base, memArg.offset, 1)
                     memories[0].writeByte(address, value)
                 }
-                "i64.store16" -> {
+                WasmOpCode.I64_STORE16 -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val value = stack.removeLast().toInt()
                     val base = stack.removeLast()
@@ -546,33 +558,33 @@ class WasmInterpreter(
                     memories[0].writeByte(address, (value and 0xFF).toByte())
                     memories[0].writeByte(address + 1, ((value shr 8) and 0xFF).toByte())
                 }
-                "i64.store32" -> {
+                WasmOpCode.I64_STORE32 -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val value = stack.removeLast().toInt()
                     val base = stack.removeLast()
                     val address = checkedAddress("i64.store32", base, memArg.offset, 4)
                     memories[0].writeI32(address, value)
                 }
-                "f32.load" -> {
+                WasmOpCode.F32_LOAD -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val base = stack.removeLast()
                     val address = checkedAddress("f32.load", base, memArg.offset, 4)
                     stack.addLast(memories[0].readI32(address).toLong() and 0xFFFFFFFFL)
                 }
-                "f32.store" -> {
+                WasmOpCode.F32_STORE -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val value = stack.removeLast().toInt()
                     val base = stack.removeLast()
                     val address = checkedAddress("f32.store", base, memArg.offset, 4)
                     memories[0].writeI32(address, value)
                 }
-                "f64.load" -> {
+                WasmOpCode.F64_LOAD -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val base = stack.removeLast()
                     val address = checkedAddress("f64.load", base, memArg.offset, 8)
                     stack.addLast(memories[0].readI64(address))
                 }
-                "f64.store" -> {
+                WasmOpCode.F64_STORE -> {
                     val memArg = instruction.operands as Operands.MemArg
                     val value = stack.removeLast()
                     val base = stack.removeLast()
@@ -580,15 +592,15 @@ class WasmInterpreter(
                     memories[0].writeI64(address, value)
                 }
 
-                "drop" -> stack.removeLast()
-                "select" -> {
+                WasmOpCode.DROP -> stack.removeLast()
+                WasmOpCode.SELECT -> {
                     val condition = stack.removeLast().toInt()
                     val falseValue = stack.removeLast()
                     val trueValue = stack.removeLast()
                     stack.addLast(if (condition != 0) trueValue else falseValue)
                 }
 
-                "call" -> {
+                WasmOpCode.CALL -> {
                     val funcIndex = (instruction.operands as Operands.Index).value
                     val calleeType = resolveCalleeType(funcIndex)
                     val callArgs = LongArray(calleeType.params.size)
@@ -601,7 +613,7 @@ class WasmInterpreter(
                     }
                 }
 
-                "call_indirect" -> {
+                WasmOpCode.CALL_INDIRECT -> {
                     val operands = instruction.operands as Operands.CallIndirect
                     val tableIndex = stack.removeLast().toInt()
                     if (tableIndex < 0 || tableIndex >= functionTable.size) {
@@ -623,7 +635,7 @@ class WasmInterpreter(
                     }
                 }
 
-                "return" -> {
+                WasmOpCode.RETURN -> {
                     return if (frame.funcType.results.isEmpty()) {
                         longArrayOf()
                     } else {
@@ -631,50 +643,56 @@ class WasmInterpreter(
                     }
                 }
 
-                "block" -> {
-                    val endPc = findMatchingEnd(instructions, programCounter - 1)
+                WasmOpCode.BLOCK -> {
+                    val openPc = programCounter - 1
+                    val endPc = blockStructure.endMap[openPc]
                     controlStack.add(ControlFrame(ControlKind.BLOCK, endPc + 1, stack.size))
                 }
-                "loop" -> {
-                    val endPc = findMatchingEnd(instructions, programCounter - 1)
+                WasmOpCode.LOOP -> {
                     controlStack.add(ControlFrame(ControlKind.LOOP, programCounter, stack.size))
                 }
-                "if" -> {
+                WasmOpCode.IF -> {
                     val condition = stack.removeLast().toInt()
-                    val endPc = findMatchingEnd(instructions, programCounter - 1)
-                    val elsePc = findMatchingElse(instructions, programCounter - 1)
+                    val openPc = programCounter - 1
+                    val endPc = blockStructure.endMap[openPc]
+                    val elsePc = blockStructure.elseMap[openPc]
                     if (condition == 0) {
-                        programCounter = elsePc ?: endPc
-                        if (elsePc == null) {
+                        if (elsePc >= 0) {
+                            programCounter = elsePc
+                        } else {
                             programCounter = endPc + 1
                         }
                     }
                     controlStack.add(ControlFrame(ControlKind.IF, endPc + 1, stack.size))
                 }
-                "else" -> {
-                    val frame2 = controlStack.last()
-                    programCounter = frame2.targetPc
+                WasmOpCode.ELSE -> {
+                    val ifFrame = controlStack.last()
+                    programCounter = ifFrame.targetPc
+                    val savedStackHeight = ifFrame.stackHeight
                     controlStack.removeAt(controlStack.size - 1)
                     val endPc = programCounter - 1
-                    controlStack.add(ControlFrame(ControlKind.IF, endPc + 1, stack.size))
+                    while (stack.size > savedStackHeight) {
+                        stack.removeLast()
+                    }
+                    controlStack.add(ControlFrame(ControlKind.IF, endPc + 1, savedStackHeight))
                 }
-                "end" -> {
+                WasmOpCode.END -> {
                     if (controlStack.isNotEmpty()) {
                         controlStack.removeAt(controlStack.size - 1)
                     }
                 }
-                "br" -> {
+                WasmOpCode.BR -> {
                     val depth = (instruction.operands as Operands.Index).value
                     programCounter = branchTo(controlStack, depth, stack)
                 }
-                "br_if" -> {
+                WasmOpCode.BR_IF -> {
                     val depth = (instruction.operands as Operands.Index).value
                     val condition = stack.removeLast().toInt()
                     if (condition != 0) {
                         programCounter = branchTo(controlStack, depth, stack)
                     }
                 }
-                "br_table" -> {
+                WasmOpCode.BR_TABLE -> {
                     val operands = instruction.operands as Operands.BrTable
                     val index = stack.removeLast().toInt()
                     val depth = if (index >= 0 && index < operands.labels.size) {
@@ -685,9 +703,49 @@ class WasmInterpreter(
                     programCounter = branchTo(controlStack, depth, stack)
                 }
 
-                "unreachable" -> throw WasmTrap("unreachable")
-                "nop" -> { }
-                else -> throw WasmTrap("unimplemented opcode: ${instruction.opcode.mnemonic} in ${functionName(currentFunctionIndex)} at PC=$programCounter")
+                WasmOpCode.SELECT_TYPED -> {
+                    val condition = stack.removeLast().toInt()
+                    val falseValue = stack.removeLast()
+                    val trueValue = stack.removeLast()
+                    stack.addLast(if (condition != 0) trueValue else falseValue)
+                }
+
+                WasmOpCode.I32_TRUNC_SAT_F32_S -> {
+                    val value = f(stack.removeLast()).toDouble()
+                    stack.addLast(i32TruncSatS(value).toLong())
+                }
+                WasmOpCode.I32_TRUNC_SAT_F32_U -> {
+                    val value = f(stack.removeLast()).toDouble()
+                    stack.addLast(i32TruncSatU(value))
+                }
+                WasmOpCode.I32_TRUNC_SAT_F64_S -> {
+                    val value = d(stack.removeLast())
+                    stack.addLast(i32TruncSatS(value).toLong())
+                }
+                WasmOpCode.I32_TRUNC_SAT_F64_U -> {
+                    val value = d(stack.removeLast())
+                    stack.addLast(i32TruncSatU(value))
+                }
+                WasmOpCode.I64_TRUNC_SAT_F32_S -> {
+                    val value = f(stack.removeLast()).toDouble()
+                    stack.addLast(i64TruncSatS(value))
+                }
+                WasmOpCode.I64_TRUNC_SAT_F32_U -> {
+                    val value = f(stack.removeLast()).toDouble()
+                    stack.addLast(i64TruncSatU(value))
+                }
+                WasmOpCode.I64_TRUNC_SAT_F64_S -> {
+                    val value = d(stack.removeLast())
+                    stack.addLast(i64TruncSatS(value))
+                }
+                WasmOpCode.I64_TRUNC_SAT_F64_U -> {
+                    val value = d(stack.removeLast())
+                    stack.addLast(i64TruncSatU(value))
+                }
+
+                WasmOpCode.UNREACHABLE -> throw WasmTrap("unreachable")
+                WasmOpCode.NOP -> { }
+                else -> throw WasmTrap("unimplemented opcode: ${instruction.opcode} in ${functionName(currentFunctionIndex)} at PC=$programCounter")
             }
         }
 
@@ -716,48 +774,45 @@ class WasmInterpreter(
         }
     }
 
-    private fun findMatchingEnd(instructions: List<WasmInstruction>, startPc: Int): Int {
-        var depth = 0
-        for (index in startPc until instructions.size) {
-            val mnemonic = instructions[index].opcode.mnemonic
-            if (mnemonic == "block" || mnemonic == "loop" || mnemonic == "if") {
-                depth++
-            } else if (mnemonic == "end") {
-                depth--
-                if (depth == 0) {
-                    return index
-                }
-            }
+    private fun getBlockStructure(localIndex: Int, instructions: List<WasmInstruction>): BlockStructure {
+        return blockStructureCache.getOrPut(localIndex) {
+            buildBlockStructure(instructions)
         }
-        return instructions.size
     }
 
-    private fun findMatchingElse(instructions: List<WasmInstruction>, startPc: Int): Int? {
-        var depth = 0
-        for (index in startPc until instructions.size) {
-            val mnemonic = instructions[index].opcode.mnemonic
-            if (mnemonic == "block" || mnemonic == "loop" || mnemonic == "if") {
-                depth++
-            } else if (mnemonic == "end") {
-                depth--
-                if (depth == 0) {
-                    return null
+    private fun buildBlockStructure(instructions: List<WasmInstruction>): BlockStructure {
+        val endMap = IntArray(instructions.size) { -1 }
+        val elseMap = IntArray(instructions.size) { -1 }
+        val blockStack = ArrayDeque<Int>()
+
+        for (index in instructions.indices) {
+            val opcode = instructions[index].opcode
+            if (opcode == WasmOpCode.BLOCK || opcode == WasmOpCode.LOOP || opcode == WasmOpCode.IF) {
+                blockStack.addLast(index)
+            } else if (opcode == WasmOpCode.ELSE) {
+                if (blockStack.isNotEmpty()) {
+                    val ifPc = blockStack.last()
+                    elseMap[ifPc] = index + 1
                 }
-            } else if (mnemonic == "else" && depth == 1) {
-                return index + 1
+            } else if (opcode == WasmOpCode.END) {
+                if (blockStack.isNotEmpty()) {
+                    val openPc = blockStack.removeLast()
+                    endMap[openPc] = index
+                }
             }
         }
-        return null
+        return BlockStructure(endMap, elseMap)
     }
 
     private fun resolveCalleeType(funcIndex: Int): WasmModule.FuncType {
-        val importCount = wasmModule.importedFunctionCount
-        return if (funcIndex < importCount) {
-            val importDecl = wasmModule.imports.filterIsInstance<WasmModule.Import.Func>()[funcIndex]
-            wasmModule.types[importDecl.typeIndex]
-        } else {
-            val localIndex = funcIndex - importCount
-            wasmModule.types[wasmModule.functions[localIndex].typeIndex]
+        return calleeTypeCache.getOrPut(funcIndex) {
+            val importCount = wasmModule.importedFunctionCount
+            if (funcIndex < importCount) {
+                wasmModule.types[importedFunctions[funcIndex].typeIndex]
+            } else {
+                val localIndex = funcIndex - importCount
+                wasmModule.types[wasmModule.functions[localIndex].typeIndex]
+            }
         }
     }
 
@@ -823,6 +878,35 @@ class WasmInterpreter(
         if (a == 0.0 && b == 0.0) { return if (java.lang.Double.doubleToRawLongBits(a) < 0 && java.lang.Double.doubleToRawLongBits(b) < 0) { -0.0 } else { 0.0 } }
         return if (a > b) { a } else { b }
     }
+
+    private fun i32TruncSatS(value: Double): Int {
+        if (value.isNaN()) { return 0 }
+        if (value >= Int.MAX_VALUE.toDouble()) { return Int.MAX_VALUE }
+        if (value <= Int.MIN_VALUE.toDouble()) { return Int.MIN_VALUE }
+        return value.toInt()
+    }
+
+    private fun i32TruncSatU(value: Double): Long {
+        if (value.isNaN()) { return 0L }
+        if (value >= 4294967295.0) { return 0xFFFFFFFFL }
+        if (value <= 0.0) { return 0L }
+        return value.toLong() and 0xFFFFFFFFL
+    }
+
+    private fun i64TruncSatS(value: Double): Long {
+        if (value.isNaN()) { return 0L }
+        if (value >= Long.MAX_VALUE.toDouble()) { return Long.MAX_VALUE }
+        if (value <= Long.MIN_VALUE.toDouble()) { return Long.MIN_VALUE }
+        return value.toLong()
+    }
+
+    private fun i64TruncSatU(value: Double): Long {
+        if (value.isNaN()) { return 0L }
+        if (value <= 0.0) { return 0L }
+        if (value >= 18446744073709551615.0) { return -1L }
+        if (value < 9.223372036854776E18) { return value.toLong() }
+        return (value - 9.223372036854776E18).toLong() + Long.MIN_VALUE
+    }
 }
 
 class InterpreterFrame(
@@ -837,4 +921,9 @@ class ControlFrame(
     val kind: ControlKind,
     val targetPc: Int,
     val stackHeight: Int,
+)
+
+class BlockStructure(
+    val endMap: IntArray,
+    val elseMap: IntArray,
 )

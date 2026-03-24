@@ -81,7 +81,7 @@ tasks.register<Jar>("fatJar") {
             ") else (\r\n" +
             "    set WAD=%~2\r\n" +
             ")\r\n" +
-            "java --enable-native-access=ALL-UNNAMED -Xmx1g -jar $jarName %WASM% %WAD%\r\n"
+            "java --enable-native-access=ALL-UNNAMED -Xmx1g -jar $jarName %WASM% %WAD% %3 %4 %5\r\n"
         )
 
         dir.resolve("doom.sh").writeText(

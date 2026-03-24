@@ -2,6 +2,7 @@ package org.wark.compile.translate
 
 import org.kgen.ir.Constant
 import org.kgen.ir.Type
+import org.kgen.target.wasm.WasmOpCode
 import org.kgen.target.wasm.disasm.WasmInstruction
 import org.kgen.target.wasm.disasm.WasmInstruction.Operands
 import org.wark.compile.CompilationContext
@@ -9,45 +10,44 @@ import org.wark.compile.CompilationContext
 class MemoryTranslator : InstructionTranslator {
 
     private val handled = setOf(
-        "i32.load", "i32.store", "i64.load", "i64.store",
-        "i32.load8_s", "i32.load8_u", "i32.load16_s", "i32.load16_u",
-        "i32.store8", "i32.store16",
-        "i64.load8_s", "i64.load8_u", "i64.load16_s", "i64.load16_u",
-        "i64.load32_s", "i64.load32_u",
-        "i64.store8", "i64.store16", "i64.store32",
-        "f32.load", "f32.store", "f64.load", "f64.store",
+        WasmOpCode.I32_LOAD, WasmOpCode.I32_STORE, WasmOpCode.I64_LOAD, WasmOpCode.I64_STORE,
+        WasmOpCode.I32_LOAD8_S, WasmOpCode.I32_LOAD8_U, WasmOpCode.I32_LOAD16_S, WasmOpCode.I32_LOAD16_U,
+        WasmOpCode.I32_STORE8, WasmOpCode.I32_STORE16,
+        WasmOpCode.I64_LOAD8_S, WasmOpCode.I64_LOAD8_U, WasmOpCode.I64_LOAD16_S, WasmOpCode.I64_LOAD16_U,
+        WasmOpCode.I64_LOAD32_S, WasmOpCode.I64_LOAD32_U,
+        WasmOpCode.I64_STORE8, WasmOpCode.I64_STORE16, WasmOpCode.I64_STORE32,
+        WasmOpCode.F32_LOAD, WasmOpCode.F32_STORE, WasmOpCode.F64_LOAD, WasmOpCode.F64_STORE,
     )
 
-    override fun canHandle(mnemonic: String): Boolean = mnemonic in handled
+    override fun canHandle(opcode: WasmOpCode): Boolean = opcode in handled
 
     override fun translate(context: CompilationContext, instruction: WasmInstruction) {
-        when (instruction.opcode.mnemonic) {
-            "i32.load" -> load(context, instruction, Type.I32)
-            "i64.load" -> load(context, instruction, Type.I64)
-            "f32.load" -> load(context, instruction, Type.F32)
-            "f64.load" -> load(context, instruction, Type.F64)
+        when (instruction.opcode) {
+            WasmOpCode.I32_LOAD -> load(context, instruction, Type.I32)
+            WasmOpCode.I64_LOAD -> load(context, instruction, Type.I64)
+            WasmOpCode.F32_LOAD -> load(context, instruction, Type.F32)
+            WasmOpCode.F64_LOAD -> load(context, instruction, Type.F64)
 
-            "i32.store" -> store(context, instruction)
-            "i64.store" -> store(context, instruction)
-            "f32.store" -> store(context, instruction)
-            "f64.store" -> store(context, instruction)
+            WasmOpCode.I32_STORE, WasmOpCode.I64_STORE,
+            WasmOpCode.F32_STORE, WasmOpCode.F64_STORE -> store(context, instruction)
 
-            "i32.load8_s" -> loadExtend(context, instruction, Type.I8, Type.I32, signed = true)
-            "i32.load8_u" -> loadExtend(context, instruction, Type.I8, Type.I32, signed = false)
-            "i32.load16_s" -> loadExtend(context, instruction, Type.I16, Type.I32, signed = true)
-            "i32.load16_u" -> loadExtend(context, instruction, Type.I16, Type.I32, signed = false)
-            "i64.load8_s" -> loadExtend(context, instruction, Type.I8, Type.I64, signed = true)
-            "i64.load8_u" -> loadExtend(context, instruction, Type.I8, Type.I64, signed = false)
-            "i64.load16_s" -> loadExtend(context, instruction, Type.I16, Type.I64, signed = true)
-            "i64.load16_u" -> loadExtend(context, instruction, Type.I16, Type.I64, signed = false)
-            "i64.load32_s" -> loadExtend(context, instruction, Type.I32, Type.I64, signed = true)
-            "i64.load32_u" -> loadExtend(context, instruction, Type.I32, Type.I64, signed = false)
+            WasmOpCode.I32_LOAD8_S -> loadExtend(context, instruction, Type.I8, Type.I32, signed = true)
+            WasmOpCode.I32_LOAD8_U -> loadExtend(context, instruction, Type.I8, Type.I32, signed = false)
+            WasmOpCode.I32_LOAD16_S -> loadExtend(context, instruction, Type.I16, Type.I32, signed = true)
+            WasmOpCode.I32_LOAD16_U -> loadExtend(context, instruction, Type.I16, Type.I32, signed = false)
+            WasmOpCode.I64_LOAD8_S -> loadExtend(context, instruction, Type.I8, Type.I64, signed = true)
+            WasmOpCode.I64_LOAD8_U -> loadExtend(context, instruction, Type.I8, Type.I64, signed = false)
+            WasmOpCode.I64_LOAD16_S -> loadExtend(context, instruction, Type.I16, Type.I64, signed = true)
+            WasmOpCode.I64_LOAD16_U -> loadExtend(context, instruction, Type.I16, Type.I64, signed = false)
+            WasmOpCode.I64_LOAD32_S -> loadExtend(context, instruction, Type.I32, Type.I64, signed = true)
+            WasmOpCode.I64_LOAD32_U -> loadExtend(context, instruction, Type.I32, Type.I64, signed = false)
 
-            "i32.store8" -> storeTrunc(context, instruction, Type.I8)
-            "i32.store16" -> storeTrunc(context, instruction, Type.I16)
-            "i64.store8" -> storeTrunc(context, instruction, Type.I8)
-            "i64.store16" -> storeTrunc(context, instruction, Type.I16)
-            "i64.store32" -> storeTrunc(context, instruction, Type.I32)
+            WasmOpCode.I32_STORE8 -> storeTrunc(context, instruction, Type.I8)
+            WasmOpCode.I32_STORE16 -> storeTrunc(context, instruction, Type.I16)
+            WasmOpCode.I64_STORE8 -> storeTrunc(context, instruction, Type.I8)
+            WasmOpCode.I64_STORE16 -> storeTrunc(context, instruction, Type.I16)
+            WasmOpCode.I64_STORE32 -> storeTrunc(context, instruction, Type.I32)
+            else -> { }
         }
     }
 
