@@ -148,64 +148,68 @@ class WasmToIrCompiler(
         val importedFunctions = wasmModule.imports.filterIsInstance<WasmModule.Import.Func>()
         val importCount = wasmModule.importedFunctionCount
 
-        // Group table entries by callee arity
-        val entriesByArity = mutableMapOf<Int, MutableList<Pair<Int, Int>>>()
+        // Group table entries by type index (full signature match)
+        val entriesByTypeIndex = mutableMapOf<Int, MutableList<Pair<Int, Int>>>()
         for ((tableSlot, funcIndex) in functionTable.withIndex()) {
-            if (funcIndex < 0) { continue } // skip empty slots
-            val arity = functionArity(funcIndex, importedFunctions, importCount)
-            entriesByArity.getOrPut(arity) { mutableListOf() }.add(tableSlot to funcIndex)
+            if (funcIndex < 0) { continue }
+            val typeIndex = functionTypeIndex(funcIndex, importedFunctions, importCount)
+            entriesByTypeIndex.getOrPut(typeIndex) { mutableListOf() }.add(tableSlot to funcIndex)
         }
 
-        for ((arity, entries) in entriesByArity) {
-            generateDispatcherForArity(builder, arity, entries, importedFunctions, importCount)
+        for ((typeIndex, entries) in entriesByTypeIndex) {
+            generateDispatcherForType(builder, typeIndex, entries, importedFunctions, importCount)
         }
     }
 
-    private fun functionArity(
+    private fun functionTypeIndex(
         funcIndex: Int,
         importedFunctions: List<WasmModule.Import.Func>,
         importCount: Int,
     ): Int {
         if (funcIndex < importCount) {
-            return wasmModule.types[importedFunctions[funcIndex].typeIndex].params.size
+            return importedFunctions[funcIndex].typeIndex
         }
         val localIndex = funcIndex - importCount
-        return wasmModule.types[wasmModule.functions[localIndex].typeIndex].params.size
+        return wasmModule.functions[localIndex].typeIndex
     }
 
-    private fun generateDispatcherForArity(
+    private fun generateDispatcherForType(
         builder: ModuleBuilder,
-        arity: Int,
+        typeIndex: Int,
         entries: List<Pair<Int, Int>>,
         importedFunctions: List<WasmModule.Import.Func>,
         importCount: Int,
     ) {
+        val funcType = wasmModule.types[typeIndex]
         val dispatchParams = mutableListOf<Param>()
         dispatchParams.add(Param("context", Type.I64))
         dispatchParams.add(Param("tableIndex", Type.I32))
-        for (paramIndex in 0 until arity) {
-            dispatchParams.add(Param("arg$paramIndex", Type.I64))
+        for ((paramIndex, wasmType) in funcType.params.withIndex()) {
+            dispatchParams.add(Param("arg$paramIndex", wasmTypeToIr(wasmType)))
         }
 
-        val params = builder.createFunction("__wark_call_indirect_$arity", dispatchParams, Type.I64)
+        val returnType = if (funcType.results.isEmpty()) {
+            Type.Void
+        } else {
+            wasmTypeToIr(funcType.results[0])
+        }
+
+        val params = builder.createFunction("__wark_call_indirect_type$typeIndex", dispatchParams, returnType)
         builder.appendBlock("entry")
         val tableIndexParam = params[1]
 
         for ((tableSlot, funcIndex) in entries) {
             val calleeName: String
-            val calleeType: WasmModule.FuncType
             if (funcIndex < importCount) {
                 val importDecl = importedFunctions[funcIndex]
                 calleeName = "${importDecl.module}_${importDecl.name}"
-                calleeType = wasmModule.types[importDecl.typeIndex]
             } else {
                 val localIndex = funcIndex - importCount
                 calleeName = wasmModule.functionName(funcIndex) ?: "func_$localIndex"
-                calleeType = wasmModule.types[wasmModule.functions[localIndex].typeIndex]
             }
 
-            val thenLabel = "arity${arity}_slot_${tableSlot}"
-            val nextLabel = "arity${arity}_next_${tableSlot}"
+            val thenLabel = "type${typeIndex}_slot_${tableSlot}"
+            val nextLabel = "type${typeIndex}_next_${tableSlot}"
 
             val cmp = builder.icmp(ICmpPredicate.EQ, tableIndexParam, Constant.I32(tableSlot))
             builder.condBr(cmp, thenLabel, nextLabel)
@@ -213,25 +217,16 @@ class WasmToIrCompiler(
             builder.appendBlock(thenLabel)
             val callArgs = mutableListOf<Value>()
             callArgs.add(params[0])
-            for (paramIndex in calleeType.params.indices) {
+            for (paramIndex in funcType.params.indices) {
                 callArgs.add(params[paramIndex + 2])
-            }
-            val returnType = if (calleeType.results.isEmpty()) {
-                Type.Void
-            } else {
-                wasmTypeToIr(calleeType.results[0])
             }
             val result = builder.call(calleeName, callArgs, returnType)
             if (returnType == Type.Void) {
-                builder.ret(Constant.I64(0))
+                builder.ret()
             } else if (result != null) {
-                if (result.type == Type.I32) {
-                    builder.ret(builder.zext(result, Type.I64))
-                } else {
-                    builder.ret(result)
-                }
+                builder.ret(result)
             } else {
-                builder.ret(Constant.I64(0))
+                builder.ret()
             }
 
             builder.appendBlock(nextLabel)
@@ -239,7 +234,18 @@ class WasmToIrCompiler(
 
         // Default: trap for invalid table index
         builder.call("__wark_trap", listOf(Constant.I32(-1)), Type.Void)
-        builder.ret(Constant.I64(0))
+        if (returnType == Type.Void) {
+            builder.ret()
+        } else {
+            val defaultReturn = when (returnType) {
+                Type.I32 -> Constant.I32(0)
+                Type.I64 -> Constant.I64(0)
+                Type.F32 -> Constant.F32(0f)
+                Type.F64 -> Constant.F64(0.0)
+                else -> Constant.I64(0)
+            }
+            builder.ret(defaultReturn)
+        }
         builder.finalizeFunction()
     }
 

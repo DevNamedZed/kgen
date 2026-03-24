@@ -109,12 +109,7 @@ class ControlFlowTranslator(
                 args.add(tableIndex)
                 val paramArgs = mutableListOf<org.kgen.ir.Value>()
                 for (paramIndex in calleeType.params.indices) {
-                    val arg = stack.pop()
-                    if (arg.type == Type.I32) {
-                        paramArgs.add(builder.zext(arg, Type.I64))
-                    } else {
-                        paramArgs.add(arg)
-                    }
+                    paramArgs.add(stack.pop())
                 }
                 paramArgs.reverse()
                 args.addAll(paramArgs)
@@ -125,23 +120,23 @@ class ControlFlowTranslator(
                     WasmToIrCompiler.wasmTypeToIr(calleeType.results[0])
                 }
 
-                // Dispatch via arity-specific dispatcher; always returns I64
-                val arity = calleeType.params.size
-                val dispatchResult: Value? = builder.call("__wark_call_indirect_$arity", args, Type.I64)
+                val dispatchResult: Value? = builder.call(
+                    "__wark_call_indirect_type${operands.typeIndex}", args, wasmReturnType)
                 if (context.traceEnabled && dispatchResult != null) {
+                    val traceValue = if (dispatchResult.type == Type.I32) {
+                        builder.zext(dispatchResult, Type.I64)
+                    } else {
+                        dispatchResult
+                    }
                     builder.call("__wark_trace_return", listOf(
                         context.contextPointer,
                         Constant.I64(context.functionIndex.toLong()),
                         Constant.I64(-1L),
-                        dispatchResult,
+                        traceValue,
                     ), Type.Void)
                 }
                 if (wasmReturnType != Type.Void && dispatchResult != null) {
-                    if (wasmReturnType == Type.I32) {
-                        stack.push(builder.trunc(dispatchResult, Type.I32))
-                    } else {
-                        stack.push(dispatchResult)
-                    }
+                    stack.push(dispatchResult)
                 }
             }
 
@@ -154,11 +149,14 @@ class ControlFlowTranslator(
             "i32.wrap_i64" -> { stack.push(builder.trunc(stack.pop(), Type.I32)) }
             "i64.extend_i32_s" -> { stack.push(builder.sext(stack.pop(), Type.I64)) }
             "i64.extend_i32_u" -> { stack.push(builder.zext(stack.pop(), Type.I64)) }
-            "f32.convert_i32_s", "f32.convert_i32_u" -> { stack.push(builder.sitofp(stack.pop(), Type.F32)) }
-            "f64.convert_i32_s", "f64.convert_i32_u" -> { stack.push(builder.sitofp(stack.pop(), Type.F64)) }
-            "f64.convert_i64_s", "f64.convert_i64_u" -> { stack.push(builder.sitofp(stack.pop(), Type.F64)) }
+            "f32.convert_i32_s" -> { stack.push(builder.sitofp(stack.pop(), Type.F32)) }
+            "f32.convert_i32_u" -> { stack.push(builder.uitofp(stack.pop(), Type.F32)) }
+            "f64.convert_i32_s" -> { stack.push(builder.sitofp(stack.pop(), Type.F64)) }
+            "f64.convert_i32_u" -> { stack.push(builder.uitofp(stack.pop(), Type.F64)) }
+            "f64.convert_i64_s" -> { stack.push(builder.sitofp(stack.pop(), Type.F64)) }
+            "f64.convert_i64_u" -> { stack.push(builder.uitofp(stack.pop(), Type.F64)) }
             "i32.trunc_f32_s", "i32.trunc_f64_s" -> { stack.push(builder.fptosi(stack.pop(), Type.I32)) }
-            "i32.trunc_f64_u" -> { stack.push(builder.fptosi(stack.pop(), Type.I32)) }
+            "i32.trunc_f64_u" -> { stack.push(builder.fptoui(stack.pop(), Type.I32)) }
             "f32.demote_f64" -> { stack.push(builder.fptrunc(stack.pop(), Type.F32)) }
             "f64.promote_f32" -> { stack.push(builder.fpext(stack.pop(), Type.F64)) }
             "i64.reinterpret_f64" -> { stack.push(builder.bitcast(stack.pop(), Type.I64)) }

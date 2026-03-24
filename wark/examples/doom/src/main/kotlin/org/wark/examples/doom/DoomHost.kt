@@ -165,9 +165,15 @@ class DoomRunner(
         const val KEY_LEFTARROW = 0xAC
         const val KEY_UPARROW = 0xAD
         const val KEY_DOWNARROW = 0xAF
+        const val KEY_STRAFE_L = 0xA0
+        const val KEY_STRAFE_R = 0xA1
+        const val KEY_USE = 0xA2
         const val KEY_FIRE = 0xA3
-        const val KEY_USE = 0x20
         const val KEY_ESCAPE = 0x1B
         const val KEY_ENTER = 0x0D
+        const val KEY_TAB = 0x09
+        const val KEY_RSHIFT = 0xB6
+        const val KEY_RCTRL = 0x9D
+        const val KEY_RALT = 0x9E
     }
 }

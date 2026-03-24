@@ -231,14 +231,26 @@ object DoomSdlRunner {
     }
 
     private fun scancodeToKey(scancode: Int): Int = when (scancode) {
-        80 -> DoomRunner.KEY_LEFTARROW
-        79 -> DoomRunner.KEY_RIGHTARROW
-        82 -> DoomRunner.KEY_UPARROW
-        81 -> DoomRunner.KEY_DOWNARROW
-        44 -> DoomRunner.KEY_FIRE     // Space
-        41 -> DoomRunner.KEY_ESCAPE   // Escape
-        40 -> DoomRunner.KEY_ENTER    // Enter
-        8 -> DoomRunner.KEY_USE       // E
+        80 -> DoomRunner.KEY_LEFTARROW      // Left arrow
+        79 -> DoomRunner.KEY_RIGHTARROW     // Right arrow
+        82 -> DoomRunner.KEY_UPARROW        // Up arrow
+        81 -> DoomRunner.KEY_DOWNARROW      // Down arrow
+        44 -> DoomRunner.KEY_USE            // Space = use (open doors)
+        224 -> DoomRunner.KEY_FIRE          // Left Ctrl = fire
+        228 -> DoomRunner.KEY_FIRE          // Right Ctrl = fire
+        41 -> DoomRunner.KEY_ESCAPE         // Escape
+        40 -> DoomRunner.KEY_ENTER          // Enter
+        43 -> DoomRunner.KEY_TAB            // Tab = automap
+        225 -> DoomRunner.KEY_RSHIFT        // Left Shift = run
+        229 -> DoomRunner.KEY_RSHIFT        // Right Shift = run
+        226 -> DoomRunner.KEY_RALT          // Left Alt = strafe
+        230 -> DoomRunner.KEY_RALT          // Right Alt = strafe
+        4 -> DoomRunner.KEY_STRAFE_L        // A = strafe left
+        7 -> DoomRunner.KEY_STRAFE_R        // D = strafe right
+        26 -> DoomRunner.KEY_UPARROW        // W = forward
+        22 -> DoomRunner.KEY_DOWNARROW      // S = backward
+        8 -> DoomRunner.KEY_USE             // E = use
+        9 -> DoomRunner.KEY_FIRE            // F = fire (alt)
         else -> 0
     }
 }

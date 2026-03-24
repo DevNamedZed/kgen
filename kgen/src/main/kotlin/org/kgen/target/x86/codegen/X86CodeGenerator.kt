@@ -3864,11 +3864,20 @@ class X86CodeGenerator : CodeGenerator {
         }
 
         private fun emitStoreMem8(base: X86Register64, disp: Int, src: X86Register32) {
-            asm.mov(X86Memory.base(base).offset(disp), reg32to8(src))
+            val sEnc = (src as X86Register).encoding
+            val bEnc = (base as X86Register).encoding
+            if (sEnc >= 4 || bEnc >= 8) asm.emitByte(0x40 or ((sEnc shr 3) shl 2) or (bEnc shr 3))
+            asm.emitByte(0x88)
+            emitModRM(sEnc, bEnc, disp)
         }
 
         private fun emitStoreMem16(base: X86Register64, disp: Int, src: X86Register32) {
-            asm.mov(X86Memory.base(base).offset(disp), reg32to16(src))
+            val sEnc = (src as X86Register).encoding
+            val bEnc = (base as X86Register).encoding
+            asm.emitByte(0x66)
+            if (sEnc >= 8 || bEnc >= 8) asm.emitByte(0x40 or ((sEnc shr 3) shl 2) or (bEnc shr 3))
+            asm.emitByte(0x89)
+            emitModRM(sEnc, bEnc, disp)
         }
 
         private fun emitMovqXmmToGp64(dest: X86Register64, src: X86Xmm) {
