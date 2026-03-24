@@ -1078,39 +1078,19 @@ class X86CodeGenerator : CodeGenerator {
         }
 
         private fun emitLoadFromStack64(dest: X86Register64, offset: Int) {
-            // mov dest, [rbp + offset]
-            val enc = (dest as X86Register).encoding
-            val rex = 0x48 or ((enc shr 3) and 1).shl(2)
-            asm.emitByte(rex)
-            asm.emitByte(0x8B)
-            asm.emitByte(0x85 or ((enc and 7) shl 3)) // ModRM: mod=10 (disp32), rm=101 (rbp)
-            asm.emitInt32(offset)
+            asm.mov(dest, X86Memory.base(rbp64).offset(offset) as X86Operand64)
         }
 
         private fun emitStoreToStack64(src: X86Register64, offset: Int) {
-            // mov [rbp + offset], src
-            val enc = (src as X86Register).encoding
-            val rex = 0x48 or ((enc shr 3) and 1).shl(2)
-            asm.emitByte(rex)
-            asm.emitByte(0x89)
-            asm.emitByte(0x85 or ((enc and 7) shl 3))
-            asm.emitInt32(offset)
+            asm.mov(X86Memory.base(rbp64).offset(offset), src)
         }
 
         private fun emitLoadFromStack32(dest: X86Register32, offset: Int) {
-            val enc = (dest as X86Register).encoding
-            if (enc >= 8) asm.emitByte(0x44)
-            asm.emitByte(0x8B)
-            asm.emitByte(0x85 or ((enc and 7) shl 3))
-            asm.emitInt32(offset)
+            asm.mov(dest, X86Memory.base(rbp64).offset(offset) as X86Operand32)
         }
 
         private fun emitStoreToStack32(src: X86Register32, offset: Int) {
-            val enc = (src as X86Register).encoding
-            if (enc >= 8) asm.emitByte(0x44)
-            asm.emitByte(0x89)
-            asm.emitByte(0x85 or ((enc and 7) shl 3))
-            asm.emitInt32(offset)
+            asm.mov(X86Memory.base(rbp64).offset(offset), src)
         }
 
         private fun getDest64(name: String): X86Register64 {
@@ -2034,24 +2014,11 @@ class X86CodeGenerator : CodeGenerator {
         }
 
         private fun emitAddImm64(dest: X86Register64, imm: Int) {
-            // add dest, imm32
-            val enc = (dest as X86Register).encoding
-            val rex = 0x48 or ((enc shr 3) and 1)
-            asm.emitByte(rex)
-            asm.emitByte(0x81)
-            asm.emitByte(0xC0 or (enc and 7))
-            asm.emitInt32(imm)
+            asm.add(dest, imm)
         }
 
         private fun emitImulImm64(dest: X86Register64, src: X86Register64, imm: Int) {
-            // imul dest, src, imm32
-            val dEnc = (dest as X86Register).encoding
-            val sEnc = (src as X86Register).encoding
-            val rex = 0x48 or ((dEnc shr 3) and 1).shl(2) or ((sEnc shr 3) and 1)
-            asm.emitByte(rex)
-            asm.emitByte(0x69)
-            asm.emitByte(0xC0 or ((dEnc and 7) shl 3) or (sEnc and 7))
-            asm.emitInt32(imm)
+            asm.imul(dest, src as X86Operand64, imm)
         }
 
         private fun aggregateFieldOffset(type: Type, indices: List<Int>): Int {
@@ -2156,43 +2123,19 @@ class X86CodeGenerator : CodeGenerator {
         }
 
         private fun emitLoadFromRbp32(dest: X86Register32, offset: Int) {
-            // mov dest32, [rbp + offset]
-            val enc = (dest as X86Register).encoding
-            val rex = if (enc >= 8) 0x44 else 0
-            if (rex != 0) asm.emitByte(rex)
-            asm.emitByte(0x8B)
-            asm.emitByte(0x85 or ((enc and 7) shl 3))
-            asm.emitInt32(offset)
+            emitLoadFromStack32(dest, offset)
         }
 
         private fun emitLoadFromRbp64(dest: X86Register64, offset: Int) {
-            // mov dest64, [rbp + offset]
-            val enc = (dest as X86Register).encoding
-            val rex = 0x48 or ((enc shr 3) and 1).shl(2)
-            asm.emitByte(rex)
-            asm.emitByte(0x8B)
-            asm.emitByte(0x85 or ((enc and 7) shl 3))
-            asm.emitInt32(offset)
+            emitLoadFromStack64(dest, offset)
         }
 
         private fun emitStoreToRbp32(src: X86Register32, offset: Int) {
-            // mov [rbp + offset], src32
-            val enc = (src as X86Register).encoding
-            val rex = if (enc >= 8) 0x44 else 0
-            if (rex != 0) asm.emitByte(rex)
-            asm.emitByte(0x89)
-            asm.emitByte(0x85 or ((enc and 7) shl 3))
-            asm.emitInt32(offset)
+            emitStoreToStack32(src, offset)
         }
 
         private fun emitStoreToRbp64(src: X86Register64, offset: Int) {
-            // mov [rbp + offset], src64
-            val enc = (src as X86Register).encoding
-            val rex = 0x48 or ((enc shr 3) and 1).shl(2)
-            asm.emitByte(rex)
-            asm.emitByte(0x89)
-            asm.emitByte(0x85 or ((enc and 7) shl 3))
-            asm.emitInt32(offset)
+            emitStoreToStack64(src, offset)
         }
 
         private fun isPowerOf2(n: Int): Int? {
@@ -2391,21 +2334,13 @@ class X86CodeGenerator : CodeGenerator {
                 Type.I32 -> {
                     val d = getDest32(inst.dest.name)
                     loadValue32(inst.operand, d)
-                    // not r32 = F7 /2
-                    val enc = (d as X86Register).encoding
-                    if (enc >= 8) asm.emitByte(0x41)
-                    asm.emitByte(0xF7)
-                    asm.emitByte(0xD0 or (enc and 7))
+                    asm.not_(d as X86Operand32)
                     if (isSpilled(inst.dest.name)) storeTo(inst.dest.name, reg32 = d)
                 }
                 Type.I64 -> {
                     val d = getDest64(inst.dest.name)
                     loadValue64(inst.operand, d)
-                    // not r64 = REX.W F7 /2
-                    val enc = (d as X86Register).encoding
-                    asm.emitByte(0x48 or ((enc shr 3) and 1))
-                    asm.emitByte(0xF7)
-                    asm.emitByte(0xD0 or (enc and 7))
+                    asm.not_(d as X86Operand64)
                     if (isSpilled(inst.dest.name)) storeTo(inst.dest.name, reg64 = d)
                 }
                 else -> error("Unsupported not type: ${inst.operand.type}")
@@ -2632,23 +2567,7 @@ class X86CodeGenerator : CodeGenerator {
         }
 
         private fun emitLea64(dest: X86Register64, base: X86Register64, disp: Int) {
-            val dEnc = (dest as X86Register).encoding
-            val bEnc = (base as X86Register).encoding
-            val rex = 0x48 or ((dEnc shr 3) shl 2) or (bEnc shr 3)
-            asm.emitByte(rex)
-            asm.emitByte(0x8D) // LEA
-            if (disp == 0 && (bEnc and 7) != 5) {
-                asm.emitByte(((dEnc and 7) shl 3) or (bEnc and 7))
-                if ((bEnc and 7) == 4) asm.emitByte(0x24) // SIB for RSP
-            } else if (disp in -128..127) {
-                asm.emitByte(0x40 or ((dEnc and 7) shl 3) or (bEnc and 7))
-                if ((bEnc and 7) == 4) asm.emitByte(0x24) // SIB for RSP
-                asm.emitByte(disp and 0xFF)
-            } else {
-                asm.emitByte(0x80 or ((dEnc and 7) shl 3) or (bEnc and 7))
-                if ((bEnc and 7) == 4) asm.emitByte(0x24) // SIB for RSP
-                asm.emitInt32(disp)
-            }
+            asm.lea(dest, X86Memory.base(base).offset(disp))
         }
 
         private fun isTlsGlobal(name: String): Boolean =
@@ -3330,11 +3249,7 @@ class X86CodeGenerator : CodeGenerator {
         }
 
         private fun emitLoadImm64(dest: X86Register64, value: Long) {
-            // movabs dest, imm64
-            val enc = (dest as X86Register).encoding
-            asm.emitByte(0x48 or ((enc shr 3) and 1))
-            asm.emitByte(0xB8 or (enc and 7))
-            asm.emitInt64(value)
+            asm.mov(dest, value)
         }
 
         private fun emitAtomicRMW(inst: AtomicRMW) {
@@ -3345,27 +3260,18 @@ class X86CodeGenerator : CodeGenerator {
 
             when (inst.op) {
                 AtomicRMWOp.XCHG -> {
-                    // xchg is implicitly locked
+                    val ptrMem = X86Memory.base(ptrReg).build()
                     when (inst.dest.type) {
                         Type.I64, Type.OpaquePointer, is Type.Pointer -> {
                             val dest = getDest64(inst.dest.name)
                             loadValue64(inst.value, dest)
-                            // xchg [ptr], dest — REX.W 87 /r with memory operand
-                            val dEnc = (dest as X86Register).encoding
-                            val bEnc = (ptrReg as X86Register).encoding
-                            asm.emitByte(0x48 or ((dEnc shr 3) shl 2) or (bEnc shr 3))
-                            asm.emitByte(0x87)
-                            asm.emitByte(((dEnc and 7) shl 3) or (bEnc and 7))
+                            asm.xchg(ptrMem as X86Operand64, dest)
                             if (isSpilled(inst.dest.name)) storeTo(inst.dest.name, reg64 = dest)
                         }
                         else -> {
                             val dest = getDest32(inst.dest.name)
                             loadValue32(inst.value, dest)
-                            val dEnc = (dest as X86Register).encoding
-                            val bEnc = (ptrReg as X86Register).encoding
-                            if (dEnc >= 8 || bEnc >= 8) asm.emitByte(0x40 or ((dEnc shr 3) shl 2) or (bEnc shr 3))
-                            asm.emitByte(0x87)
-                            asm.emitByte(((dEnc and 7) shl 3) or (bEnc and 7))
+                            asm.xchg(ptrMem as X86Operand32, dest)
                             if (isSpilled(inst.dest.name)) storeTo(inst.dest.name, reg32 = dest)
                         }
                     }
@@ -3714,30 +3620,16 @@ class X86CodeGenerator : CodeGenerator {
         }
 
         private fun emitFPExt(inst: FPExt) {
-            // f32 → f64: cvtss2sd
             val d = getDestXmm(inst.dest.name)
             val src = getOrLoadXmm(inst.value.name, if (d == xmm15) xmm14 else xmm15)
-            // cvtss2sd d, src — F3 0F 5A /r
-            val dEnc = (d as X86Register).encoding
-            val sEnc = (src as X86Register).encoding
-            asm.emitByte(0xF3)
-            if (dEnc >= 8 || sEnc >= 8) asm.emitByte(0x40 or ((dEnc shr 3) shl 2) or (sEnc shr 3))
-            asm.emitBytes(0x0F, 0x5A)
-            asm.emitByte(0xC0 or ((dEnc and 7) shl 3) or (sEnc and 7))
+            asm.cvtss2sd(d, src)
             if (isSpilled(inst.dest.name)) storeToXmm(inst.dest.name, d)
         }
 
         private fun emitFPTrunc(inst: FPTrunc) {
-            // f64 → f32: cvtsd2ss
             val d = getDestXmm(inst.dest.name)
             val src = getOrLoadXmm(inst.value.name, if (d == xmm15) xmm14 else xmm15)
-            // cvtsd2ss d, src — F2 0F 5A /r
-            val dEnc = (d as X86Register).encoding
-            val sEnc = (src as X86Register).encoding
-            asm.emitByte(0xF2)
-            if (dEnc >= 8 || sEnc >= 8) asm.emitByte(0x40 or ((dEnc shr 3) shl 2) or (sEnc shr 3))
-            asm.emitBytes(0x0F, 0x5A)
-            asm.emitByte(0xC0 or ((dEnc and 7) shl 3) or (sEnc and 7))
+            asm.cvtsd2ss(d, src)
             if (isSpilled(inst.dest.name)) storeToXmm(inst.dest.name, d)
         }
 
@@ -3951,67 +3843,33 @@ class X86CodeGenerator : CodeGenerator {
         }
 
         private fun emitPxor(a: X86Xmm, b: X86Xmm) {
-            // pxor a, b — 66 0F EF /r
-            val aEnc = (a as X86Register).encoding
-            val bEnc = (b as X86Register).encoding
-            asm.emitByte(0x66)
-            if (aEnc >= 8 || bEnc >= 8) asm.emitByte(0x40 or ((aEnc shr 3) shl 2) or (bEnc shr 3))
-            asm.emitBytes(0x0F, 0xEF)
-            asm.emitByte(0xC0 or ((aEnc and 7) shl 3) or (bEnc and 7))
+            asm.pxor(a, b)
         }
 
         // Memory access helpers — manual encoding for register-indirect addressing
 
         private fun emitLoadMem32(dest: X86Register32, base: X86Register64, disp: Int) {
-            // mov dest, [base + disp]
-            val dEnc = (dest as X86Register).encoding
-            val bEnc = (base as X86Register).encoding
-            if (dEnc >= 8 || bEnc >= 8) asm.emitByte(0x40 or ((dEnc shr 3) shl 2) or (bEnc shr 3))
-            asm.emitByte(0x8B)
-            emitModRM(dEnc, bEnc, disp)
+            asm.mov(dest, X86Memory.base(base).offset(disp) as X86Operand32)
         }
 
         private fun emitLoadMem64(dest: X86Register64, base: X86Register64, disp: Int) {
-            val dEnc = (dest as X86Register).encoding
-            val bEnc = (base as X86Register).encoding
-            asm.emitByte(0x48 or ((dEnc shr 3) shl 2) or (bEnc shr 3))
-            asm.emitByte(0x8B)
-            emitModRM(dEnc, bEnc, disp)
+            asm.mov(dest, X86Memory.base(base).offset(disp) as X86Operand64)
         }
 
         private fun emitStoreMem32(base: X86Register64, disp: Int, src: X86Register32) {
-            val sEnc = (src as X86Register).encoding
-            val bEnc = (base as X86Register).encoding
-            if (sEnc >= 8 || bEnc >= 8) asm.emitByte(0x40 or ((sEnc shr 3) shl 2) or (bEnc shr 3))
-            asm.emitByte(0x89)
-            emitModRM(sEnc, bEnc, disp)
+            asm.mov(X86Memory.base(base).offset(disp), src)
         }
 
         private fun emitStoreMem64(base: X86Register64, disp: Int, src: X86Register64) {
-            val sEnc = (src as X86Register).encoding
-            val bEnc = (base as X86Register).encoding
-            asm.emitByte(0x48 or ((sEnc shr 3) shl 2) or (bEnc shr 3))
-            asm.emitByte(0x89)
-            emitModRM(sEnc, bEnc, disp)
+            asm.mov(X86Memory.base(base).offset(disp), src)
         }
 
         private fun emitStoreMem8(base: X86Register64, disp: Int, src: X86Register32) {
-            // mov [base+disp], src8 — use low byte of src
-            val sEnc = (src as X86Register).encoding
-            val bEnc = (base as X86Register).encoding
-            if (sEnc >= 4 || bEnc >= 8) asm.emitByte(0x40 or ((sEnc shr 3) shl 2) or (bEnc shr 3))
-            asm.emitByte(0x88)
-            emitModRM(sEnc, bEnc, disp)
+            asm.mov(X86Memory.base(base).offset(disp), reg32to8(src))
         }
 
         private fun emitStoreMem16(base: X86Register64, disp: Int, src: X86Register32) {
-            // mov [base+disp], src16 — operand size prefix
-            val sEnc = (src as X86Register).encoding
-            val bEnc = (base as X86Register).encoding
-            asm.emitByte(0x66) // operand size prefix
-            if (sEnc >= 8 || bEnc >= 8) asm.emitByte(0x40 or ((sEnc shr 3) shl 2) or (bEnc shr 3))
-            asm.emitByte(0x89)
-            emitModRM(sEnc, bEnc, disp)
+            asm.mov(X86Memory.base(base).offset(disp), reg32to16(src))
         }
 
         private fun emitMovqXmmToGp64(dest: X86Register64, src: X86Xmm) {
@@ -4107,20 +3965,11 @@ class X86CodeGenerator : CodeGenerator {
         }
 
         private fun emitMovzxMem8(dest: X86Register32, base: X86Register64, disp: Int) {
-            // movzx dest, byte [base+disp]
-            val dEnc = (dest as X86Register).encoding
-            val bEnc = (base as X86Register).encoding
-            if (dEnc >= 8 || bEnc >= 8) asm.emitByte(0x40 or ((dEnc shr 3) shl 2) or (bEnc shr 3))
-            asm.emitBytes(0x0F, 0xB6)
-            emitModRM(dEnc, bEnc, disp)
+            asm.movzx(dest, X86Memory.base(base).offset(disp) as X86Operand8)
         }
 
         private fun emitMovzxMem16(dest: X86Register32, base: X86Register64, disp: Int) {
-            val dEnc = (dest as X86Register).encoding
-            val bEnc = (base as X86Register).encoding
-            if (dEnc >= 8 || bEnc >= 8) asm.emitByte(0x40 or ((dEnc shr 3) shl 2) or (bEnc shr 3))
-            asm.emitBytes(0x0F, 0xB7)
-            emitModRM(dEnc, bEnc, disp)
+            asm.movzx(dest, X86Memory.base(base).offset(disp) as X86Operand16)
         }
 
         private fun emitModRM(regBits: Int, rmBits: Int, disp: Int) {
@@ -4150,35 +3999,19 @@ class X86CodeGenerator : CodeGenerator {
         // Register-to-register movzx/movsx (source is low bits of a 32-bit reg)
 
         private fun emitMovzx32from8(dest: X86Register32, src: X86Register32) {
-            val dEnc = (dest as X86Register).encoding
-            val sEnc = (src as X86Register).encoding
-            if (dEnc >= 8 || sEnc >= 4) asm.emitByte(0x40 or ((dEnc shr 3) shl 2) or (sEnc shr 3))
-            asm.emitBytes(0x0F, 0xB6)
-            asm.emitByte(0xC0 or ((dEnc and 7) shl 3) or (sEnc and 7))
+            asm.movzx(dest, reg32to8(src) as X86Operand8)
         }
 
         private fun emitMovzx32from16(dest: X86Register32, src: X86Register32) {
-            val dEnc = (dest as X86Register).encoding
-            val sEnc = (src as X86Register).encoding
-            if (dEnc >= 8 || sEnc >= 8) asm.emitByte(0x40 or ((dEnc shr 3) shl 2) or (sEnc shr 3))
-            asm.emitBytes(0x0F, 0xB7)
-            asm.emitByte(0xC0 or ((dEnc and 7) shl 3) or (sEnc and 7))
+            asm.movzx(dest, reg32to16(src) as X86Operand16)
         }
 
         private fun emitMovsx32from8(dest: X86Register32, src: X86Register32) {
-            val dEnc = (dest as X86Register).encoding
-            val sEnc = (src as X86Register).encoding
-            if (dEnc >= 8 || sEnc >= 4) asm.emitByte(0x40 or ((dEnc shr 3) shl 2) or (sEnc shr 3))
-            asm.emitBytes(0x0F, 0xBE)
-            asm.emitByte(0xC0 or ((dEnc and 7) shl 3) or (sEnc and 7))
+            asm.movsx(dest, reg32to8(src) as X86Operand8)
         }
 
         private fun emitMovsx32from16(dest: X86Register32, src: X86Register32) {
-            val dEnc = (dest as X86Register).encoding
-            val sEnc = (src as X86Register).encoding
-            if (dEnc >= 8 || sEnc >= 8) asm.emitByte(0x40 or ((dEnc shr 3) shl 2) or (sEnc shr 3))
-            asm.emitBytes(0x0F, 0xBF)
-            asm.emitByte(0xC0 or ((dEnc and 7) shl 3) or (sEnc and 7))
+            asm.movsx(dest, reg32to16(src) as X86Operand16)
         }
 
         private fun reg64to32(r: X86Register64): X86Register32 = when (r) {
@@ -4201,6 +4034,30 @@ class X86CodeGenerator : CodeGenerator {
             r12d32 -> r12_64; r13d32 -> r13_64
             r14d32 -> r14_64; r15d32 -> r15_64
             else -> error("Unknown 32-bit register: $r")
+        }
+
+        private fun reg32to8(r: X86Register32): X86Register8 = when ((r as X86Register).encoding) {
+            0 -> X86Register.AL; 1 -> X86Register.CL
+            2 -> X86Register.DL; 3 -> X86Register.BL
+            4 -> X86Register.SPL; 5 -> X86Register.BPL
+            6 -> X86Register.SIL; 7 -> X86Register.DIL
+            8 -> X86Register.R8B; 9 -> X86Register.R9B
+            10 -> X86Register.R10B; 11 -> X86Register.R11B
+            12 -> X86Register.R12B; 13 -> X86Register.R13B
+            14 -> X86Register.R14B; 15 -> X86Register.R15B
+            else -> error("Unknown 32-bit register encoding: ${(r as X86Register).encoding}")
+        }
+
+        private fun reg32to16(r: X86Register32): X86Register16 = when ((r as X86Register).encoding) {
+            0 -> X86Register.AX; 1 -> X86Register.CX
+            2 -> X86Register.DX; 3 -> X86Register.BX
+            4 -> X86Register.SP; 5 -> X86Register.BP
+            6 -> X86Register.SI; 7 -> X86Register.DI
+            8 -> X86Register.R8W; 9 -> X86Register.R9W
+            10 -> X86Register.R10W; 11 -> X86Register.R11W
+            12 -> X86Register.R12W; 13 -> X86Register.R13W
+            14 -> X86Register.R14W; 15 -> X86Register.R15W
+            else -> error("Unknown 32-bit register encoding: ${(r as X86Register).encoding}")
         }
 
         /**
