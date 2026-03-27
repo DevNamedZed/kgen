@@ -24,7 +24,7 @@ class BlockTranslator : InstructionTranslator {
                 val endLabel = context.freshLabel("block_end")
                 val resultCount = blockResultCount(instruction)
                 context.stack.save()
-                controlStack.push(ControlEntry(ControlKind.BLOCK, endLabel, resultCount = resultCount))
+                controlStack.push(ControlEntry(ControlKind.BLOCK, endLabel, resultCount = resultCount, resultType = blockResultType(instruction)))
             }
 
             WasmOpCode.LOOP -> {
@@ -55,7 +55,7 @@ class BlockTranslator : InstructionTranslator {
                 builder.appendBlock(thenLabel)
                 context.currentBlockLabel = thenLabel
                 context.emitBlockTrace()
-                controlStack.push(ControlEntry(ControlKind.IF, endLabel, elseLabel, resultCount))
+                controlStack.push(ControlEntry(ControlKind.IF, endLabel, elseLabel, resultCount, blockResultType(instruction)))
             }
 
             WasmOpCode.ELSE -> {
@@ -99,6 +99,10 @@ class BlockTranslator : InstructionTranslator {
                             builder.appendBlock(entry.elseLabel!!)
                             context.currentBlockLabel = entry.elseLabel!!
                             context.emitBlockTrace()
+                            if (entry.resultCount > 0) {
+                                val defaultValue = org.wark.compile.WasmToIrCompiler.defaultValue(entry.resultType)
+                                entry.pendingResults.add(defaultValue to entry.elseLabel!!)
+                            }
                         }
                         builder.br(entry.label)
                         builder.appendBlock(entry.label)
@@ -202,13 +206,31 @@ class BlockTranslator : InstructionTranslator {
         }
     }
 
+    private fun blockResultType(instruction: WasmInstruction): org.kgen.ir.Type {
+        val operands = instruction.operands
+        if (operands is Operands.BlockType) {
+            return when (operands.type) {
+                -1 -> org.kgen.ir.Type.I32
+                -2 -> org.kgen.ir.Type.I64
+                -3 -> org.kgen.ir.Type.F32
+                -4 -> org.kgen.ir.Type.F64
+                else -> org.kgen.ir.Type.Void
+            }
+        }
+        return org.kgen.ir.Type.Void
+    }
+
     private fun blockResultCount(instruction: WasmInstruction): Int {
         val operands = instruction.operands
         if (operands is Operands.BlockType) {
             val typeCode = operands.type
+            // Block type is decoded as signed LEB128:
+            //   0x40 → -64 (void)
+            //   0x7F → -1 (i32), 0x7E → -2 (i64), 0x7D → -3 (f32), 0x7C → -4 (f64)
+            //   positive values → type index (multi-value)
             return when (typeCode) {
-                0x40 -> 0
-                0x7F, 0x7E, 0x7D, 0x7C -> 1
+                -64 -> 0
+                -1, -2, -3, -4 -> 1
                 else -> if (typeCode >= 0) { 1 } else { 0 }
             }
         }
@@ -223,6 +245,7 @@ class ControlEntry(
     val label: String,
     var elseLabel: String? = null,
     val resultCount: Int = 0,
+    val resultType: org.kgen.ir.Type = org.kgen.ir.Type.Void,
     val pendingResults: MutableList<Pair<Value, String>> = mutableListOf(),
 )
 
@@ -239,7 +262,5 @@ class ControlStack {
         return entries[index]
     }
 
-    fun targetAt(depth: Int): String {
-        return entryAt(depth).label
-    }
+    fun targetAt(depth: Int): String = entryAt(depth).label
 }

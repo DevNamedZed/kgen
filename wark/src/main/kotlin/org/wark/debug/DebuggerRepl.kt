@@ -278,12 +278,10 @@ class DebuggerRepl(
         }
     }
 
-    private fun formatCallResult(result: CallResult): String {
-        return when {
-            result.completed -> formatArgs(result.result)
-            result.trap != null -> "TRAP: ${result.trap}"
-            else -> "paused"
-        }
+    private fun formatCallResult(result: CallResult): String = when {
+        result.completed -> formatArgs(result.result)
+        result.trap != null -> "TRAP: ${result.trap}"
+        else -> "paused"
     }
 
     private fun resolveFunc(spec: String?): Int? {
@@ -311,17 +309,13 @@ class DebuggerRepl(
         }
     }
 
-    protected fun parseNumber(value: String): Long {
-        return if (value.startsWith("0x") || value.startsWith("0X")) {
-            java.lang.Long.parseUnsignedLong(value.substring(2), 16)
-        } else {
-            value.toLong()
-        }
+    protected fun parseNumber(value: String): Long = if (value.startsWith("0x") || value.startsWith("0X")) {
+        java.lang.Long.parseUnsignedLong(value.substring(2), 16)
+    } else {
+        value.toLong()
     }
 
-    protected fun formatArgs(args: LongArray): String {
-        return args.joinToString(", ") { "$it (0x${java.lang.Long.toHexString(it)})" }
-    }
+    protected fun formatArgs(args: LongArray): String = args.joinToString(", ") { "$it (0x${java.lang.Long.toHexString(it)})" }
 
     private fun printHelp() {
         output.println("""

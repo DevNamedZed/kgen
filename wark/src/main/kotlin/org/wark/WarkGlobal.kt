@@ -48,8 +48,11 @@ class WarkGlobal(
 
     companion object {
         @JvmStatic fun mutableI32(initial: Int): WarkGlobal = WarkGlobal(true, initial.toLong() and 0xFFFFFFFFL)
+
         @JvmStatic fun mutableI64(initial: Long): WarkGlobal = WarkGlobal(true, initial)
+
         @JvmStatic fun immutableI32(value: Int): WarkGlobal = WarkGlobal(false, value.toLong() and 0xFFFFFFFFL)
+
         @JvmStatic fun immutableI64(value: Long): WarkGlobal = WarkGlobal(false, value)
     }
 }

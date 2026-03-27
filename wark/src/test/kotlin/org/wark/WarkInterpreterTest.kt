@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test
 import org.kgen.target.wasm.WasmValueType
 import org.kgen.target.wasm.asm.WasmAssembler
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class WarkInterpreterTest {
 

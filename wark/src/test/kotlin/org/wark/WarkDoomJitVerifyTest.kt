@@ -1,14 +1,9 @@
 package org.wark
 
-import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.kgen.target.wasm.WasmValueType
-import org.kgen.target.wasm.WasmRefType
 import org.kgen.target.wasm.asm.WasmAssembler
-import org.kgen.target.wasm.module.WasmModuleReader
-import java.nio.file.Files
-import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

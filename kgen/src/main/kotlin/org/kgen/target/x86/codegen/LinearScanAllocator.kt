@@ -33,6 +33,7 @@ class LinearScanAllocator(
     private val paramRegs32: Array<X86Register32>,
     private val paramXmm: Array<X86Xmm> = emptyArray(),
     private val gpParamOffset: Int = 0,
+    private val sharedParamSlots: Boolean = false,
 ) {
 
     // Map 32-bit callee-saved registers to their 64-bit counterparts
@@ -348,17 +349,18 @@ class LinearScanAllocator(
         for (param in fn.params) {
             val interval = intervals.firstOrNull { it.name == param.name } ?: continue
             if (isFloatType(param.type)) {
-                if (xmmIdx < paramXmm.size) {
+                val xmmSlot = if (sharedParamSlots) { gpIdx } else { xmmIdx }
+                if (xmmSlot < paramXmm.size) {
                     if (interval.acrossCall) {
-                        paramMoves[param.name] = xmmIdx
+                        paramMoves[param.name] = xmmSlot
                     } else {
-                        val reg = paramXmm[xmmIdx]
+                        val reg = paramXmm[xmmSlot]
                         locations[param.name] = Location.RegXmm(reg)
                         freeXmm.remove(reg)
                         activeXmm.add(interval to reg)
                     }
-                    xmmIdx++
                 }
+                if (sharedParamSlots) { gpIdx++ } else { xmmIdx++ }
             } else if (param.type == Type.I64 || param.type == Type.OpaquePointer || param.type is Type.Pointer) {
                 if (gpIdx < paramRegs64.size) {
                     val reg = paramRegs64[gpIdx]
@@ -372,9 +374,9 @@ class LinearScanAllocator(
                         if (reg in calleeSaved64) usedCallee64.add(reg)
                     }
                 } else {
-                    // Stack parameter: on Win64, at [RBP + 0x10 + gpIdx*8]
                     val stackOffset = 0x10 + gpIdx * 8
                     locations[param.name] = Location.Spill(stackOffset)
+                    System.err.println("[ALLOC] ${fn.name}: stack param ${param.name} (I64) at [RBP+0x${stackOffset.toString(16)}], gpIdx=$gpIdx")
                 }
                 gpIdx++
             } else {
@@ -395,6 +397,7 @@ class LinearScanAllocator(
                 } else {
                     val stackOffset = 0x10 + gpIdx * 8
                     locations[param.name] = Location.Spill(stackOffset)
+                    System.err.println("[ALLOC] ${fn.name}: stack param ${param.name} (I32) at [RBP+0x${stackOffset.toString(16)}], gpIdx=$gpIdx")
                 }
                 gpIdx++
             }

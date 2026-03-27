@@ -1,0 +1,3 @@
+sxd av
+sxe -c "~*k 30;q" ep
+g

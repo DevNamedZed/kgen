@@ -1,6 +1,5 @@
 package org.wark.debug
 
-import org.kgen.target.wasm.disasm.WasmDisassembler
 import org.kgen.target.wasm.module.WasmModule
 import org.kgen.target.wasm.module.WasmModuleReader
 import org.wark.*
@@ -148,17 +147,15 @@ class DifferentialRunner(
         }
     }
 
-    private fun runJit(functionName: String, args: LongArray): ResultOrError {
-        return try {
-            val runtime = WarkRuntime.create(WasmTarget.V2_0, ExecutionMode.JIT)
-            val instance = runtime.load(wasmBytes).instantiate(imports)
-            val result = instance.call(functionName, *args)
-            ResultOrError.Success(result)
-        } catch (trap: WasmTrap) {
-            ResultOrError.Trap(trap.message ?: "unknown trap")
-        } catch (exception: Exception) {
-            ResultOrError.Trap("${exception.javaClass.simpleName}: ${exception.message}")
-        }
+    private fun runJit(functionName: String, args: LongArray): ResultOrError = try {
+        val runtime = WarkRuntime.create(WasmTarget.V2_0, ExecutionMode.JIT)
+        val instance = runtime.load(wasmBytes).instantiate(imports)
+        val result = instance.call(functionName, *args)
+        ResultOrError.Success(result)
+    } catch (trap: WasmTrap) {
+        ResultOrError.Trap(trap.message ?: "unknown trap")
+    } catch (exception: Exception) {
+        ResultOrError.Trap("${exception.javaClass.simpleName}: ${exception.message}")
     }
 
     private fun compareResults(a: ResultOrError, b: ResultOrError): Boolean {

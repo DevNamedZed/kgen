@@ -32,6 +32,29 @@ tasks.register<JavaExec>("findCrash") {
     args = (project.findProperty("funcArgs") as String?)?.split(" ") ?: listOf("scan")
 }
 
+tasks.register<JavaExec>("diffTest") {
+    mainClass.set("org.wark.examples.doom.PathTraverseDiffTest")
+    classpath = sourceSets["main"].runtimeClasspath
+    jvmArgs("--enable-native-access=ALL-UNNAMED", "-Xmx2g")
+    workingDir = projectDir
+}
+
+tasks.register<JavaExec>("fixedMathTest") {
+    mainClass.set("org.wark.examples.doom.FixedMathTest")
+    classpath = sourceSets["main"].runtimeClasspath
+    jvmArgs("--enable-native-access=ALL-UNNAMED", "-Xmx2g")
+    workingDir = projectDir
+    args = listOf("../assets/doom_wasm_debug.wasm")
+}
+
+tasks.register<JavaExec>("damageDiag") {
+    mainClass.set("org.wark.examples.doom.DamageDiag")
+    classpath = sourceSets["main"].runtimeClasspath
+    jvmArgs("--enable-native-access=ALL-UNNAMED", "-Xmx2g")
+    workingDir = projectDir
+    args = listOf("../assets/doom_wasm_debug.wasm")
+}
+
 tasks.register<Jar>("fatJar") {
     archiveBaseName.set("wark-doom")
     archiveClassifier.set("")

@@ -19,17 +19,11 @@ class WasmFeatureSet private constructor(
 
     fun enabledFeatures(): Set<WasmFeature> = enabled.toSet()
 
-    fun with(feature: WasmFeature): WasmFeatureSet {
-        return WasmFeatureSet(enabled + feature)
-    }
+    fun with(feature: WasmFeature): WasmFeatureSet = WasmFeatureSet(enabled + feature)
 
-    fun without(feature: WasmFeature): WasmFeatureSet {
-        return WasmFeatureSet(enabled - feature)
-    }
+    fun without(feature: WasmFeature): WasmFeatureSet = WasmFeatureSet(enabled - feature)
 
-    fun merge(other: WasmFeatureSet): WasmFeatureSet {
-        return WasmFeatureSet(enabled + other.enabled)
-    }
+    fun merge(other: WasmFeatureSet): WasmFeatureSet = WasmFeatureSet(enabled + other.enabled)
 
     fun size(): Int = enabled.size
 

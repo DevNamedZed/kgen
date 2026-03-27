@@ -73,6 +73,18 @@ class WasmModuleReader private constructor(private val buf: ByteBuffer) {
             buf.position(sectionEnd)
         }
 
+        // Apply function names from the name section (parsed after the code section)
+        if (functionNames.isNotEmpty()) {
+            val importFuncCount = imports.count { it is WasmModule.Import.Func }
+            for ((index, func) in functions.withIndex()) {
+                val globalIndex = importFuncCount + index
+                val name = functionNames[globalIndex]
+                if (name != null && func.name == null) {
+                    functions[index] = WasmModule.Function(name, func.typeIndex, func.locals, func.body)
+                }
+            }
+        }
+
         return WasmModule(
             version = version,
             types = types.toList(),
@@ -342,7 +354,8 @@ class WasmModuleReader private constructor(private val buf: ByteBuffer) {
             if (subsectionId == 1) { // function names
                 val names = mutableMapOf<Int, String>()
                 val count = readU32(nameBuf)
-                repeat(count) {
+                for (entry in 0 until count) {
+                    if (!nameBuf.hasRemaining()) { break }
                     val index = readU32(nameBuf)
                     val funcName = readName(nameBuf)
                     names[index] = funcName

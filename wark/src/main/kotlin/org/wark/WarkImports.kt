@@ -20,17 +20,11 @@ class WarkImports private constructor(
     private val globals: Map<ImportKey, WarkGlobal>,
 ) {
 
-    fun resolveFunction(module: String, name: String): HostFunction? {
-        return functions[ImportKey(module, name)]
-    }
+    fun resolveFunction(module: String, name: String): HostFunction? = functions[ImportKey(module, name)]
 
-    fun resolveMemory(module: String, name: String): WarkMemory? {
-        return memories[ImportKey(module, name)]
-    }
+    fun resolveMemory(module: String, name: String): WarkMemory? = memories[ImportKey(module, name)]
 
-    fun resolveGlobal(module: String, name: String): WarkGlobal? {
-        return globals[ImportKey(module, name)]
-    }
+    fun resolveGlobal(module: String, name: String): WarkGlobal? = globals[ImportKey(module, name)]
 
     fun functionCount(): Int = functions.size
     fun memoryCount(): Int = memories.size

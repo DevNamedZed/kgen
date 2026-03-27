@@ -312,6 +312,10 @@ class DwarfReader private constructor(
     private fun resolveTypeDIE(cu: ParsedCompileUnit, die: ParsedDIE): DebugType {
         cu.resolvedTypes[die.offset]?.let { return it }
 
+        // Insert placeholder to break recursive type cycles (e.g., struct with pointer to self)
+        val placeholder = DebugType.Base("<recursive>", 0, DwarfEncoding.ADDRESS)
+        cu.resolvedTypes[die.offset] = placeholder
+
         val name = die.stringAttr(DwarfAttribute.NAME) ?: ""
         val byteSize = die.longAttr(DwarfAttribute.BYTE_SIZE) ?: 0
         val sizeInBits = byteSize * 8

@@ -1,0 +1,8 @@
+:wark:examples
+wark\examples\src\main\kotlin
+wark\examples\src\main\java
+
+wark\examples\build\classes\kotlin\main
+wark\examples\build\classes\java\main
+
+wark\examples\build\kover\bin-reports\test.ic

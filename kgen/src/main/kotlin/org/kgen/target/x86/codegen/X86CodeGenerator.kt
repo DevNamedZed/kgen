@@ -339,6 +339,15 @@ class X86CodeGenerator : CodeGenerator {
                 val v = c.value
                 ByteArray(8) { i -> ((v shr (i * 8)) and 0xFF).toByte() }
             }
+            is Constant.F32 -> {
+                val v = java.lang.Float.floatToRawIntBits(c.value)
+                byteArrayOf((v and 0xFF).toByte(), ((v shr 8) and 0xFF).toByte(),
+                    ((v shr 16) and 0xFF).toByte(), ((v shr 24) and 0xFF).toByte())
+            }
+            is Constant.F64 -> {
+                val v = java.lang.Double.doubleToRawLongBits(c.value)
+                ByteArray(8) { i -> ((v shr (i * 8)) and 0xFF).toByte() }
+            }
             is Constant.NullPtr -> ByteArray(8)
             is Constant.ZeroInitializer -> ByteArray(sizeOfType(c.type))
             is Constant.ArrayConst -> c.elements.map { serializeConstant(it) }.reduce { a, b -> a + b }
@@ -793,6 +802,7 @@ class X86CodeGenerator : CodeGenerator {
                 paramRegs32 = callArgRegs32,
                 paramXmm = callArgXmm,
                 gpParamOffset = if (hasSret) 1 else 0,
+                sharedParamSlots = isWindows,
             )
             alloc = allocator.allocate()
 
@@ -904,21 +914,26 @@ class X86CodeGenerator : CodeGenerator {
             var xmmParamIdx = 0
             for (param in fn.params) {
                 if (param.name in handledParams) {
-                    if (isFloatType(param.type)) { xmmParamIdx++ } else { gpParamIdx++ }
+                    if (isFloatType(param.type)) {
+                        if (isWindows) { gpParamIdx++ } else { xmmParamIdx++ }
+                    } else {
+                        gpParamIdx++
+                    }
                     continue
                 }
                 val loc = alloc.locations[param.name] ?: continue
                 when {
                     isFloatType(param.type) -> {
-                        if (xmmParamIdx < callArgRegsXmm.size) {
-                            val srcReg = callArgRegsXmm[xmmParamIdx]
+                        val xmmSlot = if (isWindows) { gpParamIdx } else { xmmParamIdx }
+                        if (xmmSlot < callArgRegsXmm.size) {
+                            val srcReg = callArgRegsXmm[xmmSlot]
                             when (loc) {
                                 is Location.Spill -> { asm.movsd(xmm15, srcReg); emitStoreXmmToStack(xmm15, loc.offset) }
                                 is Location.RegXmm -> if (loc.reg != srcReg) asm.movsd(loc.reg, srcReg)
                                 else -> {}
                             }
                         }
-                        xmmParamIdx++
+                        if (isWindows) { gpParamIdx++ } else { xmmParamIdx++ }
                     }
                     param.type == Type.I64 || param.type == Type.OpaquePointer || param.type is Type.Pointer -> {
                         if (gpParamIdx < callArgRegs64.size) {
@@ -926,6 +941,16 @@ class X86CodeGenerator : CodeGenerator {
                             when (loc) {
                                 is Location.Spill -> emitStoreToStack64(srcReg, loc.offset)
                                 is Location.Reg64 -> if (loc.reg != srcReg) asm.mov(loc.reg, srcReg as X86Operand64)
+                                else -> {}
+                            }
+                        } else {
+                            val stackArgOffset = callerStackArgOffset(gpParamIdx)
+                            when (loc) {
+                                is Location.Spill -> {
+                                    emitLoadFromRbpOffset64(r11_64, stackArgOffset)
+                                    emitStoreToStack64(r11_64, loc.offset)
+                                }
+                                is Location.Reg64 -> emitLoadFromRbpOffset64(loc.reg, stackArgOffset)
                                 else -> {}
                             }
                         }
@@ -939,10 +964,55 @@ class X86CodeGenerator : CodeGenerator {
                                 is Location.Reg32 -> if (loc.reg != srcReg) asm.mov(loc.reg, srcReg as X86Operand32)
                                 else -> {}
                             }
+                        } else {
+                            val stackArgOffset = callerStackArgOffset(gpParamIdx)
+                            when (loc) {
+                                is Location.Spill -> {
+                                    emitLoadFromRbpOffset32(r11d32, stackArgOffset)
+                                    emitStoreToStack32(r11d32, loc.offset)
+                                }
+                                is Location.Reg32 -> emitLoadFromRbpOffset32(loc.reg, stackArgOffset)
+                                else -> {}
+                            }
                         }
                         gpParamIdx++
                     }
                 }
+            }
+        }
+
+        private fun callerStackArgOffset(gpParamIdx: Int): Int {
+            val regCount = callArgRegs64.size
+            val shadowSize = if (isWindows) { 0x20 } else { 0 }
+            return 16 + shadowSize + (gpParamIdx - regCount) * 8
+        }
+
+        private fun emitLoadFromRbpOffset64(dest: X86Register64, offset: Int) {
+            val enc = (dest as X86Register).encoding
+            val rex = 0x48 or ((enc shr 3) and 1).shl(2)
+            asm.emitByte(rex)
+            asm.emitByte(0x8B)
+            if (offset in -128..127) {
+                asm.emitByte(0x45 or ((enc and 7) shl 3))
+                asm.emitByte(offset and 0xFF)
+            } else {
+                asm.emitByte(0x85 or ((enc and 7) shl 3))
+                asm.emitInt32(offset)
+            }
+        }
+
+        private fun emitLoadFromRbpOffset32(dest: X86Register32, offset: Int) {
+            val enc = (dest as X86Register).encoding
+            if (enc >= 8) {
+                asm.emitByte(0x44)
+            }
+            asm.emitByte(0x8B)
+            if (offset in -128..127) {
+                asm.emitByte(0x45 or ((enc and 7) shl 3))
+                asm.emitByte(offset and 0xFF)
+            } else {
+                asm.emitByte(0x85 or ((enc and 7) shl 3))
+                asm.emitInt32(offset)
             }
         }
 
@@ -2217,8 +2287,28 @@ class X86CodeGenerator : CodeGenerator {
                         r11d32
                     }
                     loadValue32(lhs, eax32)
-                    if (signed) asm.cdq() else { asm.xor_(edx32, edx32 as X86Operand32) }
-                    if (signed) asm.idiv(divisor as X86Operand32) else asm.div(divisor as X86Operand32)
+                    if (signed) {
+                        // Guard: idiv MIN_VALUE / -1 causes x86 #DE trap.
+                        // WASM spec: return MIN_VALUE for div, 0 for rem.
+                        val skipGuard = asm.label()
+                        val doDiv = asm.label()
+                        asm.cmp(divisor as X86Operand32, -1)
+                        asm.jne(doDiv)
+                        asm.cmp(eax32 as X86Operand32, Int.MIN_VALUE)
+                        asm.jne(doDiv)
+                        if (remainder) {
+                            asm.xor_(edx32, edx32 as X86Operand32)
+                        }
+                        // For div: result already in EAX (MIN_VALUE); for rem: EDX = 0
+                        asm.jmp(skipGuard)
+                        asm.mark(doDiv)
+                        asm.cdq()
+                        asm.idiv(divisor)
+                        asm.mark(skipGuard)
+                    } else {
+                        asm.xor_(edx32, edx32 as X86Operand32)
+                        asm.div(divisor as X86Operand32)
+                    }
                     val resultReg = if (remainder) edx32 else eax32
                     val d = getDest32(dest.name)
                     if (d != resultReg) asm.mov(d, resultReg as X86Operand32)
@@ -2235,8 +2325,26 @@ class X86CodeGenerator : CodeGenerator {
                         r11_64
                     }
                     loadValue64(lhs, rax64)
-                    if (signed) asm.cqo() else { asm.xor_(edx32, edx32 as X86Operand32) }
-                    if (signed) asm.idiv(divisor as X86Operand64) else asm.div(divisor as X86Operand64)
+                    if (signed) {
+                        val skipGuard = asm.label()
+                        val doDiv = asm.label()
+                        asm.cmp(divisor as X86Operand64, -1)
+                        asm.jne(doDiv)
+                        asm.mov(r10_64 as X86Register64, Long.MIN_VALUE)
+                        asm.cmp(rax64 as X86Register64, r10_64 as X86Operand64)
+                        asm.jne(doDiv)
+                        if (remainder) {
+                            asm.xor_(edx32, edx32 as X86Operand32)
+                        }
+                        asm.jmp(skipGuard)
+                        asm.mark(doDiv)
+                        asm.cqo()
+                        asm.idiv(divisor)
+                        asm.mark(skipGuard)
+                    } else {
+                        asm.xor_(edx32, edx32 as X86Operand32)
+                        asm.div(divisor as X86Operand64)
+                    }
                     val resultReg = if (remainder) rdx64 else rax64
                     val d = getDest64(dest.name)
                     if (d != resultReg) asm.mov(d, resultReg as X86Operand64)
@@ -3484,10 +3592,7 @@ class X86CodeGenerator : CodeGenerator {
         }
 
         private fun emitFNeg(inst: FNeg) {
-            // fneg = xor with sign bit mask, or sub from 0
-            // Simplest: xorpd with sign mask. But easier: sub from 0
             val d = getDestXmm(inst.dest.name)
-            // pxor d, d (zero it)
             emitPxor(d, d)
             val src = if (inst.operand is Parameter || inst.operand is InstructionRef) {
                 getOrLoadXmm(inst.operand.name, if (d == xmm15) xmm14 else xmm15)
@@ -3496,7 +3601,11 @@ class X86CodeGenerator : CodeGenerator {
                 loadValueXmm(inst.operand, scratch)
                 scratch
             }
-            asm.subsd(d, src)
+            if (inst.operand.type == Type.F32) {
+                asm.subss(d, src)
+            } else {
+                asm.subsd(d, src)
+            }
             if (isSpilled(inst.dest.name)) storeToXmm(inst.dest.name, d)
         }
 
@@ -3508,33 +3617,69 @@ class X86CodeGenerator : CodeGenerator {
                 loadValueXmm(inst.rhs, xmm15); xmm15
             }
 
-            // Zero dest BEFORE ucomisd — xor clobbers flags
             val dest = getDest32(inst.dest.name)
             asm.xor_(dest, dest as X86Operand32)
-            asm.ucomisd(lhsReg, rhsReg)
-            val cc = when (inst.predicate) {
-                FCmpPredicate.OEQ -> 0x04  // JE (and not unordered)
-                FCmpPredicate.ONE -> 0x05  // JNE
-                FCmpPredicate.OLT -> 0x02  // JB (below, for ordered)
-                FCmpPredicate.OLE -> 0x06  // JBE
-                FCmpPredicate.OGT -> 0x07  // JA (above, for ordered)
-                FCmpPredicate.OGE -> 0x03  // JAE
-                FCmpPredicate.UEQ -> 0x04
-                FCmpPredicate.UNE -> 0x05
-                FCmpPredicate.ULT -> 0x02
-                FCmpPredicate.ULE -> 0x06
-                FCmpPredicate.UGT -> 0x07
-                FCmpPredicate.UGE -> 0x03
-                FCmpPredicate.ORD -> 0x0B  // JNP (not parity = ordered)
-                FCmpPredicate.UNO -> 0x0A  // JP (parity = unordered)
+
+            when (inst.predicate) {
                 FCmpPredicate.TRUE -> { asm.mov(dest, 1); if (isSpilled(inst.dest.name)) storeTo(inst.dest.name, reg32 = dest); return }
                 FCmpPredicate.FALSE -> { if (isSpilled(inst.dest.name)) storeTo(inst.dest.name, reg32 = dest); return }
+                else -> {}
             }
-            val enc = (dest as X86Register).encoding
-            if (enc >= 4) asm.emitByte(0x40 or (if (enc >= 8) 0x01 else 0))
-            asm.emitBytes(0x0F, 0x90 + cc)
-            asm.emitByte(0xC0 or (enc and 7))
+
+            if (inst.lhs.type == Type.F32) {
+                asm.ucomiss(lhsReg, rhsReg)
+            } else {
+                asm.ucomisd(lhsReg, rhsReg)
+            }
+
+            val cc = when (inst.predicate) {
+                FCmpPredicate.OEQ, FCmpPredicate.UEQ -> 0x04
+                FCmpPredicate.ONE, FCmpPredicate.UNE -> 0x05
+                FCmpPredicate.OLT, FCmpPredicate.ULT -> 0x02
+                FCmpPredicate.OLE, FCmpPredicate.ULE -> 0x06
+                FCmpPredicate.OGT, FCmpPredicate.UGT -> 0x07
+                FCmpPredicate.OGE, FCmpPredicate.UGE -> 0x03
+                FCmpPredicate.ORD -> 0x0B
+                FCmpPredicate.UNO -> 0x0A
+                else -> error("Unreachable")
+            }
+
+            // NaN handling: ucomisd/ucomiss sets PF=1 for unordered (NaN) operands.
+            // Ordered predicates (O*): NaN → false. Skip setcc when PF=1 (dest stays 0).
+            // Unordered predicates (U*): NaN → true. Set dest=1 when PF=1, skip setcc.
+            // OGT/OGE/ORD/UNO: already correct without extra parity handling.
+            val needsParityGuard = when (inst.predicate) {
+                FCmpPredicate.OEQ, FCmpPredicate.ONE, FCmpPredicate.OLT, FCmpPredicate.OLE -> true
+                FCmpPredicate.UEQ, FCmpPredicate.UNE, FCmpPredicate.ULT, FCmpPredicate.ULE,
+                FCmpPredicate.UGT, FCmpPredicate.UGE -> true
+                else -> false
+            }
+
+            val done = if (needsParityGuard) asm.label() else null
+            if (needsParityGuard) {
+                val isUnordered = inst.predicate.name.startsWith("U")
+                if (isUnordered) {
+                    emitSetCC(dest, 0x0A)
+                    asm.jp(done!!)
+                } else {
+                    asm.jp(done!!)
+                }
+            }
+
+            emitSetCC(dest, cc)
+
+            if (done != null) {
+                asm.mark(done)
+            }
+
             if (isSpilled(inst.dest.name)) storeTo(inst.dest.name, reg32 = dest)
+        }
+
+        private fun emitSetCC(dest: X86Register32, conditionCode: Int) {
+            val enc = (dest as X86Register).encoding
+            if (enc >= 4) { asm.emitByte(0x40 or (if (enc >= 8) 0x01 else 0)) }
+            asm.emitBytes(0x0F, 0x90 + conditionCode)
+            asm.emitByte(0xC0 or (enc and 7))
         }
 
         private fun emitSIToFP(inst: SIToFP) {
@@ -3575,22 +3720,25 @@ class X86CodeGenerator : CodeGenerator {
         }
 
         private fun emitUIToFP(inst: UIToFP) {
-            // Unsigned int to float: zero-extend to i64, then cvtsi2sd with 64-bit source
             val d = getDestXmm(inst.dest.name)
             when (inst.value.type) {
                 Type.I32 -> {
-                    // Zero-extend i32 → i64 (mov r32 auto-zeros upper bits), then cvtsi2sd r64
                     val src64 = r11_64
                     val src32 = r11d32
                     loadValue32(inst.value, src32)
-                    // 32-bit mov already zero-extends to 64-bit
-                    asm.cvtsi2sd(d, src64 as X86Operand64)
+                    if (inst.dest.type == Type.F32) {
+                        asm.cvtsi2ss(d, src64 as X86Operand64)
+                    } else {
+                        asm.cvtsi2sd(d, src64 as X86Operand64)
+                    }
                 }
                 Type.I64 -> {
-                    // For unsigned i64 → f64, we need to handle the sign bit
-                    // Simple approach: use signed conversion (correct for values < 2^63)
                     val src = getOrLoad64(inst.value.name, r11_64)
-                    asm.cvtsi2sd(d, src as X86Operand64)
+                    if (inst.dest.type == Type.F32) {
+                        asm.cvtsi2ss(d, src as X86Operand64)
+                    } else {
+                        asm.cvtsi2sd(d, src as X86Operand64)
+                    }
                 }
                 else -> error("Unsupported uitofp source: ${inst.value.type}")
             }
@@ -3598,20 +3746,18 @@ class X86CodeGenerator : CodeGenerator {
         }
 
         private fun emitFPToUI(inst: FPToUI) {
-            // Float to unsigned int: use cvtsd2si with 64-bit dest, then truncate
             val src = getOrLoadXmm(inst.value.name, xmm15)
+            val fromF32 = inst.value.type == Type.F32
             when (inst.toType) {
                 Type.I32 -> {
-                    // cvtsd2si to 64-bit, then use the 32-bit part
                     val d = getDest32(inst.dest.name)
                     val d64 = reg32to64(d)
-                    asm.cvtsd2si(d64, src)
-                    // The result is already in the lower 32 bits
+                    if (fromF32) { asm.cvttss2si(d64, src) } else { asm.cvttsd2si(d64, src) }
                     if (isSpilled(inst.dest.name)) storeTo(inst.dest.name, reg32 = d)
                 }
                 Type.I64 -> {
                     val d = getDest64(inst.dest.name)
-                    asm.cvtsd2si(d, src)
+                    if (fromF32) { asm.cvttss2si(d, src) } else { asm.cvttsd2si(d, src) }
                     if (isSpilled(inst.dest.name)) storeTo(inst.dest.name, reg64 = d)
                 }
                 else -> error("Unsupported fptoui target: ${inst.toType}")

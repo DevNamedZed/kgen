@@ -92,11 +92,11 @@ class WarkNestedBlockTest {
         asm.globalGet(0)
         asm.endFunction()
         asm.beginFunction("allocate", listOf(WasmValueType.I32), listOf(WasmValueType.I32), exported = true)
-        asm.globalGet(0)        // old SP
-        asm.localGet(0)         // size
-        asm.i32Sub()            // new SP = old - size
-        asm.globalSet(0)        // write back
-        asm.globalGet(0)        // return new SP
+        asm.globalGet(0) // old SP
+        asm.localGet(0) // size
+        asm.i32Sub() // new SP = old - size
+        asm.globalSet(0) // write back
+        asm.globalGet(0) // return new SP
         asm.endFunction()
 
         val bytes = asm.assemble()

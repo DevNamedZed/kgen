@@ -3,10 +3,8 @@ package org.wark
 import org.junit.jupiter.api.Test
 import org.kgen.target.wasm.WasmValueType
 import org.kgen.target.wasm.asm.WasmAssembler
-import org.wark.wasi.WasiPreview1
 import java.io.ByteArrayOutputStream
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 /**
  * Tests that simulate real-world C-compiled WASM patterns.

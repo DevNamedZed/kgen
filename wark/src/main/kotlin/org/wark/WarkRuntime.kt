@@ -43,9 +43,7 @@ class WarkRuntime private constructor(
     /**
      * Load a WASM module from a pre-parsed [WasmModule].
      */
-    fun load(wasmModule: WasmModule): WarkModule {
-        return WarkModule(this, wasmModule, byteArrayOf())
-    }
+    fun load(wasmModule: WasmModule): WarkModule = WarkModule(this, wasmModule, byteArrayOf())
 
     override fun close() {
     }
@@ -55,26 +53,18 @@ class WarkRuntime private constructor(
          * Create a runtime with the features enabled by a [WasmTarget] preset.
          */
         @JvmStatic
-        fun create(target: WasmTarget): WarkRuntime {
-            return WarkRuntime(target.features())
-        }
+        fun create(target: WasmTarget): WarkRuntime = WarkRuntime(target.features())
 
         @JvmStatic
-        fun create(target: WasmTarget, mode: ExecutionMode): WarkRuntime {
-            return WarkRuntime(target.features(), mode)
-        }
+        fun create(target: WasmTarget, mode: ExecutionMode): WarkRuntime = WarkRuntime(target.features(), mode)
 
         @JvmStatic
-        fun create(features: WasmFeatureSet): WarkRuntime {
-            return WarkRuntime(features)
-        }
+        fun create(features: WasmFeatureSet): WarkRuntime = WarkRuntime(features)
 
         /**
          * Create a runtime with all features enabled.
          */
         @JvmStatic
-        fun createLatest(): WarkRuntime {
-            return WarkRuntime(WasmFeatureSet.all())
-        }
+        fun createLatest(): WarkRuntime = WarkRuntime(WasmFeatureSet.all())
     }
 }

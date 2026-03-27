@@ -212,9 +212,9 @@ class WarkFunc34IsolationTest {
 
         // Set up: 0x427888 != 0x20 → entry fails, goes to br_if_cont_1
         // Set up: 0x42785c != 0x427858 → br_if_cont_1 fails, goes to br_if_cont_2
-        jitInstance.memory().writeI32(0x427888, 0xFF)  // != p0&255=0x20
-        jitInstance.memory().writeI32(0x42785c, 500)   // counter
-        jitInstance.memory().writeI32(0x427858, 999)   // != counter
+        jitInstance.memory().writeI32(0x427888, 0xFF) // != p0&255=0x20
+        jitInstance.memory().writeI32(0x42785c, 500) // counter
+        jitInstance.memory().writeI32(0x427858, 999) // != counter
 
         jitInstance.compiledIr()
 
@@ -237,18 +237,16 @@ class WarkFunc34IsolationTest {
         assertEquals(0x20.toByte(), storedByte, "Byte stored at old counter address")
     }
 
-    private fun minimalImports(): WarkImports {
-        return WarkImports.builder()
-            .function("loading", "onGameInit", HostFunction { _, _ -> longArrayOf() })
-            .function("loading", "wadSizes", HostFunction { _, _ -> longArrayOf(0) })
-            .function("loading", "readWads", HostFunction { _, _ -> longArrayOf() })
-            .function("runtimeControl", "timeInMilliseconds", HostFunction { _, _ -> longArrayOf(0) })
-            .function("ui", "drawFrame", HostFunction { _, _ -> longArrayOf() })
-            .function("gameSaving", "sizeOfSaveGame", HostFunction { _, _ -> longArrayOf(0) })
-            .function("gameSaving", "readSaveGame", HostFunction { _, _ -> longArrayOf(0) })
-            .function("gameSaving", "writeSaveGame", HostFunction { _, _ -> longArrayOf(0) })
-            .function("console", "onInfoMessage", HostFunction { _, _ -> longArrayOf() })
-            .function("console", "onErrorMessage", HostFunction { _, _ -> longArrayOf() })
-            .build()
-    }
+    private fun minimalImports(): WarkImports = WarkImports.builder()
+        .function("loading", "onGameInit", HostFunction { _, _ -> longArrayOf() })
+        .function("loading", "wadSizes", HostFunction { _, _ -> longArrayOf(0) })
+        .function("loading", "readWads", HostFunction { _, _ -> longArrayOf() })
+        .function("runtimeControl", "timeInMilliseconds", HostFunction { _, _ -> longArrayOf(0) })
+        .function("ui", "drawFrame", HostFunction { _, _ -> longArrayOf() })
+        .function("gameSaving", "sizeOfSaveGame", HostFunction { _, _ -> longArrayOf(0) })
+        .function("gameSaving", "readSaveGame", HostFunction { _, _ -> longArrayOf(0) })
+        .function("gameSaving", "writeSaveGame", HostFunction { _, _ -> longArrayOf(0) })
+        .function("console", "onInfoMessage", HostFunction { _, _ -> longArrayOf() })
+        .function("console", "onErrorMessage", HostFunction { _, _ -> longArrayOf() })
+        .build()
 }

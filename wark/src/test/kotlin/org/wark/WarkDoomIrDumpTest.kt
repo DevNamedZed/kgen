@@ -163,30 +163,28 @@ class WarkDoomIrDumpTest {
         }
     }
 
-    private fun createDoomInstance(wasmBytes: ByteArray, wadBytes: ByteArray): WarkInstance {
-        return WarkRuntime.create(WasmTarget.V2_0, ExecutionMode.JIT).load(wasmBytes).instantiate(
-            WarkImports.builder()
-                .function("loading", "onGameInit") { inst, args ->
-                    java.io.File("build/doom-trace.log").appendText("HOST: onGameInit(${args[0]}, ${args[1]})\n")
-                    longArrayOf()
-                }
-                .function("loading", "wadSizes") { inst, args -> longArrayOf(wadBytes.size.toLong()) }
-                .function("loading", "readWads") { inst, args ->
-                    inst.memory().writeBytes(args[0].toInt(), wadBytes)
-                    longArrayOf()
-                }
-                .function("runtimeControl", "timeInMilliseconds") { inst, args ->
-                    longArrayOf(System.currentTimeMillis() % 10_000_000)
-                }
-                .function("ui", "drawFrame") { inst, args -> longArrayOf() }
-                .function("gameSaving", "sizeOfSaveGame") { inst, args -> longArrayOf(0) }
-                .function("gameSaving", "readSaveGame") { inst, args -> longArrayOf(0) }
-                .function("gameSaving", "writeSaveGame") { inst, args -> longArrayOf(0) }
-                .function("console", "onInfoMessage") { inst, args -> longArrayOf() }
-                .function("console", "onErrorMessage") { inst, args -> longArrayOf() }
-                .build()
-        )
-    }
+    private fun createDoomInstance(wasmBytes: ByteArray, wadBytes: ByteArray): WarkInstance = WarkRuntime.create(WasmTarget.V2_0, ExecutionMode.JIT).load(wasmBytes).instantiate(
+        WarkImports.builder()
+            .function("loading", "onGameInit") { inst, args ->
+                java.io.File("build/doom-trace.log").appendText("HOST: onGameInit(${args[0]}, ${args[1]})\n")
+                longArrayOf()
+            }
+            .function("loading", "wadSizes") { inst, args -> longArrayOf(wadBytes.size.toLong()) }
+            .function("loading", "readWads") { inst, args ->
+                inst.memory().writeBytes(args[0].toInt(), wadBytes)
+                longArrayOf()
+            }
+            .function("runtimeControl", "timeInMilliseconds") { inst, args ->
+                longArrayOf(System.currentTimeMillis() % 10_000_000)
+            }
+            .function("ui", "drawFrame") { inst, args -> longArrayOf() }
+            .function("gameSaving", "sizeOfSaveGame") { inst, args -> longArrayOf(0) }
+            .function("gameSaving", "readSaveGame") { inst, args -> longArrayOf(0) }
+            .function("gameSaving", "writeSaveGame") { inst, args -> longArrayOf(0) }
+            .function("console", "onInfoMessage") { inst, args -> longArrayOf() }
+            .function("console", "onErrorMessage") { inst, args -> longArrayOf() }
+            .build()
+    )
 
     @Test
     @Timeout(60, unit = TimeUnit.SECONDS)
@@ -216,7 +214,6 @@ class WarkDoomIrDumpTest {
             }
             println("func_34 IR dumped to build/func_34_ir.txt (${function.blocks.size} blocks, ${function.blocks.sumOf { it.instructions.size }} instructions)")
         }
-
     }
 
     @Test

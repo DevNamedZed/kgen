@@ -1,4 +1,4 @@
-rootProject.name = "kgen"
+rootProject.name = "kgen-root"
 
 include("kgen")
 

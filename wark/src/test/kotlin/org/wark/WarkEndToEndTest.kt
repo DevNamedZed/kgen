@@ -3,7 +3,6 @@ package org.wark
 import org.junit.jupiter.api.Test
 import org.kgen.target.wasm.WasmValueType
 import org.kgen.target.wasm.asm.WasmAssembler
-import org.kgen.target.wasm.module.WasmModuleReader
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue

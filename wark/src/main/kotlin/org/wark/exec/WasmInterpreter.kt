@@ -1,12 +1,10 @@
 package org.wark.exec
 
 import org.kgen.target.wasm.WasmOpCode
-import org.kgen.target.wasm.WasmValueType
 import org.kgen.target.wasm.disasm.WasmDisassembler
 import org.kgen.target.wasm.disasm.WasmInstruction
 import org.kgen.target.wasm.disasm.WasmInstruction.Operands
 import org.kgen.target.wasm.module.WasmModule
-import org.wark.HostFunction
 import org.wark.WarkImports
 import org.wark.WarkMemory
 import org.wark.WasmTrap
@@ -111,7 +109,6 @@ class WasmInterpreter(
         }
 
         onFunctionEntry?.invoke(functionIndex, args)
-        onFunctionEntry?.let { /* already invoked above */ }
 
         val previousFunctionIndex = currentFunctionIndex
         currentFunctionIndex = functionIndex
@@ -125,9 +122,7 @@ class WasmInterpreter(
         }
     }
 
-    fun functionName(index: Int): String {
-        return wasmModule.functionName(index) ?: "func_${index - wasmModule.importedFunctionCount}"
-    }
+    fun functionName(index: Int): String = wasmModule.functionName(index) ?: "func_${index - wasmModule.importedFunctionCount}"
 
     var instructionLimit: Long = Long.MAX_VALUE
     var totalInstructions: Long = 0
@@ -211,7 +206,12 @@ class WasmInterpreter(
                 WasmOpCode.F64_CONST -> stack.addLast(java.lang.Double.doubleToRawLongBits((instruction.operands as Operands.F64).value))
 
                 WasmOpCode.LOCAL_GET -> stack.addLast(locals[(instruction.operands as Operands.Index).value])
-                WasmOpCode.LOCAL_SET -> locals[(instruction.operands as Operands.Index).value] = stack.removeLast()
+                WasmOpCode.LOCAL_SET -> {
+                    if (stack.isEmpty()) {
+                        throw WasmTrap("stack underflow at local.set in ${functionName(currentFunctionIndex)}, PC=$programCounter, controlStack=${controlStack.size}")
+                    }
+                    locals[(instruction.operands as Operands.Index).value] = stack.removeLast()
+                }
                 WasmOpCode.LOCAL_TEE -> locals[(instruction.operands as Operands.Index).value] = stack.last()
 
                 WasmOpCode.I32_ADD -> { val b = stack.removeLast().toInt(); val a = stack.removeLast().toInt(); stack.addLast((a + b).toLong()) }
@@ -659,22 +659,28 @@ class WasmInterpreter(
                     if (condition == 0) {
                         if (elsePc >= 0) {
                             programCounter = elsePc
+                            controlStack.add(ControlFrame(ControlKind.IF, endPc + 1, stack.size))
                         } else {
                             programCounter = endPc + 1
+                            // No else branch, skipping past END — don't push frame
                         }
+                    } else {
+                        controlStack.add(ControlFrame(ControlKind.IF, endPc + 1, stack.size))
                     }
-                    controlStack.add(ControlFrame(ControlKind.IF, endPc + 1, stack.size))
                 }
                 WasmOpCode.ELSE -> {
                     val ifFrame = controlStack.last()
-                    programCounter = ifFrame.targetPc
                     val savedStackHeight = ifFrame.stackHeight
                     controlStack.removeAt(controlStack.size - 1)
-                    val endPc = programCounter - 1
+                    // True branch → jump past end. Keep one result value if the block is typed.
+                    val result = if (stack.size > savedStackHeight) { stack.removeLast() } else { null }
                     while (stack.size > savedStackHeight) {
                         stack.removeLast()
                     }
-                    controlStack.add(ControlFrame(ControlKind.IF, endPc + 1, savedStackHeight))
+                    if (result != null) {
+                        stack.addLast(result)
+                    }
+                    programCounter = ifFrame.targetPc
                 }
                 WasmOpCode.END -> {
                     if (controlStack.isNotEmpty()) {
@@ -743,7 +749,7 @@ class WasmInterpreter(
                     stack.addLast(i64TruncSatU(value))
                 }
 
-                WasmOpCode.UNREACHABLE -> throw WasmTrap("unreachable")
+                WasmOpCode.UNREACHABLE -> throw WasmTrap("unreachable in ${functionName(currentFunctionIndex)} PC=$programCounter depth=$callDepth")
                 WasmOpCode.NOP -> { }
                 else -> throw WasmTrap("unimplemented opcode: ${instruction.opcode} in ${functionName(currentFunctionIndex)} at PC=$programCounter")
             }
@@ -762,6 +768,22 @@ class WasmInterpreter(
         val targetIndex = controlStack.size - 1 - depth
         val target = controlStack[targetIndex]
 
+        // For non-loop blocks: unwind stack to entry height, preserving top value as result
+        if (target.kind != ControlKind.LOOP) {
+            val result = if (stack.size > target.stackHeight) { stack.removeLast() } else { null }
+            while (stack.size > target.stackHeight) {
+                stack.removeLast()
+            }
+            if (result != null) {
+                stack.addLast(result)
+            }
+        } else {
+            // For loop: unwind to entry height (loop doesn't produce results on br)
+            while (stack.size > target.stackHeight) {
+                stack.removeLast()
+            }
+        }
+
         while (controlStack.size > targetIndex + 1) {
             controlStack.removeAt(controlStack.size - 1)
         }
@@ -774,10 +796,8 @@ class WasmInterpreter(
         }
     }
 
-    private fun getBlockStructure(localIndex: Int, instructions: List<WasmInstruction>): BlockStructure {
-        return blockStructureCache.getOrPut(localIndex) {
-            buildBlockStructure(instructions)
-        }
+    private fun getBlockStructure(localIndex: Int, instructions: List<WasmInstruction>): BlockStructure = blockStructureCache.getOrPut(localIndex) {
+        buildBlockStructure(instructions)
     }
 
     private fun buildBlockStructure(instructions: List<WasmInstruction>): BlockStructure {
@@ -804,15 +824,13 @@ class WasmInterpreter(
         return BlockStructure(endMap, elseMap)
     }
 
-    private fun resolveCalleeType(funcIndex: Int): WasmModule.FuncType {
-        return calleeTypeCache.getOrPut(funcIndex) {
-            val importCount = wasmModule.importedFunctionCount
-            if (funcIndex < importCount) {
-                wasmModule.types[importedFunctions[funcIndex].typeIndex]
-            } else {
-                val localIndex = funcIndex - importCount
-                wasmModule.types[wasmModule.functions[localIndex].typeIndex]
-            }
+    private fun resolveCalleeType(funcIndex: Int): WasmModule.FuncType = calleeTypeCache.getOrPut(funcIndex) {
+        val importCount = wasmModule.importedFunctionCount
+        if (funcIndex < importCount) {
+            wasmModule.types[importedFunctions[funcIndex].typeIndex]
+        } else {
+            val localIndex = funcIndex - importCount
+            wasmModule.types[wasmModule.functions[localIndex].typeIndex]
         }
     }
 
@@ -821,10 +839,10 @@ class WasmInterpreter(
         if (address < 0 || address + size > memories[0].sizeBytes()) {
             throw WasmTrap(
                 "$opcode OOB: base=$base (0x${java.lang.Long.toHexString(base)}), " +
-                "offset=$offset (0x${Integer.toHexString(offset)}), " +
-                "effective=$address (0x${Integer.toHexString(address)}), " +
-                "memSize=${memories[0].sizeBytes()} (${memories[0].pages()} pages), " +
-                "func=${functionName(currentFunctionIndex)}"
+                    "offset=$offset (0x${Integer.toHexString(offset)}), " +
+                    "effective=$address (0x${Integer.toHexString(address)}), " +
+                    "memSize=${memories[0].sizeBytes()} (${memories[0].pages()} pages), " +
+                    "func=${functionName(currentFunctionIndex)}"
             )
         }
         return address

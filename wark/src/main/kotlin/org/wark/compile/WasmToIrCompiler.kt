@@ -83,6 +83,8 @@ class WasmToIrCompiler(
         if (traceEnabled) {
             builder.declareFunction("__wark_trace_enter",
                 listOf(Param("context", Type.I64), Param("funcId", Type.I32)), Type.Void)
+            builder.declareFunction("__wark_trace_arg",
+                listOf(Param("context", Type.I64), Param("funcId", Type.I64), Param("argValue", Type.I64)), Type.Void)
             builder.declareFunction("__wark_trace_return",
                 listOf(
                     Param("context", Type.I64),
@@ -100,6 +102,13 @@ class WasmToIrCompiler(
                 listOf(Param("blockId", Type.I32)), Type.Void)
         }
 
+        // Debug: verify name section is loaded
+        var namedCount = 0
+        for ((i, f) in wasmModule.functions.withIndex()) {
+            if (wasmModule.functionName(i + wasmModule.importedFunctionCount) != null) { namedCount++ }
+        }
+        System.err.println("[DIAG] WASM functions: ${wasmModule.functions.size}, named: $namedCount")
+
         for ((index, function) in wasmModule.functions.withIndex()) {
             val globalIndex = index + wasmModule.importedFunctionCount
             val name = wasmModule.functionName(globalIndex) ?: "func_$index"
@@ -113,10 +122,9 @@ class WasmToIrCompiler(
             if (traceEnabled) {
                 builder.call("__wark_trace_enter", listOf(params[0], Constant.I32(index)), Type.Void)
             }
-            // Debug: for specific functions, log the first WASM param
-            if (traceEnabled && funcType.params.isNotEmpty() && index in setOf(75, 122, 123, 199, 34, 38, 41)) {
-                builder.call("__wark_trace_arg", listOf(params[0], Constant.I32(index), params[1]), Type.Void)
-            }
+            // (All memory-based instrumentation removed — was corrupting DOOM's data at low addresses)
+            // Damage debug: store callback param to a known memory location for external inspection
+            // (P_TraverseIntercepts memory instrumentation removed — corrupted game data)
 
             val locals = initializeLocals(builder, params, funcType, function)
             val instructions = WasmDisassembler().disassemble(function.body)
@@ -245,8 +253,8 @@ class WasmToIrCompiler(
                 calleeName = wasmModule.functionName(funcIndex) ?: "func_$localIndex"
             }
 
-            val thenLabel = "type${typeIndex}_slot_${tableSlot}"
-            val nextLabel = "type${typeIndex}_next_${tableSlot}"
+            val thenLabel = "type${typeIndex}_slot_$tableSlot"
+            val nextLabel = "type${typeIndex}_next_$tableSlot"
 
             val cmp = builder.icmp(ICmpPredicate.EQ, tableIndexParam, Constant.I32(tableSlot))
             builder.condBr(cmp, thenLabel, nextLabel)
@@ -404,6 +412,24 @@ class WasmToIrCompiler(
         return when (expr[0].toInt() and 0xFF) {
             0x41 -> { var result = 0; var shift = 0; var pos = 1; while (pos < expr.size) { val byte = expr[pos].toInt() and 0xFF; result = result or ((byte and 0x7F) shl shift); shift += 7; pos++; if (byte and 0x80 == 0) { if (shift < 32 && byte and 0x40 != 0) { result = result or ((-1) shl shift) }; break } }; result.toLong() }
             0x42 -> { var result = 0L; var shift = 0; var pos = 1; while (pos < expr.size) { val byte = expr[pos].toInt() and 0xFF; result = result or ((byte.toLong() and 0x7F) shl shift); shift += 7; pos++; if (byte and 0x80 == 0) { if (shift < 64 && byte and 0x40 != 0) { result = result or (-1L shl shift) }; break } }; result }
+            0x43 -> { // f32.const
+                if (expr.size >= 5) {
+                    val bits = (expr[1].toInt() and 0xFF) or
+                        ((expr[2].toInt() and 0xFF) shl 8) or
+                        ((expr[3].toInt() and 0xFF) shl 16) or
+                        ((expr[4].toInt() and 0xFF) shl 24)
+                    bits.toLong()
+                } else { 0L }
+            }
+            0x44 -> { // f64.const
+                if (expr.size >= 9) {
+                    var bits = 0L
+                    for (i in 0 until 8) {
+                        bits = bits or ((expr[1 + i].toLong() and 0xFF) shl (i * 8))
+                    }
+                    bits
+                } else { 0L }
+            }
             else -> 0L
         }
     }
@@ -428,12 +454,10 @@ class WasmToIrCompiler(
         return params
     }
 
-    private fun returnType(funcType: WasmModule.FuncType): Type {
-        return if (funcType.results.isEmpty()) {
-            Type.Void
-        } else {
-            wasmTypeToIr(funcType.results[0])
-        }
+    private fun returnType(funcType: WasmModule.FuncType): Type = if (funcType.results.isEmpty()) {
+        Type.Void
+    } else {
+        wasmTypeToIr(funcType.results[0])
     }
 
     private fun initializeLocals(
@@ -502,7 +526,7 @@ class CompilationContext(
     private var labelCounter = 0
 
     fun freshLabel(prefix: String): String {
-        val label = "${prefix}_${labelCounter}"
+        val label = "${prefix}_$labelCounter"
         labelCounter++
         return label
     }

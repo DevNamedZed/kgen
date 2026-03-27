@@ -205,7 +205,7 @@ class WarkDoomLoadTest {
         }
 
         if (gameInitialized) {
-            println("DOOM initialized: ${screenWidth}x${screenHeight}")
+            println("DOOM initialized: ${screenWidth}x$screenHeight")
             println("Frames rendered: $framesRendered")
         }
     }

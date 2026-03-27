@@ -1,7 +1,7 @@
 package org.wark
 
-import org.kgen.target.wasm.module.WasmModuleReader
 import org.kgen.target.wasm.disasm.WasmDisassembler
+import org.kgen.target.wasm.module.WasmModuleReader
 import java.nio.file.Files
 import java.nio.file.Path
 

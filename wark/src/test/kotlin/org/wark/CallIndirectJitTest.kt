@@ -1,8 +1,8 @@
 package org.wark
 
 import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
 import java.io.ByteArrayOutputStream
+import kotlin.test.assertEquals
 
 class CallIndirectJitTest {
 
@@ -89,22 +89,22 @@ class CallIndirectJitTest {
 
             // func 0: double(x) = x * 2
             writeBody(s) { b ->
-                b.write(0x20); writeLeb(b, 0)  // local.get 0
-                b.write(0x41); writeLeb(b, 2)  // i32.const 2
-                b.write(0x6C)                   // i32.mul
+                b.write(0x20); writeLeb(b, 0) // local.get 0
+                b.write(0x41); writeLeb(b, 2) // i32.const 2
+                b.write(0x6C) // i32.mul
             }
 
             // func 1: triple(x) = x * 3
             writeBody(s) { b ->
-                b.write(0x20); writeLeb(b, 0)  // local.get 0
-                b.write(0x41); writeLeb(b, 3)  // i32.const 3
-                b.write(0x6C)                   // i32.mul
+                b.write(0x20); writeLeb(b, 0) // local.get 0
+                b.write(0x41); writeLeb(b, 3) // i32.const 3
+                b.write(0x6C) // i32.mul
             }
 
             // func 2: test(index, arg) = call_indirect[type 0](arg, index)
             writeBody(s) { b ->
-                b.write(0x20); writeLeb(b, 1)  // local.get 1 (arg)
-                b.write(0x20); writeLeb(b, 0)  // local.get 0 (table index)
+                b.write(0x20); writeLeb(b, 1) // local.get 1 (arg)
+                b.write(0x20); writeLeb(b, 0) // local.get 0 (table index)
                 b.write(0x11); writeLeb(b, 0); writeLeb(b, 0) // call_indirect type=0 table=0
             }
         }

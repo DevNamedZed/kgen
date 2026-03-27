@@ -1,7 +1,6 @@
 package org.wark.compile.translate
 
 import org.kgen.ir.Constant
-import org.kgen.ir.Type
 import org.kgen.target.wasm.WasmOpCode
 import org.kgen.target.wasm.disasm.WasmInstruction
 import org.kgen.target.wasm.disasm.WasmInstruction.Operands

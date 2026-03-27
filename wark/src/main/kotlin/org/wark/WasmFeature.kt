@@ -32,8 +32,6 @@ enum class WasmFeature(val specName: String) {
 
     companion object {
         @JvmStatic
-        fun fromSpecName(name: String): WasmFeature? {
-            return entries.firstOrNull { it.specName == name }
-        }
+        fun fromSpecName(name: String): WasmFeature? = entries.firstOrNull { it.specName == name }
     }
 }

@@ -70,6 +70,8 @@ class X86Assembler : X86AssemblerOps() {
     fun jno(label: Label) = jcc(X86Condition.NOT_OVERFLOW, label)
     fun js(label: Label) = jcc(X86Condition.SIGN, label)
     fun jns(label: Label) = jcc(X86Condition.NOT_SIGN, label)
+    fun jp(label: Label) = jcc(X86Condition.PARITY, label)
+    fun jnp(label: Label) = jcc(X86Condition.NOT_PARITY, label)
 
     fun call(label: Label) {
         emitByte(0xE8)

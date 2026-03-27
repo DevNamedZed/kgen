@@ -1,8 +1,8 @@
 package org.wark.compile.translate
 
-import org.kgen.ir.ICmpPredicate
-import org.kgen.ir.FCmpPredicate
 import org.kgen.ir.Constant
+import org.kgen.ir.FCmpPredicate
+import org.kgen.ir.ICmpPredicate
 import org.kgen.ir.Type
 import org.kgen.ir.Value
 import org.kgen.ir.build.ModuleBuilder
@@ -112,7 +112,7 @@ class ArithmeticTranslator : InstructionTranslator {
             WasmOpCode.F32_COPYSIGN -> binaryStub(stack, builder, "__wark_f32_copysign", Type.F32)
 
             WasmOpCode.F32_EQ, WasmOpCode.F64_EQ -> fcmpOp(stack, FCmpPredicate.OEQ, builder)
-            WasmOpCode.F32_NE, WasmOpCode.F64_NE -> fcmpOp(stack, FCmpPredicate.ONE, builder)
+            WasmOpCode.F32_NE, WasmOpCode.F64_NE -> fcmpOp(stack, FCmpPredicate.UNE, builder)
             WasmOpCode.F32_LT, WasmOpCode.F64_LT -> fcmpOp(stack, FCmpPredicate.OLT, builder)
             WasmOpCode.F32_GT, WasmOpCode.F64_GT -> fcmpOp(stack, FCmpPredicate.OGT, builder)
             WasmOpCode.F32_LE, WasmOpCode.F64_LE -> fcmpOp(stack, FCmpPredicate.OLE, builder)

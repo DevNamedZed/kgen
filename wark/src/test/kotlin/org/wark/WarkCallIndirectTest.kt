@@ -1,8 +1,8 @@
 package org.wark
 
 import org.junit.jupiter.api.Test
-import org.kgen.target.wasm.WasmValueType
 import org.kgen.target.wasm.WasmRefType
+import org.kgen.target.wasm.WasmValueType
 import org.kgen.target.wasm.asm.WasmAssembler
 import kotlin.test.assertEquals
 

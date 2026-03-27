@@ -16,20 +16,18 @@ class DoomJitVsInterpTest {
 
     private val doomPath = Path.of("examples/assets/doom.wasm")
 
-    private fun createImports(): WarkImports {
-        return WarkImports.builder()
-            .function("loading", "onGameInit") { inst, args -> longArrayOf() }
-            .function("loading", "wadSizes") { inst, args -> longArrayOf(0) }
-            .function("loading", "readWads") { inst, args -> longArrayOf() }
-            .function("runtimeControl", "timeInMilliseconds") { inst, args -> longArrayOf(0) }
-            .function("ui", "drawFrame") { inst, args -> longArrayOf() }
-            .function("gameSaving", "sizeOfSaveGame") { inst, args -> longArrayOf(0) }
-            .function("gameSaving", "readSaveGame") { inst, args -> longArrayOf(0) }
-            .function("gameSaving", "writeSaveGame") { inst, args -> longArrayOf(0) }
-            .function("console", "onInfoMessage") { inst, args -> longArrayOf() }
-            .function("console", "onErrorMessage") { inst, args -> longArrayOf() }
-            .build()
-    }
+    private fun createImports(): WarkImports = WarkImports.builder()
+        .function("loading", "onGameInit") { inst, args -> longArrayOf() }
+        .function("loading", "wadSizes") { inst, args -> longArrayOf(0) }
+        .function("loading", "readWads") { inst, args -> longArrayOf() }
+        .function("runtimeControl", "timeInMilliseconds") { inst, args -> longArrayOf(0) }
+        .function("ui", "drawFrame") { inst, args -> longArrayOf() }
+        .function("gameSaving", "sizeOfSaveGame") { inst, args -> longArrayOf(0) }
+        .function("gameSaving", "readSaveGame") { inst, args -> longArrayOf(0) }
+        .function("gameSaving", "writeSaveGame") { inst, args -> longArrayOf(0) }
+        .function("console", "onInfoMessage") { inst, args -> longArrayOf() }
+        .function("console", "onErrorMessage") { inst, args -> longArrayOf() }
+        .build()
 
     @Test
     @Timeout(120, unit = TimeUnit.SECONDS)

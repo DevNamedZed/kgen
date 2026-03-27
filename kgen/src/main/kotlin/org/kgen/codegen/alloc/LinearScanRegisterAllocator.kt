@@ -90,8 +90,19 @@ class LinearScanRegisterAllocator : RegisterAllocator {
         private fun assignParameters() {
             var gpIdx = 0
             for (param in fn.params) {
-                if (gpIdx >= constraints.paramRegisters.size) break
-                val interval = intervals.firstOrNull { it.name == param.name } ?: continue
+                val interval = intervals.firstOrNull { it.name == param.name }
+                if (gpIdx >= constraints.paramRegisters.size) {
+                    if (interval != null) {
+                        locations[param.name] = spillToPool(param.name)
+                    }
+                    gpIdx++
+                    continue
+                }
+
+                if (interval == null) {
+                    gpIdx++
+                    continue
+                }
 
                 val paramReg = constraints.paramRegisters[gpIdx]
                 val needsMove = (interval.acrossCall && paramReg !in constraints.calleeSaved)

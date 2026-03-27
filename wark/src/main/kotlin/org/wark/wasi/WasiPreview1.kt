@@ -2,10 +2,7 @@ package org.wark.wasi
 
 import org.wark.HostFunction
 import org.wark.WarkImports
-import org.wark.WarkInstance
-import org.wark.WarkMemory
 import java.io.OutputStream
-import java.io.PrintStream
 
 /**
  * WASI Preview 1 implementation. Provides the standard WASI syscalls that
@@ -47,9 +44,7 @@ class WasiPreview1 private constructor(
         return builder
     }
 
-    fun buildImports(): WarkImports {
-        return registerImports(WarkImports.builder()).build()
-    }
+    fun buildImports(): WarkImports = registerImports(WarkImports.builder()).build()
 
     private fun fdWrite(): HostFunction = HostFunction { instance, args ->
         val fileDescriptor = args[0].toInt()

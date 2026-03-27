@@ -195,8 +195,6 @@ class WarkMemory(
         private val LITTLE_ENDIAN_DOUBLE = ValueLayout.JAVA_DOUBLE_UNALIGNED.withOrder(ByteOrder.LITTLE_ENDIAN)
 
         @JvmStatic
-        fun create(initialPages: Int, maxPages: Int = 65536): WarkMemory {
-            return WarkMemory(initialPages, maxPages)
-        }
+        fun create(initialPages: Int, maxPages: Int = 65536): WarkMemory = WarkMemory(initialPages, maxPages)
     }
 }

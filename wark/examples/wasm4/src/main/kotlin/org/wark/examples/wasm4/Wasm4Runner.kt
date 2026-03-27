@@ -33,9 +33,11 @@ class Wasm4Runner private constructor(
         val inst = module.instantiate(imports)
         instance = inst
 
-        val memory = inst.memory()
-        memory.writeI32(Wasm4Host.DRAW_COLORS_ADDRESS, 0x1234)
+        // System memory initialized by Wasm4Host.registerImports before instantiation
 
+        if (inst.exportedFunctions().contains("_initialize")) {
+            inst.call("_initialize")
+        }
         if (inst.exportedFunctions().contains("start")) {
             inst.call("start")
         }
@@ -46,12 +48,17 @@ class Wasm4Runner private constructor(
         if (inst.exportedFunctions().contains("update")) {
             inst.call("update")
         }
+        host.readFramebuffer(inst)
         frameCount++
     }
 
     fun setGamepad(buttons: Int) {
         val inst = instance ?: return
-        inst.memory().writeByte(Wasm4Host.GAMEPAD1_ADDRESS, buttons.toByte())
+        val memory = inst.memory()
+        memory.writeByte(Wasm4Host.GAMEPAD1_ADDRESS, buttons.toByte())
+        memory.writeByte(Wasm4Host.GAMEPAD1_ADDRESS + 1, 0)
+        memory.writeByte(Wasm4Host.GAMEPAD1_ADDRESS + 2, 0)
+        memory.writeByte(Wasm4Host.GAMEPAD1_ADDRESS + 3, 0)
     }
 
     fun setMouse(x: Int, y: Int, buttons: Int) {

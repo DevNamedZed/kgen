@@ -1,7 +1,7 @@
 package org.wark
 
-import org.kgen.target.wasm.module.WasmModuleReader
 import org.kgen.ir.target.Target
+import org.kgen.target.wasm.module.WasmModuleReader
 import org.wark.compile.WasmToIrCompiler
 import java.nio.file.Files
 import java.nio.file.Path
@@ -54,12 +54,12 @@ fun main() {
     // Test FixedMul: (context, a, b) -> result
     // FixedMul(a, b) = (a * b) >>> 16
     val tests = listOf(
-        Triple(0x10000, 0x10000, 0x10000),  // 1.0 * 1.0 = 1.0
-        Triple(0x20000, 0x8000, 0x10000),   // 2.0 * 0.5 = 1.0
-        Triple(0x10000, 0x20000, 0x20000),  // 1.0 * 2.0 = 2.0
-        Triple(100, 200, 0),                // small values
+        Triple(0x10000, 0x10000, 0x10000), // 1.0 * 1.0 = 1.0
+        Triple(0x20000, 0x8000, 0x10000), // 2.0 * 0.5 = 1.0
+        Triple(0x10000, 0x20000, 0x20000), // 1.0 * 2.0 = 2.0
+        Triple(100, 200, 0), // small values
         Triple(-0x10000, 0x10000, -0x10000), // -1.0 * 1.0 = -1.0 (via unsigned shift!)
-        Triple(0x30000, 0x15555, 0x3FFFF),  // 3.0 * ~1.333 ≈ 4.0
+        Triple(0x30000, 0x15555, 0x3FFFF), // 3.0 * ~1.333 ≈ 4.0
     )
 
     println("FixedMul JIT tests:")

@@ -14,7 +14,6 @@ class WarkAdvancedExecutionTest {
         return assembler.assemble()
     }
 
-    @org.junit.jupiter.api.Disabled
     @Test
     fun executeF64Arithmetic() {
         val bytes = buildWasmBytes {
@@ -57,7 +56,6 @@ class WarkAdvancedExecutionTest {
         assertEquals(42L, loaded[0])
     }
 
-    @org.junit.jupiter.api.Disabled
     @Test
     fun executeFunctionCallBetweenWasmFunctions() {
         val bytes = buildWasmBytes {
@@ -80,7 +78,6 @@ class WarkAdvancedExecutionTest {
         assertEquals(16L, instance.call("quadruple", 4)[0])
     }
 
-    @org.junit.jupiter.api.Disabled
     @Test
     fun executeFibonacci() {
         val bytes = buildWasmBytes {
@@ -135,7 +132,6 @@ class WarkAdvancedExecutionTest {
         assertEquals(89L, instance.call("fib", 10)[0])
     }
 
-    @org.junit.jupiter.api.Disabled
     @Test
     fun executeHostFunctionCall() {
         val bytes = buildWasmBytes {
@@ -161,7 +157,6 @@ class WarkAdvancedExecutionTest {
         assertEquals(42L, result[0])
     }
 
-    @org.junit.jupiter.api.Disabled
     @Test
     fun executeMultipleMemoryOperations() {
         val bytes = buildWasmBytes {
@@ -176,7 +171,7 @@ class WarkAdvancedExecutionTest {
                 asm.localSet(index)
 
                 asm.beginBlock()
-            beginLoop()
+                beginLoop()
 
                 asm.localGet(sum)
                 asm.localGet(func.getParameter(0))
@@ -197,6 +192,7 @@ class WarkAdvancedExecutionTest {
                 asm.localGet(func.getParameter(1))
                 asm.i32LtS()
                 asm.brIf(0)
+                asm.end()
                 asm.end()
 
                 asm.localGet(sum)

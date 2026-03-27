@@ -69,20 +69,18 @@ fun main() {
     }
 }
 
-private fun buildTestImports(wadBytes: ByteArray): WarkImports {
-    return WarkImports.builder()
-        .function("loading", "onGameInit") { _, _ -> longArrayOf() }
-        .function("loading", "wadSizes") { _, _ -> longArrayOf(wadBytes.size.toLong()) }
-        .function("loading", "readWads") { instance, args ->
-            instance.memory().writeBytes(args[0].toInt(), wadBytes)
-            longArrayOf()
-        }
-        .function("runtimeControl", "timeInMilliseconds") { _, _ -> longArrayOf(0) }
-        .function("ui", "drawFrame") { _, _ -> longArrayOf() }
-        .function("gameSaving", "sizeOfSaveGame") { _, _ -> longArrayOf(0) }
-        .function("gameSaving", "readSaveGame") { _, _ -> longArrayOf(0) }
-        .function("gameSaving", "writeSaveGame") { _, _ -> longArrayOf(0) }
-        .function("console", "onInfoMessage") { _, _ -> longArrayOf() }
-        .function("console", "onErrorMessage") { _, _ -> longArrayOf() }
-        .build()
-}
+private fun buildTestImports(wadBytes: ByteArray): WarkImports = WarkImports.builder()
+    .function("loading", "onGameInit") { _, _ -> longArrayOf() }
+    .function("loading", "wadSizes") { _, _ -> longArrayOf(wadBytes.size.toLong()) }
+    .function("loading", "readWads") { instance, args ->
+        instance.memory().writeBytes(args[0].toInt(), wadBytes)
+        longArrayOf()
+    }
+    .function("runtimeControl", "timeInMilliseconds") { _, _ -> longArrayOf(0) }
+    .function("ui", "drawFrame") { _, _ -> longArrayOf() }
+    .function("gameSaving", "sizeOfSaveGame") { _, _ -> longArrayOf(0) }
+    .function("gameSaving", "readSaveGame") { _, _ -> longArrayOf(0) }
+    .function("gameSaving", "writeSaveGame") { _, _ -> longArrayOf(0) }
+    .function("console", "onInfoMessage") { _, _ -> longArrayOf() }
+    .function("console", "onErrorMessage") { _, _ -> longArrayOf() }
+    .build()

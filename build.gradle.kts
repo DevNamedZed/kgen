@@ -2,6 +2,8 @@ plugins {
     kotlin("jvm") version "2.1.10" apply false
     `maven-publish`
     signing
+    id("org.jetbrains.kotlinx.kover") version "0.9.1"
+    id("com.diffplug.spotless") version "7.0.2" apply false
 }
 
 allprojects {
@@ -17,6 +19,18 @@ subprojects {
     apply(plugin = "org.jetbrains.kotlin.jvm")
     apply(plugin = "maven-publish")
     apply(plugin = "signing")
+    apply(plugin = "com.diffplug.spotless")
+    if (path in listOf(":kgen", ":wark")) {
+        apply(plugin = "org.jetbrains.kotlinx.kover")
+    }
+
+    configure<com.diffplug.gradle.spotless.SpotlessExtension> {
+        kotlin {
+            ktlint("1.5.0")
+                .setEditorConfigPath(rootProject.file(".editorconfig"))
+            targetExclude("**/generated/**")
+        }
+    }
 
     dependencies {
         "testImplementation"(kotlin("test"))
@@ -104,4 +118,74 @@ subprojects {
             freeCompilerArgs.add("-Xjvm-default=all")
         }
     }
+}
+
+// --- Top-level convenience tasks ---
+
+// Core modules for building/testing
+val coreModules = listOf(":kgen", ":wark", ":integration", ":generator", ":cli")
+// Modules with reliable test suites for coverage
+val coverageModules = listOf(":kgen", ":wark")
+
+tasks.register("buildAll") {
+    description = "Build core modules (kgen, wark, integration, generator, cli)"
+    group = "build"
+    dependsOn(coreModules.map { project(it).tasks.named("classes") })
+}
+
+tasks.register("testAll") {
+    description = "Run tests for core modules"
+    group = "verification"
+    dependsOn(coreModules.filter { it != ":cli" && it != ":generator" }.map { project(it).tasks.named("test") })
+}
+
+// Kover merged report at root build/reports/kover/html
+dependencies {
+    coverageModules.forEach { path ->
+        kover(project(path))
+    }
+}
+
+kover {
+    reports {
+        total {
+            html {
+                onCheck = false
+                htmlDir = layout.buildDirectory.dir("reports/kover/html")
+            }
+        }
+    }
+}
+
+tasks.register("lint") {
+    description = "Check formatting across all modules"
+    group = "verification"
+    dependsOn(subprojects.map { it.tasks.named("spotlessCheck") })
+}
+
+tasks.register("format") {
+    description = "Auto-format all source files"
+    group = "verification"
+    dependsOn(subprojects.map { it.tasks.named("spotlessApply") })
+}
+
+tasks.register("coverage") {
+    description = "Run tests and generate merged coverage report (build/reports/kover/html)"
+    group = "verification"
+    dependsOn("koverHtmlReport")
+    doLast {
+        println("Coverage report: file://${rootProject.projectDir}/build/reports/kover/html/index.html")
+    }
+}
+
+// Collect jars from core modules into build/libs/
+tasks.register<Copy>("collectJars") {
+    description = "Copy core module jars to build/libs/"
+    group = "build"
+    val coreProjects = coreModules.map { project(it) }
+    from(coreProjects.flatMap { sub ->
+        sub.tasks.withType<Jar>().map { it.archiveFile }
+    })
+    into(layout.buildDirectory.dir("libs"))
+    dependsOn(coreProjects.map { it.tasks.named("jar") })
 }

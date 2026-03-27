@@ -1,8 +1,8 @@
 package org.wark
 
-import org.wark.compile.WasmToIrCompiler
-import org.kgen.target.wasm.module.WasmModuleReader
 import org.kgen.ir.target.Target
+import org.kgen.target.wasm.module.WasmModuleReader
+import org.wark.compile.WasmToIrCompiler
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -22,6 +22,21 @@ fun main() {
     }
 
     // Check which type indices are referenced by call_indirect in the WASM
+    println()
+    // Also check what collectCallIndirectTypeIndices finds via disassembler
+    val disasm2 = org.kgen.target.wasm.disasm.WasmDisassembler()
+    val disasmTypeIndices = mutableSetOf<Int>()
+    for (func in wasmModule.functions) {
+        for (inst in disasm2.disassemble(func.body)) {
+            if (inst.mnemonic == "call_indirect") {
+                val ops = inst.operands
+                if (ops is org.kgen.target.wasm.disasm.WasmInstruction.Operands.CallIndirect) {
+                    disasmTypeIndices.add(ops.typeIndex)
+                }
+            }
+        }
+    }
+    println("Disassembler found call_indirect type indices: $disasmTypeIndices")
     println()
     println("call_indirect type indices used in WASM:")
     val usedTypeIndices = mutableSetOf<Int>()

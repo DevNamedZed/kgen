@@ -38,6 +38,7 @@ class WarkInstance(
     private val contextArena = java.lang.foreign.Arena.ofShared()
     private val contextSegment: java.lang.foreign.MemorySegment =
         contextArena.allocate(RuntimeContextLayout.SIZE, 8)
+    private val upcallArena = java.lang.foreign.Arena.ofShared()
 
     init {
         linkImports()
@@ -72,9 +73,7 @@ class WarkInstance(
         return callJit(functionIndex, args)
     }
 
-    fun callJitByIndex(functionIndex: Int, vararg args: Long): LongArray {
-        return callJit(functionIndex, args)
-    }
+    fun callJitByIndex(functionIndex: Int, vararg args: Long): LongArray = callJit(functionIndex, args)
 
     fun call(functionName: String, vararg args: Long): LongArray {
         val export = exportMap[functionName]
@@ -146,13 +145,11 @@ class WarkInstance(
         interp.instructionLimit = limit
     }
 
-    fun interpreter(): WasmInterpreter {
-        return interpreter ?: run {
-            val globalValues = globals.map { it.rawValue() }.toMutableList()
-            val newInterp = WasmInterpreter(module.wasmModule, memories, globalValues, imports, this)
-            interpreter = newInterp
-            newInterp
-        }
+    fun interpreter(): WasmInterpreter = interpreter ?: run {
+        val globalValues = globals.map { it.rawValue() }.toMutableList()
+        val newInterp = WasmInterpreter(module.wasmModule, memories, globalValues, imports, this)
+        interpreter = newInterp
+        newInterp
     }
 
     fun memory(): WarkMemory {
@@ -185,11 +182,9 @@ class WarkInstance(
         return globals[export.index]
     }
 
-    fun exportedFunctions(): List<String> {
-        return exportMap.entries
-            .filter { it.value.kind == WasmModule.ExportKind.FUNCTION }
-            .map { it.key }
-    }
+    fun exportedFunctions(): List<String> = exportMap.entries
+        .filter { it.value.kind == WasmModule.ExportKind.FUNCTION }
+        .map { it.key }
 
     private fun linkImports() {
         for (import in module.wasmModule.imports) {
@@ -272,7 +267,16 @@ class WarkInstance(
 
     private fun runStartFunction() {
         val startIndex = module.wasmModule.start ?: return
-        // TODO: execute start function at index startIndex
+        // Use interpreter for the start function since JIT isn't ready during construction
+        val globalValues = globals.map { it.rawValue() }.toMutableList()
+        val interp = org.wark.exec.WasmInterpreter(module.wasmModule, memories, globalValues, imports, this)
+        interp.call(startIndex, longArrayOf())
+        // Write back globals that the start function may have modified
+        for ((index, value) in globalValues.withIndex()) {
+            if (index < globals.size && globals[index].mutable) {
+                globals[index].setI64(value)
+            }
+        }
     }
 
     private fun callJit(functionIndex: Int, args: LongArray): LongArray {
@@ -284,14 +288,64 @@ class WarkInstance(
         val runtimeEngine = engine ?: throw WasmTrap("runtime engine not initialized")
         updateRuntimeContext()
 
-        val callArgs = LongArray(args.size + 1)
-        callArgs[0] = contextAddress()
-        for (index in args.indices) {
-            callArgs[index + 1] = args[index]
+        val funcType = module.wasmModule.types[module.wasmModule.functions[localIndex].typeIndex]
+        val jitEngine = runtimeEngine.jit()
+
+        val jl = java.lang.foreign.ValueLayout.JAVA_LONG
+        val jd = java.lang.foreign.ValueLayout.JAVA_DOUBLE
+        val jf = java.lang.foreign.ValueLayout.JAVA_FLOAT
+
+        // Build FFM descriptor matching the actual WASM param/return types
+        // IR params: (context: i64, p0, p1, ...) — context is always i64
+        val paramLayouts = mutableListOf<java.lang.foreign.MemoryLayout>(jl) // context
+        for (wasmParam in funcType.params) {
+            paramLayouts.add(when (wasmParam) {
+                org.kgen.target.wasm.WasmValueType.F32 -> jf
+                org.kgen.target.wasm.WasmValueType.F64 -> jd
+                else -> jl
+            })
         }
 
-        val result = runtimeEngine.call(name, *callArgs)
-        return longArrayOf(result)
+        val returnLayout = if (funcType.results.isEmpty()) {
+            null
+        } else {
+            when (funcType.results[0]) {
+                org.kgen.target.wasm.WasmValueType.F32 -> jf
+                org.kgen.target.wasm.WasmValueType.F64 -> jd
+                else -> jl
+            }
+        }
+
+        val descriptor = if (returnLayout != null) {
+            java.lang.foreign.FunctionDescriptor.of(returnLayout, *paramLayouts.toTypedArray())
+        } else {
+            java.lang.foreign.FunctionDescriptor.ofVoid(*paramLayouts.toTypedArray())
+        }
+
+        val handle = jitEngine.handle(name, descriptor)
+
+        // Build typed args: context (Long) + WASM params (typed)
+        val typedArgs = mutableListOf<Any>()
+        typedArgs.add(contextAddress())
+        for ((index, wasmParam) in funcType.params.withIndex()) {
+            val rawBits = args[index]
+            typedArgs.add(when (wasmParam) {
+                org.kgen.target.wasm.WasmValueType.F32 -> java.lang.Float.intBitsToFloat(rawBits.toInt())
+                org.kgen.target.wasm.WasmValueType.F64 -> java.lang.Double.longBitsToDouble(rawBits)
+                else -> rawBits
+            })
+        }
+
+        val result = handle.invokeWithArguments(typedArgs)
+        checkPendingTrap()
+
+        // Convert return value back to Long
+        return when {
+            funcType.results.isEmpty() -> longArrayOf(0)
+            funcType.results[0] == org.kgen.target.wasm.WasmValueType.F32 -> longArrayOf(java.lang.Float.floatToRawIntBits(result as Float).toLong())
+            funcType.results[0] == org.kgen.target.wasm.WasmValueType.F64 -> longArrayOf(java.lang.Double.doubleToRawLongBits(result as Double))
+            else -> longArrayOf(result as Long)
+        }
     }
 
     private fun callInterpreted(functionIndex: Int, args: LongArray): LongArray {
@@ -383,8 +437,6 @@ class WarkInstance(
             jitEngine.lookup(name) == null
         }
     }
-
-    private val upcallArena = java.lang.foreign.Arena.ofShared()
 
     private fun registerBoundsCheck(runtimeEngine: RuntimeEngine) {
         val linker = java.lang.foreign.Linker.nativeLinker()
@@ -478,9 +530,7 @@ class WarkInstance(
         return result
     }
 
-    fun memorySize(contextPointer: Long): Int {
-        return memories[0].pages()
-    }
+    fun memorySize(contextPointer: Long): Int = memories[0].pages()
 
     fun memoryCopy(contextPointer: Long, destination: Int, source: Int, length: Int) {
         if (memories.isNotEmpty()) {
@@ -649,7 +699,9 @@ class WarkInstance(
 
         private val bitopLog = java.io.File("build/bitop-trace.txt").also { it.parentFile?.mkdirs() }
         private val blockLog = java.io.File("build/block-trace.txt").also { it.parentFile?.mkdirs() }
+
         @Volatile private var ctzCallCount = 0
+
         @Volatile private var memoryForDiag: WarkMemory? = null
 
         @JvmStatic
@@ -814,46 +866,19 @@ class WarkInstance(
 
         @Volatile @JvmField var lastTrapInstance: WarkInstance? = null
 
+        @Volatile @JvmField var pendingTrapFunctionIndex: Int = -1
+
         @JvmStatic
         fun onTrap(functionIndex: Int) {
-            val traceFile = java.io.File("build/doom-trace.log")
-            traceFile.appendText("TRAP: unreachable in func_$functionIndex\n")
+            pendingTrapFunctionIndex = functionIndex
+        }
 
-            // Dump diagnostic for func_817 trap
-            val inst = lastTrapInstance
-            if (inst != null && functionIndex == 817) {
-                try {
-                    val mem = inst.memory()
-                    traceFile.appendText("  guard mem[0x4278c0] = ${mem.readI32(0x4278c0)}\n")
-
-                    // Dump the .data section (globals) from JIT memory
-                    val engine = inst.javaClass.getDeclaredField("engine")
-                    engine.isAccessible = true
-                    val runtimeEngine = engine.get(inst) as? org.kgen.runtime.RuntimeEngine
-                    if (runtimeEngine != null) {
-                        val jitField = runtimeEngine.javaClass.getDeclaredField("jitEngine")
-                        jitField.isAccessible = true
-                        val jitEngine = jitField.get(runtimeEngine) as? org.kgen.jit.JitEngine
-                        if (jitEngine != null) {
-                            val sym0 = jitEngine.lookup("__wasm_global_0")
-                            val sym1 = jitEngine.lookup("__wasm_global_1")
-                            if (sym0 != null && sym1 != null) {
-                                val seg0 = java.lang.foreign.MemorySegment.ofAddress(sym0.address).reinterpret(4)
-                                val seg1 = java.lang.foreign.MemorySegment.ofAddress(sym1.address).reinterpret(4)
-                                val g0 = seg0.get(java.lang.foreign.ValueLayout.JAVA_INT, 0)
-                                val g1 = seg1.get(java.lang.foreign.ValueLayout.JAVA_INT, 0)
-                                traceFile.appendText("  JIT global_0 addr=0x${java.lang.Long.toHexString(sym0.address)} val=$g0\n")
-                                traceFile.appendText("  JIT global_1 addr=0x${java.lang.Long.toHexString(sym1.address)} val=$g1\n")
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    traceFile.appendText("  diagnostic failed: ${e.message}\n")
-                }
+        fun checkPendingTrap() {
+            val funcIdx = pendingTrapFunctionIndex
+            if (funcIdx >= 0) {
+                pendingTrapFunctionIndex = -1
+                throw WasmTrap("unreachable trap in func_$funcIdx")
             }
-
-            System.err.flush()
-            throw org.wark.WasmTrap("unreachable trap in func_$functionIndex")
         }
     }
 
@@ -955,14 +980,7 @@ class WarkInstance(
             val calleeLabel = if (calleeId < 0) { "indirect" } else { "func_$calleeId" }
             callback(calleeId, "  <<< $calleeLabel returned 0x${resultI32.toUInt().toString(16)} ($resultI32) to func_$callerId")
 
-            if (calleeId == 123 || calleeId == 41 || calleeId == 75) {
-                val memSize = if (instance.memories.isNotEmpty()) { instance.memories[0].sizeBytes() } else { 0 }
-                if (resultI32 != 0 && (resultI32 < 0 || resultI32 >= memSize)) {
-                    callback(calleeId, "  *** BAD MALLOC: $calleeLabel returned 0x${resultI32.toUInt().toString(16)}, memSize=$memSize ***")
-                    System.err.println("BAD MALLOC: $calleeLabel returned 0x${resultI32.toUInt().toString(16)}, memSize=$memSize")
-                    System.err.flush()
-                }
-            }
+            // (BAD MALLOC check removed — was false positive on debug binary)
         }
     }
 
@@ -1017,6 +1035,10 @@ class WarkInstance(
         fun call4(a0: Long, a1: Long, a2: Long, a3: Long): Long = dispatch(a0, a1, a2, a3)
         fun call5(a0: Long, a1: Long, a2: Long, a3: Long, a4: Long): Long = dispatch(a0, a1, a2, a3, a4)
         fun call6(a0: Long, a1: Long, a2: Long, a3: Long, a4: Long, a5: Long): Long = dispatch(a0, a1, a2, a3, a4, a5)
+        fun call7(a0: Long, a1: Long, a2: Long, a3: Long, a4: Long, a5: Long, a6: Long): Long = dispatch(a0, a1, a2, a3, a4, a5, a6)
+        fun call8(a0: Long, a1: Long, a2: Long, a3: Long, a4: Long, a5: Long, a6: Long, a7: Long): Long = dispatch(a0, a1, a2, a3, a4, a5, a6, a7)
+        fun call9(a0: Long, a1: Long, a2: Long, a3: Long, a4: Long, a5: Long, a6: Long, a7: Long, a8: Long): Long = dispatch(a0, a1, a2, a3, a4, a5, a6, a7, a8)
+        fun call10(a0: Long, a1: Long, a2: Long, a3: Long, a4: Long, a5: Long, a6: Long, a7: Long, a8: Long, a9: Long): Long = dispatch(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9)
     }
 
     private fun evaluateInitExpr(expr: ByteArray): Long {

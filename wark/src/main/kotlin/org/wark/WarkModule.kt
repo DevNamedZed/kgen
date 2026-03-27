@@ -24,36 +24,28 @@ class WarkModule(
      * Instantiate this module with the given imports.
      * Links all imports, initializes memory and globals, runs the start function.
      */
-    fun instantiate(imports: WarkImports = WarkImports.empty()): WarkInstance {
-        return WarkInstance(this, imports)
-    }
+    fun instantiate(imports: WarkImports = WarkImports.empty()): WarkInstance = WarkInstance(this, imports)
 
     /**
      * Names of all exported functions.
      */
-    fun exportedFunctionNames(): List<String> {
-        return wasmModule.exports
-            .filter { it.kind == WasmModule.ExportKind.FUNCTION }
-            .map { it.name }
-    }
+    fun exportedFunctionNames(): List<String> = wasmModule.exports
+        .filter { it.kind == WasmModule.ExportKind.FUNCTION }
+        .map { it.name }
 
     /**
      * Names of all exported memories.
      */
-    fun exportedMemoryNames(): List<String> {
-        return wasmModule.exports
-            .filter { it.kind == WasmModule.ExportKind.MEMORY }
-            .map { it.name }
-    }
+    fun exportedMemoryNames(): List<String> = wasmModule.exports
+        .filter { it.kind == WasmModule.ExportKind.MEMORY }
+        .map { it.name }
 
     /**
      * Names of all exported globals.
      */
-    fun exportedGlobalNames(): List<String> {
-        return wasmModule.exports
-            .filter { it.kind == WasmModule.ExportKind.GLOBAL }
-            .map { it.name }
-    }
+    fun exportedGlobalNames(): List<String> = wasmModule.exports
+        .filter { it.kind == WasmModule.ExportKind.GLOBAL }
+        .map { it.name }
 
     /**
      * Number of imported functions this module requires.

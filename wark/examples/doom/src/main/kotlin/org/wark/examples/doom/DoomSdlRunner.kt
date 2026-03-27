@@ -92,6 +92,8 @@ object DoomSdlRunner {
         host.registerImports(builder)
         val instance = module.instantiate(builder.build())
 
+        val traceLog = java.io.File("damage-trace.txt")
+        val traceLines = java.util.concurrent.atomic.AtomicInteger(0)
         println("Initializing DOOM...")
         instance.call("initGame")
 
@@ -105,6 +107,17 @@ object DoomSdlRunner {
         cleanup()
         println("DOOM exited.")
     }
+
+    private var tickCounter = 0
+    private val trackedNames = setOf(
+        "P_DamageMobj", "P_AimLineAttack", "PTR_ShootTraverse", "PTR_AimTraverse",
+        "P_PathTraverse", "A_WeaponReady", "A_FirePistol", "P_BulletSlope",
+        "P_GunShot", "P_PlayerThink", "P_MovePlayer", "P_SetPsprite",
+        "P_MovePsprites", "P_FireWeapon", "P_CheckAmmo", "P_DeathThink",
+        "P_Ticker", "G_PlayerReborn", "P_LineAttack", "P_KillMobj",
+        "P_TraverseIntercepts", "PIT_AddLineIntercepts", "PIT_AddThingIntercepts",
+    )
+    private val nameCounts = java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicInteger>()
 
     private fun gameLoop(instance: WarkInstance) {
         val eventBuffer = arena.allocate(56)
@@ -132,6 +145,14 @@ object DoomSdlRunner {
             }
 
             instance.call("tickGame")
+            tickCounter++
+            if (tickCounter % 300 == 0) {
+                val sb = StringBuilder("[DMG] tick=$tickCounter")
+                for ((name, count) in nameCounts.entries.sortedBy { it.key }) {
+                    sb.append(" $name=${count.get()}")
+                }
+                println(sb)
+            }
             sdlDelay(16)
         }
     }

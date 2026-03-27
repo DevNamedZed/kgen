@@ -1,14 +1,9 @@
 package org.wark
 
 import org.junit.jupiter.api.Test
-import org.kgen.ir.target.Target
-import org.kgen.pipeline.Mem2Reg
-import org.kgen.runtime.RuntimeEngine
 import org.kgen.target.wasm.WasmValueType
 import org.kgen.target.wasm.asm.WasmAssembler
-import org.wark.compile.WasmToIrCompiler
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 /**
  * End-to-end execution tests: WASM binary → parse → IR → JIT → FFM call → result.

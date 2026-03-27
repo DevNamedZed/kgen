@@ -29,6 +29,9 @@ class Wasm4Host(
     private var traceOutput: StringBuilder = StringBuilder()
 
     fun registerImports(builder: WarkImports.Builder) {
+        val wasmMemory = org.wark.WarkMemory.create(2, 2)
+        initializeSystemMemory(wasmMemory)
+        builder.memory("env", "memory", wasmMemory)
         builder.function("env", "blit", blit())
         builder.function("env", "blitSub", blitSub())
         builder.function("env", "line", line())
@@ -42,6 +45,8 @@ class Wasm4Host(
         builder.function("env", "diskw", diskw())
         builder.function("env", "trace", trace())
         builder.function("env", "tracef", tracef())
+        builder.function("env", "textUtf8", textUtf8())
+        builder.function("env", "textUtf16", textUtf16())
     }
 
     fun buildImports(): WarkImports {
@@ -64,7 +69,7 @@ class Wasm4Host(
         return (framebuffer[byteIndex].toInt() shr bitOffset) and 0x03
     }
 
-    private fun readFramebufferFromMemory(instance: WarkInstance) {
+    fun readFramebuffer(instance: WarkInstance) {
         val memory = instance.memory()
         framebuffer = memory.readBytes(FRAMEBUFFER_ADDRESS, SCREEN_SIZE * SCREEN_SIZE / 4)
     }
@@ -90,15 +95,35 @@ class Wasm4Host(
         if (fillColor != 0) {
             for (row in y until y + height) {
                 for (col in x until x + width) {
-                    setPixel(col, row, (fillColor - 1) and 0x03)
+                    setPixelInMemory(instance, col, row, (fillColor - 1) and 0x03)
                 }
             }
         }
-        writeFramebufferToMemory(instance)
         longArrayOf()
     }
 
     private fun line(): HostFunction = HostFunction { instance, args ->
+        val x1 = args[0].toInt()
+        val y1 = args[1].toInt()
+        val x2 = args[2].toInt()
+        val y2 = args[3].toInt()
+        val drawColors = readDrawColors(instance)
+        val color = (drawColors and 0x0F)
+        if (color == 0) { return@HostFunction longArrayOf() }
+        val c = (color - 1) and 0x03
+        var dx = kotlin.math.abs(x2 - x1)
+        var dy = -kotlin.math.abs(y2 - y1)
+        var sx = if (x1 < x2) { 1 } else { -1 }
+        var sy = if (y1 < y2) { 1 } else { -1 }
+        var err = dx + dy
+        var cx = x1; var cy = y1
+        while (true) {
+            setPixelInMemory(instance, cx, cy, c)
+            if (cx == x2 && cy == y2) { break }
+            val e2 = 2 * err
+            if (e2 >= dy) { err += dy; cx += sx }
+            if (e2 <= dx) { err += dx; cy += sy }
+        }
         longArrayOf()
     }
 
@@ -110,26 +135,73 @@ class Wasm4Host(
         val color = (drawColors and 0x0F)
         if (color != 0) {
             for (col in x until x + length) {
-                setPixel(col, y, (color - 1) and 0x03)
+                setPixelInMemory(instance, col, y, (color - 1) and 0x03)
             }
         }
-        writeFramebufferToMemory(instance)
         longArrayOf()
     }
 
     private fun vline(): HostFunction = HostFunction { instance, args ->
+        val x = args[0].toInt()
+        val y = args[1].toInt()
+        val length = args[2].toInt()
+        val drawColors = readDrawColors(instance)
+        val color = (drawColors and 0x0F)
+        if (color != 0) {
+            for (row in y until y + length) {
+                setPixelInMemory(instance, x, row, (color - 1) and 0x03)
+            }
+        }
         longArrayOf()
     }
 
     private fun oval(): HostFunction = HostFunction { instance, args ->
+        val x = args[0].toInt()
+        val y = args[1].toInt()
+        val width = args[2].toInt()
+        val height = args[3].toInt()
+        val drawColors = readDrawColors(instance)
+        val fillColor = drawColors and 0x0F
+        if (fillColor == 0) { return@HostFunction longArrayOf() }
+        val c = (fillColor - 1) and 0x03
+        val rx = width / 2.0
+        val ry = height / 2.0
+        val cx = x + rx
+        val cy = y + ry
+        for (row in y until y + height) {
+            for (col in x until x + width) {
+                val dx = (col + 0.5 - cx) / rx
+                val dy = (row + 0.5 - cy) / ry
+                if (dx * dx + dy * dy <= 1.0) {
+                    setPixelInMemory(instance, col, row, c)
+                }
+            }
+        }
         longArrayOf()
     }
 
     private fun blit(): HostFunction = HostFunction { instance, args ->
+        val spritePtr = args[0].toInt()
+        val x = args[1].toInt()
+        val y = args[2].toInt()
+        val width = args[3].toInt()
+        val height = args[4].toInt()
+        val flags = args[5].toInt()
+        blitImpl(instance, spritePtr, x, y, width, height, 0, 0, width, flags)
         longArrayOf()
     }
 
     private fun blitSub(): HostFunction = HostFunction { instance, args ->
+        val spritePtr = args[0].toInt()
+        val x = args[1].toInt()
+        val y = args[2].toInt()
+        val width = args[3].toInt()
+        val height = args[4].toInt()
+        val srcX = args[5].toInt()
+        val srcY = args[6].toInt()
+        val stride = args[7].toInt()
+        val flags = args[8].toInt()
+        blitImpl(instance, spritePtr, x, y, width, height, srcX, srcY, stride, flags)
         longArrayOf()
     }
 
@@ -178,16 +250,96 @@ class Wasm4Host(
         longArrayOf()
     }
 
+    private fun textUtf8(): HostFunction = HostFunction { instance, args ->
+        val stringAddress = args[0].toInt()
+        val byteLength = args[1].toInt()
+        val x = args[2].toInt()
+        val y = args[3].toInt()
+        longArrayOf()
+    }
+
+    private fun textUtf16(): HostFunction = HostFunction { instance, args ->
+        val stringAddress = args[0].toInt()
+        val byteLength = args[1].toInt()
+        val x = args[2].toInt()
+        val y = args[3].toInt()
+        longArrayOf()
+    }
+
+    private fun blitImpl(
+        instance: WarkInstance, spritePtr: Int,
+        destX: Int, destY: Int, width: Int, height: Int,
+        srcX: Int, srcY: Int, stride: Int, flags: Int,
+    ) {
+        val memory = instance.memory()
+        val drawColors = readDrawColors(instance)
+        val bpp2 = (flags and 1) != 0
+        val flipX = (flags and 2) != 0
+        val flipY = (flags and 4) != 0
+        val rotate = (flags and 8) != 0
+
+        for (row in 0 until height) {
+            for (col in 0 until width) {
+                val sx = srcX + col
+                val sy = srcY + row
+                val bitIndex = if (bpp2) {
+                    (sy * stride + sx) * 2
+                } else {
+                    sy * stride + sx
+                }
+                val byteIndex = spritePtr + bitIndex / 8
+                val bitOffset = bitIndex % 8
+
+                val colorIndex = if (bpp2) {
+                    (memory.readByte(byteIndex).toInt() shr (6 - bitOffset)) and 0x03
+                } else {
+                    (memory.readByte(byteIndex).toInt() shr (7 - bitOffset)) and 0x01
+                }
+
+                val mappedColor = (drawColors shr (colorIndex * 4)) and 0x0F
+                if (mappedColor == 0) { continue }
+
+                var px = if (flipX) { width - 1 - col } else { col }
+                var py = if (flipY) { height - 1 - row } else { row }
+                if (rotate) {
+                    val temp = px
+                    px = py
+                    py = temp
+                }
+
+                setPixelInMemory(instance, destX + px, destY + py, (mappedColor - 1) and 0x03)
+            }
+        }
+    }
+
     private fun readDrawColors(instance: WarkInstance): Int {
         return instance.memory().readI32(DRAW_COLORS_ADDRESS) and 0xFFFF
     }
 
-    private fun writeFramebufferToMemory(instance: WarkInstance) {
-        instance.memory().writeBytes(FRAMEBUFFER_ADDRESS, framebuffer)
+    private fun setPixelInMemory(instance: WarkInstance, x: Int, y: Int, color: Int) {
+        if (x < 0 || x >= SCREEN_SIZE || y < 0 || y >= SCREEN_SIZE) { return }
+        val index = y * SCREEN_SIZE + x
+        val byteOffset = FRAMEBUFFER_ADDRESS + index / 4
+        val bitOffset = (index % 4) * 2
+        val current = instance.memory().readByte(byteOffset).toInt() and 0xFF
+        val mask = (0x03 shl bitOffset).inv() and 0xFF
+        val newByte = (current and mask) or ((color and 0x03) shl bitOffset)
+        instance.memory().writeByte(byteOffset, newByte.toByte())
     }
 
     fun interface FrameCallback {
         fun onFrame(framebuffer: ByteArray, width: Int, height: Int)
+    }
+
+    private fun initializeSystemMemory(memory: org.wark.WarkMemory) {
+        memory.writeI32(0x04, 0xe0f8cf.toInt())
+        memory.writeI32(0x08, 0x86c06c)
+        memory.writeI32(0x0C, 0x306850)
+        memory.writeI32(0x10, 0x071821)
+        memory.writeByte(0x14, 0x03)
+        memory.writeByte(0x15, 0x12)
+        memory.writeI32(MOUSE_X_ADDRESS, 0x7fff.toShort().toInt())
+        memory.writeI32(MOUSE_Y_ADDRESS, 0x7fff.toShort().toInt())
     }
 
     companion object {

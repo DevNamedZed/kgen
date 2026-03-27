@@ -63,19 +63,17 @@ class WarkDebugger(
 
     var boundsChecking = false
 
-    fun loadJit(): Boolean {
-        return try {
-            val jit = WarkRuntime.create(WasmTarget.V2_0, ExecutionMode.JIT)
-                .load(wasmBytes).instantiate(imports)
-            if (boundsChecking) {
-                jit.enableBoundsChecking()
-            }
-            jit.compiledIr()
-            jitInstance = jit
-            true
-        } catch (exception: Exception) {
-            false
+    fun loadJit(): Boolean = try {
+        val jit = WarkRuntime.create(WasmTarget.V2_0, ExecutionMode.JIT)
+            .load(wasmBytes).instantiate(imports)
+        if (boundsChecking) {
+            jit.enableBoundsChecking()
         }
+        jit.compiledIr()
+        jitInstance = jit
+        true
+    } catch (exception: Exception) {
+        false
     }
 
     // -- Module Inspection --
@@ -115,9 +113,7 @@ class WarkDebugger(
         )
     }
 
-    fun disassemble(localIndex: Int): List<WasmInstruction> {
-        return disassembler.disassemble(wasmModule.functions[localIndex].body)
-    }
+    fun disassemble(localIndex: Int): List<WasmInstruction> = disassembler.disassemble(wasmModule.functions[localIndex].body)
 
     fun jitAsm(functionName: String): String? {
         val inspector = jitInstance?.inspector() ?: return null
@@ -129,9 +125,7 @@ class WarkDebugger(
         return inspector.dumpIr(resolveFuncName(functionName))
     }
 
-    fun dumpAlloc(functionName: String): String {
-        return org.kgen.target.x86.codegen.X86CodeGenerator.dumpAlloc(resolveFuncName(functionName))
-    }
+    fun dumpAlloc(functionName: String): String = org.kgen.target.x86.codegen.X86CodeGenerator.dumpAlloc(resolveFuncName(functionName))
 
     fun exports(): List<WasmModule.Export> = wasmModule.exports.toList()
 
@@ -159,13 +153,11 @@ class WarkDebugger(
         }
     }
 
-    fun callByIndex(globalIndex: Int, vararg args: Long): CallResult {
-        return try {
-            val result = interpreter.call(globalIndex, args)
-            CallResult(result, completed = true, paused = false, trap = null)
-        } catch (trap: WasmTrap) {
-            CallResult(longArrayOf(), completed = false, paused = false, trap = trap.message)
-        }
+    fun callByIndex(globalIndex: Int, vararg args: Long): CallResult = try {
+        val result = interpreter.call(globalIndex, args)
+        CallResult(result, completed = true, paused = false, trap = null)
+    } catch (trap: WasmTrap) {
+        CallResult(longArrayOf(), completed = false, paused = false, trap = trap.message)
     }
 
     fun continueExecution(additionalInstructions: Long): CallResult {
@@ -184,9 +176,7 @@ class WarkDebugger(
         }
     }
 
-    fun step(count: Long = 1): CallResult {
-        return continueExecution(count)
-    }
+    fun step(count: Long = 1): CallResult = continueExecution(count)
 
     fun runTo(functionName: String): CallResult {
         breakFunctions.add(functionName)
@@ -231,13 +221,11 @@ class WarkDebugger(
 
     // -- State Inspection --
 
-    fun where(): ExecutionState {
-        return ExecutionState(
-            totalInstructions = interpreter.totalInstructions,
-            callDepth = interpreter.callDepth,
-            functionsCalled = interpreter.tracedCalls().size,
-        )
-    }
+    fun where(): ExecutionState = ExecutionState(
+        totalInstructions = interpreter.totalInstructions,
+        callDepth = interpreter.callDepth,
+        functionsCalled = interpreter.tracedCalls().size,
+    )
 
     fun trace(count: Int = 20): List<String> {
         val traced = interpreter.tracedCalls()

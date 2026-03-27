@@ -27,9 +27,7 @@ class ValueStack {
         return values.removeLast()
     }
 
-    fun peek(): Value {
-        return values.last()
-    }
+    fun peek(): Value = values.last()
 
     fun isEmpty(): Boolean = values.isEmpty()
 
