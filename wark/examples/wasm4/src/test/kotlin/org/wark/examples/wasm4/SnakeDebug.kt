@@ -1,7 +1,6 @@
 package org.wark.examples.wasm4
 
 import org.kgen.ir.target.Target
-import org.kgen.ir.text.IrPrinter
 import org.kgen.pipeline.Mem2Reg
 import org.kgen.target.wasm.disasm.WasmDisassembler
 import org.kgen.target.wasm.module.WasmModuleReader

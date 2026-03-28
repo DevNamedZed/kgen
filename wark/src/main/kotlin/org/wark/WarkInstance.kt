@@ -279,6 +279,32 @@ class WarkInstance(
         }
     }
 
+    private fun syncGlobalsToJit(runtimeEngine: RuntimeEngine) {
+        val jitEngine = runtimeEngine.jit()
+        val importedGlobals = module.wasmModule.imports.filterIsInstance<WasmModule.Import.Global>()
+        val totalGlobals = importedGlobals.size + module.wasmModule.globals.size
+        for (index in 0 until minOf(totalGlobals, globals.size)) {
+            val symbolName = "__wasm_global_$index"
+            val sym = jitEngine.lookup(symbolName)
+            val addr = sym?.address ?: 0L
+            if (addr != 0L) {
+                val seg = java.lang.foreign.MemorySegment.ofAddress(addr).reinterpret(8)
+                val globalDef = if (index < importedGlobals.size) {
+                    null
+                } else {
+                    module.wasmModule.globals.getOrNull(index - importedGlobals.size)
+                }
+                val isI64 = globalDef?.type == org.kgen.target.wasm.WasmValueType.I64
+                val value = globals[index].rawValue()
+                if (isI64) {
+                    seg.set(java.lang.foreign.ValueLayout.JAVA_LONG_UNALIGNED, 0, value)
+                } else {
+                    seg.set(java.lang.foreign.ValueLayout.JAVA_INT_UNALIGNED, 0, value.toInt())
+                }
+            }
+        }
+    }
+
     private fun callJit(functionIndex: Int, args: LongArray): LongArray {
         ensureCompiled()
         val importedFuncCount = module.wasmModule.importedFunctionCount
@@ -336,6 +362,7 @@ class WarkInstance(
             })
         }
 
+        lastTrapInstance = this
         val result = handle.invokeWithArguments(typedArgs)
         checkPendingTrap()
 
@@ -405,6 +432,11 @@ class WarkInstance(
         }
         runtimeEngine.addModule(irModule)
         engine = runtimeEngine
+
+        // Sync globals from interpreter (start function may have modified them)
+        if (module.wasmModule.start != null) {
+            syncGlobalsToJit(runtimeEngine)
+        }
 
         // Log unresolved symbols
         val unresolvedSymbols = findUnresolvedSymbols(irModule, runtimeEngine)
@@ -871,6 +903,36 @@ class WarkInstance(
         @JvmStatic
         fun onTrap(functionIndex: Int) {
             pendingTrapFunctionIndex = functionIndex
+            dumpTrapState(functionIndex)
+            // Force JVM exit with the trap info — prevent silent crashes after trap
+            System.err.flush()
+        }
+
+        private fun dumpTrapState(functionIndex: Int) {
+            try {
+                System.err.println("[TRAP] func_$functionIndex unreachable hit")
+                val instance = lastTrapInstance ?: return
+                if (instance.memories.isEmpty()) { return }
+                val mem = instance.memories[0]
+                System.err.println("[TRAP] Memory dump at trap:")
+                for (addr in listOf(0x2E80, 0x2E84, 0x2E88, 0x2E8C, 0x2EA0, 11908, 11916, 11940)) {
+                    System.err.println("[TRAP]   mem[0x${Integer.toHexString(addr)}] = ${mem.readI32(addr)} (0x${Integer.toHexString(mem.readI32(addr))})")
+                }
+                // Dump the shadow stack area around 0x2088
+                System.err.println("[TRAP] Shadow stack (0x2088-0x20FF):")
+                for (addr in 0x2088 until 0x2100 step 4) {
+                    val value = mem.readI32(addr)
+                    if (value != 0) {
+                        System.err.println("[TRAP]   [0x${Integer.toHexString(addr)}] = $value (0x${Integer.toHexString(value)})")
+                    }
+                }
+                // Globals
+                for (index in instance.globals.indices) {
+                    System.err.println("[TRAP]   global[$index] = ${instance.globals[index].rawValue()}")
+                }
+            } catch (ignored: Throwable) {
+                System.err.println("[TRAP] dump failed: ${ignored.message}")
+            }
         }
 
         fun checkPendingTrap() {

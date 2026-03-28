@@ -92,11 +92,24 @@ class Wasm4Host(
         val height = args[3].toInt()
         val drawColors = readDrawColors(instance)
         val fillColor = drawColors and 0x0F
+        val strokeColor = (drawColors shr 4) and 0x0F
         if (fillColor != 0) {
+            val fc = (fillColor - 1) and 0x03
             for (row in y until y + height) {
                 for (col in x until x + width) {
-                    setPixelInMemory(instance, col, row, (fillColor - 1) and 0x03)
+                    setPixelInMemory(instance, col, row, fc)
                 }
+            }
+        }
+        if (strokeColor != 0) {
+            val sc = (strokeColor - 1) and 0x03
+            for (col in x until x + width) {
+                setPixelInMemory(instance, col, y, sc)
+                setPixelInMemory(instance, col, y + height - 1, sc)
+            }
+            for (row in y until y + height) {
+                setPixelInMemory(instance, x, row, sc)
+                setPixelInMemory(instance, x + width - 1, row, sc)
             }
         }
         longArrayOf()
@@ -162,8 +175,8 @@ class Wasm4Host(
         val height = args[3].toInt()
         val drawColors = readDrawColors(instance)
         val fillColor = drawColors and 0x0F
-        if (fillColor == 0) { return@HostFunction longArrayOf() }
-        val c = (fillColor - 1) and 0x03
+        val strokeColor = (drawColors shr 4) and 0x0F
+        if (fillColor == 0 && strokeColor == 0) { return@HostFunction longArrayOf() }
         val rx = width / 2.0
         val ry = height / 2.0
         val cx = x + rx
@@ -172,12 +185,25 @@ class Wasm4Host(
             for (col in x until x + width) {
                 val dx = (col + 0.5 - cx) / rx
                 val dy = (row + 0.5 - cy) / ry
-                if (dx * dx + dy * dy <= 1.0) {
-                    setPixelInMemory(instance, col, row, c)
+                if (dx * dx + dy * dy > 1.0) { continue }
+                if (strokeColor != 0 && isOvalBorder(col, row, cx, cy, rx, ry)) {
+                    setPixelInMemory(instance, col, row, (strokeColor - 1) and 0x03)
+                } else if (fillColor != 0) {
+                    setPixelInMemory(instance, col, row, (fillColor - 1) and 0x03)
                 }
             }
         }
         longArrayOf()
+    }
+
+    private fun isOvalBorder(col: Int, row: Int, cx: Double, cy: Double, rx: Double, ry: Double): Boolean {
+        val neighbors = arrayOf(-1 to 0, 1 to 0, 0 to -1, 0 to 1)
+        for ((ndx, ndy) in neighbors) {
+            val nx = (col + ndx + 0.5 - cx) / rx
+            val ny = (row + ndy + 0.5 - cy) / ry
+            if (nx * nx + ny * ny > 1.0) { return true }
+        }
+        return false
     }
 
     private fun blit(): HostFunction = HostFunction { instance, args ->
@@ -210,8 +236,8 @@ class Wasm4Host(
         val x = args[1].toInt()
         val y = args[2].toInt()
         val memory = instance.memory()
-        val textContent = memory.readUtf8(stringAddress)
-        traceOutput.append("[text@($x,$y): $textContent]")
+        val textBytes = readNullTerminatedBytes(memory, stringAddress)
+        drawText(instance, textBytes, x, y)
         longArrayOf()
     }
 
@@ -255,6 +281,9 @@ class Wasm4Host(
         val byteLength = args[1].toInt()
         val x = args[2].toInt()
         val y = args[3].toInt()
+        val memory = instance.memory()
+        val textBytes = memory.readBytes(stringAddress, byteLength)
+        drawText(instance, textBytes, x, y)
         longArrayOf()
     }
 
@@ -264,6 +293,58 @@ class Wasm4Host(
         val x = args[2].toInt()
         val y = args[3].toInt()
         longArrayOf()
+    }
+
+    private fun drawText(instance: WarkInstance, textBytes: ByteArray, startX: Int, startY: Int) {
+        val drawColors = readDrawColors(instance)
+        val foreground = drawColors and 0x0F
+        val background = (drawColors shr 4) and 0x0F
+        var cursorX = startX
+        var cursorY = startY
+
+        for (rawByte in textBytes) {
+            val charCode = rawByte.toInt() and 0xFF
+            if (charCode == 0x0A) {
+                cursorX = startX
+                cursorY += Wasm4Font.GLYPH_SIZE
+                continue
+            }
+            val glyphIndex = charCode - Wasm4Font.FIRST_CHAR
+            if (glyphIndex < 0 || glyphIndex >= Wasm4Font.GLYPH_COUNT) { continue }
+            drawGlyph(instance, glyphIndex, cursorX, cursorY, foreground, background)
+            cursorX += Wasm4Font.GLYPH_SIZE
+        }
+    }
+
+    private fun drawGlyph(
+        instance: WarkInstance, glyphIndex: Int,
+        x: Int, y: Int, foreground: Int, background: Int,
+    ) {
+        val offset = glyphIndex * Wasm4Font.GLYPH_SIZE
+        for (row in 0 until Wasm4Font.GLYPH_SIZE) {
+            val rowBits = Wasm4Font.data[offset + row].toInt() and 0xFF
+            for (col in 0 until Wasm4Font.GLYPH_SIZE) {
+                val isForeground = (rowBits shr (7 - col)) and 1 == 0
+                if (isForeground) {
+                    if (foreground != 0) {
+                        setPixelInMemory(instance, x + col, y + row, (foreground - 1) and 0x03)
+                    }
+                } else {
+                    if (background != 0) {
+                        setPixelInMemory(instance, x + col, y + row, (background - 1) and 0x03)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun readNullTerminatedBytes(memory: org.wark.WarkMemory, address: Int): ByteArray {
+        var end = address
+        while (memory.readByte(end) != 0.toByte()) {
+            end++
+        }
+        if (end == address) { return ByteArray(0) }
+        return memory.readBytes(address, end - address)
     }
 
     private fun blitImpl(
@@ -312,9 +393,7 @@ class Wasm4Host(
         }
     }
 
-    private fun readDrawColors(instance: WarkInstance): Int {
-        return instance.memory().readI32(DRAW_COLORS_ADDRESS) and 0xFFFF
-    }
+    private fun readDrawColors(instance: WarkInstance): Int = instance.memory().readI32(DRAW_COLORS_ADDRESS) and 0xFFFF
 
     private fun setPixelInMemory(instance: WarkInstance, x: Int, y: Int, color: Int) {
         if (x < 0 || x >= SCREEN_SIZE || y < 0 || y >= SCREEN_SIZE) { return }

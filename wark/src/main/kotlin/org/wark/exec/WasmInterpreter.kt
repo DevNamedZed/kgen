@@ -175,7 +175,8 @@ class WasmInterpreter(
 
         val controlStack = mutableListOf<ControlFrame>()
         val functionEndPc = instructions.indexOfLast { it.opcode == WasmOpCode.END }
-        controlStack.add(ControlFrame(ControlKind.BLOCK, if (functionEndPc >= 0) { functionEndPc } else { instructions.size }, 0))
+        val functionHasResult = frame.funcType.results.isNotEmpty()
+        controlStack.add(ControlFrame(ControlKind.BLOCK, if (functionEndPc >= 0) { functionEndPc } else { instructions.size }, 0, functionHasResult))
 
         while (programCounter < instructions.size) {
             totalInstructions++
@@ -646,45 +647,57 @@ class WasmInterpreter(
                 WasmOpCode.BLOCK -> {
                     val openPc = programCounter - 1
                     val endPc = blockStructure.endMap[openPc]
-                    controlStack.add(ControlFrame(ControlKind.BLOCK, endPc + 1, stack.size))
+                    val hasResult = blockHasResult(instruction)
+                    controlStack.add(ControlFrame(ControlKind.BLOCK, endPc + 1, stack.size, hasResult))
                 }
                 WasmOpCode.LOOP -> {
-                    controlStack.add(ControlFrame(ControlKind.LOOP, programCounter, stack.size))
+                    val hasResult = blockHasResult(instruction)
+                    controlStack.add(ControlFrame(ControlKind.LOOP, programCounter, stack.size, hasResult))
                 }
                 WasmOpCode.IF -> {
                     val condition = stack.removeLast().toInt()
                     val openPc = programCounter - 1
                     val endPc = blockStructure.endMap[openPc]
                     val elsePc = blockStructure.elseMap[openPc]
+                    val hasResult = blockHasResult(instruction)
                     if (condition == 0) {
                         if (elsePc >= 0) {
                             programCounter = elsePc
-                            controlStack.add(ControlFrame(ControlKind.IF, endPc + 1, stack.size))
+                            controlStack.add(ControlFrame(ControlKind.IF, endPc + 1, stack.size, hasResult))
                         } else {
                             programCounter = endPc + 1
-                            // No else branch, skipping past END — don't push frame
                         }
                     } else {
-                        controlStack.add(ControlFrame(ControlKind.IF, endPc + 1, stack.size))
+                        controlStack.add(ControlFrame(ControlKind.IF, endPc + 1, stack.size, hasResult))
                     }
                 }
                 WasmOpCode.ELSE -> {
                     val ifFrame = controlStack.last()
                     val savedStackHeight = ifFrame.stackHeight
                     controlStack.removeAt(controlStack.size - 1)
-                    // True branch → jump past end. Keep one result value if the block is typed.
-                    val result = if (stack.size > savedStackHeight) { stack.removeLast() } else { null }
-                    while (stack.size > savedStackHeight) {
-                        stack.removeLast()
-                    }
-                    if (result != null) {
+                    if (ifFrame.hasResult) {
+                        val result = if (stack.size > savedStackHeight) { stack.removeLast() } else { 0L }
+                        while (stack.size > savedStackHeight) {
+                            stack.removeLast()
+                        }
                         stack.addLast(result)
+                    } else {
+                        while (stack.size > savedStackHeight) {
+                            stack.removeLast()
+                        }
                     }
                     programCounter = ifFrame.targetPc
                 }
                 WasmOpCode.END -> {
                     if (controlStack.isNotEmpty()) {
-                        controlStack.removeAt(controlStack.size - 1)
+                        val frame = controlStack.removeAt(controlStack.size - 1)
+                        if (frame.hasResult) {
+                            val result = if (stack.size > frame.stackHeight) { stack.removeLast() } else { 0L }
+                            while (stack.size > frame.stackHeight) {
+                                stack.removeLast()
+                            }
+                            stack.addLast(result)
+                        }
                     }
                 }
                 WasmOpCode.BR -> {
@@ -768,17 +781,13 @@ class WasmInterpreter(
         val targetIndex = controlStack.size - 1 - depth
         val target = controlStack[targetIndex]
 
-        // For non-loop blocks: unwind stack to entry height, preserving top value as result
-        if (target.kind != ControlKind.LOOP) {
-            val result = if (stack.size > target.stackHeight) { stack.removeLast() } else { null }
+        if (target.kind != ControlKind.LOOP && target.hasResult) {
+            val result = if (stack.size > target.stackHeight) { stack.removeLast() } else { 0L }
             while (stack.size > target.stackHeight) {
                 stack.removeLast()
             }
-            if (result != null) {
-                stack.addLast(result)
-            }
+            stack.addLast(result)
         } else {
-            // For loop: unwind to entry height (loop doesn't produce results on br)
             while (stack.size > target.stackHeight) {
                 stack.removeLast()
             }
@@ -794,6 +803,11 @@ class WasmInterpreter(
             controlStack.removeAt(controlStack.size - 1)
             return target.targetPc
         }
+    }
+
+    private fun blockHasResult(instruction: WasmInstruction): Boolean {
+        val blockType = instruction.operands as? Operands.BlockType ?: return false
+        return blockType.type != -64
     }
 
     private fun getBlockStructure(localIndex: Int, instructions: List<WasmInstruction>): BlockStructure = blockStructureCache.getOrPut(localIndex) {
@@ -939,6 +953,7 @@ class ControlFrame(
     val kind: ControlKind,
     val targetPc: Int,
     val stackHeight: Int,
+    val hasResult: Boolean = false,
 )
 
 class BlockStructure(

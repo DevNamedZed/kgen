@@ -29,12 +29,13 @@ class BlockTranslator : InstructionTranslator {
 
             WasmOpCode.LOOP -> {
                 val headerLabel = context.freshLabel("loop_header")
+                val resultCount = blockResultCount(instruction)
                 context.stack.save()
                 builder.br(headerLabel)
                 builder.appendBlock(headerLabel)
                 context.currentBlockLabel = headerLabel
                 context.emitBlockTrace()
-                controlStack.push(ControlEntry(ControlKind.LOOP, headerLabel, resultCount = 0))
+                controlStack.push(ControlEntry(ControlKind.LOOP, headerLabel, resultCount = resultCount, resultType = blockResultType(instruction)))
             }
 
             WasmOpCode.IF -> {
@@ -89,7 +90,17 @@ class BlockTranslator : InstructionTranslator {
                         emitPhiResults(context, entry)
                     }
                     ControlKind.LOOP -> {
-                        context.stack.restore(entry.resultCount)
+                        if (entry.resultCount > 0) {
+                            recordResultsForEntry(context, entry)
+                            context.stack.restore(entry.resultCount)
+                            val endLabel = context.freshLabel("loop_end")
+                            builder.br(endLabel)
+                            builder.appendBlock(endLabel)
+                            context.currentBlockLabel = endLabel
+                            emitPhiResults(context, entry)
+                        } else {
+                            context.stack.restore(entry.resultCount)
+                        }
                     }
                     ControlKind.IF -> {
                         recordResultsForEntry(context, entry)
@@ -115,10 +126,18 @@ class BlockTranslator : InstructionTranslator {
 
             WasmOpCode.BR -> {
                 val depth = (instruction.operands as Operands.Index).value
-                val entry = controlStack.entryAt(depth)
-                recordBranchResults(context, entry)
-                val target = controlStack.targetAt(depth)
-                builder.br(target)
+                if (depth >= controlStack.size()) {
+                    if (context.stack.isEmpty()) {
+                        builder.ret()
+                    } else {
+                        builder.ret(context.stack.pop())
+                    }
+                } else {
+                    val entry = controlStack.entryAt(depth)
+                    recordBranchResults(context, entry)
+                    val target = controlStack.targetAt(depth)
+                    builder.br(target)
+                }
                 val unreachableLabel = context.freshLabel("unreachable")
                 builder.appendBlock(unreachableLabel)
                 context.currentBlockLabel = unreachableLabel
@@ -154,21 +173,37 @@ class BlockTranslator : InstructionTranslator {
                 val index = context.stack.pop()
 
                 for ((tableIndex, depth) in operands.labels.withIndex()) {
-                    val entry = controlStack.entryAt(depth)
-                    recordBranchResults(context, entry)
-                    val target = controlStack.targetAt(depth)
-                    val nextLabel = context.freshLabel("br_table_next_$tableIndex")
-                    val cmp = builder.icmp(ICmpPredicate.EQ, index, Constant.I32(tableIndex))
-                    builder.condBr(cmp, target, nextLabel)
-                    builder.appendBlock(nextLabel)
-                    context.currentBlockLabel = nextLabel
-                    context.emitBlockTrace()
+                    if (depth >= controlStack.size()) {
+                        val retLabel = context.freshLabel("br_table_ret_$tableIndex")
+                        val nextLabel = context.freshLabel("br_table_next_$tableIndex")
+                        val cmp = builder.icmp(ICmpPredicate.EQ, index, Constant.I32(tableIndex))
+                        builder.condBr(cmp, retLabel, nextLabel)
+                        builder.appendBlock(retLabel)
+                        if (context.stack.isEmpty()) { builder.ret() } else { builder.ret(context.stack.peek()) }
+                        builder.appendBlock(nextLabel)
+                        context.currentBlockLabel = nextLabel
+                        context.emitBlockTrace()
+                    } else {
+                        val entry = controlStack.entryAt(depth)
+                        recordBranchResults(context, entry)
+                        val target = controlStack.targetAt(depth)
+                        val nextLabel = context.freshLabel("br_table_next_$tableIndex")
+                        val cmp = builder.icmp(ICmpPredicate.EQ, index, Constant.I32(tableIndex))
+                        builder.condBr(cmp, target, nextLabel)
+                        builder.appendBlock(nextLabel)
+                        context.currentBlockLabel = nextLabel
+                        context.emitBlockTrace()
+                    }
                 }
 
-                val defaultEntry = controlStack.entryAt(operands.default)
-                recordBranchResults(context, defaultEntry)
-                val defaultTarget = controlStack.targetAt(operands.default)
-                builder.br(defaultTarget)
+                if (operands.default >= controlStack.size()) {
+                    if (context.stack.isEmpty()) { builder.ret() } else { builder.ret(context.stack.peek()) }
+                } else {
+                    val defaultEntry = controlStack.entryAt(operands.default)
+                    recordBranchResults(context, defaultEntry)
+                    val defaultTarget = controlStack.targetAt(operands.default)
+                    builder.br(defaultTarget)
+                }
                 val unreachableLabel = context.freshLabel("br_table_unreachable")
                 builder.appendBlock(unreachableLabel)
                 context.currentBlockLabel = unreachableLabel
@@ -256,6 +291,7 @@ class ControlStack {
     fun pop(): ControlEntry = entries.removeLast()
     fun peek(): ControlEntry = entries.last()
     fun isEmpty(): Boolean = entries.isEmpty()
+    fun size(): Int = entries.size
 
     fun entryAt(depth: Int): ControlEntry {
         val index = entries.size - 1 - depth

@@ -429,4 +429,198 @@ class SpillSlotAliasingTest {
         assertEquals(570L, engine.call("f", contextMemory.address(), 1))
         arena.close()
     }
+
+    /**
+     * Snake crash pattern: load a value from memory, store it to another address,
+     * then use a DIFFERENT value (local/param) for the next memory access.
+     * The allocator must not confuse the loaded value with the local.
+     *
+     * Sequence: load palette → store palette → write draw_colors → load from gamePtr
+     * The gamePtr must survive the store and draw_colors write.
+     */
+    @Test
+    fun loadStoreThenReuseLocal() {
+        val module = buildModule {
+            val params = createFunction("f", listOf(
+                Param("ctx", Type.I64),
+                Param("gamePtr", Type.I32),
+            ), Type.I32)
+            appendBlock("entry")
+
+            // Load memory base from context
+            val memBase = load(Type.I64, params[0])
+
+            // Load palette value from addr 4: palette = mem[4]
+            val paletteAddr = add(memBase, Constant.I64(4))
+            val paletteValue = load(Type.I32, paletteAddr)
+
+            // Store palette to a different location: mem[100] = palette
+            val storeAddr = add(memBase, Constant.I64(100))
+            store(paletteValue, storeAddr)
+
+            // Write draw colors constant: mem[20] = 2 (i16 store)
+            val dcAddr = add(memBase, Constant.I64(20))
+            val dcValue = trunc(Constant.I32(2), Type.I16)
+            store(dcValue, dcAddr)
+
+            // Now use gamePtr (the parameter) for a load — this is where the bug hits
+            // gamePtr must NOT have been overwritten by paletteValue's register
+            val memBase2 = load(Type.I64, params[0])
+            val gameAddr = add(memBase2, zext(params[1], Type.I64))
+            val gameValue = load(Type.I32, gameAddr)
+
+            ret(gameValue)
+            finalizeFunction()
+        }
+        val engine = JitEngine(X86CodeGenerator())
+        engine.addModule(module)
+
+        val arena = java.lang.foreign.Arena.ofShared()
+        val memory = arena.allocate(1024, 8)
+        val contextMem = arena.allocate(8, 8)
+        contextMem.set(java.lang.foreign.ValueLayout.JAVA_LONG, 0, memory.address())
+
+        // Set palette at addr 4
+        memory.set(java.lang.foreign.ValueLayout.JAVA_INT, 4, 0x00e0f8cf.toInt())
+        // Set game value at addr 200
+        memory.set(java.lang.foreign.ValueLayout.JAVA_INT, 200, 42)
+
+        // gamePtr=200, should return mem[200]=42, NOT palette value
+        val result = engine.call("f", contextMem.address(), 200L)
+        assertEquals(42L, result, "Should load from gamePtr=200, not from palette address")
+        arena.close()
+    }
+
+    /**
+     * Extended snake pattern with more register pressure: 8 memory loads
+     * interleaved with stores, then use params that must survive.
+     */
+    @Test
+    fun manyLoadsStoresThenReuseParams() {
+        val module = buildModule {
+            val params = createFunction("f", listOf(
+                Param("ctx", Type.I64),
+                Param("p1", Type.I32),
+                Param("p2", Type.I32),
+                Param("p3", Type.I32),
+            ), Type.I32)
+            appendBlock("entry")
+
+            val memBase = load(Type.I64, params[0])
+
+            // Load 8 values from sequential addresses
+            val loaded = mutableListOf<Value>()
+            for (index in 0 until 8) {
+                val addr = add(memBase, Constant.I64(index.toLong() * 4))
+                loaded.add(load(Type.I32, addr))
+            }
+
+            // Store first 4 values to different locations
+            for (index in 0 until 4) {
+                val addr = add(memBase, Constant.I64((100 + index * 4).toLong()))
+                store(loaded[index], addr)
+            }
+
+            // Write a constant (like draw_colors)
+            val dcAddr = add(memBase, Constant.I64(20))
+            store(Constant.I32(0x1234), dcAddr)
+
+            // Now use p1, p2, p3 — all must have survived the stores
+            val memBase2 = load(Type.I64, params[0])
+            val addr1 = add(memBase2, zext(params[1], Type.I64))
+            val val1 = load(Type.I32, addr1)
+            val addr2 = add(memBase2, zext(params[2], Type.I64))
+            val val2 = load(Type.I32, addr2)
+            val addr3 = add(memBase2, zext(params[3], Type.I64))
+            val val3 = load(Type.I32, addr3)
+
+            // Also use loaded[4..7] which should have survived
+            var result = add(val1, val2)
+            result = add(result, val3)
+            for (index in 4 until 8) {
+                result = add(result, loaded[index])
+            }
+
+            ret(result)
+            finalizeFunction()
+        }
+        val engine = JitEngine(X86CodeGenerator())
+        engine.addModule(module)
+
+        val arena = java.lang.foreign.Arena.ofShared()
+        val memory = arena.allocate(1024, 8)
+        val contextMem = arena.allocate(8, 8)
+        contextMem.set(java.lang.foreign.ValueLayout.JAVA_LONG, 0, memory.address())
+
+        // Set sequential values at 0-31
+        for (index in 0 until 8) {
+            memory.set(java.lang.foreign.ValueLayout.JAVA_INT, index.toLong() * 4, (index + 1) * 10)
+        }
+        // Set values at p1=200, p2=204, p3=208
+        memory.set(java.lang.foreign.ValueLayout.JAVA_INT, 200, 1000)
+        memory.set(java.lang.foreign.ValueLayout.JAVA_INT, 204, 2000)
+        memory.set(java.lang.foreign.ValueLayout.JAVA_INT, 208, 3000)
+
+        // result = val1(1000) + val2(2000) + val3(3000) + loaded[4](50) + loaded[5](60) + loaded[6](70) + loaded[7](80)
+        // = 6000 + 260 = 6260
+        val result = engine.call("f", contextMem.address(), 200L, 204L, 208L)
+        assertEquals(6260L, result)
+        arena.close()
+    }
+
+    /**
+     * Context indirection with function call in between — the function call
+     * clobbers caller-saved registers. Values loaded BEFORE the call must
+     * survive in callee-saved registers or be reloaded from spills.
+     */
+    @Test
+    fun contextIndirectionAcrossCall() {
+        val module = buildModule {
+            declareFunction("helper", listOf(Param("ctx", Type.I64), Param("x", Type.I32)), Type.I32)
+
+            val helperParams = createFunction("helper", listOf(Param("ctx", Type.I64), Param("x", Type.I32)), Type.I32)
+            appendBlock("entry")
+            ret(add(helperParams[1], Constant.I32(1)))
+            finalizeFunction()
+
+            val params = createFunction("f", listOf(Param("ctx", Type.I64), Param("p0", Type.I32)), Type.I32)
+            appendBlock("entry")
+
+            // Load several values from memory BEFORE the call
+            val memBase = load(Type.I64, params[0])
+            val addr1 = add(memBase, zext(params[1], Type.I64))
+            val val1 = load(Type.I32, addr1)
+            val addr2 = add(memBase, add(zext(params[1], Type.I64), Constant.I64(4)))
+            val val2 = load(Type.I32, addr2)
+            val addr3 = add(memBase, add(zext(params[1], Type.I64), Constant.I64(8)))
+            val val3 = load(Type.I32, addr3)
+
+            // Call helper(ctx, val1) — clobbers caller-saved registers
+            val callResult = call("helper", listOf(params[0], val1), Type.I32)
+
+            // Use val2 and val3 AFTER the call — they must have survived
+            var result = add(callResult!!, val2)
+            result = add(result, val3)
+
+            ret(result)
+            finalizeFunction()
+        }
+        val engine = JitEngine(X86CodeGenerator())
+        engine.addModule(module)
+
+        val arena = java.lang.foreign.Arena.ofShared()
+        val memory = arena.allocate(1024, 8)
+        val contextMem = arena.allocate(8, 8)
+        contextMem.set(java.lang.foreign.ValueLayout.JAVA_LONG, 0, memory.address())
+
+        // At offset 100: values 10, 20, 30
+        memory.set(java.lang.foreign.ValueLayout.JAVA_INT, 100, 10)
+        memory.set(java.lang.foreign.ValueLayout.JAVA_INT, 104, 20)
+        memory.set(java.lang.foreign.ValueLayout.JAVA_INT, 108, 30)
+
+        // helper(ctx, 10) = 11, result = 11 + 20 + 30 = 61
+        val result = engine.call("f", contextMem.address(), 100L)
+        assertEquals(61L, result)
+        arena.close()
+    }
 }

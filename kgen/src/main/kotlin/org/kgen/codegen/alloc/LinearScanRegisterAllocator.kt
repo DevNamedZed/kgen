@@ -71,6 +71,7 @@ class LinearScanRegisterAllocator : RegisterAllocator {
             initializeFreeLists()
             assignParameters()
             allocateIntervals()
+            verifyNoRegisterConflicts()
             return RegisterAssignment(
                 locations = locations,
                 spillSlots = spillPool.maxSlots,
@@ -78,6 +79,28 @@ class LinearScanRegisterAllocator : RegisterAllocator {
                 paramMoves = paramMoves,
                 splitPoints = splitPoints,
             )
+        }
+
+        private fun verifyNoRegisterConflicts() {
+            val regIntervals = mutableMapOf<PhysicalRegister, MutableList<LiveInterval>>()
+            for ((name, loc) in locations) {
+                val reg = when (loc) {
+                    is ValueLocation.Register -> loc.reg
+                    else -> continue
+                }
+                val interval = intervals.firstOrNull { it.name == name } ?: continue
+                regIntervals.getOrPut(reg) { mutableListOf() }.add(interval)
+            }
+            for ((reg, ivs) in regIntervals) {
+                val sorted = ivs.sortedBy { it.start }
+                for (index in 0 until sorted.size - 1) {
+                    val current = sorted[index]
+                    val next = sorted[index + 1]
+                    if (current.end >= next.start) {
+                        System.err.println("[ALLOC CONFLICT] ${reg.name}: ${current.name}[${current.start}..${current.end}] overlaps ${next.name}[${next.start}..${next.end}] in ${fn.name}")
+                    }
+                }
+            }
         }
 
         private fun initializeFreeLists() {
@@ -268,8 +291,8 @@ class LinearScanRegisterAllocator : RegisterAllocator {
             private set
 
         fun acquire(): Int {
-            return if (freeSlots.isNotEmpty()) freeSlots.removeFirst()
-            else ++maxSlots
+            return if (freeSlots.isNotEmpty()) { freeSlots.removeFirst() }
+            else { ++maxSlots }
         }
 
         fun release(slot: Int) {

@@ -45,11 +45,22 @@ class Wasm4Runner private constructor(
 
     fun update() {
         val inst = instance ?: throw WasmTrap("Not started")
+        val memory = inst.memory()
+        val systemFlags = memory.readByte(Wasm4Host.SYSTEM_FLAGS_ADDRESS).toInt() and 0xFF
+        val preserveFramebuffer = (systemFlags and 0x01) != 0
+        if (!preserveFramebuffer) {
+            clearFramebuffer(memory)
+        }
         if (inst.exportedFunctions().contains("update")) {
             inst.call("update")
         }
         host.readFramebuffer(inst)
         frameCount++
+    }
+
+    private fun clearFramebuffer(memory: org.wark.WarkMemory) {
+        val framebufferSize = Wasm4Host.SCREEN_SIZE * Wasm4Host.SCREEN_SIZE / 4
+        memory.writeBytes(Wasm4Host.FRAMEBUFFER_ADDRESS, ByteArray(framebufferSize))
     }
 
     fun setGamepad(buttons: Int) {

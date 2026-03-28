@@ -8,7 +8,6 @@ import org.wark.WasmTarget
 import org.wark.WasmTrap
 import java.nio.file.Files
 import java.nio.file.Path
-import kotlin.test.fail
 
 class SnakeInterpTraceTest {
 

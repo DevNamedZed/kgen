@@ -10,6 +10,8 @@ import org.kgen.target.wasm.disasm.WasmInstruction
 import org.kgen.target.wasm.module.WasmModule
 import org.wark.compile.translate.ArithmeticTranslator
 import org.wark.compile.translate.BlockTranslator
+import org.wark.compile.translate.ControlEntry
+import org.wark.compile.translate.ControlKind
 import org.wark.compile.translate.ControlFlowTranslator
 import org.wark.compile.translate.ControlStack
 import org.wark.compile.translate.GlobalTranslator

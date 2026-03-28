@@ -147,6 +147,13 @@ data class RegisterAssignment(
     val paramMoves: Map<String, Int> = emptyMap(),
     /** Split points where values need save/reload around clobber instructions. */
     val splitPoints: List<SplitPoint> = emptyList(),
+    /**
+     * Backup spill slots for register-allocated values. Every value in a register
+     * also gets a spill slot. The codegen stores to this slot at definition time.
+     * If the register is later freed and reused, the allocator can change the
+     * location to Spill and the value can be reloaded from the backup.
+     */
+    val backupSpills: Map<String, Int> = emptyMap(),
 )
 
 /**

@@ -20,6 +20,7 @@ data class AllocResult(
     val usedCalleeRegs32: Set<X86Register32>,
     val paramMoves: Map<String, Int> = emptyMap(),
     val intervals: List<org.kgen.codegen.alloc.LiveInterval> = emptyList(),
+    val backupSpills: Map<String, Int> = emptyMap(),
 )
 
 class LinearScanAllocator(
@@ -332,6 +333,10 @@ class LinearScanAllocator(
         // This prevents the pool from reusing a slot while another value
         // whose liveness overlaps has been eagerly stored there.
         val slotReservations = mutableListOf<Triple<Int, Int, Int>>() // (slot, start, end)
+        val backupSpills = mutableMapOf<String, Int>()
+
+
+
 
         fun spillToPool(interval: LiveInterval): Location.Spill {
             val reserveStart = if (interval.isPhi) { 1 } else { interval.start }
@@ -445,6 +450,7 @@ class LinearScanAllocator(
                     if (reg != null) {
                         allocate64(reg)
                         locations[interval.name] = Location.Reg64(reg)
+
                         active64.add(interval to reg)
                         if (reg in calleeSaved64) usedCallee64.add(reg)
                     } else {
@@ -462,7 +468,9 @@ class LinearScanAllocator(
                             val (evictedIv, evictedReg) = evicted
                             active64.remove(evicted)
                             locations[evictedIv.name] = spillToPool(evictedIv)
+
                             locations[interval.name] = Location.Reg64(evictedReg)
+    
                             active64.add(interval to evictedReg)
                             if (evictedReg in calleeSaved64) usedCallee64.add(evictedReg)
                         } else {
@@ -473,8 +481,10 @@ class LinearScanAllocator(
                 interval.type == Type.I32 || interval.type == Type.I16 || interval.type == Type.I8 || interval.type == Type.I1 -> {
                     val reg = pickBestReg32(free32, interval, hints, locations)
                     if (reg != null) {
+
                         allocate32(reg)
                         locations[interval.name] = Location.Reg32(reg)
+
                         active32.add(interval to reg)
                         if (reg in calleeSaved32) {
                             usedCallee32.add(reg)
@@ -491,7 +501,9 @@ class LinearScanAllocator(
                             val (evictedIv, evictedReg) = evicted
                             active32.remove(evicted)
                             locations[evictedIv.name] = spillToPool(evictedIv)
+
                             locations[interval.name] = Location.Reg32(evictedReg)
+    
                             active32.add(interval to evictedReg)
                             if (evictedReg in calleeSaved32) {
                                 usedCallee32.add(evictedReg)
@@ -523,6 +535,7 @@ class LinearScanAllocator(
             usedCalleeRegs32 = usedCallee32,
             paramMoves = paramMoves,
             intervals = intervals,
+            backupSpills = backupSpills,
         )
     }
 

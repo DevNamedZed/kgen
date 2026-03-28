@@ -17,6 +17,9 @@ object Wasm4SdlRunner {
     private const val SDL_QUIT_EVENT = 0x100
     private const val SDL_KEYDOWN = 0x300
     private const val SDL_KEYUP = 0x301
+    private const val SDL_MOUSEMOTION = 0x400
+    private const val SDL_MOUSEBUTTONDOWN = 0x401
+    private const val SDL_MOUSEBUTTONUP = 0x402
 
     private var sdlWindow = 0L
     private var sdlRenderer = 0L
@@ -34,7 +37,11 @@ object Wasm4SdlRunner {
     )
 
     private var gamepadState = 0
+    private var mouseState = MouseState(0, 0, 0)
     private var frameCount = 0
+
+    private data class MouseState(val x: Int, val y: Int, val buttons: Int)
+    private val pixelBuffer = arena.allocate((WINDOW_SIZE * WINDOW_SIZE * 4).toLong())
 
     @JvmStatic
     fun main(args: Array<String>) {
@@ -138,7 +145,7 @@ object Wasm4SdlRunner {
             while (pollEvent(eventBuffer)) {
                 val eventType = eventBuffer.get(JAVA_INT, 0)
                 if (frameCount < 3) {
-                    System.err.println("[EVENT] type=$eventType")
+                    System.err.println("[EVENT] type=$eventType (0x${Integer.toHexString(eventType)})")
                 }
                 when (eventType) {
                     SDL_QUIT_EVENT -> { running = false }
@@ -149,12 +156,29 @@ object Wasm4SdlRunner {
                     }
                     SDL_KEYUP -> {
                         val scancode = eventBuffer.get(JAVA_INT, 16)
+                        System.err.println("[KEY] UP scancode=$scancode")
                         handleKey(scancode, false)
+                    }
+                    SDL_MOUSEMOTION -> {
+                        val mouseX = eventBuffer.get(JAVA_INT, 20)
+                        val mouseY = eventBuffer.get(JAVA_INT, 24)
+                        mouseState = mouseState.copy(x = mouseX / SCALE, y = mouseY / SCALE)
+                    }
+                    SDL_MOUSEBUTTONDOWN -> {
+                        val button = eventBuffer.get(ValueLayout.JAVA_BYTE, 16).toInt() and 0xFF
+                        if (button == 1) { mouseState = mouseState.copy(buttons = mouseState.buttons or 0x01) }
+                        if (button == 3) { mouseState = mouseState.copy(buttons = mouseState.buttons or 0x02) }
+                    }
+                    SDL_MOUSEBUTTONUP -> {
+                        val button = eventBuffer.get(ValueLayout.JAVA_BYTE, 16).toInt() and 0xFF
+                        if (button == 1) { mouseState = mouseState.copy(buttons = mouseState.buttons and 0x01.inv()) }
+                        if (button == 3) { mouseState = mouseState.copy(buttons = mouseState.buttons and 0x02.inv()) }
                     }
                 }
             }
 
             runner.setGamepad(gamepadState)
+            runner.setMouse(mouseState.x, mouseState.y, mouseState.buttons)
             if (gamepadState != 0 && frameCount < 5) {
                 System.err.println("[INPUT] gamepad=0x${gamepadState.toString(16)}")
             }
@@ -185,14 +209,14 @@ object Wasm4SdlRunner {
 
     private fun handleKey(scancode: Int, down: Boolean) {
         val button = when (scancode) {
-            82 -> 0x40   // Up arrow → DPAD_UP
-            81 -> 0x80   // Down arrow → DPAD_DOWN
-            80 -> 0x10   // Left arrow → DPAD_LEFT
-            79 -> 0x20   // Right arrow → DPAD_RIGHT
-            27 -> 0x01   // X → BUTTON_1
-            29 -> 0x02   // Z → BUTTON_2
-            40 -> 0x01   // Enter → BUTTON_1
-            44 -> 0x02   // Space → BUTTON_2
+            82 -> 0x40 // Up arrow → DPAD_UP
+            81 -> 0x80 // Down arrow → DPAD_DOWN
+            80 -> 0x10 // Left arrow → DPAD_LEFT
+            79 -> 0x20 // Right arrow → DPAD_RIGHT
+            27 -> 0x01 // X → BUTTON_1
+            29 -> 0x02 // Z → BUTTON_2
+            40 -> 0x01 // Enter → BUTTON_1
+            44 -> 0x02 // Space → BUTTON_2
             else -> 0
         }
         if (button != 0) {
@@ -207,7 +231,7 @@ object Wasm4SdlRunner {
     private fun renderFrame(runner: Wasm4Runner) {
         if (sdlTexture == 0L) { return }
 
-        val pixels = arena.allocate((WINDOW_SIZE * WINDOW_SIZE * 4).toLong())
+        val pixels = pixelBuffer
         for (y in 0 until Wasm4Host.SCREEN_SIZE) {
             for (x in 0 until Wasm4Host.SCREEN_SIZE) {
                 val colorIndex = runner.getPixel(x, y)
@@ -237,6 +261,9 @@ object Wasm4SdlRunner {
         callSdl("SDL_RenderPresent",
             FunctionDescriptor.ofVoid(ADDRESS),
             MemorySegment.ofAddress(sdlRenderer).reinterpret(1))
+        if (frameCount < 5) {
+            System.err.println("[RENDER] frame=$frameCount presented")
+        }
     }
 
     private fun initSdl(title: String) {
@@ -246,19 +273,19 @@ object Wasm4SdlRunner {
             FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT, JAVA_INT, JAVA_INT, JAVA_INT, JAVA_INT),
             titleSeg, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
             WINDOW_SIZE, WINDOW_SIZE, SDL_WINDOW_SHOWN) as MemorySegment).address()
+        val windowSeg = MemorySegment.ofAddress(sdlWindow).reinterpret(1)
+        callSdl("SDL_RaiseWindow", FunctionDescriptor.ofVoid(ADDRESS), windowSeg)
         sdlRenderer = (callSdl("SDL_CreateRenderer",
             FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT, JAVA_INT),
-            MemorySegment.ofAddress(sdlWindow).reinterpret(1), -1, 0) as MemorySegment).address()
+            windowSeg, -1, 0) as MemorySegment).address()
         sdlTexture = (callSdl("SDL_CreateTexture",
             FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT, JAVA_INT, JAVA_INT, JAVA_INT),
             MemorySegment.ofAddress(sdlRenderer).reinterpret(1),
             0x16362004, 0, WINDOW_SIZE, WINDOW_SIZE) as MemorySegment).address()
     }
 
-    private fun pollEvent(eventBuffer: MemorySegment): Boolean {
-        return (callSdl("SDL_PollEvent",
-            FunctionDescriptor.of(JAVA_INT, ADDRESS), eventBuffer) as Int) != 0
-    }
+    private fun pollEvent(eventBuffer: MemorySegment): Boolean = (callSdl("SDL_PollEvent",
+        FunctionDescriptor.of(JAVA_INT, ADDRESS), eventBuffer) as Int) != 0
 
     private fun sdlDelay(ms: Int) {
         callSdl("SDL_Delay", FunctionDescriptor.ofVoid(JAVA_INT), ms)

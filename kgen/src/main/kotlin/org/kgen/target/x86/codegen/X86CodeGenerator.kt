@@ -1183,6 +1183,19 @@ class X86CodeGenerator : CodeGenerator {
 
         private fun isSpilled(name: String): Boolean = alloc.locations[name] is Location.Spill
 
+        private fun spillAndBackup(name: String, reg32: X86Register32? = null, reg64: X86Register64? = null) {
+            if (isSpilled(name)) {
+                storeTo(name, reg64 = reg64, reg32 = reg32)
+            }
+            val backupOffset = alloc.backupSpills[name] ?: return
+            if (alloc.locations[name] is Location.Spill) { return }
+            if (reg64 != null) {
+                emitStoreToStack64(reg64, backupOffset)
+            } else if (reg32 != null) {
+                emitStoreToStack32(reg32, backupOffset)
+            }
+        }
+
         private fun getDestXmm(name: String): X86Xmm {
             return when (val loc = alloc.locations[name]) {
                 is Location.RegXmm -> loc.reg
@@ -4227,6 +4240,16 @@ class X86CodeGenerator : CodeGenerator {
             if (moves.size <= 1) {
                 for ((dest, value) in moves) emitSinglePhiCopy(dest, value)
                 return
+            }
+
+            if (moves.size >= 4 && targetBlockLabel.contains("loop_header")) {
+                System.err.println("[PHI] $currentBlockLabel → $targetBlockLabel: ${moves.size} moves")
+                for ((dest, value) in moves) {
+                    val destLoc = alloc.locations[dest.name]
+                    val srcName = (value as? InstructionRef)?.name ?: (value as? Parameter)?.name ?: value.toString()
+                    val srcLoc = if (value is InstructionRef || value is Parameter) { alloc.locations[srcName] } else { null }
+                    System.err.println("[PHI]   ${dest.name}($destLoc) ← $srcName($srcLoc)")
+                }
             }
 
             // Parallel move algorithm: topological emit + scratch register for cycles.
