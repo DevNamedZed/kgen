@@ -350,7 +350,7 @@ class WasmToIrCompiler(
 
             if (deadDepth > 0) {
                 when (opcode) {
-                    WasmOpCode.BLOCK, WasmOpCode.LOOP, WasmOpCode.IF -> deadDepth++
+                    WasmOpCode.BLOCK, WasmOpCode.LOOP, WasmOpCode.IF, WasmOpCode.TRY -> deadDepth++
                     WasmOpCode.END -> {
                         deadDepth--
                         if (deadDepth == 0) {
@@ -358,9 +358,16 @@ class WasmToIrCompiler(
                             translator?.translate(context, instruction)
                         }
                     }
-                    WasmOpCode.ELSE -> {
+                    WasmOpCode.ELSE, WasmOpCode.CATCH, WasmOpCode.CATCH_ALL -> {
                         if (deadDepth == 1) {
                             deadDepth = 0
+                            val translator = translators.firstOrNull { it.canHandle(opcode) }
+                            translator?.translate(context, instruction)
+                        }
+                    }
+                    WasmOpCode.DELEGATE -> {
+                        deadDepth--
+                        if (deadDepth == 0) {
                             val translator = translators.firstOrNull { it.canHandle(opcode) }
                             translator?.translate(context, instruction)
                         }
@@ -380,7 +387,7 @@ class WasmToIrCompiler(
                 throw IllegalStateException("at instruction '${instruction.text()}' (offset ${instruction.offset}): ${exception.message}", exception)
             }
 
-            if (opcode == WasmOpCode.BR || opcode == WasmOpCode.BR_TABLE || opcode == WasmOpCode.RETURN || opcode == WasmOpCode.UNREACHABLE) {
+            if (opcode == WasmOpCode.BR || opcode == WasmOpCode.BR_TABLE || opcode == WasmOpCode.RETURN || opcode == WasmOpCode.UNREACHABLE || opcode == WasmOpCode.THROW || opcode == WasmOpCode.RETHROW) {
                 deadDepth = 1
             }
         }
@@ -574,6 +581,7 @@ class CompilationContext(
         builder.appendBlock(okLabel)
     }
 
+    var tryDepth = 0
     val localTypes: MutableList<Type> = mutableListOf()
 
     fun localType(index: Int): Type {

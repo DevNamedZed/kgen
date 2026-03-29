@@ -62,6 +62,13 @@ class WarkInstance(
 
     fun contextAddress(): Long = contextSegment.address()
 
+    fun setExceptionState(tagIndex: Int, value0: Long, value1: Long) {
+        contextSegment.set(java.lang.foreign.ValueLayout.JAVA_INT, RuntimeContextLayout.EXC_PENDING, 1)
+        contextSegment.set(java.lang.foreign.ValueLayout.JAVA_INT, RuntimeContextLayout.EXC_TAG, tagIndex)
+        contextSegment.set(java.lang.foreign.ValueLayout.JAVA_LONG, RuntimeContextLayout.EXC_VALUES, value0)
+        contextSegment.set(java.lang.foreign.ValueLayout.JAVA_LONG, RuntimeContextLayout.EXC_VALUES + 8, value1)
+    }
+
     /**
      * Call an exported function by name.
      */
@@ -201,6 +208,7 @@ class WarkInstance(
                 }
                 is WasmModule.Import.Func -> { }
                 is WasmModule.Import.Table -> { }
+                is WasmModule.Import.Tag -> { }
             }
         }
     }
@@ -364,6 +372,8 @@ class WarkInstance(
 
         lastTrapInstance = this
         val result = handle.invokeWithArguments(typedArgs)
+        // Clear exception pending flag (was used for JIT call chain unwinding)
+        contextSegment.set(java.lang.foreign.ValueLayout.JAVA_INT, RuntimeContextLayout.EXC_PENDING, 0)
         checkPendingTrap()
 
         // Convert return value back to Long
@@ -433,10 +443,8 @@ class WarkInstance(
         runtimeEngine.addModule(irModule)
         engine = runtimeEngine
 
-        // Sync globals from interpreter (start function may have modified them)
-        if (module.wasmModule.start != null) {
-            syncGlobalsToJit(runtimeEngine)
-        }
+        // Sync globals — host may have modified them (e.g., stack pointer relocation)
+        syncGlobalsToJit(runtimeEngine)
 
         // Log unresolved symbols
         val unresolvedSymbols = findUnresolvedSymbols(irModule, runtimeEngine)
@@ -903,9 +911,16 @@ class WarkInstance(
         @JvmStatic
         fun onTrap(functionIndex: Int) {
             pendingTrapFunctionIndex = functionIndex
-            dumpTrapState(functionIndex)
-            // Force JVM exit with the trap info — prevent silent crashes after trap
-            System.err.flush()
+            // Set exception pending so the JIT call chain unwinds properly
+            val instance = lastTrapInstance
+            if (instance != null) {
+                instance.contextSegment.set(
+                    java.lang.foreign.ValueLayout.JAVA_INT,
+                    RuntimeContextLayout.EXC_PENDING, 1)
+                instance.contextSegment.set(
+                    java.lang.foreign.ValueLayout.JAVA_INT,
+                    RuntimeContextLayout.EXC_TAG, -1)
+            }
         }
 
         private fun dumpTrapState(functionIndex: Int) {

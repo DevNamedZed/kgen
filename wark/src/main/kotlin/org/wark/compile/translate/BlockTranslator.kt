@@ -11,6 +11,8 @@ class BlockTranslator : InstructionTranslator {
     private val handled = setOf(
         WasmOpCode.BLOCK, WasmOpCode.LOOP, WasmOpCode.IF, WasmOpCode.ELSE, WasmOpCode.END,
         WasmOpCode.BR, WasmOpCode.BR_IF, WasmOpCode.BR_TABLE,
+        WasmOpCode.TRY, WasmOpCode.CATCH, WasmOpCode.CATCH_ALL,
+        WasmOpCode.THROW, WasmOpCode.RETHROW, WasmOpCode.DELEGATE,
     )
 
     override fun canHandle(opcode: WasmOpCode): Boolean = opcode in handled
@@ -25,6 +27,78 @@ class BlockTranslator : InstructionTranslator {
                 val resultCount = blockResultCount(instruction)
                 context.stack.save()
                 controlStack.push(ControlEntry(ControlKind.BLOCK, endLabel, resultCount = resultCount, resultType = blockResultType(instruction)))
+            }
+
+            WasmOpCode.TRY -> {
+                val endLabel = context.freshLabel("try_end")
+                val catchLabel = context.freshLabel("try_catch")
+                val resultCount = blockResultCount(instruction)
+                context.stack.save()
+                context.tryDepth++
+                controlStack.push(ControlEntry(ControlKind.TRY, endLabel, catchLabel,
+                    resultCount, blockResultType(instruction)))
+            }
+
+            WasmOpCode.CATCH -> {
+                val entry = controlStack.peek()
+                if (entry.kind == ControlKind.TRY) {
+                    val catchLabel = entry.elseLabel ?: context.freshLabel("catch_body")
+                    recordResultsForEntry(context, entry)
+                    context.stack.restore(entry.resultCount)
+                    context.stack.save()
+                    context.tryDepth--
+                    builder.br(entry.label)
+                    builder.appendBlock(catchLabel)
+                    context.currentBlockLabel = catchLabel
+                    entry.elseLabel = null
+
+                    val tagIndex = (instruction.operands as Operands.Index).value
+                    emitExceptionCheck(context, entry, tagIndex)
+                }
+            }
+
+            WasmOpCode.CATCH_ALL -> {
+                val entry = controlStack.peek()
+                if (entry.kind == ControlKind.TRY) {
+                    val catchLabel = entry.elseLabel ?: context.freshLabel("catch_all")
+                    recordResultsForEntry(context, entry)
+                    context.stack.restore(entry.resultCount)
+                    context.stack.save()
+                    context.tryDepth--
+                    builder.br(entry.label)
+                    builder.appendBlock(catchLabel)
+                    context.currentBlockLabel = catchLabel
+                    entry.elseLabel = null
+                    clearExceptionFlag(context)
+                }
+            }
+
+            WasmOpCode.THROW -> {
+                val tagIndex = (instruction.operands as Operands.Index).value
+                emitThrow(context, tagIndex)
+                val unreachableLabel = context.freshLabel("throw_unreachable")
+                builder.appendBlock(unreachableLabel)
+                context.currentBlockLabel = unreachableLabel
+            }
+
+            WasmOpCode.RETHROW -> {
+                builder.ret()
+                val unreachableLabel = context.freshLabel("rethrow_unreachable")
+                builder.appendBlock(unreachableLabel)
+                context.currentBlockLabel = unreachableLabel
+            }
+
+            WasmOpCode.DELEGATE -> {
+                val entry = controlStack.pop()
+                if (entry.kind == ControlKind.TRY) {
+                    context.tryDepth--
+                    recordResultsForEntry(context, entry)
+                    context.stack.restore(entry.resultCount)
+                    builder.br(entry.label)
+                    builder.appendBlock(entry.label)
+                    context.currentBlockLabel = entry.label
+                    emitPhiResults(context, entry)
+                }
             }
 
             WasmOpCode.LOOP -> {
@@ -101,6 +175,18 @@ class BlockTranslator : InstructionTranslator {
                         } else {
                             context.stack.restore(entry.resultCount)
                         }
+                    }
+                    ControlKind.TRY -> {
+                        recordResultsForEntry(context, entry)
+                        context.stack.restore(entry.resultCount)
+                        if (entry.elseLabel != null) {
+                            context.tryDepth--
+                        }
+                        builder.br(entry.label)
+                        builder.appendBlock(entry.label)
+                        context.currentBlockLabel = entry.label
+                        context.emitBlockTrace()
+                        emitPhiResults(context, entry)
                     }
                     ControlKind.IF -> {
                         recordResultsForEntry(context, entry)
@@ -241,6 +327,77 @@ class BlockTranslator : InstructionTranslator {
         }
     }
 
+    private fun emitExceptionCheck(context: CompilationContext, entry: ControlEntry, tagIndex: Int) {
+        val builder = context.builder
+
+        val tagPtr = builder.add(context.contextPointer, Constant.I64(org.wark.RuntimeContextLayout.EXC_TAG))
+        val caughtTag = builder.load(Type.I32, tagPtr)
+        val tagMatch = builder.icmp(ICmpPredicate.EQ, caughtTag, Constant.I32(tagIndex))
+        val matchLabel = context.freshLabel("catch_match")
+        val mismatchLabel = context.freshLabel("catch_mismatch")
+        builder.condBr(tagMatch, matchLabel, mismatchLabel)
+
+        builder.appendBlock(mismatchLabel)
+        builder.ret()
+
+        builder.appendBlock(matchLabel)
+        clearExceptionFlag(context)
+        val tagType = context.wasmModule.imports
+            .filterIsInstance<org.kgen.target.wasm.module.WasmModule.Import.Tag>()
+            .getOrNull(tagIndex)
+        if (tagType != null) {
+            val funcType = context.wasmModule.types[tagType.typeIndex]
+            for (paramIndex in funcType.params.indices) {
+                val offset = org.wark.RuntimeContextLayout.EXC_VALUES + paramIndex * 8L
+                val valuePtr = builder.add(context.contextPointer, Constant.I64(offset))
+                val irType = org.wark.compile.WasmToIrCompiler.wasmTypeToIr(funcType.params[paramIndex])
+                val value = builder.load(Type.I64, valuePtr)
+                val typed = if (irType == Type.I32) {
+                    builder.trunc(value, Type.I32)
+                } else {
+                    value
+                }
+                context.stack.push(typed)
+            }
+        }
+    }
+
+    private fun clearExceptionFlag(context: CompilationContext) {
+        val builder = context.builder
+        val excPtr = builder.add(context.contextPointer, Constant.I64(org.wark.RuntimeContextLayout.EXC_PENDING))
+        builder.store(Constant.I32(0), excPtr)
+    }
+
+    private fun emitThrow(context: CompilationContext, tagIndex: Int) {
+        val builder = context.builder
+        val tagType = context.wasmModule.imports
+            .filterIsInstance<org.kgen.target.wasm.module.WasmModule.Import.Tag>()
+            .getOrNull(tagIndex)
+        if (tagType != null) {
+            val funcType = context.wasmModule.types[tagType.typeIndex]
+            val values = mutableListOf<Value>()
+            for (paramIndex in funcType.params.indices) {
+                values.add(context.stack.pop())
+            }
+            values.reverse()
+            for ((paramIndex, value) in values.withIndex()) {
+                val offset = org.wark.RuntimeContextLayout.EXC_VALUES + paramIndex * 8L
+                val valuePtr = builder.add(context.contextPointer, Constant.I64(offset))
+                val value64 = if (value.type == Type.I32) {
+                    builder.zext(value, Type.I64)
+                } else {
+                    value
+                }
+                builder.store(value64, valuePtr)
+            }
+        }
+        val tagPtr = builder.add(context.contextPointer, Constant.I64(org.wark.RuntimeContextLayout.EXC_TAG))
+        builder.store(Constant.I32(tagIndex), tagPtr)
+        val excPtr = builder.add(context.contextPointer, Constant.I64(org.wark.RuntimeContextLayout.EXC_PENDING))
+        builder.store(Constant.I32(1), excPtr)
+        builder.ret()
+    }
+
     private fun blockResultType(instruction: WasmInstruction): org.kgen.ir.Type {
         val operands = instruction.operands
         if (operands is Operands.BlockType) {
@@ -273,7 +430,7 @@ class BlockTranslator : InstructionTranslator {
     }
 }
 
-enum class ControlKind { BLOCK, LOOP, IF }
+enum class ControlKind { BLOCK, LOOP, IF, TRY }
 
 class ControlEntry(
     val kind: ControlKind,

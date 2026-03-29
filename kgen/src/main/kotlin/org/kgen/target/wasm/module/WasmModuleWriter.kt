@@ -86,6 +86,11 @@ class WasmModuleWriter private constructor(private val module: WasmModule) {
                         s.write(imp.type.code)
                         s.write(if (imp.mutable) 0x01 else 0x00)
                     }
+                    is WasmModule.Import.Tag -> {
+                        s.write(0x04)
+                        s.write(imp.attribute)
+                        writeU32(s, imp.typeIndex)
+                    }
                 }
             }
         }

@@ -211,6 +211,20 @@ fun main() {
 
     traceStream.println("Exports: ${instance.exportedFunctions()}")
 
+    // Dump function prologues (sub rsp sizes) to identify crashing function
+    if (inspector != null) {
+        traceStream.println("\nFunction stack sizes:")
+        val impCount = wasmModule.importedFunctionCount
+        for ((localIdx, _) in wasmModule.functions.withIndex()) {
+            val name = wasmModule.functionName(impCount + localIdx) ?: "func_$localIdx"
+            val funcAsm = inspector.dumpAsm(name)
+            val subRsp = Regex("sub rsp, 0x([0-9a-fA-F]+)").find(funcAsm)
+            val size = if (subRsp != null) { "sub rsp 0x${subRsp.groupValues[1]}" } else { "no sub rsp" }
+            val bytes = Regex("\\(([0-9]+) bytes\\)").find(funcAsm)?.groupValues?.get(1) ?: "?"
+            traceStream.println("  $name: $bytes bytes, $size")
+        }
+    }
+
     // Run interpreter to get expected function calls
     val interpMemory = WarkMemory.create(2, 2)
     interpMemory.writeI32(0x04, 0xe0f8cf.toInt())

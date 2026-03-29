@@ -7,6 +7,7 @@ import org.kgen.target.wasm.WasmOpCode
 import org.kgen.target.wasm.disasm.WasmInstruction
 import org.kgen.target.wasm.disasm.WasmInstruction.Operands
 import org.kgen.target.wasm.module.WasmModule
+import org.kgen.ir.ICmpPredicate
 import org.wark.compile.CompilationContext
 import org.wark.compile.WasmToIrCompiler
 
@@ -167,6 +168,7 @@ class ControlFlowTranslator(
         }
 
         val result: Value? = builder.call(calleeName, args, returnType)
+        emitExceptionPendingCheck(context)
         if (context.traceEnabled) {
             val calleeLocalIndex = if (functionIndex >= importCount) {
                 functionIndex - importCount
@@ -190,6 +192,39 @@ class ControlFlowTranslator(
         if (returnType != Type.Void && result != null) {
             stack.push(result)
         }
+    }
+
+    private fun emitExceptionPendingCheck(context: CompilationContext) {
+        val builder = context.builder
+        val excPtr = builder.add(context.contextPointer, Constant.I64(org.wark.RuntimeContextLayout.EXC_PENDING))
+        val pending = builder.load(Type.I32, excPtr)
+        val hasException = builder.icmp(ICmpPredicate.NE, pending, Constant.I32(0))
+
+        val catchLabel = findInnermostCatchLabel(context.controlStack)
+        if (catchLabel != null) {
+            val continueLabel = context.freshLabel("exc_ok")
+            builder.condBr(hasException, catchLabel, continueLabel)
+            builder.appendBlock(continueLabel)
+            context.currentBlockLabel = continueLabel
+        } else {
+            val retLabel = context.freshLabel("exc_ret")
+            val continueLabel = context.freshLabel("exc_ok")
+            builder.condBr(hasException, retLabel, continueLabel)
+            builder.appendBlock(retLabel)
+            builder.ret()
+            builder.appendBlock(continueLabel)
+            context.currentBlockLabel = continueLabel
+        }
+    }
+
+    private fun findInnermostCatchLabel(controlStack: ControlStack): String? {
+        for (depth in 0 until controlStack.size()) {
+            val entry = controlStack.entryAt(depth)
+            if (entry.kind == ControlKind.TRY && entry.elseLabel != null) {
+                return entry.elseLabel
+            }
+        }
+        return null
     }
 
     private fun translateCallIndirect(context: CompilationContext, instruction: WasmInstruction) {
@@ -217,6 +252,7 @@ class ControlFlowTranslator(
 
         val dispatchResult: Value? = builder.call(
             "__wark_call_indirect_type${operands.typeIndex}", args, wasmReturnType)
+        emitExceptionPendingCheck(context)
         if (context.traceEnabled && dispatchResult != null) {
             val traceValue = if (dispatchResult.type == Type.I32) {
                 builder.zext(dispatchResult, Type.I64)

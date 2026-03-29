@@ -57,6 +57,7 @@ data class WasmModule(
         data class Table(override val module: String, override val name: String, val refType: WasmRefType, val min: Int, val max: Int?) : Import
         data class Memory(override val module: String, override val name: String, val min: Int, val max: Int?) : Import
         data class Global(override val module: String, override val name: String, val type: WasmValueType, val mutable: Boolean) : Import
+        data class Tag(override val module: String, override val name: String, val attribute: Int, val typeIndex: Int) : Import
     }
 
     data class Function(

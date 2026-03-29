@@ -186,6 +186,8 @@ class WasmInterpreter(
 
             val instruction = instructions[programCounter]
 
+            try {
+
             val stepCallback = onStep
             if (stepCallback != null) {
                 val info = StepInfo(
@@ -650,6 +652,56 @@ class WasmInterpreter(
                     val hasResult = blockHasResult(instruction)
                     controlStack.add(ControlFrame(ControlKind.BLOCK, endPc + 1, stack.size, hasResult))
                 }
+                WasmOpCode.TRY -> {
+                    val openPc = programCounter - 1
+                    val endPc = blockStructure.endMap[openPc]
+                    val hasResult = blockHasResult(instruction)
+                    val handlers = blockStructure.catchMap[openPc] ?: emptyList()
+                    controlStack.add(ControlFrame(ControlKind.TRY, endPc + 1, stack.size, hasResult, handlers))
+                }
+                WasmOpCode.CATCH -> {
+                    val tryFrame = controlStack.last()
+                    val savedStackHeight = tryFrame.stackHeight
+                    controlStack.removeAt(controlStack.size - 1)
+                    if (tryFrame.hasResult) {
+                        val result = if (stack.size > savedStackHeight) { stack.removeLast() } else { 0L }
+                        while (stack.size > savedStackHeight) { stack.removeLast() }
+                        stack.addLast(result)
+                    } else {
+                        while (stack.size > savedStackHeight) { stack.removeLast() }
+                    }
+                    programCounter = tryFrame.targetPc
+                }
+                WasmOpCode.CATCH_ALL -> {
+                    val tryFrame = controlStack.last()
+                    val savedStackHeight = tryFrame.stackHeight
+                    controlStack.removeAt(controlStack.size - 1)
+                    if (tryFrame.hasResult) {
+                        val result = if (stack.size > savedStackHeight) { stack.removeLast() } else { 0L }
+                        while (stack.size > savedStackHeight) { stack.removeLast() }
+                        stack.addLast(result)
+                    } else {
+                        while (stack.size > savedStackHeight) { stack.removeLast() }
+                    }
+                    programCounter = tryFrame.targetPc
+                }
+                WasmOpCode.THROW -> {
+                    val tagIndex = (instruction.operands as WasmInstruction.Operands.Index).value
+                    val tagType = resolveTagType(tagIndex)
+                    val values = LongArray(tagType.params.size) { stack.removeLast() }.reversedArray()
+                    throw WasmException(tagIndex, values)
+                }
+                WasmOpCode.RETHROW -> {
+                    val depth = (instruction.operands as WasmInstruction.Operands.Index).value
+                    val targetIndex = controlStack.size - 1 - depth
+                    val target = controlStack[targetIndex]
+                    throw WasmException(target.catchHandlers.firstOrNull()?.tagIndex ?: -1, longArrayOf())
+                }
+                WasmOpCode.DELEGATE -> {
+                    if (controlStack.isNotEmpty()) {
+                        controlStack.removeAt(controlStack.size - 1)
+                    }
+                }
                 WasmOpCode.LOOP -> {
                     val hasResult = blockHasResult(instruction)
                     controlStack.add(ControlFrame(ControlKind.LOOP, programCounter, stack.size, hasResult))
@@ -766,6 +818,11 @@ class WasmInterpreter(
                 WasmOpCode.NOP -> { }
                 else -> throw WasmTrap("unimplemented opcode: ${instruction.opcode} in ${functionName(currentFunctionIndex)} at PC=$programCounter")
             }
+
+            } catch (wasmException: WasmException) {
+                programCounter = handleException(wasmException, controlStack, stack)
+                    ?: throw wasmException
+            }
         }
 
         return if (frame.funcType.results.isEmpty()) {
@@ -817,16 +874,35 @@ class WasmInterpreter(
     private fun buildBlockStructure(instructions: List<WasmInstruction>): BlockStructure {
         val endMap = IntArray(instructions.size) { -1 }
         val elseMap = IntArray(instructions.size) { -1 }
+        val catchMap = mutableMapOf<Int, MutableList<CatchHandler>>()
         val blockStack = ArrayDeque<Int>()
 
         for (index in instructions.indices) {
             val opcode = instructions[index].opcode
-            if (opcode == WasmOpCode.BLOCK || opcode == WasmOpCode.LOOP || opcode == WasmOpCode.IF) {
+            if (opcode == WasmOpCode.BLOCK || opcode == WasmOpCode.LOOP || opcode == WasmOpCode.IF || opcode == WasmOpCode.TRY) {
                 blockStack.addLast(index)
             } else if (opcode == WasmOpCode.ELSE) {
                 if (blockStack.isNotEmpty()) {
                     val ifPc = blockStack.last()
                     elseMap[ifPc] = index + 1
+                }
+            } else if (opcode == WasmOpCode.CATCH) {
+                if (blockStack.isNotEmpty()) {
+                    val tryPc = blockStack.last()
+                    val tagIndex = (instructions[index].operands as WasmInstruction.Operands.Index).value
+                    catchMap.getOrPut(tryPc) { mutableListOf() }
+                        .add(CatchHandler(tagIndex, index + 1))
+                }
+            } else if (opcode == WasmOpCode.CATCH_ALL) {
+                if (blockStack.isNotEmpty()) {
+                    val tryPc = blockStack.last()
+                    catchMap.getOrPut(tryPc) { mutableListOf() }
+                        .add(CatchHandler(-1, index + 1, isCatchAll = true))
+                }
+            } else if (opcode == WasmOpCode.DELEGATE) {
+                if (blockStack.isNotEmpty()) {
+                    val tryPc = blockStack.removeLast()
+                    endMap[tryPc] = index
                 }
             } else if (opcode == WasmOpCode.END) {
                 if (blockStack.isNotEmpty()) {
@@ -835,7 +911,45 @@ class WasmInterpreter(
                 }
             }
         }
-        return BlockStructure(endMap, elseMap)
+        return BlockStructure(endMap, elseMap, catchMap)
+    }
+
+    private fun handleException(
+        exception: WasmException,
+        controlStack: MutableList<ControlFrame>,
+        stack: ArrayDeque<Long>,
+    ): Int? {
+        for (frameIndex in controlStack.indices.reversed()) {
+            val frame = controlStack[frameIndex]
+            if (frame.kind != ControlKind.TRY) {
+                continue
+            }
+            for (handler in frame.catchHandlers) {
+                if (handler.isCatchAll || handler.tagIndex == exception.tagIndex) {
+                    while (stack.size > frame.stackHeight) {
+                        stack.removeLast()
+                    }
+                    if (!handler.isCatchAll) {
+                        for (value in exception.values) {
+                            stack.addLast(value)
+                        }
+                    }
+                    while (controlStack.size > frameIndex + 1) {
+                        controlStack.removeAt(controlStack.size - 1)
+                    }
+                    return handler.pc
+                }
+            }
+        }
+        return null
+    }
+
+    private fun resolveTagType(tagIndex: Int): WasmModule.FuncType {
+        val tagImports = wasmModule.imports.filterIsInstance<WasmModule.Import.Tag>()
+        if (tagIndex < tagImports.size) {
+            return wasmModule.types[tagImports[tagIndex].typeIndex]
+        }
+        return WasmModule.FuncType(emptyList(), emptyList())
     }
 
     private fun resolveCalleeType(funcIndex: Int): WasmModule.FuncType = calleeTypeCache.getOrPut(funcIndex) {
@@ -947,16 +1061,24 @@ class InterpreterFrame(
     val stack: ArrayDeque<Long> = ArrayDeque(),
 )
 
-enum class ControlKind { BLOCK, LOOP, IF }
+enum class ControlKind { BLOCK, LOOP, IF, TRY }
 
 class ControlFrame(
     val kind: ControlKind,
     val targetPc: Int,
     val stackHeight: Int,
     val hasResult: Boolean = false,
+    val catchHandlers: List<CatchHandler> = emptyList(),
+)
+
+class CatchHandler(
+    val tagIndex: Int,
+    val pc: Int,
+    val isCatchAll: Boolean = false,
 )
 
 class BlockStructure(
     val endMap: IntArray,
     val elseMap: IntArray,
+    val catchMap: Map<Int, List<CatchHandler>>,
 )

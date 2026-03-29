@@ -133,6 +133,11 @@ class WasmModuleReader private constructor(private val buf: ByteBuffer) {
                     val mutable = readU8() == 1
                     imports.add(WasmModule.Import.Global(module, name, type, mutable))
                 }
+                0x04 -> {
+                    val attribute = readU8()
+                    val typeIndex = readU32()
+                    imports.add(WasmModule.Import.Tag(module, name, attribute, typeIndex))
+                }
                 else -> error("Unknown import kind: $kind")
             }
         }

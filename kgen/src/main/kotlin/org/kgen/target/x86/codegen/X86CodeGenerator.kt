@@ -800,7 +800,7 @@ class X86CodeGenerator : CodeGenerator {
                 calleeSaved32 = if (isWindows) winCalleeSaved32 else sysVCalleeSaved32,
                 paramRegs64 = callArgRegs64,
                 paramRegs32 = callArgRegs32,
-                paramXmm = callArgXmm,
+                paramXmm = callArgRegsXmm,
                 gpParamOffset = if (hasSret) 1 else 0,
                 sharedParamSlots = isWindows,
             )
@@ -849,10 +849,28 @@ class X86CodeGenerator : CodeGenerator {
             } else {
                 0
             }
-            if (stackReserve > 0) {
-                asm.sub(rsp64 as X86Operand64, stackReserve)
+            // On Windows, XMM6-15 are callee-saved. Add space for saving them.
+            val xmmSaveCount = if (isWindows && hasCalls) 10 else 0
+            val xmmSaveSize = xmmSaveCount * 16
+            val alignedReserve = if (xmmSaveSize > 0) {
+                ((stackReserve + xmmSaveSize + 15) and 15.inv()).let {
+                    if ((totalFrameBeforeSub + it) % 16 != 0) it + 8 else it
+                }
+            } else {
+                stackReserve
             }
-            this.stackReserve = stackReserve
+            if (alignedReserve > 0) {
+                asm.sub(rsp64 as X86Operand64, alignedReserve)
+            }
+            this.stackReserve = alignedReserve
+            if (xmmSaveCount > 0) {
+                val xmmSaveBase = alignedReserve - xmmSaveSize
+                this.xmmSaveBase = xmmSaveBase
+                for (i in 0 until xmmSaveCount) {
+                    val xmmReg = arrayOf(xmm6, xmm7, xmm8, xmm9, xmm10, xmm11, xmm12, xmm13, xmm14, xmm15)[i]
+                    emitSaveXmmToRsp(xmmReg, xmmSaveBase + i * 16)
+                }
+            }
 
             // Save the hidden sret pointer if this function returns a large struct
             if (hasSret) {
@@ -879,30 +897,69 @@ class X86CodeGenerator : CodeGenerator {
                 val loc = alloc.locations[paramName] ?: continue
                 when {
                     isFloatType(param.type) -> {
-                        val srcReg = callArgRegsXmm[abiIdx]
-                        when (loc) {
-                            is Location.RegXmm -> if (loc.reg != srcReg) asm.movsd(loc.reg, srcReg)
-                            is Location.Spill -> {
-                                asm.movsd(xmm15, srcReg)
-                                emitStoreXmmToStack(xmm15, loc.offset)
+                        if (abiIdx < callArgRegsXmm.size) {
+                            val srcReg = callArgRegsXmm[abiIdx]
+                            when (loc) {
+                                is Location.RegXmm -> if (loc.reg != srcReg) asm.movsd(loc.reg, srcReg)
+                                is Location.Spill -> {
+                                    asm.movsd(xmm15, srcReg)
+                                    emitStoreXmmToStack(xmm15, loc.offset)
+                                }
+                                else -> {}
                             }
-                            else -> {}
+                        } else {
+                            val stackArgOffset = callerStackArgOffset(abiIdx)
+                            when (loc) {
+                                is Location.Spill -> {
+                                    emitLoadFromRbpOffset64(r11_64, stackArgOffset)
+                                    emitStoreToStack64(r11_64, loc.offset)
+                                }
+                                is Location.RegXmm -> {
+                                    emitLoadFromRbpOffset64(r11_64, stackArgOffset)
+                                    asm.movq(loc.reg, r11_64)
+                                }
+                                else -> {}
+                            }
                         }
                     }
                     param.type == Type.I64 || param.type == Type.OpaquePointer || param.type is Type.Pointer -> {
-                        val srcReg = callArgRegs64[abiIdx]
-                        when (loc) {
-                            is Location.Reg64 -> if (loc.reg != srcReg) asm.mov(loc.reg, srcReg as X86Operand64)
-                            is Location.Spill -> emitStoreToStack64(srcReg, loc.offset)
-                            else -> {}
+                        if (abiIdx < callArgRegs64.size) {
+                            val srcReg = callArgRegs64[abiIdx]
+                            when (loc) {
+                                is Location.Reg64 -> if (loc.reg != srcReg) asm.mov(loc.reg, srcReg as X86Operand64)
+                                is Location.Spill -> emitStoreToStack64(srcReg, loc.offset)
+                                else -> {}
+                            }
+                        } else {
+                            val stackArgOffset = callerStackArgOffset(abiIdx)
+                            when (loc) {
+                                is Location.Spill -> {
+                                    emitLoadFromRbpOffset64(r11_64, stackArgOffset)
+                                    emitStoreToStack64(r11_64, loc.offset)
+                                }
+                                is Location.Reg64 -> emitLoadFromRbpOffset64(loc.reg, stackArgOffset)
+                                else -> {}
+                            }
                         }
                     }
                     else -> {
-                        val srcReg = callArgRegs32[abiIdx]
-                        when (loc) {
-                            is Location.Reg32 -> if (loc.reg != srcReg) asm.mov(loc.reg, srcReg as X86Operand32)
-                            is Location.Spill -> emitStoreToStack32(srcReg, loc.offset)
-                            else -> {}
+                        if (abiIdx < callArgRegs32.size) {
+                            val srcReg = callArgRegs32[abiIdx]
+                            when (loc) {
+                                is Location.Reg32 -> if (loc.reg != srcReg) asm.mov(loc.reg, srcReg as X86Operand32)
+                                is Location.Spill -> emitStoreToStack32(srcReg, loc.offset)
+                                else -> {}
+                            }
+                        } else {
+                            val stackArgOffset = callerStackArgOffset(abiIdx)
+                            when (loc) {
+                                is Location.Spill -> {
+                                    emitLoadFromRbpOffset32(r11d32, stackArgOffset)
+                                    emitStoreToStack32(r11d32, loc.offset)
+                                }
+                                is Location.Reg32 -> emitLoadFromRbpOffset32(loc.reg, stackArgOffset)
+                                else -> {}
+                            }
                         }
                     }
                 }
@@ -1017,8 +1074,16 @@ class X86CodeGenerator : CodeGenerator {
         }
 
         private var stackReserve = 0
+        private var xmmSaveBase = 0
 
         private fun emitEpilogue(omitRet: Boolean = false) {
+            // Restore Windows callee-saved XMM registers
+            if (isWindows && hasCalls && xmmSaveBase >= 0) {
+                for (i in 0 until 10) {
+                    val xmmReg = arrayOf(xmm6, xmm7, xmm8, xmm9, xmm10, xmm11, xmm12, xmm13, xmm14, xmm15)[i]
+                    emitLoadXmmFromRsp(xmmReg, xmmSaveBase + i * 16)
+                }
+            }
             if (stackReserve > 0) {
                 asm.add(rsp64 as X86Operand64, stackReserve)
             }
@@ -1250,6 +1315,28 @@ class X86CodeGenerator : CodeGenerator {
             if (sEnc >= 8) asm.emitByte(0x44)
             asm.emitBytes(0x0F, 0x11)
             asm.emitByte(0x85 or ((sEnc and 7) shl 3))
+            asm.emitInt32(offset)
+        }
+
+        private fun emitSaveXmmToRsp(src: X86Xmm, offset: Int) {
+            // movups [rsp + offset], src — 0F 11 /r with SIB for RSP base
+            val sEnc = (src as X86Register).encoding
+            val rex = if (sEnc >= 8) 0x44 else -1
+            if (rex >= 0) asm.emitByte(rex)
+            asm.emitBytes(0x0F, 0x11)
+            asm.emitByte(0x84 or ((sEnc and 7) shl 3)) // ModRM: [SIB + disp32]
+            asm.emitByte(0x24) // SIB: base=RSP, index=none
+            asm.emitInt32(offset)
+        }
+
+        private fun emitLoadXmmFromRsp(dest: X86Xmm, offset: Int) {
+            // movups dest, [rsp + offset] — 0F 10 /r with SIB for RSP base
+            val dEnc = (dest as X86Register).encoding
+            val rex = if (dEnc >= 8) 0x44 else -1
+            if (rex >= 0) asm.emitByte(rex)
+            asm.emitBytes(0x0F, 0x10)
+            asm.emitByte(0x84 or ((dEnc and 7) shl 3))
+            asm.emitByte(0x24)
             asm.emitInt32(offset)
         }
 
@@ -4543,35 +4630,58 @@ class X86CodeGenerator : CodeGenerator {
 
         private fun emitSelect(inst: Select) {
             // select dest, cond, trueVal, falseVal
-            // Strategy: test condition, load both values, cmov.
-            // The condition register must not conflict with dest or trueReg.
+            // Only scratch registers r10/r11 are used — never allocatable registers.
             when (inst.dest.type) {
                 Type.I32 -> {
-                    // r10d is never allocated (reserved scratch), safe for condition
-                    loadValue32(inst.condition, r10d32)
                     val dest = getDest32(inst.dest.name)
-                    val trueReg = if (dest == r11d32) { ecx32 } else { r11d32 }
-                    loadValue32(inst.falseValue, dest)
-                    loadValue32(inst.trueValue, trueReg)
-                    asm.cmp(r10d32 as X86Operand32, 0)
-                    emitCmov32(0x45, dest, trueReg)
+                    if (dest == r11d32) {
+                        // Dest is spilled: use branch-based approach since we only have 2 scratch regs
+                        loadValue32(inst.condition, r10d32)
+                        asm.cmp(r10d32 as X86Operand32, 0)
+                        val trueLabel = asm.label()
+                        val doneLabel = asm.label()
+                        asm.jne(trueLabel)
+                        loadValue32(inst.falseValue, r11d32)
+                        asm.jmp(doneLabel)
+                        asm.mark(trueLabel)
+                        loadValue32(inst.trueValue, r11d32)
+                        asm.mark(doneLabel)
+                    } else {
+                        loadValue32(inst.condition, r10d32)
+                        loadValue32(inst.falseValue, dest)
+                        loadValue32(inst.trueValue, r11d32)
+                        asm.cmp(r10d32 as X86Operand32, 0)
+                        emitCmov32(0x45, dest, r11d32)
+                    }
                     if (isSpilled(inst.dest.name)) { storeTo(inst.dest.name, reg32 = dest) }
                 }
                 Type.I64, Type.OpaquePointer, is Type.Pointer -> {
-                    loadValue32(inst.condition, r10d32)
                     val dest = getDest64(inst.dest.name)
-                    val trueReg = if (dest == r11_64) { rcx64 } else { r11_64 }
-                    loadValue64(inst.falseValue, dest)
-                    loadValue64(inst.trueValue, trueReg)
-                    asm.cmp(r10d32 as X86Operand32, 0)
-                    emitCmov64(0x45, dest, trueReg)
+                    if (dest == r11_64) {
+                        loadValue32(inst.condition, r10d32)
+                        asm.cmp(r10d32 as X86Operand32, 0)
+                        val trueLabel = asm.label()
+                        val doneLabel = asm.label()
+                        asm.jne(trueLabel)
+                        loadValue64(inst.falseValue, r11_64)
+                        asm.jmp(doneLabel)
+                        asm.mark(trueLabel)
+                        loadValue64(inst.trueValue, r11_64)
+                        asm.mark(doneLabel)
+                    } else {
+                        loadValue32(inst.condition, r10d32)
+                        loadValue64(inst.falseValue, dest)
+                        loadValue64(inst.trueValue, r11_64)
+                        asm.cmp(r10d32 as X86Operand32, 0)
+                        emitCmov64(0x45, dest, r11_64)
+                    }
                     if (isSpilled(inst.dest.name)) { storeTo(inst.dest.name, reg64 = dest) }
                 }
                 Type.F64, Type.F32 -> {
-                    loadValue32(inst.condition, ecx32)
+                    loadValue32(inst.condition, r10d32)
                     val dest = getDestXmm(inst.dest.name)
                     loadValueXmm(inst.falseValue, dest)
-                    asm.cmp(ecx32 as X86Operand32, 0)
+                    asm.cmp(r10d32 as X86Operand32, 0)
                     val skipLabel = asm.label()
                     asm.je(skipLabel)
                     loadValueXmm(inst.trueValue, dest)

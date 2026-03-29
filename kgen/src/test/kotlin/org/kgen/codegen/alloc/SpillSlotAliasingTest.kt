@@ -569,6 +569,96 @@ class SpillSlotAliasingTest {
     }
 
     /**
+     * Select with high register pressure forces the select dest to spill.
+     * Before the fix, the codegen used ECX as a scratch register for the
+     * trueValue, corrupting any value live in ECX.
+     */
+    @Test
+    fun selectWithSpilledDestI32() {
+        val module = buildModule {
+            val params = createFunction("f", listOf(
+                Param("base", Type.I64),
+                Param("cond", Type.I32),
+            ), Type.I32)
+            appendBlock("entry")
+
+            // Load 12 values to exhaust registers and force select dest to spill
+            val loaded = mutableListOf<Value>()
+            for (index in 0 until 12) {
+                loaded.add(load(Type.I32, add(params[0], Constant.I64(index.toLong() * 4))))
+            }
+
+            // The select's dest is likely to be spilled due to register pressure
+            val selected = select(params[1], loaded[0], loaded[1])
+
+            // Use all loaded values to keep them live past the select
+            var sum = selected
+            for (index in 2 until loaded.size) {
+                sum = add(sum, loaded[index])
+            }
+            ret(sum)
+            finalizeFunction()
+        }
+        val engine = JitEngine(X86CodeGenerator())
+        engine.addModule(module)
+
+        val arena = java.lang.foreign.Arena.ofShared()
+        val memory = arena.allocate(12 * 4, 8)
+        for (index in 0 until 12) {
+            memory.set(java.lang.foreign.ValueLayout.JAVA_INT, index.toLong() * 4, (index + 1) * 10)
+        }
+
+        // cond=1 (true): selected = loaded[0]=10; sum = 10 + 30+40+...+120 = 10 + 750 = 760
+        assertEquals(760L, engine.call("f", memory.address(), 1))
+        // cond=0 (false): selected = loaded[1]=20; sum = 20 + 30+40+...+120 = 20 + 750 = 770
+        assertEquals(770L, engine.call("f", memory.address(), 0))
+        arena.close()
+    }
+
+    /**
+     * Select with I64 values under register pressure. Same pattern as I32 but
+     * tests the 64-bit path that previously used RCX as scratch.
+     */
+    @Test
+    fun selectWithSpilledDestI64() {
+        val module = buildModule {
+            val params = createFunction("f", listOf(
+                Param("base", Type.I64),
+                Param("cond", Type.I32),
+            ), Type.I64)
+            appendBlock("entry")
+
+            val loaded = mutableListOf<Value>()
+            for (index in 0 until 12) {
+                loaded.add(load(Type.I64, add(params[0], Constant.I64(index.toLong() * 8))))
+            }
+
+            val selected = select(params[1], loaded[0], loaded[1])
+
+            var sum = selected
+            for (index in 2 until loaded.size) {
+                sum = add(sum, loaded[index])
+            }
+            ret(sum)
+            finalizeFunction()
+        }
+        val engine = JitEngine(X86CodeGenerator())
+        engine.addModule(module)
+
+        val arena = java.lang.foreign.Arena.ofShared()
+        val memory = arena.allocate(12 * 8, 8)
+        for (index in 0 until 12) {
+            memory.set(java.lang.foreign.ValueLayout.JAVA_LONG, index.toLong() * 8, (index + 1) * 100L)
+        }
+
+        // cond=1 (true): selected = loaded[0]=100; sum = 100 + 300+400+...+1200 = 100 + 7500 = 7600
+        assertEquals(7600L, engine.call("f", memory.address(), 1))
+        // cond=0 (false): selected = loaded[1]=200; sum = 200 + 300+400+...+1200 = 200 + 7500 = 7700
+        assertEquals(7700L, engine.call("f", memory.address(), 0))
+        arena.close()
+    }
+
+    /**
      * Context indirection with function call in between — the function call
      * clobbers caller-saved registers. Values loaded BEFORE the call must
      * survive in callee-saved registers or be reloaded from spills.
