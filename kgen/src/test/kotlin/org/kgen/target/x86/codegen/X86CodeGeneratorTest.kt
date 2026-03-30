@@ -769,8 +769,7 @@ class X86CodeGeneratorTest {
         assertValidCodegen(code)
 
         val insts = org.kgen.target.x86.disasm.X86Disassembler().disassembleRaw(code)
-        assertTrue(insts.any { it.mnemonic == "pxor" }, "pxor for zeroing: ${insts.map { it.text() }}")
-        assertTrue(insts.any { it.mnemonic == "subsd" }, "subsd for negation: ${insts.map { it.text() }}")
+        assertTrue(insts.any { it.mnemonic == "pxor" }, "pxor for sign-bit flip: ${insts.map { it.text() }}")
     }
 
     @Test

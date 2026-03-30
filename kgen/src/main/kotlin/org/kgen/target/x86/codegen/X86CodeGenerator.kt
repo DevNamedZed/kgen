@@ -3693,7 +3693,6 @@ class X86CodeGenerator : CodeGenerator {
 
         private fun emitFNeg(inst: FNeg) {
             val d = getDestXmm(inst.dest.name)
-            emitPxor(d, d)
             val src = if (inst.operand is Parameter || inst.operand is InstructionRef) {
                 getOrLoadXmm(inst.operand.name, if (d == xmm15) xmm14 else xmm15)
             } else {
@@ -3701,11 +3700,17 @@ class X86CodeGenerator : CodeGenerator {
                 loadValueXmm(inst.operand, scratch)
                 scratch
             }
-            if (inst.operand.type == Type.F32) {
-                asm.subss(d, src)
-            } else {
-                asm.subsd(d, src)
+            if (d != src) {
+                if (inst.operand.type == Type.F32) { asm.movss(d, src) } else { asm.movsd(d, src) }
             }
+            // Flip sign bit via XOR with sign mask — preserves IEEE 754 negative zero
+            val maskReg = if (d != xmm13) xmm13 else xmm12
+            if (inst.operand.type == Type.F32) {
+                loadValueXmm(Constant.F32(java.lang.Float.intBitsToFloat(0x80000000.toInt())), maskReg)
+            } else {
+                loadValueXmm(Constant.F64(java.lang.Double.longBitsToDouble(Long.MIN_VALUE)), maskReg)
+            }
+            emitPxor(d, maskReg)
             if (isSpilled(inst.dest.name)) storeToXmm(inst.dest.name, d)
         }
 
