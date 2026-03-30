@@ -10,6 +10,8 @@ object QuakeSdlRunner {
     private val arena = Arena.ofShared()
     private val linker = Linker.nativeLinker()
     private var sdlLookup: SymbolLookup? = null
+    private var pixelBuffer: MemorySegment? = null
+    private var pixelBufferSize = 0
 
     private var sdlWindow = 0L
     private var sdlRenderer = 0L
@@ -100,7 +102,12 @@ object QuakeSdlRunner {
 
         val indexedPixels = memory.readBytes(framebufferPtr, width * height)
 
-        val pixelData = arena.allocate((width * height * 4).toLong())
+        val requiredSize = width * height * 4
+        if (pixelBuffer == null || pixelBufferSize < requiredSize) {
+            pixelBuffer = arena.allocate(requiredSize.toLong())
+            pixelBufferSize = requiredSize
+        }
+        val pixelData = pixelBuffer!!
         for (i in indexedPixels.indices) {
             val colorIndex = indexedPixels[i].toInt() and 0xFF
             pixelData.set(JAVA_INT, (i * 4).toLong(), palette[colorIndex])
