@@ -571,6 +571,392 @@ class QuakeRendererTest {
         interpRunner.shutdown()
     }
 
+    @Test
+    @EnabledIf("quakeWasmExists")
+    fun categorizeFrame1Diffs() {
+        val interpRunner = loadDeterministic(ExecutionMode.INTERPRET).runner
+        interpRunner.initialize()
+        val jitRunner = loadDeterministic(ExecutionMode.JIT).runner
+        jitRunner.initialize()
+
+        interpRunner.frame(1.0f / 30.0f)
+        jitRunner.frame(1.0f / 30.0f)
+
+        val interpSnap = interpRunner.memory().readBytes(0, interpRunner.memory().sizeBytes())
+        val jitSnap = jitRunner.memory().readBytes(0, jitRunner.memory().sizeBytes())
+        val minSize = minOf(interpSnap.size, jitSnap.size)
+
+        var jitZeroInterpNonZero = 0
+        var interpZeroJitNonZero = 0
+        var bothNonZeroDifferent = 0
+        val jitZeroExamples = mutableListOf<Pair<Int, Int>>() // address, interpValue
+
+        for (address in 0 until minSize step 4) {
+            val interpVal = readI32(interpSnap, address)
+            val jitVal = readI32(jitSnap, address)
+            if (interpVal == jitVal) { continue }
+            if (jitVal == 0 && interpVal != 0) {
+                jitZeroInterpNonZero++
+                if (jitZeroExamples.size < 15) {
+                    jitZeroExamples.add(address to interpVal)
+                }
+            } else if (interpVal == 0 && jitVal != 0) {
+                interpZeroJitNonZero++
+            } else {
+                bothNonZeroDifferent++
+            }
+        }
+
+        println("=== Frame 1 diff categories ===")
+        println("  JIT=0, Interp!=0: $jitZeroInterpNonZero")
+        println("  Interp=0, JIT!=0: $interpZeroJitNonZero")
+        println("  Both non-zero, different: $bothNonZeroDifferent")
+        println("  Total: ${jitZeroInterpNonZero + interpZeroJitNonZero + bothNonZeroDifferent}")
+
+        if (jitZeroExamples.isNotEmpty()) {
+            println("\n  JIT=0 examples:")
+            for ((address, interpVal) in jitZeroExamples) {
+                println("    0x${Integer.toHexString(address)}: interp=0x${Integer.toHexString(interpVal)}")
+            }
+        }
+
+        interpRunner.shutdown()
+        jitRunner.shutdown()
+    }
+
+    /**
+     * Disassembles the key rasterizer functions to find which WASM opcodes
+     * they use — helps identify which JIT codegen paths could diverge.
+     */
+    @Test
+    @EnabledIf("quakeWasmExists")
+    fun disassembleRasterizer() {
+        val wasmBytes = java.nio.file.Files.readAllBytes(wasmPath)
+        val wasmModule = org.kgen.target.wasm.module.WasmModuleReader.read(wasmBytes)
+        val importCount = wasmModule.importedFunctionCount
+        val disasm = org.kgen.target.wasm.disasm.WasmDisassembler()
+
+        // Key functions from our investigation
+        val targetFuncs = mapOf(
+            "R_AliasTransformFinalVert" to -1,
+            "R_AliasProjectFinalVert" to -1,
+            "D_RasterizeAliasPolySmooth" to 236,
+            "D_PolysetScanLeftEdge" to 239,
+            "D_PolysetDrawSpans8" to 240,
+            "R_AliasDrawModel" to 557,
+        )
+
+        for ((name, knownIndex) in targetFuncs) {
+            var funcIndex = knownIndex
+            if (funcIndex < 0) {
+                for ((localIndex, _) in wasmModule.functions.withIndex()) {
+                    val funcName = wasmModule.functionName(localIndex + importCount)
+                    if (funcName == name) {
+                        funcIndex = localIndex + importCount
+                        break
+                    }
+                }
+            }
+            if (funcIndex < 0) {
+                println("$name: NOT FOUND")
+                continue
+            }
+
+            val localIndex = funcIndex - importCount
+            if (localIndex < 0 || localIndex >= wasmModule.functions.size) {
+                println("$name (func $funcIndex): out of range")
+                continue
+            }
+
+            val function = wasmModule.functions[localIndex]
+            val instructions = disasm.disassemble(function)
+            val opcodeCounts = mutableMapOf<String, Int>()
+            for (instruction in instructions) {
+                val opName = instruction.opcode.name
+                opcodeCounts[opName] = (opcodeCounts[opName] ?: 0) + 1
+            }
+
+            println("$name (func $funcIndex): ${instructions.size} instructions")
+            // Show float and interesting opcodes
+            val interesting = opcodeCounts.filter { (op, _) ->
+                op.startsWith("F32_") || op.startsWith("F64_") ||
+                op.contains("CONVERT") || op.contains("TRUNC") ||
+                op.contains("EXTEND") || op.contains("WRAP") ||
+                op.contains("REINTERPRET") || op == "CALL_INDIRECT" ||
+                op == "CALL" || op == "SELECT"
+            }.entries.sortedByDescending { it.value }
+
+            if (interesting.isNotEmpty()) {
+                for ((op, count) in interesting) {
+                    println("  $op: $count")
+                }
+            } else {
+                println("  (no float/conversion ops)")
+                // Show top opcodes instead
+                for ((op, count) in opcodeCounts.entries.sortedByDescending { it.value }.take(10)) {
+                    println("  $op: $count")
+                }
+            }
+            println()
+        }
+    }
+
+    /**
+     * Runs both engines through frame 1, then dumps memory around the first
+     * diff address to understand the data layout and nature of the divergence.
+     */
+    @Test
+    @EnabledIf("quakeWasmExists")
+    fun isolateVertexTransformDivergence() {
+        val interpRunner = loadDeterministic(ExecutionMode.INTERPRET).runner
+        interpRunner.initialize()
+        val jitRunner = loadDeterministic(ExecutionMode.JIT).runner
+        jitRunner.initialize()
+
+        interpRunner.frame(1.0f / 30.0f)
+        jitRunner.frame(1.0f / 30.0f)
+
+        val interpSnap = interpRunner.memory().readBytes(0, interpRunner.memory().sizeBytes())
+        val jitSnap = jitRunner.memory().readBytes(0, jitRunner.memory().sizeBytes())
+        val minSize = minOf(interpSnap.size, jitSnap.size)
+
+        var firstDiffAddr = -1
+        var totalDiffs = 0
+        for (address in 0 until minSize step 4) {
+            if (readI32(interpSnap, address) != readI32(jitSnap, address)) {
+                if (firstDiffAddr == -1) { firstDiffAddr = address }
+                totalDiffs++
+            }
+        }
+        println("After frame 1: $totalDiffs diffs, first at 0x${Integer.toHexString(firstDiffAddr)}")
+
+        // Dump memory around first diff
+        if (firstDiffAddr >= 0) {
+            val start = maxOf(0, firstDiffAddr - 16)
+            val end = minOf(minSize, firstDiffAddr + 128)
+            println("\nMemory around first diff:")
+            for (address in start until end step 4) {
+                val interpVal = readI32(interpSnap, address)
+                val jitVal = readI32(jitSnap, address)
+                val marker = if (interpVal != jitVal) " <-- DIFF" else ""
+                println("  0x${Integer.toHexString(address)}: interp=0x${Integer.toHexString(interpVal)} jit=0x${Integer.toHexString(jitVal)}$marker")
+            }
+        }
+
+        // FNeg fix verification
+        for (addr in intArrayOf(0x1dfd4, 0x21264)) {
+            val interpVal = readI32(interpSnap, addr)
+            val jitVal = readI32(jitSnap, addr)
+            println("-0.0 check 0x${Integer.toHexString(addr)}: ${if (interpVal == jitVal) "FIXED" else "STILL BROKEN"}")
+        }
+
+        interpRunner.shutdown()
+        jitRunner.shutdown()
+    }
+
+    /**
+     * Traces R_AliasTransformFinalVert calls in the interpreter to capture
+     * the vertex output values, then compares against JIT.
+     */
+    @Test
+    @EnabledIf("quakeWasmExists")
+    fun traceVertexTransformOutputs() {
+        // Run interpreter with function tracing on R_AliasTransformFinalVert
+        val interpRunner = loadDeterministic(ExecutionMode.INTERPRET).runner
+        interpRunner.initialize()
+
+        val instance = interpRunner.instance()
+        val wasmModule = instance.module.wasmModule
+        val importCount = wasmModule.importedFunctionCount
+
+        val transformFuncIndex = (0 until wasmModule.functions.size).firstOrNull { localIndex ->
+            wasmModule.functionName(localIndex + importCount) == "R_AliasTransformFinalVert"
+        }?.let { it + importCount } ?: -1
+
+        val rasterizeFuncIndex = (0 until wasmModule.functions.size).firstOrNull { localIndex ->
+            wasmModule.functionName(localIndex + importCount) == "D_RasterizeAliasPolySmooth"
+        }?.let { it + importCount } ?: -1
+
+        println("R_AliasTransformFinalVert: func $transformFuncIndex")
+        println("D_RasterizeAliasPolySmooth: func $rasterizeFuncIndex")
+
+        val memory = interpRunner.memory()
+        // Track calls to R_AliasTransformFinalVert and their output addresses
+        // In Quake: R_AliasTransformFinalVert(finalvert_t *fv, stvert_t *pstverts, trivertx_t *pverts)
+        // The first arg is the output finalvert_t struct
+        val vertexOutputs = mutableListOf<Pair<Int, IntArray>>()
+        var rasterizeCallCount = 0
+
+        instance.setFunctionEntryCallback { funcIndex, args ->
+            if (funcIndex == transformFuncIndex && args.isNotEmpty()) {
+                val outputAddr = args[0].toInt()
+                // Read the output after return won't work (this is entry callback)
+                // Instead, record address and read after frame
+            }
+            if (funcIndex == rasterizeFuncIndex) {
+                rasterizeCallCount++
+            }
+        }
+
+        interpRunner.frame(1.0f / 30.0f)
+        println("D_RasterizeAliasPolySmooth called $rasterizeCallCount times in frame 1")
+
+        // Now run JIT and compare
+        val jitRunner = loadDeterministic(ExecutionMode.JIT).runner
+        jitRunner.initialize()
+        jitRunner.frame(1.0f / 30.0f)
+
+        // Compare the scan-line data that feeds D_RasterizeAliasPolySmooth
+        // Addresses 0x4a2cc and 0x4a2d0 are span edge Y coordinates
+        val interpMem = interpRunner.memory()
+        val jitMem = jitRunner.memory()
+
+        // Scan the region 0x4a200-0x4a400 for the polygon data structures
+        println("\n=== Rasterizer input data (0x4a280-0x4a340) ===")
+        for (addr in 0x4a280 until 0x4a340 step 4) {
+            val interpVal = interpMem.readI32(addr)
+            val jitVal = jitMem.readI32(addr)
+            val marker = if (interpVal != jitVal) " <-- DIFF" else ""
+            if (interpVal != jitVal || (addr in 0x4a2c0..0x4a2e0)) {
+                println("  0x${Integer.toHexString(addr)}: interp=$interpVal jit=$jitVal$marker")
+            }
+        }
+
+        // Also scan the vertex output area — look for float diffs
+        // that feed into the rasterizer
+        println("\n=== Scanning 0x4c200-0x4c400 for vertex float diffs ===")
+        var vertexDiffs = 0
+        for (addr in 0x4c200 until 0x4c400 step 4) {
+            val interpVal = interpMem.readI32(addr)
+            val jitVal = jitMem.readI32(addr)
+            if (interpVal != jitVal) {
+                vertexDiffs++
+                val interpFloat = java.lang.Float.intBitsToFloat(interpVal)
+                val jitFloat = java.lang.Float.intBitsToFloat(jitVal)
+                if (vertexDiffs <= 20) {
+                    println("  0x${Integer.toHexString(addr)}: interp=0x${Integer.toHexString(interpVal)}($interpFloat) jit=0x${Integer.toHexString(jitVal)}($jitFloat)")
+                }
+            }
+        }
+        println("  Total diffs in range: $vertexDiffs")
+
+        interpRunner.shutdown()
+        jitRunner.shutdown()
+    }
+
+    /**
+     * Uses function entry callbacks to capture the aliastransform matrix
+     * (and related state) right before R_AliasTransformFinalVert runs,
+     * then compares JIT vs interpreter.
+     */
+    @Test
+    @EnabledIf("quakeWasmExists")
+    fun traceTransformMatrix() {
+        val interpRunner = loadDeterministic(ExecutionMode.INTERPRET).runner
+        interpRunner.initialize()
+
+        val instance = interpRunner.instance()
+        val wasmModule = instance.module.wasmModule
+        val importCount = wasmModule.importedFunctionCount
+
+        // Find the functions
+        val transformIndex = findFunc(wasmModule, importCount, "R_AliasTransformFinalVert")
+        val drawModelIndex = findFunc(wasmModule, importCount, "R_AliasDrawModel")
+        val setupTransIndex = findFunc(wasmModule, importCount, "R_AliasSetUpTransform")
+        println("R_AliasTransformFinalVert: $transformIndex")
+        println("R_AliasDrawModel: $drawModelIndex")
+        println("R_AliasSetUpTransform: $setupTransIndex")
+
+        val memory = interpRunner.memory()
+
+        // Track first call to R_AliasTransformFinalVert — capture args
+        var firstTransformArgs: LongArray? = null
+        var transformCallCount = 0
+        var watchAddr = 0x1fdad54
+        var watchPrev = memory.readI32(watchAddr)
+
+        val projectFuncIndex = findFunc(wasmModule, importCount, "R_AliasProjectFinalVert")
+        var projectCallCount = 0
+
+        instance.setFunctionEntryCallback { funcIndex, args ->
+            if (funcIndex == transformIndex) {
+                transformCallCount++
+                if (firstTransformArgs == null) {
+                    firstTransformArgs = args.clone()
+                }
+            }
+            if (funcIndex == projectFuncIndex) {
+                projectCallCount++
+            }
+        }
+
+        // Check 0x1fdad54 before frame
+        val preFrameInterp = memory.readI32(0x1fdad54)
+        println("0x1fdad54 BEFORE frame (interp): 0x${Integer.toHexString(preFrameInterp)} (${java.lang.Float.intBitsToFloat(preFrameInterp)})")
+
+        interpRunner.frame(1.0f / 30.0f)
+
+        val postFrameInterp = memory.readI32(0x1fdad54)
+        println("0x1fdad54 AFTER frame (interp): 0x${Integer.toHexString(postFrameInterp)} (${java.lang.Float.intBitsToFloat(postFrameInterp)})")
+        println("R_AliasTransformFinalVert called $transformCallCount times")
+        println("R_AliasProjectFinalVert called $projectCallCount times")
+
+        if (firstTransformArgs != null) {
+            val args = firstTransformArgs!!
+            println("First call args: ${args.map { "0x${Integer.toHexString(it.toInt())}" }}")
+            // Args: fv (output), pstverts, pverts
+            // The aliastransform matrix is a global: 3 rows × 4 cols of floats = 48 bytes
+            // Find it by searching for known function R_AliasSetUpTransform which writes it
+        }
+
+        // Now run JIT and count R_AliasProjectFinalVert calls via a wrapper
+        val jitRunner = loadDeterministic(ExecutionMode.JIT).runner
+        jitRunner.initialize()
+
+        // We can't hook individual WASM function calls in JIT mode.
+        // But we can compare the outputs.
+        jitRunner.frame(1.0f / 30.0f)
+
+        val jitPostFrame = jitRunner.memory().readI32(0x1fdad54)
+        println("0x1fdad54 AFTER frame (jit): 0x${Integer.toHexString(jitPostFrame)} (${java.lang.Float.intBitsToFloat(jitPostFrame)})")
+
+        val interpMem = interpRunner.memory()
+        val jitMem = jitRunner.memory()
+
+        // Search for the first float-valued diff in a wide range (outside framebuffer)
+        println("\n=== First 30 float-valued diffs (plausible range) ===")
+        val fbStart = interpRunner.framebufferPointer()
+        val fbEnd = fbStart + 320 * 200
+        var shown = 0
+        for (addr in 0 until minOf(interpMem.sizeBytes(), jitMem.sizeBytes()) step 4) {
+            if (addr in fbStart until fbEnd) { continue }
+            val interpVal = interpMem.readI32(addr)
+            val jitVal = jitMem.readI32(addr)
+            if (interpVal == jitVal) { continue }
+            val interpFloat = java.lang.Float.intBitsToFloat(interpVal)
+            val jitFloat = java.lang.Float.intBitsToFloat(jitVal)
+            // Only show values that look like plausible floats (not tiny denorms)
+            if (interpFloat.isFinite() && jitFloat.isFinite() &&
+                kotlin.math.abs(interpFloat) > 0.01f && kotlin.math.abs(interpFloat) < 1e6f) {
+                println("  0x${Integer.toHexString(addr)}: interp=0x${Integer.toHexString(interpVal)}($interpFloat) jit=0x${Integer.toHexString(jitVal)}($jitFloat)")
+                shown++
+                if (shown >= 30) { break }
+            }
+        }
+
+        interpRunner.shutdown()
+        jitRunner.shutdown()
+    }
+
+    private fun findFunc(wasmModule: org.kgen.target.wasm.module.WasmModule, importCount: Int, name: String): Int {
+        for ((localIndex, _) in wasmModule.functions.withIndex()) {
+            if (wasmModule.functionName(localIndex + importCount) == name) {
+                return localIndex + importCount
+            }
+        }
+        return -1
+    }
+
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
@@ -579,7 +965,7 @@ class QuakeRendererTest {
                 println("quake.wasm not found at ${test.wasmPath}")
                 return
             }
-            test.analyzeFrame5Divergence()
+            test.findFirstDivergentFrame()
         }
     }
 }

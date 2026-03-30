@@ -630,9 +630,11 @@ class X86CodeGenerator : CodeGenerator {
             var pushOffset = 0
             for (reg in alloc.usedCalleeRegs64) {
                 pushOffset++
-                cfi.add(CfiInstruction.advanceLoc(2)) // push r64 is typically 2 bytes
+                // push r64 is 1 byte for regs 0-7 (e.g. push rbx = 0x53),
+                // 2 bytes for r8-r15 (REX prefix + 0x50+r)
+                val pushSize = if ((reg as X86Register).encoding >= 8) 2 else 1
+                cfi.add(CfiInstruction.advanceLoc(pushSize))
                 val dwarfReg = x86ToDwarfRegister(reg)
-                // Saved at CFA - (16 + pushOffset * 8), factored offset = 2 + pushOffset
                 cfi.add(CfiInstruction.offset(dwarfReg, 2 + pushOffset))
             }
             return FdeEntry(fn.name, startOffset.toLong(), length.toLong(), cfi)
@@ -647,7 +649,7 @@ class X86CodeGenerator : CodeGenerator {
             codes.add(UnwindCode(offset, UnwindOperation.SET_FPREG, 0))
 
             for (reg in alloc.usedCalleeRegs64) {
-                offset += 2 // push r64 is typically 2 bytes (REX + 0x50+r)
+                offset += if ((reg as X86Register).encoding >= 8) 2 else 1
                 codes.add(UnwindCode(offset, UnwindOperation.PUSH_NONVOL, x86ToSehRegister(reg)))
             }
 
@@ -1457,10 +1459,18 @@ class X86CodeGenerator : CodeGenerator {
                 is BSwap -> emitBSwap(inst)
                 is BitReverse -> emitBitReverse(inst)
 
-                is Sqrt -> emitFpUnaryXmm(inst.dest, inst.operand) { d, s -> asm.sqrtsd(d, s) }
-                is Ceil -> emitFpUnaryXmm(inst.dest, inst.operand) { d, s -> asm.roundsd(d, s, 0x02) }
-                is Floor -> emitFpUnaryXmm(inst.dest, inst.operand) { d, s -> asm.roundsd(d, s, 0x01) }
-                is Round -> emitFpUnaryXmm(inst.dest, inst.operand) { d, s -> asm.roundsd(d, s, 0x00) }
+                is Sqrt -> emitFpUnaryXmm(inst.dest, inst.operand) { d, s ->
+                    if (inst.operand.type == Type.F32) { asm.sqrtss(d, s) } else { asm.sqrtsd(d, s) }
+                }
+                is Ceil -> emitFpUnaryXmm(inst.dest, inst.operand) { d, s ->
+                    if (inst.operand.type == Type.F32) { asm.roundss(d, s, 0x02) } else { asm.roundsd(d, s, 0x02) }
+                }
+                is Floor -> emitFpUnaryXmm(inst.dest, inst.operand) { d, s ->
+                    if (inst.operand.type == Type.F32) { asm.roundss(d, s, 0x01) } else { asm.roundsd(d, s, 0x01) }
+                }
+                is Round -> emitFpUnaryXmm(inst.dest, inst.operand) { d, s ->
+                    if (inst.operand.type == Type.F32) { asm.roundss(d, s, 0x00) } else { asm.roundsd(d, s, 0x00) }
+                }
                 is FAbs -> emitFAbs(inst)
                 is FMin -> emitFBinOp(inst.dest, inst.lhs, inst.rhs) { d, s ->
                     if (inst.dest.type == Type.F32) asm.minss(d, s) else asm.minsd(d, s)
@@ -1477,7 +1487,7 @@ class X86CodeGenerator : CodeGenerator {
 
                 is MemCpy -> emitRepMovsb(inst.dst, inst.src, inst.len)
                 is MemSet -> emitMemSet(inst)
-                is MemMove -> emitRepMovsb(inst.dst, inst.src, inst.len)
+                is MemMove -> emitMemMove(inst.dst, inst.src, inst.len)
 
                 is Fence -> {
                     when (inst.ordering) {
@@ -1600,42 +1610,25 @@ class X86CodeGenerator : CodeGenerator {
             }
         }
 
-        private fun emitCall(inst: Call) {
-            // System V: GP and XMM args use independent counters
-            // Windows: GP and XMM share the same slot index
-            var gpIdx = 0
+        private data class CallArgResult(val xmmIdx: Int, val stackArgsSize: Int)
+
+        private fun emitCallArgs(args: List<Value>, startGpIdx: Int = 0): CallArgResult {
+            var gpIdx = startGpIdx
             var xmmIdx = 0
-            val stackArgs = mutableListOf<Pair<Value, Int>>() // (arg, stack offset)
+            val stackArgs = mutableListOf<Pair<Value, Int>>()
             var stackArgsSize = 0
 
-            // Large struct return: pass hidden sret pointer as first GP arg
-            val dest = inst.dest
-            val callerSret = dest != null && dest.type is Type.Struct && typeSizeBytes(dest.type) > 16
-            if (callerSret) {
-                val loc = alloc.locations[dest!!.name]
-                if (loc is Location.Spill) {
-                    // LEA first_arg_reg, [RBP + spill_offset]
-                    asm.lea(callArgRegs64[0], X86Memory.base(rbp64).offset(loc.offset))
-                } else {
-                    error("Large struct call result must be spilled")
-                }
-                gpIdx = 1 // first GP slot consumed by sret
-            }
-
-            // Pre-scan: detect when loading arg[i] into its target register would
-            // destroy a later arg[j]'s source register. Pre-save endangered values
-            // to scratch registers (r10/r11) before the arg loop starts.
             val savedConflicts = mutableMapOf<String, X86Register64>()
             run {
-                var scanGpIdx = if (callerSret) { 1 } else { 0 }
-                for ((argIndex, arg) in inst.args.withIndex()) {
+                var scanGpIdx = startGpIdx
+                for ((argIndex, arg) in args.withIndex()) {
                     if (arg.type == Type.F64 || arg.type == Type.F32) {
                         if (isWindows) { scanGpIdx++ }
                         continue
                     }
                     if (scanGpIdx >= callArgRegs64.size) { scanGpIdx++; continue }
                     val targetReg = callArgRegs64[scanGpIdx]
-                    for (laterArg in inst.args.drop(argIndex + 1)) {
+                    for (laterArg in args.drop(argIndex + 1)) {
                         if (laterArg is Parameter || laterArg is InstructionRef) {
                             val loc = alloc.locations[laterArg.name]
                             val valueReg = when (loc) {
@@ -1654,7 +1647,7 @@ class X86CodeGenerator : CodeGenerator {
                 }
             }
 
-            for (arg in inst.args) {
+            for (arg in args) {
                 when {
                     arg.type == Type.F64 || arg.type == Type.F32 -> {
                         if (isWindows) {
@@ -1700,7 +1693,6 @@ class X86CodeGenerator : CodeGenerator {
                 }
             }
 
-            // Write stack args into the pre-allocated parameter area (reserved in prologue)
             if (stackArgs.isNotEmpty()) {
                 val argAreaBase = if (isWindows) 0x20 else 0
                 for ((arg, offset) in stackArgs) {
@@ -1717,6 +1709,24 @@ class X86CodeGenerator : CodeGenerator {
                     }
                 }
             }
+            return CallArgResult(xmmIdx, stackArgsSize)
+        }
+
+        private fun emitCall(inst: Call) {
+            val dest = inst.dest
+            val callerSret = dest != null && dest.type is Type.Struct && typeSizeBytes(dest.type) > 16
+            var startGpIdx = 0
+            if (callerSret) {
+                val loc = alloc.locations[dest!!.name]
+                if (loc is Location.Spill) {
+                    asm.lea(callArgRegs64[0], X86Memory.base(rbp64).offset(loc.offset))
+                } else {
+                    error("Large struct call result must be spilled")
+                }
+                startGpIdx = 1
+            }
+
+            val callArgResult = emitCallArgs(inst.args, startGpIdx)
 
             // System V ABI: vararg calls must set AL to the number of XMM registers used
             val isVararg = when (val f = inst.function) {
@@ -1724,7 +1734,7 @@ class X86CodeGenerator : CodeGenerator {
                 else -> module.functions.firstOrNull { it.name == (f as? GlobalRef)?.name }?.isVarArg == true
             }
             if (isVararg && !isWindows) {
-                val xmmCount = xmmIdx.coerceAtMost(8)
+                val xmmCount = callArgResult.xmmIdx.coerceAtMost(8)
                 asm.mov(al8, xmmCount.toByte())
             }
 
@@ -1736,7 +1746,7 @@ class X86CodeGenerator : CodeGenerator {
 
             val isTailCall = inst.tailCall == TailCallKind.MUSTTAIL ||
                 inst.tailCall == TailCallKind.TAIL
-            val canTailCall = isTailCall && stackArgsSize == 0
+            val canTailCall = isTailCall && callArgResult.stackArgsSize == 0
 
             if (canTailCall) {
                 // Tail call: restore frame, then jump instead of call
@@ -1808,31 +1818,8 @@ class X86CodeGenerator : CodeGenerator {
                 else -> error("Unsupported invoke target: $f")
             }
 
-            // Emit arguments using the same logic as emitCall
-            var gpIdx = 0
-            var xmmIdx = 0
-            for (arg in inst.args) {
-                when {
-                    arg.type == Type.F64 || arg.type == Type.F32 -> {
-                        if (isWindows) {
-                            if (gpIdx < callArgRegsXmm.size) loadValueXmm(arg, callArgRegsXmm[gpIdx])
-                            gpIdx++
-                        } else {
-                            if (xmmIdx < callArgRegsXmm.size) loadValueXmm(arg, callArgRegsXmm[xmmIdx])
-                            xmmIdx++
-                        }
-                    }
-                    else -> {
-                        if (gpIdx < callArgRegs64.size) {
-                            when (arg.type) {
-                                Type.I32, Type.I16, Type.I8, Type.I1 -> loadValue32(arg, callArgRegs32[gpIdx])
-                                else -> loadValue64(arg, callArgRegs64[gpIdx])
-                            }
-                        }
-                        gpIdx++
-                    }
-                }
-            }
+            // Emit arguments with conflict detection and stack args (same as emitCall)
+            emitCallArgs(inst.args)
 
             // Record call site: offset before call instruction
             val callStart = asm.position() - funcStartOffset
@@ -1898,31 +1885,8 @@ class X86CodeGenerator : CodeGenerator {
                 else -> error("Unsupported callbr target: $f")
             }
 
-            // Emit arguments
-            var gpIdx = 0
-            var xmmIdx = 0
-            for (arg in inst.args) {
-                when {
-                    arg.type == Type.F64 || arg.type == Type.F32 -> {
-                        if (isWindows) {
-                            if (gpIdx < callArgRegsXmm.size) { loadValueXmm(arg, callArgRegsXmm[gpIdx]) }
-                            gpIdx++
-                        } else {
-                            if (xmmIdx < callArgRegsXmm.size) { loadValueXmm(arg, callArgRegsXmm[xmmIdx]) }
-                            xmmIdx++
-                        }
-                    }
-                    else -> {
-                        if (gpIdx < callArgRegs64.size) {
-                            when (arg.type) {
-                                Type.I32, Type.I16, Type.I8, Type.I1 -> loadValue32(arg, callArgRegs32[gpIdx])
-                                else -> loadValue64(arg, callArgRegs64[gpIdx])
-                            }
-                        }
-                        gpIdx++
-                    }
-                }
-            }
+            // Emit arguments with conflict detection and stack args (same as emitCall)
+            emitCallArgs(inst.args)
 
             // Emit the call
             val isLocal = module.functions.any { it.name == funcName && !it.isExternal }
@@ -3015,12 +2979,17 @@ class X86CodeGenerator : CodeGenerator {
                     emitStoreMem16(addr, 0, src)
                 }
                 Type.F64 -> {
+                    // Load XMM value BEFORE resolving pointer — loadValueXmm may clobber r11
+                    // for non-zero constants (uses mov r11, bits; movq xmm, r11).
+                    // Re-resolve pointer into r10 to avoid the clobber.
                     loadValueXmm(val_, xmm15)
-                    emitMovsdToMem(addr, 0, xmm15)
+                    val safeAddr = resolvePointer(ptr, r10_64)
+                    emitMovsdToMem(safeAddr, 0, xmm15)
                 }
                 Type.F32 -> {
                     loadValueXmm(val_, xmm15)
-                    emitMovssToMem(addr, 0, xmm15)
+                    val safeAddr = resolvePointer(ptr, r10_64)
+                    emitMovssToMem(safeAddr, 0, xmm15)
                 }
                 else -> error("Unsupported store type: ${val_.type}")
             }
@@ -3197,29 +3166,46 @@ class X86CodeGenerator : CodeGenerator {
                 loadValueXmm(inst.operand, scratch)
                 scratch
             }
-            if (d != src) asm.movsd(d, src)
-            // Load abs mask (clear sign bit): 0x7FFFFFFFFFFFFFFF
+            if (d != src) {
+                if (inst.operand.type == Type.F32) { asm.movss(d, src) } else { asm.movsd(d, src) }
+            }
             val maskReg = if (d != xmm13) xmm13 else xmm12
-            loadValueXmm(Constant.F64(java.lang.Double.longBitsToDouble(0x7FFFFFFFFFFFFFFFL)), maskReg)
-            asm.andpd(d, maskReg)
+            if (inst.operand.type == Type.F32) {
+                loadValueXmm(Constant.F32(java.lang.Float.intBitsToFloat(0x7FFFFFFF)), maskReg)
+                asm.andps(d, maskReg)
+            } else {
+                loadValueXmm(Constant.F64(java.lang.Double.longBitsToDouble(0x7FFFFFFFFFFFFFFFL)), maskReg)
+                asm.andpd(d, maskReg)
+            }
             if (isSpilled(inst.dest.name)) storeToXmm(inst.dest.name, d)
         }
 
         private fun emitCopySign(inst: CopySign) {
             val d = getDestXmm(inst.dest.name)
+            val isF32 = inst.magnitude.type == Type.F32
             // Load magnitude, clear its sign bit
             loadValueXmm(inst.magnitude, d)
             val maskReg = if (d != xmm13) xmm13 else xmm12
-            loadValueXmm(Constant.F64(java.lang.Double.longBitsToDouble(0x7FFFFFFFFFFFFFFFL)), maskReg)
-            asm.andpd(d, maskReg)
+            if (isF32) {
+                loadValueXmm(Constant.F32(java.lang.Float.intBitsToFloat(0x7FFFFFFF)), maskReg)
+                asm.andps(d, maskReg)
+            } else {
+                loadValueXmm(Constant.F64(java.lang.Double.longBitsToDouble(0x7FFFFFFFFFFFFFFFL)), maskReg)
+                asm.andpd(d, maskReg)
+            }
             // Load sign, extract its sign bit
             val signReg = if (d != xmm14) xmm14 else xmm15
             loadValueXmm(inst.sign, signReg)
             val signMaskReg = if (signReg != xmm12 && d != xmm12) xmm12 else xmm11
-            loadValueXmm(Constant.F64(java.lang.Double.longBitsToDouble(Long.MIN_VALUE)), signMaskReg) // 0x8000000000000000
-            asm.andpd(signReg, signMaskReg)
-            // Combine: magnitude | sign
-            asm.orpd(d, signReg)
+            if (isF32) {
+                loadValueXmm(Constant.F32(java.lang.Float.intBitsToFloat(0x80000000.toInt())), signMaskReg)
+                asm.andps(signReg, signMaskReg)
+                asm.orps(d, signReg)
+            } else {
+                loadValueXmm(Constant.F64(java.lang.Double.longBitsToDouble(Long.MIN_VALUE)), signMaskReg)
+                asm.andpd(signReg, signMaskReg)
+                asm.orpd(d, signReg)
+            }
             if (isSpilled(inst.dest.name)) storeToXmm(inst.dest.name, d)
         }
 
@@ -3275,28 +3261,29 @@ class X86CodeGenerator : CodeGenerator {
                 s
             }
 
+            val isF32 = inst.lhs.type == Type.F32
             // d = lhs / rhs
-            if (d != lhsXmm) asm.movsd(d, lhsXmm)
-            asm.divsd(d, rhsXmm)
-            // truncate: roundsd d, d, 3 (round toward zero)
-            asm.roundsd(d, d, 0x03)
+            if (d != lhsXmm) {
+                if (isF32) { asm.movss(d, lhsXmm) } else { asm.movsd(d, lhsXmm) }
+            }
+            if (isF32) { asm.divss(d, rhsXmm) } else { asm.divsd(d, rhsXmm) }
+            // truncate: round toward zero
+            if (isF32) { asm.roundss(d, d, 0x03) } else { asm.roundsd(d, d, 0x03) }
             // d = trunc * rhs
-            asm.mulsd(d, rhsXmm)
+            if (isF32) { asm.mulss(d, rhsXmm) } else { asm.mulsd(d, rhsXmm) }
             // result = lhs - d
-            // Need lhs in a temp
             val lhsTemp = if (lhsXmm == d) {
-                // lhs was in d and we clobbered it — this is a problem.
-                // We need to reload lhs
                 val t = xmm13
                 loadValueXmm(inst.lhs, t)
                 t
             } else lhsXmm
 
-            // Move lhsTemp to a temp, then sub
             val resultXmm = if (d == xmm13) xmm12 else xmm13
-            asm.movsd(resultXmm, lhsTemp)
-            asm.subsd(resultXmm, d)
-            if (d != resultXmm) asm.movsd(d, resultXmm)
+            if (isF32) { asm.movss(resultXmm, lhsTemp) } else { asm.movsd(resultXmm, lhsTemp) }
+            if (isF32) { asm.subss(resultXmm, d) } else { asm.subsd(resultXmm, d) }
+            if (d != resultXmm) {
+                if (isF32) { asm.movss(d, resultXmm) } else { asm.movsd(d, resultXmm) }
+            }
             if (isSpilled(inst.dest.name)) storeToXmm(inst.dest.name, d)
         }
 
@@ -3361,12 +3348,20 @@ class X86CodeGenerator : CodeGenerator {
                     else asm.sub(d, rhsReg as X86Operand64)
 
                     if (signed) {
-                        // On signed overflow (OF=1): use saturated value
-                        // Load MAX into scratch, CMOVO d, scratch
-                        // For correct saturation direction, we'd need to check SF too
-                        // Simplified: just clamp to MAX on overflow (close enough for most uses)
+                        // On signed overflow: clamp to MAX if result is negative (overflowed positive),
+                        // clamp to MIN if result is positive (overflowed negative).
+                        // After overflow: SF indicates the (wrong) sign of the result.
+                        // SF=1 (negative result) → overflowed in positive direction → clamp to MAX
+                        // SF=0 (positive result) → overflowed in negative direction → clamp to MIN
+                        val noOverflow = asm.label()
+                        asm.jno(noOverflow)
                         emitLoadImm64(rhsReg, Long.MAX_VALUE)
-                        emitCmov64(0x40, d, rhsReg) // CMOVO (overflow → use MAX)
+                        val done = asm.label()
+                        asm.js(done) // SF=1 → positive overflow → MAX is correct
+                        emitLoadImm64(rhsReg, Long.MIN_VALUE)
+                        asm.mark(done)
+                        asm.mov(d, rhsReg as X86Operand64)
+                        asm.mark(noOverflow)
                     } else {
                         // Unsigned: if carry, set to ULONG_MAX
                         emitLoadImm64(rhsReg, -1L)
@@ -3384,8 +3379,15 @@ class X86CodeGenerator : CodeGenerator {
                     else asm.sub(d, rhsReg as X86Operand32)
 
                     if (signed) {
+                        val noOverflow = asm.label()
+                        asm.jno(noOverflow)
                         asm.mov(rhsReg, Int.MAX_VALUE)
-                        emitCmov32(0x40, d, rhsReg) // CMOVO
+                        val done = asm.label()
+                        asm.js(done) // SF=1 → positive overflow → MAX is correct
+                        asm.mov(rhsReg, Int.MIN_VALUE)
+                        asm.mark(done)
+                        asm.mov(d, rhsReg as X86Operand32)
+                        asm.mark(noOverflow)
                     } else {
                         asm.mov(rhsReg, -1)
                         emitCmov32(0x42, d, rhsReg) // CMOVC
@@ -3411,43 +3413,69 @@ class X86CodeGenerator : CodeGenerator {
                     val flagCc = if (signed) 0x90 else 0x92 // SETO / SETC
 
                     if (is64) {
-                        val d = r10_64
-                        loadValue64(lhs, d)
-                        val rhsReg = r11_64
-                        loadValue64(rhs, rhsReg)
-
-                        when (op) {
-                            "add" -> asm.add(d, rhsReg as X86Operand64)
-                            "sub" -> asm.sub(d, rhsReg as X86Operand64)
-                            "mul" -> asm.imul(d, rhsReg as X86Operand64)
+                        if (op == "mul" && !signed) {
+                            // Unsigned mul: use one-operand mul (result in RDX:RAX), check RDX != 0
+                            loadValue64(lhs, rax64)
+                            loadValue64(rhs, r11_64)
+                            // mul r11: REX.W 0xF7 /4
+                            asm.emitByte(0x49) // REX.WB
+                            asm.emitByte(0xF7)
+                            asm.emitByte(0xE0 or ((r11_64 as X86Register).encoding and 7))
+                            emitStoreToRbp64(rax64, baseOffset) // low result in RAX
+                            asm.test(rdx64 as X86Operand64, rdx64)
+                            // SETNZ r10b
+                            asm.emitByte(0x41)
+                            asm.emitBytes(0x0F, 0x95)
+                            asm.emitByte(0xC0 or ((r10_64 as X86Register).encoding and 7))
+                            asm.and_(r10d32 as X86Operand32, 0xFF as Int)
+                            emitStoreToRbp64(r10_64, baseOffset + 8)
+                        } else {
+                            val d = r10_64
+                            loadValue64(lhs, d)
+                            val rhsReg = r11_64
+                            loadValue64(rhs, rhsReg)
+                            when (op) {
+                                "add" -> asm.add(d, rhsReg as X86Operand64)
+                                "sub" -> asm.sub(d, rhsReg as X86Operand64)
+                                "mul" -> asm.imul(d, rhsReg as X86Operand64)
+                            }
+                            emitStoreToRbp64(d, baseOffset)
+                            val enc = (d as X86Register).encoding
+                            asm.emitByte(0x41)
+                            asm.emitBytes(0x0F, flagCc)
+                            asm.emitByte(0xC0 or (enc and 7))
+                            asm.and_(r10d32 as X86Operand32, 0xFF as Int)
+                            emitStoreToRbp64(r10_64, baseOffset + 8)
                         }
-                        emitStoreToRbp64(d, baseOffset)
-
-                        // SETcc r10b: REX 0F cc C0|reg
-                        val enc = (d as X86Register).encoding
-                        asm.emitByte(0x41) // REX.B for r10
-                        asm.emitBytes(0x0F, flagCc)
-                        asm.emitByte(0xC0 or (enc and 7))
-                        // Zero-extend r10b to r10 via AND r10d, 0xFF
-                        asm.and_(r10d32 as X86Operand32, 0xFF as Int)
-                        emitStoreToRbp64(r10_64, baseOffset + 8)
                     } else {
-                        val d = r10d32
-                        loadValue32(lhs, d)
-                        val rhsReg = r11d32
-                        loadValue32(rhs, rhsReg)
-
-                        when (op) {
-                            "add" -> asm.add(d, rhsReg as X86Operand32)
-                            "sub" -> asm.sub(d, rhsReg as X86Operand32)
-                            "mul" -> asm.imul(d, rhsReg as X86Operand32)
+                        if (op == "mul" && !signed) {
+                            loadValue32(lhs, eax32)
+                            loadValue32(rhs, r11d32)
+                            // mul r11d: 0x41 0xF7 /4
+                            asm.emitByte(0x41)
+                            asm.emitByte(0xF7)
+                            asm.emitByte(0xE0 or ((r11d32 as X86Register).encoding and 7))
+                            emitStoreToRbp32(eax32, baseOffset)
+                            asm.test(edx32 as X86Operand32, edx32)
+                            asm.emitBytes(0x0F, 0x95) // SETNZ
+                            asm.emitByte(0xC0 or ((r10d32 as X86Register).encoding and 7))
+                            asm.and_(r10d32 as X86Operand32, 0xFF as Int)
+                        } else {
+                            val d = r10d32
+                            loadValue32(lhs, d)
+                            val rhsReg = r11d32
+                            loadValue32(rhs, rhsReg)
+                            when (op) {
+                                "add" -> asm.add(d, rhsReg as X86Operand32)
+                                "sub" -> asm.sub(d, rhsReg as X86Operand32)
+                                "mul" -> asm.imul(d, rhsReg as X86Operand32)
+                            }
+                            emitStoreToRbp32(d, baseOffset)
+                            val enc = (d as X86Register).encoding
+                            if (enc >= 8) asm.emitByte(0x41)
+                            asm.emitBytes(0x0F, flagCc)
+                            asm.emitByte(0xC0 or (enc and 7))
                         }
-                        emitStoreToRbp32(d, baseOffset)
-
-                        val enc = (d as X86Register).encoding
-                        if (enc >= 8) asm.emitByte(0x41)
-                        asm.emitBytes(0x0F, flagCc)
-                        asm.emitByte(0xC0 or (enc and 7))
                         asm.and_(r10d32 as X86Operand32, 0xFF as Int)
                         emitStoreToRbp32(r10d32, baseOffset + 4)
                     }
@@ -3838,12 +3866,37 @@ class X86CodeGenerator : CodeGenerator {
                     }
                 }
                 Type.I64 -> {
+                    // cvtsi2ss/sd treats i64 as signed — wrong for values >= 2^63.
+                    // If the sign bit is set: halve, convert, then double.
                     val src = getOrLoad64(inst.value.name, r11_64)
+                    asm.test(src as X86Operand64, src)
+                    val signedPath = asm.label()
+                    val done = asm.label()
+                    asm.js(signedPath)
+                    // Positive path: direct conversion
                     if (inst.dest.type == Type.F32) {
-                        asm.cvtsi2ss(d, src as X86Operand64)
+                        asm.cvtsi2ss(d, src)
                     } else {
-                        asm.cvtsi2sd(d, src as X86Operand64)
+                        asm.cvtsi2sd(d, src)
                     }
+                    asm.jmp(done)
+                    // Negative-sign path: halve (preserving low bit), convert, double
+                    asm.mark(signedPath)
+                    val temp = r10_64
+                    asm.mov(temp, src as X86Operand64)
+                    val lowBit = r11_64
+                    asm.mov(lowBit, src as X86Operand64)
+                    asm.and_(lowBit as X86Operand64, 1)
+                    asm.shr(temp as X86Operand64, 1.toByte())
+                    asm.or_(temp, lowBit as X86Operand64)
+                    if (inst.dest.type == Type.F32) {
+                        asm.cvtsi2ss(d, temp)
+                        asm.addss(d, d)
+                    } else {
+                        asm.cvtsi2sd(d, temp)
+                        asm.addsd(d, d)
+                    }
+                    asm.mark(done)
                 }
                 else -> error("Unsupported uitofp source: ${inst.value.type}")
             }
@@ -3861,8 +3914,38 @@ class X86CodeGenerator : CodeGenerator {
                     if (isSpilled(inst.dest.name)) storeTo(inst.dest.name, reg32 = d)
                 }
                 Type.I64 -> {
+                    // cvttss2si/cvttsd2si treats result as signed — wrong for float >= 2^63.
+                    // If value >= 2^63: subtract 2^63, convert, add 2^63 as integer.
                     val d = getDest64(inst.dest.name)
+                    val threshold = xmm14
+                    if (fromF32) {
+                        loadValueXmm(Constant.F32(9.223372E18f), threshold) // 2^63 as f32
+                        asm.comiss(src, threshold)
+                    } else {
+                        loadValueXmm(Constant.F64(9.223372036854776E18), threshold) // 2^63 as f64
+                        asm.comisd(src, threshold)
+                    }
+                    val largePath = asm.label()
+                    val done = asm.label()
+                    asm.jae(largePath)
+                    // Small path: direct conversion
                     if (fromF32) { asm.cvttss2si(d, src) } else { asm.cvttsd2si(d, src) }
+                    asm.jmp(done)
+                    // Large path: subtract 2^63, convert, add 2^63 as integer
+                    asm.mark(largePath)
+                    val adjusted = xmm13
+                    if (fromF32) {
+                        asm.movss(adjusted, src)
+                        asm.subss(adjusted, threshold)
+                        asm.cvttss2si(d, adjusted)
+                    } else {
+                        asm.movsd(adjusted, src)
+                        asm.subsd(adjusted, threshold)
+                        asm.cvttsd2si(d, adjusted)
+                    }
+                    emitLoadImm64(r11_64, Long.MIN_VALUE)
+                    asm.add(d, r11_64 as X86Operand64)
+                    asm.mark(done)
                     if (isSpilled(inst.dest.name)) storeTo(inst.dest.name, reg64 = d)
                 }
                 else -> error("Unsupported fptoui target: ${inst.toType}")
@@ -4032,23 +4115,69 @@ class X86CodeGenerator : CodeGenerator {
 
         private fun emitRepMovsb(dst: Value, src: Value, len: Value) {
             // rep movsb: RDI = dst, RSI = src, RCX = count
+            // Save RSI/RDI/RCX — allocator may have live values there
+            asm.push(rsi64)
+            asm.push(rdi64)
+            asm.push(rcx64)
             loadValue64(dst, rdi64)
             loadValue64(src, rsi64)
             loadValue64(len, rcx64)
             asm.cld()
             asm.rep()
             asm.movsb()
+            asm.pop(rcx64)
+            asm.pop(rdi64)
+            asm.pop(rsi64)
+        }
+
+        private fun emitMemMove(dst: Value, src: Value, len: Value) {
+            // memmove semantics: handle overlapping regions.
+            // If dst > src, copy backward (std); otherwise copy forward (cld).
+            asm.push(rsi64)
+            asm.push(rdi64)
+            asm.push(rcx64)
+            loadValue64(dst, rdi64)
+            loadValue64(src, rsi64)
+            loadValue64(len, rcx64)
+            asm.cmp(rdi64, rsi64 as X86Operand64)
+            val forwardCopy = asm.label()
+            val done = asm.label()
+            asm.jbe(forwardCopy)
+            // Backward copy: point RSI/RDI to last byte (base + count - 1), set DF
+            asm.add(rsi64, rcx64 as X86Operand64)
+            asm.sub(rsi64 as X86Operand64, 1)
+            asm.add(rdi64, rcx64 as X86Operand64)
+            asm.sub(rdi64 as X86Operand64, 1)
+            asm.std()
+            asm.rep()
+            asm.movsb()
+            asm.cld()
+            asm.jmp(done)
+            asm.mark(forwardCopy)
+            asm.cld()
+            asm.rep()
+            asm.movsb()
+            asm.mark(done)
+            asm.pop(rcx64)
+            asm.pop(rdi64)
+            asm.pop(rsi64)
         }
 
         private fun emitMemSet(inst: MemSet) {
             // rep stosb: RDI = dst, AL = value, RCX = count
+            // Save RDI/RCX/RAX — allocator may have live values there
+            asm.push(rdi64)
+            asm.push(rcx64)
+            asm.push(rax64)
             loadValue64(inst.dst, rdi64)
             loadValue64(inst.len, rcx64)
-            // value goes into AL
             loadValue32(inst.value, eax32)
             asm.cld()
             asm.rep()
             asm.stosb()
+            asm.pop(rax64)
+            asm.pop(rcx64)
+            asm.pop(rdi64)
         }
 
         private fun loadValueXmm(v: Value, target: X86Xmm) {
@@ -4334,16 +4463,6 @@ class X86CodeGenerator : CodeGenerator {
                 return
             }
 
-            if (moves.size >= 4 && targetBlockLabel.contains("loop_header")) {
-                System.err.println("[PHI] $currentBlockLabel → $targetBlockLabel: ${moves.size} moves")
-                for ((dest, value) in moves) {
-                    val destLoc = alloc.locations[dest.name]
-                    val srcName = (value as? InstructionRef)?.name ?: (value as? Parameter)?.name ?: value.toString()
-                    val srcLoc = if (value is InstructionRef || value is Parameter) { alloc.locations[srcName] } else { null }
-                    System.err.println("[PHI]   ${dest.name}($destLoc) ← $srcName($srcLoc)")
-                }
-            }
-
             // Parallel move algorithm: topological emit + scratch register for cycles.
             // Without this, sequential copies corrupt values when a dest register
             // is also a source of a later copy (e.g., swap patterns in loop phis).
@@ -4568,7 +4687,8 @@ class X86CodeGenerator : CodeGenerator {
                         asm.mov(r10_64, lhs.value)
                         r10_64
                     } else if (lhs is Constant.I32) {
-                        asm.mov(r10d32, lhs.value)
+                        // Use sign-extending mov r64, imm32 to preserve negative values in 64-bit context
+                        asm.mov(r10_64, lhs.value)
                         r10_64
                     } else {
                         getOrLoad64(lhs.name, r10_64)
@@ -4765,7 +4885,12 @@ class X86CodeGenerator : CodeGenerator {
                     if (v.value == 0) {
                         val t32 = reg64to32(target)
                         asm.xor_(t32, t32 as X86Operand32)
+                    } else if (v.value > 0) {
+                        // Positive: mov r32, imm32 zero-extends to 64-bit
+                        val t32 = reg64to32(target)
+                        asm.mov(t32, v.value)
                     } else {
+                        // Negative: mov r64, imm32 sign-extends (correct for signed I32 in I64 context)
                         asm.mov(target, v.value)
                     }
                 }
