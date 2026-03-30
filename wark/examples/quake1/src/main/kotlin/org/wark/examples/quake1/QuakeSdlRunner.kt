@@ -125,31 +125,34 @@ object QuakeSdlRunner {
             FunctionDescriptor.ofVoid(ADDRESS), rendererSeg)
     }
 
-    private fun mapScancode(scancode: Int): Int {
-        return when (scancode) {
-            82 -> 0xAD   // UP
-            81 -> 0xAF   // DOWN
-            80 -> 0xAC   // LEFT
-            79 -> 0xAE   // RIGHT
-            224 -> 0x9D  // LCTRL → fire
-            225 -> 0xB6  // LSHIFT → run
-            44 -> 0x20   // SPACE → jump
-            40 -> 0x0D   // ENTER
-            41 -> 0x1B   // ESCAPE
-            43 -> 0x09   // TAB
-            26 -> 'w'.code  // W
-            4 -> 'a'.code   // A
-            22 -> 's'.code  // S
-            7 -> 'd'.code   // D
-            else -> {
-                if (scancode in 4..29) {
-                    ('a'.code + scancode - 4)
-                } else if (scancode in 30..39) {
-                    ('0'.code + ((scancode - 29) % 10))
-                } else {
-                    0
-                }
-            }
+    private fun mapSdlKey(sym: Int): Int {
+        return when (sym) {
+            // Quake keys.h key codes
+            8 -> 127            // SDLK_BACKSPACE → K_BACKSPACE
+            9 -> 9              // SDLK_TAB → K_TAB
+            13 -> 13            // SDLK_RETURN → K_ENTER
+            27 -> 27            // SDLK_ESCAPE → K_ESCAPE
+            32 -> 32            // SDLK_SPACE → K_SPACE
+            // Printable ASCII — Quake expects lowercase
+            in 'a'.code..'z'.code -> sym                    // already lowercase
+            in 'A'.code..'Z'.code -> sym + 32               // uppercase → lowercase
+            in '0'.code..'9'.code -> sym                    // digits
+            in 33..126 -> sym                               // other printable ASCII
+            // Arrow keys → Quake K_UPARROW etc
+            1073741906 -> 128   // SDLK_UP → K_UPARROW
+            1073741905 -> 129   // SDLK_DOWN → K_DOWNARROW
+            1073741904 -> 130   // SDLK_LEFT → K_LEFTARROW
+            1073741903 -> 131   // SDLK_RIGHT → K_RIGHTARROW
+            // Modifiers
+            1073742050 -> 132   // SDLK_LALT → K_ALT
+            1073742054 -> 132   // SDLK_RALT → K_ALT
+            1073742048 -> 133   // SDLK_LCTRL → K_CTRL
+            1073742052 -> 133   // SDLK_RCTRL → K_CTRL
+            1073742049 -> 134   // SDLK_LSHIFT → K_SHIFT
+            1073742053 -> 134   // SDLK_RSHIFT → K_SHIFT
+            // Function keys → K_F1 (135) through K_F12 (146)
+            in 1073741882..1073741893 -> 135 + (sym - 1073741882)
+            else -> 0
         }
     }
 
@@ -184,40 +187,55 @@ object QuakeSdlRunner {
         initSdl(screenWidth, screenHeight)
         println("[QUAKE] SDL window opened (${screenWidth * SCALE}x${screenHeight * SCALE})")
 
+        // Raise and focus the window
+        val windowSeg2 = MemorySegment.ofAddress(sdlWindow).reinterpret(1)
+        callSdl("SDL_RaiseWindow", FunctionDescriptor.ofVoid(ADDRESS), windowSeg2)
+
         val eventBuffer = arena.allocate(56)
         var running = true
         var lastTime = System.nanoTime()
+        var eventCount = 0
 
         while (running) {
             while (pollEvent(eventBuffer)) {
+                eventCount++
                 val eventType = eventBuffer.get(JAVA_INT, 0)
+                if (eventCount <= 20) {
+                    println("[EVENT] type=0x${Integer.toHexString(eventType)} ($eventType)")
+                }
                 when (eventType) {
                     SDL_QUIT -> running = false
                     SDL_KEYDOWN -> {
                         val scancode = eventBuffer.get(JAVA_INT, 16)
-                        val quakeKey = mapScancode(scancode)
+                        val sym = eventBuffer.get(JAVA_INT, 20)
+                        val quakeKey = mapSdlKey(sym)
+                        println("[KEY DOWN] scancode=$scancode sym=$sym (0x${Integer.toHexString(sym)}) → quake=$quakeKey (0x${Integer.toHexString(quakeKey)}) char='${if (quakeKey in 32..126) quakeKey.toChar() else '?'}'")
                         if (quakeKey != 0) {
-                            runner.keyEvent(quakeKey, true)
+                            try {
+                                runner.keyEvent(quakeKey, true)
+                            } catch (exception: Exception) {
+                                println("[KEY] keyEvent failed: ${exception.message}")
+                            }
                         }
                     }
                     SDL_KEYUP -> {
-                        val scancode = eventBuffer.get(JAVA_INT, 16)
-                        val quakeKey = mapScancode(scancode)
+                        val sym = eventBuffer.get(JAVA_INT, 20)
+                        val quakeKey = mapSdlKey(sym)
                         if (quakeKey != 0) {
                             runner.keyEvent(quakeKey, false)
                         }
                     }
                     SDL_MOUSEMOTION -> {
-                        val dx = eventBuffer.get(JAVA_INT, 20)
-                        val dy = eventBuffer.get(JAVA_INT, 24)
+                        val dx = eventBuffer.get(JAVA_INT, 24)
+                        val dy = eventBuffer.get(JAVA_INT, 28)
                         runner.mouseMove(dx, dy)
                     }
                     SDL_MOUSEBUTTONDOWN -> {
-                        val button = eventBuffer.get(JAVA_BYTE, 16).toInt()
+                        val button = eventBuffer.get(JAVA_BYTE, 20).toInt()
                         runner.mouseButton(button, true)
                     }
                     SDL_MOUSEBUTTONUP -> {
-                        val button = eventBuffer.get(JAVA_BYTE, 16).toInt()
+                        val button = eventBuffer.get(JAVA_BYTE, 20).toInt()
                         runner.mouseButton(button, false)
                     }
                 }

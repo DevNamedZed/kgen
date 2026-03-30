@@ -23,11 +23,17 @@ class SetjmpEmulation {
         builder.function("env", "__multi3", multi3())
     }
 
+    var traceEnabled = false
+
     private fun wasmSetjmp(): HostFunction = HostFunction { instance, args ->
         val bufferAddress = args[0].toInt()
         val label = args[1].toInt()
         val tableAddress = args[2].toInt()
         val memory = instance.memory()
+
+        if (traceEnabled) {
+            System.err.println("[SETJMP] buf=0x${Integer.toHexString(bufferAddress)} label=$label table=0x${Integer.toHexString(tableAddress)}")
+        }
 
         memory.writeI32(bufferAddress, label)
         memory.writeI32(bufferAddress + 4, tableAddress)
@@ -38,6 +44,10 @@ class SetjmpEmulation {
         val bufferAddress = args[0].toInt()
         val value = args[1].toInt()
         val longjmpValue = if (value == 0) 1 else value
+
+        if (traceEnabled) {
+            System.err.println("[LONGJMP] buf=0x${Integer.toHexString(bufferAddress)} value=$longjmpValue")
+        }
 
         if (instance.module.runtime.executionMode == org.wark.ExecutionMode.INTERPRET) {
             throw WasmException(0, longArrayOf(bufferAddress.toLong(), longjmpValue.toLong()))

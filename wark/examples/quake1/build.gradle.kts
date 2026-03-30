@@ -23,6 +23,125 @@ tasks.register<JavaExec>("runHeadless") {
     args = listOf("../assets/quake.wasm", "../assets")
 }
 
+tasks.register<JavaExec>("testNewGame") {
+    mainClass.set("org.wark.examples.quake1.QuakeNewGameTest")
+    classpath = sourceSets["test"].runtimeClasspath
+    jvmArgs("--enable-native-access=ALL-UNNAMED", "-Xmx512m")
+    workingDir = projectDir
+    val modeArg = providers.gradleProperty("mode").getOrElse("interpret")
+    val extraArgs = providers.gradleProperty("extraArgs").getOrElse("")
+    args = listOfNotNull(modeArg) + extraArgs.split(",").filter { it.isNotBlank() }
+}
+
+tasks.register<JavaExec>("frameDiff") {
+    mainClass.set("org.wark.examples.quake1.QuakeFrameDiffTest")
+    classpath = sourceSets["test"].runtimeClasspath
+    val skipMem2RegProp = providers.gradleProperty("skipMem2Reg").getOrElse("false")
+    jvmArgs("--enable-native-access=ALL-UNNAMED", "-Xmx1g", "-DskipMem2Reg=$skipMem2RegProp")
+    workingDir = projectDir
+}
+
+tasks.register<JavaExec>("memDiff") {
+    mainClass.set("org.wark.examples.quake1.QuakeMemDiffTest")
+    classpath = sourceSets["test"].runtimeClasspath
+    val framesProp = providers.gradleProperty("frames").getOrElse("0")
+    jvmArgs("--enable-native-access=ALL-UNNAMED", "-Xmx1g", "-Dframes=$framesProp")
+    workingDir = projectDir
+}
+
+tasks.register<JavaExec>("swapAddress") {
+    mainClass.set("org.wark.examples.quake1.QuakeSwapAddressTest")
+    classpath = sourceSets["test"].runtimeClasspath
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
+    workingDir = projectDir
+}
+
+tasks.register<JavaExec>("swapInit") {
+    mainClass.set("org.wark.examples.quake1.QuakeSwapInitTest")
+    classpath = sourceSets["test"].runtimeClasspath
+    jvmArgs("--enable-native-access=ALL-UNNAMED", "-Xmx512m")
+    workingDir = projectDir
+}
+
+tasks.register<JavaExec>("callIndirectTest") {
+    mainClass.set("org.wark.examples.quake1.QuakeCallIndirectTest")
+    classpath = sourceSets["test"].runtimeClasspath
+    jvmArgs("--enable-native-access=ALL-UNNAMED", "-Xmx512m")
+    workingDir = projectDir
+}
+
+tasks.register<JavaExec>("endianCheck") {
+    mainClass.set("org.wark.examples.quake1.QuakeEndianTest")
+    classpath = sourceSets["test"].runtimeClasspath
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
+    workingDir = projectDir
+}
+
+tasks.register<JavaExec>("pakRead") {
+    mainClass.set("org.wark.examples.quake1.QuakePakReadTest")
+    classpath = sourceSets["test"].runtimeClasspath
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
+    workingDir = projectDir
+}
+
+tasks.register<JavaExec>("bspVerify") {
+    mainClass.set("org.wark.examples.quake1.QuakeBspVerifyTest")
+    classpath = sourceSets["test"].runtimeClasspath
+    jvmArgs("--enable-native-access=ALL-UNNAMED", "-Xmx512m")
+    workingDir = projectDir
+}
+
+tasks.register<JavaExec>("mapLoad") {
+    mainClass.set("org.wark.examples.quake1.QuakeMapLoadTest")
+    classpath = sourceSets["test"].runtimeClasspath
+    jvmArgs("--enable-native-access=ALL-UNNAMED", "-Xmx512m")
+    workingDir = projectDir
+    val modeArg = providers.gradleProperty("mode").getOrElse("interpret")
+    args = listOf(modeArg)
+}
+
+tasks.register<JavaExec>("findWriter") {
+    mainClass.set("org.wark.examples.quake1.QuakeFindWriterTest")
+    classpath = sourceSets["test"].runtimeClasspath
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
+    workingDir = projectDir
+}
+
+tasks.register<JavaExec>("analyzeOob") {
+    mainClass.set("org.wark.examples.quake1.QuakeOobFunctionTest")
+    classpath = sourceSets["test"].runtimeClasspath
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
+    workingDir = projectDir
+}
+
+tasks.register<JavaExec>("modForName") {
+    mainClass.set("org.wark.examples.quake1.QuakeModForNameTest")
+    classpath = sourceSets["test"].runtimeClasspath
+    jvmArgs("--enable-native-access=ALL-UNNAMED", "-Xmx512m")
+    workingDir = projectDir
+}
+
+tasks.register<JavaExec>("hunkOverlap") {
+    mainClass.set("org.wark.examples.quake1.QuakeHunkOverlapTest")
+    classpath = sourceSets["test"].runtimeClasspath
+    jvmArgs("--enable-native-access=ALL-UNNAMED", "-Xmx1g")
+    workingDir = projectDir
+}
+
+tasks.register<JavaExec>("rendererTest") {
+    mainClass.set("org.wark.examples.quake1.QuakeRendererTest")
+    classpath = sourceSets["test"].runtimeClasspath
+    jvmArgs("--enable-native-access=ALL-UNNAMED", "-Xmx1g")
+    workingDir = projectDir
+}
+
+tasks.register<JavaExec>("littleShortInvestigation") {
+    mainClass.set("org.wark.examples.quake1.QuakeLittleShortInvestigation")
+    classpath = sourceSets["test"].runtimeClasspath
+    jvmArgs("--enable-native-access=ALL-UNNAMED", "-Xmx512m")
+    workingDir = projectDir
+}
+
 tasks.register<Jar>("fatJar") {
     archiveBaseName.set("wark-quake1")
     archiveClassifier.set("")

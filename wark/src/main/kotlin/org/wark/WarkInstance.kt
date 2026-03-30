@@ -33,7 +33,8 @@ class WarkInstance(
     private var interpreter: WasmInterpreter? = null
     private var traceCallback: ((Int, String) -> Unit)? = null
     private var boundsChecking = false
-    private val functionNames = mutableMapOf<Int, String>()
+    var skipMem2Reg = false
+    internal val functionNames = mutableMapOf<Int, String>()
     private val dataSegmentStore = mutableMapOf<Int, ByteArray>()
     private val contextArena = java.lang.foreign.Arena.ofShared()
     private val contextSegment: java.lang.foreign.MemorySegment =
@@ -61,6 +62,10 @@ class WarkInstance(
     }
 
     fun contextAddress(): Long = contextSegment.address()
+
+    fun clearExceptionState() {
+        contextSegment.set(java.lang.foreign.ValueLayout.JAVA_INT, RuntimeContextLayout.EXC_PENDING, 0)
+    }
 
     fun setExceptionState(tagIndex: Int, value0: Long, value1: Long) {
         contextSegment.set(java.lang.foreign.ValueLayout.JAVA_INT, RuntimeContextLayout.EXC_PENDING, 1)
@@ -142,6 +147,18 @@ class WarkInstance(
         this.boundsChecking = true
     }
 
+    fun interpreterInstance(): org.wark.exec.WasmInterpreter? = interpreter
+
+    fun setFunctionEntryCallback(callback: (Int, LongArray) -> Unit) {
+        val interp = interpreter ?: run {
+            val globalValues = globals.map { it.rawValue() }.toMutableList()
+            val newInterp = org.wark.exec.WasmInterpreter(module.wasmModule, memories, globalValues, imports, this)
+            interpreter = newInterp
+            newInterp
+        }
+        interp.onFunctionEntry = callback
+    }
+
     fun setInstructionLimit(limit: Long) {
         val interp = interpreter ?: run {
             val globalValues = globals.map { it.rawValue() }.toMutableList()
@@ -178,6 +195,43 @@ class WarkInstance(
             throw WasmTrap("global index out of bounds: $index")
         }
         return globals[index]
+    }
+
+    /**
+     * Grows WASM linear memory from the host side and updates the RuntimeContext
+     * so JIT code sees the new memory size. Returns the previous page count,
+     * or -1 if growth failed.
+     *
+     * Unlike calling [WarkMemory.grow] directly, this keeps the JIT's
+     * RuntimeContext in sync (memory_base and memory_size fields).
+     */
+    fun growMemory(deltaPages: Int): Int {
+        if (memories.isEmpty()) {
+            return -1
+        }
+        val result = memories[0].grow(deltaPages)
+        if (result >= 0) {
+            updateRuntimeContext()
+        }
+        return result
+    }
+
+    /**
+     * Pushes current WarkGlobal values into the active execution engine
+     * (interpreter's globals list or JIT's native global symbols).
+     * Call after modifying globals via [global] when an engine is already running.
+     */
+    fun syncGlobals() {
+        val interp = interpreter
+        if (interp != null) {
+            for (index in globals.indices) {
+                interp.setGlobal(index, globals[index].rawValue())
+            }
+        }
+        val runtimeEngine = engine
+        if (runtimeEngine != null) {
+            syncGlobalsToJit(runtimeEngine)
+        }
     }
 
     fun global(name: String): WarkGlobal {
@@ -372,9 +426,12 @@ class WarkInstance(
 
         lastTrapInstance = this
         val result = handle.invokeWithArguments(typedArgs)
-        // Clear exception pending flag (was used for JIT call chain unwinding)
+        val exceptionWasPending = contextSegment.get(java.lang.foreign.ValueLayout.JAVA_INT, RuntimeContextLayout.EXC_PENDING)
         contextSegment.set(java.lang.foreign.ValueLayout.JAVA_INT, RuntimeContextLayout.EXC_PENDING, 0)
         checkPendingTrap()
+        if (exceptionWasPending != 0) {
+            throw WasmTrap("uncaught WASM exception in JIT code (tag=${contextSegment.get(java.lang.foreign.ValueLayout.JAVA_INT, RuntimeContextLayout.EXC_TAG)})")
+        }
 
         // Convert return value back to Long
         return when {
@@ -409,7 +466,9 @@ class WarkInstance(
             compiler.boundsCheckEnabled = true
         }
         var irModule = compiler.compileAll()
-        irModule = Mem2Reg().run(irModule)
+        if (!skipMem2Reg) {
+            irModule = Mem2Reg().run(irModule)
+        }
         compiledModule = irModule
 
         // Count trace_return calls in the IR
@@ -521,9 +580,11 @@ class WarkInstance(
         val lookup = java.lang.invoke.MethodHandles.lookup()
         val handle = lookup.findStatic(
             WarkInstance::class.java, "onOobTrap",
-            java.lang.invoke.MethodType.methodType(Void.TYPE, Long::class.java, Long::class.java)
+            java.lang.invoke.MethodType.methodType(Void.TYPE, Long::class.java, Long::class.java, Long::class.java, Long::class.java)
         )
         val descriptor = java.lang.foreign.FunctionDescriptor.ofVoid(
+            java.lang.foreign.ValueLayout.JAVA_LONG,
+            java.lang.foreign.ValueLayout.JAVA_LONG,
             java.lang.foreign.ValueLayout.JAVA_LONG,
             java.lang.foreign.ValueLayout.JAVA_LONG,
         )
@@ -896,12 +957,15 @@ class WarkInstance(
         }
 
         @JvmStatic
-        fun onOobTrap(wasmAddress: Long, memorySize: Long) {
-            val traceFile = java.io.File("build/doom-trace.log")
-            traceFile.appendText("OOB TRAP: addr=0x${java.lang.Long.toHexString(wasmAddress)}, memSize=$memorySize, after $boundsCheckCount successful checks\n")
-            System.err.println("WASM OOB: addr=0x${java.lang.Long.toHexString(wasmAddress)}, memSize=$memorySize, checks=$boundsCheckCount")
+        fun onOobTrap(wasmAddress: Long, memorySize: Long, functionIndex: Long, checkId: Long) {
+            val instance = lastTrapInstance
+            val funcName = instance?.functionNames?.get(functionIndex.toInt()) ?: "func_$functionIndex"
+            System.err.println("WASM OOB: addr=0x${java.lang.Long.toHexString(wasmAddress)}, memSize=$memorySize, func=$funcName (local idx $functionIndex), check #$checkId")
             System.err.flush()
-            throw org.wark.WasmTrap("OOB trap: addr=0x${java.lang.Long.toHexString(wasmAddress)}")
+            pendingTrapFunctionIndex = -2
+            if (instance != null) {
+                instance.contextSegment.set(java.lang.foreign.ValueLayout.JAVA_INT, RuntimeContextLayout.EXC_PENDING, 1)
+            }
         }
 
         @Volatile @JvmField var lastTrapInstance: WarkInstance? = null
@@ -911,16 +975,6 @@ class WarkInstance(
         @JvmStatic
         fun onTrap(functionIndex: Int) {
             pendingTrapFunctionIndex = functionIndex
-            // Set exception pending so the JIT call chain unwinds properly
-            val instance = lastTrapInstance
-            if (instance != null) {
-                instance.contextSegment.set(
-                    java.lang.foreign.ValueLayout.JAVA_INT,
-                    RuntimeContextLayout.EXC_PENDING, 1)
-                instance.contextSegment.set(
-                    java.lang.foreign.ValueLayout.JAVA_INT,
-                    RuntimeContextLayout.EXC_TAG, -1)
-            }
         }
 
         private fun dumpTrapState(functionIndex: Int) {
@@ -952,6 +1006,10 @@ class WarkInstance(
 
         fun checkPendingTrap() {
             val funcIdx = pendingTrapFunctionIndex
+            if (funcIdx == -2) {
+                pendingTrapFunctionIndex = -1
+                throw WasmTrap("out-of-bounds memory access")
+            }
             if (funcIdx >= 0) {
                 pendingTrapFunctionIndex = -1
                 throw WasmTrap("unreachable trap in func_$funcIdx")
@@ -1102,8 +1160,15 @@ class WarkInstance(
             } else {
                 longArrayOf()
             }
-            val results = hostFunction.call(instance, wasmArgs)
-            return if (results.isNotEmpty()) results[0] else 0L
+            return try {
+                val results = hostFunction.call(instance, wasmArgs)
+                if (results.isNotEmpty()) results[0] else 0L
+            } catch (exception: Exception) {
+                System.err.println("[HOST] Exception in host function: ${exception.message}")
+                pendingTrapFunctionIndex = -2
+                instance.contextSegment.set(java.lang.foreign.ValueLayout.JAVA_INT, RuntimeContextLayout.EXC_PENDING, 1)
+                0L
+            }
         }
 
         fun call1(a0: Long): Long = dispatch(a0)

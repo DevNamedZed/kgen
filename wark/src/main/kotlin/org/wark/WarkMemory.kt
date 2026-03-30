@@ -126,16 +126,31 @@ class WarkMemory(
 
     fun writeByte(offset: Int, value: Byte) {
         checkBounds(offset, 1)
+        checkWatch(offset, 1)
         segment.set(ValueLayout.JAVA_BYTE, offset.toLong(), value)
+    }
+
+    var watchAddress = -1
+    var watchCallback: ((Int, Int, Int) -> Unit)? = null
+
+    private fun checkWatch(offset: Int, size: Int) {
+        if (watchAddress >= 0 && watchAddress < offset + size && watchAddress + 4 > offset) {
+            val oldValue = readI32(watchAddress)
+            watchCallback?.invoke(offset, 0, oldValue)
+        }
     }
 
     fun writeI32(offset: Int, value: Int) {
         checkBounds(offset, 4)
+        if (watchAddress in offset until offset + 4) {
+            watchCallback?.invoke(offset, value, readI32(watchAddress))
+        }
         segment.set(LITTLE_ENDIAN_INT, offset.toLong(), value)
     }
 
     fun writeI64(offset: Int, value: Long) {
         checkBounds(offset, 8)
+        checkWatch(offset, 8)
         segment.set(LITTLE_ENDIAN_LONG, offset.toLong(), value)
     }
 
@@ -151,6 +166,7 @@ class WarkMemory(
 
     fun writeBytes(offset: Int, data: ByteArray) {
         checkBounds(offset, data.size)
+        checkWatch(offset, data.size)
         MemorySegment.copy(data, 0, segment, ValueLayout.JAVA_BYTE, offset.toLong(), data.size)
     }
 
@@ -164,6 +180,7 @@ class WarkMemory(
 
     fun fill(offset: Int, value: Byte, length: Int) {
         checkBounds(offset, length)
+        checkWatch(offset, length)
         segment.asSlice(offset.toLong(), length.toLong()).fill(value)
     }
 

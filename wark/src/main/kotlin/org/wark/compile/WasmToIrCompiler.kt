@@ -62,6 +62,7 @@ class WasmToIrCompiler(
         val locals = initializeLocals(builder, params, funcType, function)
         val instructions = WasmDisassembler().disassemble(function.body)
         val context = CompilationContext(builder, params, params[0], locals, wasmModule)
+        context.functionReturnType = returnType
         for (paramType in funcType.params) {
             context.localTypes.add(wasmTypeToIr(paramType))
         }
@@ -97,7 +98,7 @@ class WasmToIrCompiler(
         }
         if (boundsCheckEnabled) {
             builder.declareFunction("__wark_oob_trap",
-                listOf(Param("addr", Type.I64), Param("memSize", Type.I64)), Type.Void)
+                listOf(Param("addr", Type.I64), Param("memSize", Type.I64), Param("funcIdx", Type.I64), Param("checkId", Type.I64)), Type.Void)
         }
         if (traceEnabled) {
             builder.declareFunction("__wark_trace_block",
@@ -137,6 +138,7 @@ class WasmToIrCompiler(
             for (localType in function.locals) {
                 context.localTypes.add(wasmTypeToIr(localType))
             }
+            context.functionReturnType = returnType
             context.boundsCheckEnabled = boundsCheckEnabled
             context.traceEnabled = traceEnabled
             context.functionIndex = index
@@ -279,8 +281,8 @@ class WasmToIrCompiler(
             builder.appendBlock(nextLabel)
         }
 
-        // Default: trap for invalid table index
-        builder.call("__wark_trap", listOf(Constant.I32(-1)), Type.Void)
+        // Default: no matching table entry — trap per WASM spec, then return default.
+        builder.call("__wark_trap", listOf(Constant.I32(typeIndex)), Type.Void)
         if (returnType == Type.Void) {
             builder.ret()
         } else {
@@ -575,12 +577,14 @@ class CompilationContext(
         val okLabel = freshLabel("oob_ok")
         builder.condBr(oob, trapLabel, okLabel)
         builder.appendBlock(trapLabel)
-        // Log the failing address and memSize before trapping
-        builder.call("__wark_oob_trap", listOf(address64, memSize), Type.Void)
-        builder.ret()
+        builder.call("__wark_oob_trap", listOf(address64, memSize, Constant.I64(functionIndex.toLong()), Constant.I64(boundsCheckCounter.toLong())), Type.Void)
+        boundsCheckCounter++
+        emitDefaultReturn()
         builder.appendBlock(okLabel)
     }
 
+    var functionReturnType: Type = Type.Void
+    var boundsCheckCounter = 0
     var tryDepth = 0
     val localTypes: MutableList<Type> = mutableListOf()
 
@@ -589,5 +593,13 @@ class CompilationContext(
             return localTypes[index]
         }
         return Type.I32
+    }
+
+    fun emitDefaultReturn() {
+        if (functionReturnType == Type.Void) {
+            builder.ret()
+        } else {
+            builder.ret(WasmToIrCompiler.defaultValue(functionReturnType))
+        }
     }
 }

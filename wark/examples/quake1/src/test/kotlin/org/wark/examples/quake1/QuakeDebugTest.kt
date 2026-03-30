@@ -27,7 +27,7 @@ class QuakeDebugTest {
             .directory(gameDirectory)
             .build()
 
-        val runtime = WarkRuntime.create(WasmTarget.V2_0, ExecutionMode.JIT)
+        val runtime = WarkRuntime.create(WasmTarget.V2_0, ExecutionMode.INTERPRET)
         val module = runtime.load(wasmBytes)
 
         val builder = WarkImports.builder()
@@ -106,14 +106,11 @@ class QuakeDebugTest {
         instance.call("q_init", 32L)
         println("=== Init complete ===")
 
-        println("=== Running frames (JIT) ===")
+        println("=== Running frames (INTERPRET) ===")
         var lastTime = System.nanoTime()
-        for (frame in 1..800) {
-            val now = System.nanoTime()
-            val dt = (now - lastTime) / 1_000_000_000.0f
-            lastTime = now
+        for (frame in 1..200) {
             try {
-                val bits = java.lang.Float.floatToRawIntBits(dt.coerceAtMost(0.05f))
+                val bits = java.lang.Float.floatToRawIntBits(1.0f / 30.0f)
                 instance.call("q_frame", bits.toLong())
             } catch (trap: org.wark.WasmTrap) {
                 println("Frame $frame trap: ${trap.message}")

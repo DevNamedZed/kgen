@@ -167,7 +167,7 @@ class WasiFileOperations(private val fileTable: WasiFileTable) {
                 val iovecOffset = iovecAddress + index * 8
                 val bufferAddress = memory.readI32(iovecOffset)
                 val bufferLength = memory.readI32(iovecOffset + 4)
-                if (bufferLength > 0) {
+                if (bufferLength > 0 && bufferAddress >= 0 && bufferAddress + bufferLength <= memory.sizeBytes()) {
                     val buffer = ByteArray(bufferLength)
                     val bytesRead = fileTable.read(descriptor, buffer)
                     if (bytesRead > 0) {
@@ -177,6 +177,9 @@ class WasiFileOperations(private val fileTable: WasiFileTable) {
                     if (bytesRead < bufferLength) {
                         break
                     }
+                } else if (bufferAddress < 0 || bufferAddress + bufferLength > memory.sizeBytes()) {
+                    memory.writeI32(bytesReadAddress, totalRead)
+                    return@HostFunction longArrayOf(WasiErrno.FAULT.toLong())
                 }
             }
             memory.writeI32(bytesReadAddress, totalRead)

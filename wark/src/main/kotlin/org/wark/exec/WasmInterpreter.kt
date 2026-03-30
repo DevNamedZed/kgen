@@ -124,6 +124,12 @@ class WasmInterpreter(
 
     fun functionName(index: Int): String = wasmModule.functionName(index) ?: "func_${index - wasmModule.importedFunctionCount}"
 
+    fun setGlobal(index: Int, value: Long) {
+        if (index in globals.indices) {
+            globals[index] = value
+        }
+    }
+
     var instructionLimit: Long = Long.MAX_VALUE
     var totalInstructions: Long = 0
         private set
@@ -138,6 +144,9 @@ class WasmInterpreter(
      * Called on function entry with (functionIndex, args).
      * Useful for logging/debugging specific function calls.
      */
+    fun functionTableEntry(tableIndex: Int): Int =
+        if (tableIndex in functionTable.indices) functionTable[tableIndex] else -1
+
     var onFunctionEntry: ((Int, LongArray) -> Unit)? = null
 
     /** Current call depth for debugger display. */
@@ -619,22 +628,27 @@ class WasmInterpreter(
                 WasmOpCode.CALL_INDIRECT -> {
                     val operands = instruction.operands as Operands.CallIndirect
                     val tableIndex = stack.removeLast().toInt()
-                    if (tableIndex < 0 || tableIndex >= functionTable.size) {
-                        throw WasmTrap("call_indirect: table index out of bounds: $tableIndex")
-                    }
-                    val funcIndex = functionTable[tableIndex]
-                    val calleeType = resolveCalleeType(funcIndex)
                     val expectedType = wasmModule.types[operands.typeIndex]
-                    if (calleeType.params.size != expectedType.params.size || calleeType.results.size != expectedType.results.size) {
-                        throw WasmTrap("call_indirect: type mismatch")
-                    }
-                    val callArgs = LongArray(calleeType.params.size)
-                    for (index in callArgs.indices.reversed()) {
-                        callArgs[index] = stack.removeLast()
-                    }
-                    val results = call(funcIndex, callArgs)
-                    for (result in results) {
-                        stack.addLast(result)
+                    if (tableIndex < 0 || tableIndex >= functionTable.size) {
+                        throw WasmTrap("call_indirect: table index $tableIndex out of bounds (table size ${functionTable.size}) in ${functionName(currentFunctionIndex)}")
+                    } else {
+                        val funcIndex = functionTable[tableIndex]
+                        if (funcIndex < 0) {
+                            throw WasmTrap("call_indirect: null function at table slot $tableIndex in ${functionName(currentFunctionIndex)}")
+                        }
+                        val calleeType = resolveCalleeType(funcIndex)
+                        if (calleeType.params.size != expectedType.params.size || calleeType.results.size != expectedType.results.size) {
+                            throw WasmTrap("call_indirect: type mismatch at table slot $tableIndex in ${functionName(currentFunctionIndex)} (expected ${expectedType.params.size} params/${expectedType.results.size} results, got ${calleeType.params.size}/${calleeType.results.size})")
+                        } else {
+                            val callArgs = LongArray(calleeType.params.size)
+                            for (index in callArgs.indices.reversed()) {
+                                callArgs[index] = stack.removeLast()
+                            }
+                            val results = call(funcIndex, callArgs)
+                            for (result in results) {
+                                stack.addLast(result)
+                            }
+                        }
                     }
                 }
 

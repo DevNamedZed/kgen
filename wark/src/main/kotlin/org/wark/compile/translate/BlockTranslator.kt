@@ -82,7 +82,7 @@ class BlockTranslator : InstructionTranslator {
             }
 
             WasmOpCode.RETHROW -> {
-                builder.ret()
+                context.emitDefaultReturn()
                 val unreachableLabel = context.freshLabel("rethrow_unreachable")
                 builder.appendBlock(unreachableLabel)
                 context.currentBlockLabel = unreachableLabel
@@ -338,7 +338,7 @@ class BlockTranslator : InstructionTranslator {
         builder.condBr(tagMatch, matchLabel, mismatchLabel)
 
         builder.appendBlock(mismatchLabel)
-        builder.ret()
+        context.emitDefaultReturn()
 
         builder.appendBlock(matchLabel)
         clearExceptionFlag(context)
@@ -395,7 +395,7 @@ class BlockTranslator : InstructionTranslator {
         builder.store(Constant.I32(tagIndex), tagPtr)
         val excPtr = builder.add(context.contextPointer, Constant.I64(org.wark.RuntimeContextLayout.EXC_PENDING))
         builder.store(Constant.I32(1), excPtr)
-        builder.ret()
+        context.emitDefaultReturn()
     }
 
     private fun blockResultType(instruction: WasmInstruction): org.kgen.ir.Type {

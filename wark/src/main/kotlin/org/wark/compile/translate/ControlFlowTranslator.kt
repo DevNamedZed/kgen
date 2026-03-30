@@ -211,7 +211,7 @@ class ControlFlowTranslator(
             val continueLabel = context.freshLabel("exc_ok")
             builder.condBr(hasException, retLabel, continueLabel)
             builder.appendBlock(retLabel)
-            builder.ret()
+            context.emitDefaultReturn()
             builder.appendBlock(continueLabel)
             context.currentBlockLabel = continueLabel
         }

@@ -3,22 +3,11 @@ package org.wark.examples.quake1
 import org.wark.HostFunction
 import org.wark.WarkImports
 
-/**
- * Host for a minimal Quake 1 WASM port. Provides the custom "env" imports that
- * the quake.wasm module expects for video, audio, and console output.
- *
- * Custom imports (env module):
- * - error(ptr, len) — fatal error message
- * - print(ptr, len) — console output
- * - set-palette(ptr) — set 256-color RGB palette (768 bytes)
- * - update(ptr, width, height, stride) — framebuffer update (indexed pixels)
- * - get-pos() — audio playback position in samples
- * - submit(ptr, len) — submit audio samples
- */
 class QuakeHost(private val frameCallback: FrameCallback? = null) {
 
     private var palette = ByteArray(768)
     private var frameCount = 0
+    var lastSurfacePointer = 0
 
     fun registerImports(builder: WarkImports.Builder) {
         builder.function("quake:host/system", "error", error())
